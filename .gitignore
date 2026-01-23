@@ -1,0 +1,45 @@
+# ======================
+# Python / Django
+# ======================
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.sqlite3
+
+# Virtual environment
+venv/
+.env/
+.env
+
+# Django
+*.log
+local_settings.py
+db.sqlite3
+media/
+
+# Migrations cache
+*/migrations/__pycache__/
+
+# ======================
+# VS Code
+# ======================
+.vscode/
+
+# ======================
+# Windows
+# ======================
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# ======================
+# Mac (por las dudas)
+# ======================
+.DS_Store
+
+# ======================
+# Node / Front (si después agregan)
+# ======================
+node_modules/
