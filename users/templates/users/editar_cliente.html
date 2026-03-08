@@ -9,6 +9,9 @@
         {% if mensaje %}
             <div class="alert {% if 'correctamente' in mensaje %}alert-success{% else %}alert-danger{% endif %} mt-3">{{ mensaje }}</div>
         {% endif %}
+        <div class="mb-3 text-end">
+            <a href="{% url 'agregar_direccion' cliente.id %}" class="btn btn-outline-secondary">+ Agregar dirección</a>
+        </div>
         <form method="post">
             {% csrf_token %}
             <div class="mb-3">

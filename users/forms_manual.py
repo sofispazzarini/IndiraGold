@@ -66,3 +66,35 @@ class EditarClienteForm(forms.ModelForm):
         if user_qs.exists():
             raise ValidationError('Ya existe un usuario con este correo.')
         return email
+
+
+class NuevaDireccionForm(forms.ModelForm):
+    class Meta:
+        model = Direccion
+        fields = ['calle', 'numero', 'ciudad', 'provincia', 'codigo_postal']
+        widgets = {
+            'calle': forms.TextInput(attrs={'class': 'form-control'}),
+            'numero': forms.TextInput(attrs={'class': 'form-control'}),
+            'ciudad': forms.TextInput(attrs={'class': 'form-control'}),
+            'provincia': forms.TextInput(attrs={'class': 'form-control'}),
+            'codigo_postal': forms.TextInput(attrs={'class': 'form-control'}),
+        }
+
+    def clean(self):
+        cleaned_data = super().clean()
+        calle = cleaned_data.get('calle')
+        numero = cleaned_data.get('numero')
+        ciudad = cleaned_data.get('ciudad')
+        provincia = cleaned_data.get('provincia')
+        codigo_postal = cleaned_data.get('codigo_postal')
+        cliente = self.initial.get('cliente')
+        if cliente and Direccion.objects.filter(
+            cliente=cliente,
+            calle=calle,
+            numero=numero,
+            ciudad=ciudad,
+            provincia=provincia,
+            codigo_postal=codigo_postal
+        ).exists():
+            raise forms.ValidationError('Esta dirección ya está registrada para este cliente.')
+        return cleaned_data

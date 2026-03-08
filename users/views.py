@@ -45,7 +45,28 @@ def listado_clientes(request):
 from django.contrib.auth.models import User
 
 # Importar el nuevo formulario manual
-from .forms_manual import RegistroManualClienteForm, EditarClienteForm
+from .forms_manual import RegistroManualClienteForm, EditarClienteForm, NuevaDireccionForm
+# Vista para agregar nueva dirección a un cliente (solo admin)
+@login_required
+@user_passes_test(lambda u: u.is_superuser)
+def agregar_direccion(request, cliente_id):
+    cliente = Cliente.objects.get(pk=cliente_id)
+    direcciones = cliente.direcciones.all()
+    mensaje = None
+    if request.method == 'POST':
+        form = NuevaDireccionForm(request.POST)
+        if form.is_valid():
+            direccion = form.save(commit=False)
+            direccion.cliente = cliente
+            direccion.save()
+            mensaje = 'Dirección agregada correctamente.'
+            form = NuevaDireccionForm()  # Limpiar formulario
+            direcciones = cliente.direcciones.all()  # Actualizar lista
+        else:
+            mensaje = 'Por favor revisa los datos ingresados.'
+    else:
+        form = NuevaDireccionForm()
+    return render(request, 'users/agregar_direccion.html', {'form': form, 'cliente': cliente, 'mensaje': mensaje, 'direcciones': direcciones})
 # Vista para editar cliente (solo admin)
 @login_required
 @user_passes_test(lambda u: u.is_superuser)

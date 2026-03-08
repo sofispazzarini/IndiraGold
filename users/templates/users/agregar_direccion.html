@@ -1,0 +1,105 @@
+{% extends 'users/base.html' %}
+{% block content %}
+<div class="container mt-4 d-flex justify-content-center">
+    <div style="background: #fff; max-width: 500px; width: 100%; border-radius: 16px; box-shadow: 0 4px 24px rgba(180,140,80,0.10); padding: 32px 28px 24px 28px;">
+        <a href="{% url 'editar_cliente' cliente.id %}" class="btn btn-light mb-3" style="font-size: 1.5rem; border: none; padding: 4px 16px 4px 10px;">&#8592;</a>
+        <h2>Agregar dirección</h2>
+        <div class="mb-2 d-flex align-items-center">
+            <span><b>Cliente:</b> {{ cliente.user.first_name }} (DNI: {{ cliente.dni }})</span>
+            {% if direcciones %}
+                <button type="button" class="btn btn-outline-info btn-sm ms-2" onclick="mostrarDireccionesModal()">Ver direcciones</button>
+            {% endif %}
+        </div>
+
+        <!-- Modal de direcciones -->
+        <div id="direccionesModalBg" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.25); z-index:1050; align-items:center; justify-content:center;">
+            <div style="background:#fff; border-radius:12px; max-width:420px; width:90vw; margin:auto; box-shadow:0 4px 24px rgba(0,0,0,0.13); padding:28px 22px 18px 22px; position:relative;">
+                <button onclick="cerrarDireccionesModal()" style="position:absolute; top:10px; right:16px; border:none; background:transparent; font-size:1.5rem; color:#888;">&times;</button>
+                <h5 class="mb-3">Direcciones registradas</h5>
+                <ul style="margin-bottom:0;">
+                {% for d in direcciones %}
+                    <li>{{ d.calle }} {{ d.numero }}, {{ d.ciudad }}, {{ d.provincia }} (CP: {{ d.codigo_postal }})</li>
+                {% endfor %}
+                </ul>
+            </div>
+        </div>
+        <script>
+        function mostrarDireccionesModal() {
+            document.getElementById('direccionesModalBg').style.display = 'flex';
+        }
+        function cerrarDireccionesModal() {
+            document.getElementById('direccionesModalBg').style.display = 'none';
+        }
+        </script>
+        {% if mensaje %}
+            <div class="alert {% if 'correctamente' in mensaje %}alert-success{% else %}alert-danger{% endif %} mt-3">{{ mensaje }}</div>
+        {% endif %}
+        <form method="post" id="direccionForm" autocomplete="off">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label for="id_calle" class="form-label">Calle</label>
+                {{ form.calle }}
+            </div>
+            <div class="mb-3">
+                <label for="id_numero" class="form-label">Número</label>
+                {{ form.numero }}
+            </div>
+            <div class="mb-3">
+                <label for="id_ciudad" class="form-label">Ciudad</label>
+                {{ form.ciudad }}
+            </div>
+            <div class="mb-3">
+                <label for="id_provincia" class="form-label">Provincia</label>
+                {{ form.provincia }}
+            </div>
+            <div class="mb-3">
+                <label for="id_codigo_postal" class="form-label">Código Postal</label>
+                {{ form.codigo_postal }}
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Confirma la ubicación en el mapa:</label>
+                <div style="width:100%; height:260px; border-radius:10px; overflow:hidden; box-shadow:0 2px 8px #eee;">
+                    <iframe id="mapaDireccion" width="100%" height="260" frameborder="0" style="border:0" allowfullscreen loading="lazy"
+                        referrerpolicy="no-referrer-when-downgrade"
+                        src="https://www.google.com/maps?q=Argentina&output=embed">
+                    </iframe>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary">Agregar dirección</button>
+        </form>
+        <script>
+        function actualizarMapa() {
+            const calle = document.getElementById('id_calle').value.trim();
+            const numero = document.getElementById('id_numero').value.trim();
+            const ciudad = document.getElementById('id_ciudad').value.trim();
+            const provincia = document.getElementById('id_provincia').value.trim();
+            const cp = document.getElementById('id_codigo_postal').value.trim();
+            // Mejorar formato: Calle y número juntos, luego ciudad, provincia, CP
+            let direccion = '';
+            if (calle && numero) {
+                direccion = `${calle} ${numero}`;
+            } else if (calle) {
+                direccion = calle;
+            }
+            if (ciudad) direccion += `, ${ciudad}`;
+            if (provincia) direccion += `, ${provincia}`;
+            if (cp) direccion += `, ${cp}`;
+            direccion += ', Argentina';
+            const url = 'https://www.google.com/maps?q=' + encodeURIComponent(direccion) + '&output=embed';
+            document.getElementById('mapaDireccion').src = url;
+        }
+        document.getElementById('id_calle').addEventListener('input', actualizarMapa);
+        document.getElementById('id_numero').addEventListener('input', actualizarMapa);
+        document.getElementById('id_ciudad').addEventListener('input', actualizarMapa);
+        document.getElementById('id_provincia').addEventListener('input', actualizarMapa);
+        document.getElementById('id_codigo_postal').addEventListener('input', actualizarMapa);
+        // Prevenir submit accidental con Enter en inputs
+        document.getElementById('direccionForm').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+            }
+        });
+        </script>
+    </div>
+</div>
+{% endblock %}

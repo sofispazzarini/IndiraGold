@@ -34,6 +34,7 @@
                 <td>{{ cliente.telefono }}</td>
                 <td>
                     <a href="{% url 'editar_cliente' cliente.id %}" class="btn btn-sm btn-warning">Editar</a>
+                    <a href="{% url 'agregar_direccion' cliente.id %}" class="btn btn-sm btn-outline-primary ms-2">+ Dirección</a>
                 </td>
             </tr>
             {% empty %}
