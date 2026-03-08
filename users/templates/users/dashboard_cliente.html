@@ -25,7 +25,11 @@
     </ul>
 </div>
 <div class="main-content">
-    <h2>Bienvenido/a, {{ request.user.first_name|default:request.user.username }}</h2>
+    {% if request.user.first_name %}
+        <h2>Bienvenido/a, {{ request.user.first_name }}</h2>
+    {% else %}
+        <h2>Bienvenido/a</h2>
+    {% endif %}
     <p>Desde aquí puedes gestionar tu cuenta y acceder a las funcionalidades disponibles.</p>
 </div>
 {% endblock %}

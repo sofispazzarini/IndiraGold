@@ -37,3 +37,32 @@ class RegistroManualClienteForm(forms.ModelForm):
         if User.objects.filter(email=email).exists():
             raise ValidationError("Ya existe un usuario con este correo.")
         return email
+
+
+class EditarClienteForm(forms.ModelForm):
+    nombre = forms.CharField(label='Nombre completo', max_length=150)
+    email = forms.EmailField(label='Correo electrónico', disabled=True)
+    telefono = forms.CharField(label='Teléfono', max_length=20)
+
+    class Meta:
+        model = Cliente
+        fields = ['telefono']
+
+    def __init__(self, *args, **kwargs):
+        user_instance = kwargs.pop('user_instance', None)
+        super().__init__(*args, **kwargs)
+        if user_instance:
+            self.fields['nombre'].initial = user_instance.first_name
+            self.fields['email'].initial = user_instance.email
+        self.fields['nombre'].widget.attrs['class'] = 'form-control'
+        self.fields['email'].widget.attrs['class'] = 'form-control'
+        self.fields['telefono'].widget.attrs['class'] = 'form-control'
+
+    def clean_email(self):
+        email = self.cleaned_data['email']
+        user_qs = User.objects.filter(email=email)
+        if self.instance and self.instance.user:
+            user_qs = user_qs.exclude(pk=self.instance.user.pk)
+        if user_qs.exists():
+            raise ValidationError('Ya existe un usuario con este correo.')
+        return email

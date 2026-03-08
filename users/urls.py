@@ -13,4 +13,6 @@ urlpatterns = [
     path('admin/dashboard/', views.dashboard_admin, name='dashboard_admin'),
     path('cliente/dashboard/', views.dashboard_cliente, name='dashboard_cliente'),
     path('password_change/', CustomPasswordChangeView.as_view(), name='password_change'),
+    path('admin/clientes/', views.listado_clientes, name='listado_clientes'),
+    path('admin/clientes/<int:cliente_id>/editar/', views.editar_cliente, name='editar_cliente'),
 ]

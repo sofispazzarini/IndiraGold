@@ -29,10 +29,45 @@ from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login as auth_login
 from .forms import RegistroUsuarioForm
 from .models import Cliente, Direccion
+from django.db.models import Q
+# Vista para listado y búsqueda de clientes (solo admin)
+@login_required
+@user_passes_test(lambda u: u.is_superuser)
+def listado_clientes(request):
+    query = request.GET.get('q', '').strip()
+    clientes = Cliente.objects.select_related('user').all()
+    if query:
+        clientes = clientes.filter(
+            Q(dni__icontains=query) |
+            Q(user__email__icontains=query)
+        )
+    return render(request, 'users/listado_clientes.html', {'clientes': clientes})
 from django.contrib.auth.models import User
 
 # Importar el nuevo formulario manual
-from .forms_manual import RegistroManualClienteForm
+from .forms_manual import RegistroManualClienteForm, EditarClienteForm
+# Vista para editar cliente (solo admin)
+@login_required
+@user_passes_test(lambda u: u.is_superuser)
+def editar_cliente(request, cliente_id):
+    cliente = Cliente.objects.select_related('user').get(pk=cliente_id)
+    user = cliente.user
+    mensaje = None
+    if request.method == 'POST':
+        form = EditarClienteForm(request.POST, instance=cliente, user_instance=user)
+        if form.is_valid():
+            # Actualizar datos del user y cliente
+            user.first_name = form.cleaned_data['nombre']
+            user.email = form.cleaned_data['email']
+            user.save()
+            cliente.telefono = form.cleaned_data['telefono']
+            cliente.save()
+            mensaje = 'Datos actualizados correctamente.'
+        else:
+            mensaje = 'Por favor revisa los datos ingresados.'
+    else:
+        form = EditarClienteForm(instance=cliente, user_instance=user)
+    return render(request, 'users/editar_cliente.html', {'form': form, 'cliente': cliente, 'mensaje': mensaje})
 from django.contrib.auth.decorators import user_passes_test
 
 
