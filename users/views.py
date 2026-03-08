@@ -54,7 +54,7 @@ def agregar_direccion(request, cliente_id):
     direcciones = cliente.direcciones.all()
     mensaje = None
     if request.method == 'POST':
-        form = NuevaDireccionForm(request.POST)
+        form = NuevaDireccionForm(request.POST, initial={'cliente': cliente})
         if form.is_valid():
             direccion = form.save(commit=False)
             direccion.cliente = cliente
@@ -65,7 +65,7 @@ def agregar_direccion(request, cliente_id):
         else:
             mensaje = 'Por favor revisa los datos ingresados.'
     else:
-        form = NuevaDireccionForm()
+        form = NuevaDireccionForm(initial={'cliente': cliente})
     return render(request, 'users/agregar_direccion.html', {'form': form, 'cliente': cliente, 'mensaje': mensaje, 'direcciones': direcciones})
 # Vista para editar cliente (solo admin)
 @login_required

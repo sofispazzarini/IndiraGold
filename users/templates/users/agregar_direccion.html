@@ -34,6 +34,18 @@
         {% if mensaje %}
             <div class="alert {% if 'correctamente' in mensaje %}alert-success{% else %}alert-danger{% endif %} mt-3">{{ mensaje }}</div>
         {% endif %}
+        {% if form.errors %}
+            <div class="alert alert-danger mt-2">
+                {% for field in form %}
+                    {% for error in field.errors %}
+                        <div>{{ error }}</div>
+                    {% endfor %}
+                {% endfor %}
+                {% for error in form.non_field_errors %}
+                    <div>{{ error }}</div>
+                {% endfor %}
+            </div>
+        {% endif %}
         <form method="post" id="direccionForm" autocomplete="off">
             {% csrf_token %}
             <div class="mb-3">
