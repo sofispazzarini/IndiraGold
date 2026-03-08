@@ -1,3 +1,176 @@
-from django.shortcuts import render
+from django.contrib.auth.views import PasswordChangeView
+from django.contrib import messages
+# Vista personalizada para cambio de contraseña con mensaje de éxito en la misma página
+class CustomPasswordChangeView(PasswordChangeView):
+    template_name = 'users/password_change.html'
+    success_url = '/users/password_change/'
 
-# Create your views here.
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        messages.success(self.request, '¡Tu contraseña se cambió correctamente!')
+        return response
+# Vista dashboard para cliente normal
+from django.contrib.auth.decorators import login_required
+
+@login_required
+def dashboard_cliente(request):
+    return render(request, 'users/dashboard_cliente.html')
+
+from django.contrib.auth.decorators import login_required, user_passes_test
+
+@login_required
+@user_passes_test(lambda u: u.is_superuser)
+def dashboard_admin(request):
+    return render(request, 'users/dashboard_admin.html')
+import random
+from django.core.mail import send_mail
+from django.conf import settings
+from django.shortcuts import render, redirect
+from django.contrib.auth import authenticate, login as auth_login
+from .forms import RegistroUsuarioForm
+from .models import Cliente, Direccion
+from django.contrib.auth.models import User
+
+# Importar el nuevo formulario manual
+from .forms_manual import RegistroManualClienteForm
+from django.contrib.auth.decorators import user_passes_test
+
+
+def registro(request):
+    error = None
+    show_verification_modal = False
+    if request.method == 'POST':
+        form = RegistroUsuarioForm(request.POST)
+        if form.is_valid():
+            dni = form.cleaned_data.get('dni')
+            email = form.cleaned_data.get('email')
+            if Cliente.objects.filter(dni=dni).exists() or Cliente.objects.filter(user__email=email).exists():
+                error = 'Ya existe una cuenta registrada con estos datos (DNI o correo electrónico).'
+            else:
+                # Generar código de verificación
+                codigo = str(random.randint(100000, 999999))
+                # Guardar datos y código en sesión
+                request.session['registro_data'] = form.cleaned_data
+                request.session['codigo_verificacion'] = codigo
+                request.session['email_verificado'] = False
+                # Enviar email
+                send_mail(
+                    'Código de verificación Indira Gold',
+                    f'Tu código de verificación es: {codigo}',
+                    settings.EMAIL_HOST_USER,
+                    [email],
+                    fail_silently=False,
+                )
+                show_verification_modal = True
+        else:
+            error = 'Por favor revisa los datos ingresados.'
+    else:
+        form = RegistroUsuarioForm()
+    return render(request, 'users/registro.html', {
+        'form': form,
+        'error': error,
+        'show_verification_modal': show_verification_modal
+    })
+
+
+from django.views.decorators.csrf import csrf_exempt
+from django.http import JsonResponse
+
+@csrf_exempt
+def verificar_codigo_email(request):
+    if request.method == 'POST':
+        codigo_usuario = request.POST.get('codigo')
+        codigo_sesion = request.session.get('codigo_verificacion')
+        if codigo_usuario and codigo_sesion and codigo_usuario == codigo_sesion:
+            request.session['email_verificado'] = True
+            return JsonResponse({'success': True})
+        return JsonResponse({'success': False, 'error': 'Código incorrecto'})
+    return JsonResponse({'success': False, 'error': 'Método no permitido'})
+
+
+def confirmar_direccion(request):
+    data = request.session.get("registro_data")
+
+    if not data:
+        return redirect("registro")
+
+    # Permitir edición por POST o GET
+    params = request.POST if request.method == "POST" else request.GET
+    if 'calle' in params:
+        data['calle'] = params.get('calle', data.get('calle'))
+        data['numero'] = params.get('numero', data.get('numero'))
+        data['ciudad'] = params.get('ciudad', data.get('ciudad'))
+        data['provincia'] = params.get('provincia', data.get('provincia'))
+        data['codigo_postal'] = params.get('codigo_postal', data.get('codigo_postal'))
+        request.session['registro_data'] = data
+    elif request.method == "POST":
+        form = RegistroUsuarioForm(data)
+        if form.is_valid():
+            form.save()
+            del request.session["registro_data"]
+            return redirect("login")  # o donde quieras redirigir
+
+    return render(request, "users/confirmar_direccion.html", {"data": data})
+
+def home(request):
+    return render(request, 'users/home.html')
+
+def login_view(request):
+    error = None
+    if request.method == 'POST':
+        dni = request.POST.get('username')
+        password = request.POST.get('password')
+        if not dni.isdigit() or len(dni) not in [7,8]:
+            error = 'El DNI debe contener solo números (7 u 8 dígitos).'
+        else:
+            user = authenticate(request, username=dni, password=password)
+            if user is not None:
+                auth_login(request, user)
+                if user.is_superuser:
+                    return redirect('dashboard_admin')
+                return redirect('dashboard_cliente')
+            else:
+                error = 'DNI o contraseña incorrectos.'
+    return render(request, 'users/login.html', {'error': error})
+
+
+# Vista para registro manual de cliente (solo admin)
+@user_passes_test(lambda u: u.is_superuser)
+def registro_manual_cliente(request):
+    mensaje = None
+    if request.method == 'POST':
+        form = RegistroManualClienteForm(request.POST)
+        if form.is_valid():
+            dni = form.cleaned_data['dni']
+            nombre = form.cleaned_data['nombre']
+            email = form.cleaned_data['email']
+            telefono = form.cleaned_data['telefono']
+            calle = form.cleaned_data['calle']
+            numero = form.cleaned_data['numero']
+            ciudad = form.cleaned_data['ciudad']
+            provincia = form.cleaned_data['provincia']
+            codigo_postal = form.cleaned_data['codigo_postal']
+            password = dni  # La contraseña será el mismo DNI
+
+            user = User.objects.create_user(username=dni, email=email, password=password, first_name=nombre)
+            cliente = Cliente.objects.create(user=user, dni=dni, telefono=telefono)
+            Direccion.objects.create(cliente=cliente, calle=calle, numero=numero, ciudad=ciudad, provincia=provincia, codigo_postal=codigo_postal)
+
+            # Enviar email con usuario y contraseña
+            from django.core.mail import send_mail
+            from django.conf import settings
+            send_mail(
+                'Bienvenido a Indira Gold',
+                f'Hola {nombre},\n\nTu usuario ha sido registrado correctamente.\n\nUsuario: {dni}\nContraseña: {password}\n\nPuedes iniciar sesión en el sistema con estos datos.\n\nPor seguridad, te recomendamos cambiar tu contraseña después de ingresar por primera vez desde el panel de tu cuenta.',
+                settings.EMAIL_HOST_USER,
+                [email],
+                fail_silently=True
+            )
+
+            mensaje = 'Cliente registrado correctamente.'
+            form = RegistroManualClienteForm()  # Limpiar formulario
+        else:
+            mensaje = 'Por favor revisa los datos ingresados.'
+    else:
+        form = RegistroManualClienteForm()
+    return render(request, 'users/registro_manual_cliente.html', {'form': form, 'mensaje': mensaje})

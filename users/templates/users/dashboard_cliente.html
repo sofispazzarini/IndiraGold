@@ -1,0 +1,31 @@
+{% extends 'users/base.html' %}
+{% block content %}
+<style>
+    .sidebar {
+        min-width: 220px;
+        background: #f8f9fa;
+        height: 100vh;
+        border-right: 1px solid #ddd;
+        padding: 2rem 1rem 1rem 1rem;
+        position: fixed;
+        left: 0;
+        top: 0;
+    }
+    .sidebar h4 { margin-bottom: 2rem; }
+    .sidebar .nav-link { color: #333; margin-bottom: 1rem; font-weight: 500; }
+    .sidebar .nav-link.active, .sidebar .nav-link:hover { color: #007bff; }
+    .main-content { margin-left: 240px; padding: 2.5rem 2rem; }
+</style>
+<div class="sidebar">
+    <h4>Mi cuenta</h4>
+    <ul class="nav flex-column">
+        <li class="nav-item"><a class="nav-link active" href="{% url 'dashboard_cliente' %}">Inicio</a></li>
+        <li class="nav-item"><a class="nav-link" href="{% url 'password_change' %}">Cambiar contraseña</a></li>
+        <!-- Agrega más enlaces aquí según funcionalidades -->
+    </ul>
+</div>
+<div class="main-content">
+    <h2>Bienvenido/a, {{ request.user.first_name|default:request.user.username }}</h2>
+    <p>Desde aquí puedes gestionar tu cuenta y acceder a las funcionalidades disponibles.</p>
+</div>
+{% endblock %}

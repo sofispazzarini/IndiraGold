@@ -1,0 +1,24 @@
+{% extends 'users/base.html' %}
+{% block content %}
+<div class="d-flex">
+    <nav class="sidebar bg-light p-3" style="min-width:220px; min-height:100vh;">
+        <h4>Administrador</h4>
+        <ul class="nav flex-column">
+            <li class="nav-item"><a class="nav-link" href="{% url 'dashboard_admin' %}">Inicio</a></li>
+            <li class="nav-item"><a class="nav-link" href="{% url 'registro_manual_cliente' %}">Registrar cliente</a></li>
+            <!-- Agrega más enlaces aquí -->
+        </ul>
+    </nav>
+    <main class="flex-fill p-4">
+        <h2>Panel de administración</h2>
+        <p>Bienvenido, aquí puedes gestionar las funcionalidades de administrador.</p>
+        <!-- Aquí puedes mostrar accesos directos, estadísticas, etc. -->
+    </main>
+</div>
+<style>
+.sidebar {
+    border-right: 1px solid #ddd;
+    height: 100vh;
+}
+</style>
+{% endblock %}
