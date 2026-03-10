@@ -1,0 +1,37 @@
+{% extends 'users/base.html' %}
+{% block content %}
+<div class="container mt-4 d-flex justify-content-center">
+    <div style="background: #fff; max-width: 500px; width: 100%; border-radius: 16px; box-shadow: 0 4px 24px rgba(180,140,80,0.10); padding: 32px 28px 24px 28px;">
+        <a href="{% url 'listado_clientes' %}" class="btn btn-light mb-3" style="font-size: 1.5rem; border: none; padding: 4px 16px 4px 10px;">
+            &#8592;
+        </a>
+        <h2>Editar Cliente</h2>
+        {% if mensaje %}
+            <div class="alert {% if 'correctamente' in mensaje %}alert-success{% else %}alert-danger{% endif %} mt-3">{{ mensaje }}</div>
+        {% endif %}
+        <div class="mb-3 text-end">
+            <a href="{% url 'agregar_direccion' cliente.id %}" class="btn btn-outline-secondary">+ Agregar dirección</a>
+        </div>
+        <form method="post">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label for="id_nombre" class="form-label">Nombre completo</label>
+                {{ form.nombre }}
+            </div>
+            <div class="mb-3">
+                <label for="id_email" class="form-label">Correo electrónico</label>
+                <input type="email" class="form-control" value="{{ form.email.value }}" disabled>
+            </div>
+            <div class="mb-3">
+                <label for="id_telefono" class="form-label">Teléfono</label>
+                {{ form.telefono }}
+            </div>
+            <div class="mb-3">
+                <label class="form-label">DNI</label>
+                <input type="text" class="form-control" value="{{ cliente.dni }}" disabled>
+            </div>
+            <button type="submit" class="btn btn-primary">Guardar cambios</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

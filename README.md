@@ -5,6 +5,7 @@ Proyecto web desarrollado con Django para la gestión de productos, ventas, clie
 ---
 
 ## 📌 Tecnologías utilizadas
+
 - Python 3.12
 - Django
 - PostgreSQL
@@ -15,6 +16,7 @@ Proyecto web desarrollado con Django para la gestión de productos, ventas, clie
 ---
 
 ## 📁 Estructura del proyecto
+
 - users → gestión de usuarios, clientes y direcciones
 - productos → productos, variantes, talles, colores, medidas
 - carritos → carrito de compras
@@ -24,7 +26,9 @@ Proyecto web desarrollado con Django para la gestión de productos, ventas, clie
 ---
 
 ## ⚙️ Requisitos previos
+
 Tener instalado:
+
 - Python 3.12
 - PostgreSQL
 - pgAdmin
@@ -35,6 +39,7 @@ Tener instalado:
 ## 🚀 Instalación y puesta en marcha
 
 ### 1️⃣ Clonar el repositorio
+
 ```bash
 git clone https://github.com/sofispazzarini/IndiraGold.git
 cd IndiraGold
@@ -73,3 +78,21 @@ python manage.py createsuperuser
 
 paso 9:correr servidor
 python manage.py runserver
+
+## Configuración de variables de entorno para envío de mails
+
+Para que el envío de correos funcione correctamente, crea un archivo `.env` en la raíz del proyecto y agrega las siguientes variables (ajusta los valores según tu proveedor de correo):
+
+```
+
+EMAIL_HOST=smtp.gmail.com
+EMAIL_PORT=587
+EMAIL_HOST_USER=tu_correo@gmail.com
+EMAIL_HOST_PASSWORD=tu_contraseña_de_aplicacion
+EMAIL_USE_TLS=True
+DEFAULT_FROM_EMAIL=tu_correo@gmail.com
+
+```
+
+> **Nota:** Si usas Gmail, debes generar una contraseña de aplicación desde la configuración de seguridad de tu cuenta.
+```

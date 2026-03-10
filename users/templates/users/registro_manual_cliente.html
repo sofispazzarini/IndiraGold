@@ -1,0 +1,96 @@
+{% extends 'users/base.html' %}
+{% block content %}
+<style>
+    body { background: #faf8ee; }
+    .centered-form {
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        min-height: 80vh;
+    }
+    .card {
+        background: #fff;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+        padding: 2.5rem 2.5rem 2rem 2.5rem;
+        max-width: 420px;
+        width: 100%;
+        margin-top: 40px;
+    }
+    .card h2 {
+        font-size: 2rem;
+        margin-bottom: 1.5rem;
+        text-align: center;
+    }
+    .form-group { margin-bottom: 1.1rem; }
+    label { font-weight: 500; }
+    .btn-primary, .btn-secondary { width: 100%; margin-bottom: 0.5rem; }
+</style>
+<div class="centered-form">
+    <a href="{% url 'dashboard_admin' %}" style="position:absolute;left:40px;top:40px;text-decoration:none;z-index:10;" title="Volver al panel">
+        <span style="font-size:2rem;vertical-align:middle;">&#8592;</span>
+    </a>
+    <div class="card">
+        <h2 style="text-align:center;">Registro manual de cliente</h2>
+        {% if mensaje %}
+            <div class="alert alert-info">{{ mensaje }}</div>
+        {% endif %}
+        {% if form.errors %}
+            <div class="alert alert-danger">
+                <ul style="margin-bottom:0;">
+                {% for field, errors in form.errors.items %}
+                    {% for error in errors %}
+                        <li>{{ error }}</li>
+                    {% endfor %}
+                {% endfor %}
+                </ul>
+            </div>
+        {% endif %}
+        <form method="post">
+            {% csrf_token %}
+            <div class="form-group">
+                {{ form.dni.label_tag }}
+                <input type="text" name="dni" value="{{ form.dni.value|default_if_none:'' }}" class="form-control" style="min-width: 0; width: 100%; max-width: 100%;" maxlength="8" required>
+            </div>
+            <div class="form-group">
+                {{ form.telefono.label_tag }}
+                <input type="text" name="telefono" value="{{ form.telefono.value|default_if_none:'' }}" class="form-control" style="min-width: 0; width: 100%; max-width: 100%;" maxlength="20" required>
+            </div>
+            <div class="form-group">
+                {{ form.email.label_tag }}
+                <input type="email" name="email" value="{{ form.email.value|default_if_none:'' }}" class="form-control" style="min-width: 0; width: 100%; max-width: 100%;" maxlength="254" required>
+            </div>
+            <div class="form-group">
+                {{ form.nombre.label_tag }}
+                <input type="text" name="nombre" value="{{ form.nombre.value|default_if_none:'' }}" class="form-control" style="min-width: 0; width: 100%; max-width: 100%;" maxlength="150" required>
+            </div>
+            <hr>
+            <div class="form-group">
+                {{ form.calle.label_tag }}
+                <input type="text" name="calle" value="{{ form.calle.value|default_if_none:'' }}" class="form-control" style="min-width: 0; width: 100%; max-width: 100%;" maxlength="100" required>
+            </div>
+            <div class="form-group">
+                {{ form.numero.label_tag }}
+                <input type="text" name="numero" value="{{ form.numero.value|default_if_none:'' }}" class="form-control" style="min-width: 0; width: 100%; max-width: 100%;" maxlength="10" required>
+            </div>
+            <div class="form-group">
+                {{ form.ciudad.label_tag }}
+                <input type="text" name="ciudad" value="{{ form.ciudad.value|default_if_none:'' }}" class="form-control" style="min-width: 0; width: 100%; max-width: 100%;" maxlength="50" required>
+            </div>
+            <div class="form-group">
+                {{ form.provincia.label_tag }}
+                <select name="provincia" class="form-control" style="min-width: 0; width: 100%; max-width: 100%;" required>
+                    {% for value, label in form.provincia.field.choices %}
+                        <option value="{{ value }}" {% if form.provincia.value == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                {{ form.codigo_postal.label_tag }}
+                <input type="text" name="codigo_postal" value="{{ form.codigo_postal.value|default_if_none:'' }}" class="form-control" style="min-width: 0; width: 100%; max-width: 100%;" maxlength="10" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Registrar cliente</button>
+        </form>
+    </div>
+</div>
+{% endblock %}
