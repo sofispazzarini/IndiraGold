@@ -1,0 +1,429 @@
+{% extends 'base_publica.html' %}
+
+{% block title %}IndiraGold — Tienda{% endblock %}
+
+{% block content %}
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero__bg"></div>
+  <div class="hero__content">
+    <span class="hero__eyebrow">Nueva colección</span>
+    <h1 class="hero__title">Elegancia<br><em>que se siente</em></h1>
+    <p class="hero__sub">Descubrí prendas únicas, pensadas para vos.</p>
+    <a href="#catalogo" class="hero__cta">Ver colección</a>
+  </div>
+  <div class="hero__ornament">
+    <svg viewBox="0 0 300 300" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="150" cy="150" r="120" stroke="#b8922a" stroke-width="0.5" stroke-dasharray="5 8"/>
+      <circle cx="150" cy="150" r="85"  stroke="#b8922a" stroke-width="0.4" stroke-dasharray="2 10"/>
+      <circle cx="150" cy="150" r="45"  stroke="#b8922a" stroke-width="0.7"/>
+      <path d="M150 30 L150 270 M30 150 L270 150" stroke="#b8922a" stroke-width="0.3" opacity=".5"/>
+      <path d="M150 30 L270 150 L150 270 L30 150 Z" stroke="#b8922a" stroke-width="0.5" opacity=".3"/>
+      <circle cx="150" cy="150" r="8" fill="#b8922a" opacity=".4"/>
+      <circle cx="150" cy="30"  r="4" fill="#b8922a" opacity=".4"/>
+      <circle cx="150" cy="270" r="4" fill="#b8922a" opacity=".4"/>
+      <circle cx="30"  cy="150" r="4" fill="#b8922a" opacity=".4"/>
+      <circle cx="270" cy="150" r="4" fill="#b8922a" opacity=".4"/>
+    </svg>
+  </div>
+</section>
+
+<!-- CATEGORÍAS -->
+<section class="cats-section">
+  <div class="container">
+    <div class="cats-scroll">
+      <button class="cat-pill cat-pill--active" onclick="filterCat(this, '')">Todo</button>
+      {% for categoria in categorias %}
+        <button class="cat-pill" onclick="filterCat(this, '{{ categoria.id }}')">{{ categoria.nombre }}</button>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<!-- BUSCADOR + PRODUCTOS -->
+<section class="catalog-section" id="catalogo">
+  <div class="container">
+
+    <div class="catalog-top">
+      <h2 class="catalog-title">Catálogo</h2>
+      <div class="search-wrap">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+          <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.099zm-5.242 1.656a5.5 5.5 0 1 1 0-11 5.5 5.5 0 0 1 0 11z"/>
+        </svg>
+        <input type="text" id="searchInput" placeholder="Buscar productos…" oninput="filterSearch(this.value)" />
+      </div>
+    </div>
+
+    <div class="products-grid" id="productsGrid">
+      {% for producto in productos %}
+      <div class="product-card" data-cat="{{ producto.categoria.id }}" data-name="{{ producto.nombre|lower }} {{ producto.tipo|lower }} {{ producto.tela|lower }}">
+        <a href="{% url 'productos:producto_detail' producto.pk %}" class="product-card__img-wrap">
+          {% if producto.imagen %}
+            <img src="{{ producto.imagen.url }}" alt="{{ producto.nombre }}" class="product-card__img" />
+          {% else %}
+            <div class="product-card__placeholder">
+              <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" fill="currentColor" viewBox="0 0 16 16">
+                <path d="M6.002 5.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z"/>
+                <path d="M2.002 1a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V3a2 2 0 0 0-2-2h-12zm12 1a1 1 0 0 1 1 1v6.5l-3.777-1.947a.5.5 0 0 0-.577.093l-3.71 3.71-2.66-1.772a.5.5 0 0 0-.63.062L1.002 12V3a1 1 0 0 1 1-1h12z"/>
+              </svg>
+            </div>
+          {% endif %}
+          {% if producto.stock == 0 %}
+            <span class="product-card__badge product-card__badge--agotado">Agotado</span>
+          {% elif producto.stock < 5 %}
+            <span class="product-card__badge product-card__badge--ultimos">Últimos</span>
+          {% endif %}
+        </a>
+        <div class="product-card__body">
+          <span class="product-card__cat">{{ producto.categoria.nombre }}</span>
+          <h3 class="product-card__name">{{ producto.nombre }}</h3>
+          <p class="product-card__meta">{{ producto.tipo }} · {{ producto.tela }}</p>
+          <div class="product-card__footer">
+            <span class="product-card__price">${{ producto.precio }}</span>
+            {% if producto.stock > 0 %}
+              <button class="product-card__btn" onclick="addToCart({{ producto.pk }}, '{{ producto.nombre }}', {{ producto.precio }})">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                  <path d="M8 1a2.5 2.5 0 0 1 2.5 2.5V4h-5v-.5A2.5 2.5 0 0 1 8 1zm3.5 3v-.5a3.5 3.5 0 1 0-7 0V4H1v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V4h-3.5zM2 5h12v9a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V5z"/>
+                </svg>
+                Agregar
+              </button>
+            {% else %}
+              <span class="product-card__agotado">Sin stock</span>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      {% empty %}
+        <div class="empty-catalog">
+          <p>No hay productos disponibles por el momento.</p>
+        </div>
+      {% endfor %}
+    </div>
+
+    <div class="no-results" id="noResults" style="display:none">
+      <p>No encontramos productos con esa búsqueda.</p>
+    </div>
+
+  </div>
+</section>
+
+<!-- CONTACTO -->
+<section class="contact-section" id="contacto">
+  <div class="container contact-grid">
+    <div class="contact-info">
+      <span class="contact-eyebrow">Contacto</span>
+      <h2 class="contact-title">¿Tenés alguna<br><em>consulta?</em></h2>
+      <p class="contact-sub">Escribinos y te respondemos a la brevedad.</p>
+    </div>
+    <form class="contact-form" method="post" action="{% url 'consultas:nueva' %}">
+      {% csrf_token %}
+      <div class="cf-field">
+        <label>Nombre</label>
+        <input type="text" name="nombre" placeholder="Tu nombre" required />
+      </div>
+      <div class="cf-field">
+        <label>Email</label>
+        <input type="email" name="email" placeholder="tu@email.com" required />
+      </div>
+      <div class="cf-field">
+        <label>Mensaje</label>
+        <textarea name="mensaje" placeholder="Contanos tu consulta…" rows="4" required></textarea>
+      </div>
+      <button type="submit" class="cf-btn">Enviar consulta</button>
+    </form>
+  </div>
+</section>
+
+<!-- CARRITO FLOTANTE -->
+<div class="cart-fab" id="cartFab" onclick="toggleCart()">
+  <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" viewBox="0 0 16 16">
+    <path d="M8 1a2.5 2.5 0 0 1 2.5 2.5V4h-5v-.5A2.5 2.5 0 0 1 8 1zm3.5 3v-.5a3.5 3.5 0 1 0-7 0V4H1v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V4h-3.5z"/>
+  </svg>
+  <span class="cart-fab__count" id="cartCount">0</span>
+</div>
+
+<!-- PANEL CARRITO -->
+<div class="cart-panel" id="cartPanel">
+  <div class="cart-panel__header">
+    <h3>Tu carrito</h3>
+    <button onclick="toggleCart()" class="cart-close">✕</button>
+  </div>
+  <div class="cart-panel__items" id="cartItems">
+    <div class="cart-empty">Tu carrito está vacío.</div>
+  </div>
+  <div class="cart-panel__footer">
+    <div class="cart-total">
+      <span>Total</span>
+      <span id="cartTotal">$0</span>
+    </div>
+    <button class="cart-checkout" onclick="checkout()">Confirmar pedido</button>
+  </div>
+</div>
+<div class="cart-overlay" id="cartOverlay" onclick="toggleCart()"></div>
+
+<style>
+  /* HERO */
+  .hero {
+    min-height: 92vh;
+    background: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 6vw;
+    position: relative;
+    overflow: hidden;
+    border-bottom: 1px solid #e8dfd4;
+  }
+  .hero__bg {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at 80% 50%, #fdf6e3 0%, transparent 65%);
+    pointer-events: none;
+  }
+  .hero__content { position: relative; z-index: 1; max-width: 520px; animation: fadeUp .7s ease both; }
+  .hero__eyebrow { font-size: .75rem; font-weight: 600; letter-spacing: .2em; text-transform: uppercase; color: #b8922a; display: block; margin-bottom: .75rem; }
+  .hero__title { font-family: 'Cormorant Garamond', serif; font-size: clamp(3rem, 6vw, 5rem); font-weight: 700; color: #1a1612; line-height: 1.0; margin-bottom: 1rem; }
+  .hero__title em { font-style: italic; color: #b8922a; }
+  .hero__sub { font-size: 1rem; color: #8c7e70; line-height: 1.65; margin-bottom: 2rem; }
+  .hero__cta {
+    display: inline-flex; align-items: center; gap: .5rem;
+    background: #1a1612; color: #fff;
+    padding: .85rem 2rem; border-radius: 2px;
+    text-decoration: none; font-size: .875rem; font-weight: 500;
+    letter-spacing: .06em; text-transform: uppercase;
+    transition: background .2s;
+  }
+  .hero__cta:hover { background: #b8922a; }
+  .hero__ornament { width: clamp(240px, 35vw, 420px); opacity: .2; animation: spin 80s linear infinite; flex-shrink: 0; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* CATEGORÍAS */
+  .cats-section { padding: 1.5rem 0; border-bottom: 1px solid #e8dfd4; background: #fff; position: sticky; top: 64px; z-index: 40; }
+  .cats-scroll { display: flex; gap: .5rem; overflow-x: auto; padding-bottom: .25rem; scrollbar-width: none; }
+  .cats-scroll::-webkit-scrollbar { display: none; }
+  .cat-pill { padding: .4rem 1.1rem; border-radius: 99px; border: 1px solid #e8dfd4; background: #fff; font-size: .82rem; font-family: 'DM Sans', sans-serif; color: #3d342a; cursor: pointer; white-space: nowrap; transition: all .15s; }
+  .cat-pill:hover { border-color: #b8922a; color: #b8922a; }
+  .cat-pill--active { background: #1a1612; color: #fff; border-color: #1a1612; }
+
+  /* CATÁLOGO */
+  .catalog-section { padding: 4rem 0 5rem; background: #faf7f4; }
+  .container { max-width: 1200px; margin: 0 auto; padding: 0 2rem; }
+  .catalog-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2.5rem; flex-wrap: wrap; gap: 1rem; }
+  .catalog-title { font-family: 'Cormorant Garamond', serif; font-size: 1.75rem; font-weight: 700; color: #1a1612; }
+  .search-wrap { display: flex; align-items: center; gap: .5rem; background: #fff; border: 1px solid #e8dfd4; border-radius: 8px; padding: .45rem .85rem; }
+  .search-wrap svg { color: #8c7e70; flex-shrink: 0; }
+  .search-wrap input { border: none; outline: none; font-size: .875rem; font-family: 'DM Sans', sans-serif; color: #1a1612; width: 220px; background: transparent; }
+
+  .products-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.5rem; }
+
+  .product-card { background: #fff; border: 1px solid #e8dfd4; border-radius: 12px; overflow: hidden; transition: all .25s; animation: fadeUp .5s ease both; }
+  .product-card:hover { box-shadow: 0 12px 40px rgba(0,0,0,.08); transform: translateY(-4px); border-color: #b8922a; }
+  .product-card__img-wrap { display: block; position: relative; aspect-ratio: 3/4; overflow: hidden; background: #f3ede6; text-decoration: none; }
+  .product-card__img { width: 100%; height: 100%; object-fit: cover; transition: transform .4s; }
+  .product-card:hover .product-card__img { transform: scale(1.04); }
+  .product-card__placeholder { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; color: #b8922a; opacity: .3; }
+  .product-card__badge { position: absolute; top: .75rem; left: .75rem; font-size: .7rem; font-weight: 600; padding: .2rem .55rem; border-radius: 4px; text-transform: uppercase; letter-spacing: .05em; }
+  .product-card__badge--agotado { background: #1a1612; color: #fff; }
+  .product-card__badge--ultimos { background: #b8922a; color: #fff; }
+
+  .product-card__body { padding: 1rem 1.1rem 1.1rem; }
+  .product-card__cat  { font-size: .72rem; font-weight: 600; text-transform: uppercase; letter-spacing: .1em; color: #b8922a; }
+  .product-card__name { font-family: 'Cormorant Garamond', serif; font-size: 1.1rem; font-weight: 600; color: #1a1612; margin: .2rem 0 .25rem; line-height: 1.25; }
+  .product-card__meta { font-size: .78rem; color: #8c7e70; margin-bottom: .75rem; }
+  .product-card__footer { display: flex; justify-content: space-between; align-items: center; }
+  .product-card__price { font-family: 'Cormorant Garamond', serif; font-size: 1.2rem; font-weight: 700; color: #1a1612; }
+  .product-card__btn {
+    display: inline-flex; align-items: center; gap: .35rem;
+    background: #1a1612; color: #fff;
+    border: none; border-radius: 6px;
+    padding: .4rem .75rem; font-size: .78rem; font-weight: 500;
+    font-family: 'DM Sans', sans-serif; cursor: pointer; transition: background .15s;
+  }
+  .product-card__btn:hover { background: #b8922a; }
+  .product-card__agotado { font-size: .78rem; color: #8c7e70; }
+
+  .empty-catalog, .no-results { grid-column: 1/-1; text-align: center; padding: 4rem 1rem; color: #8c7e70; font-size: .95rem; }
+
+  /* CONTACTO */
+  .contact-section { padding: 5rem 0; background: #fff; border-top: 1px solid #e8dfd4; }
+  .contact-grid { display: grid; grid-template-columns: 1fr 1.4fr; gap: 5rem; align-items: center; }
+  .contact-eyebrow { font-size: .72rem; font-weight: 600; letter-spacing: .18em; text-transform: uppercase; color: #b8922a; display: block; margin-bottom: .6rem; }
+  .contact-title { font-family: 'Cormorant Garamond', serif; font-size: 2.5rem; font-weight: 700; color: #1a1612; line-height: 1.1; margin-bottom: .75rem; }
+  .contact-title em { font-style: italic; color: #b8922a; }
+  .contact-sub { font-size: .9rem; color: #8c7e70; line-height: 1.65; }
+  .contact-form { display: flex; flex-direction: column; gap: 1rem; }
+  .cf-field { display: flex; flex-direction: column; gap: .3rem; }
+  .cf-field label { font-size: .82rem; font-weight: 500; color: #3d342a; }
+  .cf-field input, .cf-field textarea {
+    padding: .55rem .85rem; border: 1px solid #e8dfd4; border-radius: 7px;
+    font-size: .875rem; font-family: 'DM Sans', sans-serif; color: #1a1612;
+    outline: none; transition: border-color .15s; background: #faf7f4; resize: none;
+  }
+  .cf-field input:focus, .cf-field textarea:focus { border-color: #b8922a; background: #fff; box-shadow: 0 0 0 3px rgba(184,146,42,.08); }
+  .cf-btn {
+    background: #1a1612; color: #fff; border: none; border-radius: 7px;
+    padding: .75rem 1.5rem; font-size: .875rem; font-weight: 500;
+    font-family: 'DM Sans', sans-serif; cursor: pointer; transition: background .15s; align-self: flex-start;
+  }
+  .cf-btn:hover { background: #b8922a; }
+
+  /* CARRITO FAB */
+  .cart-fab {
+    position: fixed; bottom: 2rem; right: 2rem; z-index: 100;
+    width: 56px; height: 56px; border-radius: 50%;
+    background: #1a1612; color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; box-shadow: 0 8px 24px rgba(0,0,0,.2);
+    transition: background .2s, transform .2s;
+  }
+  .cart-fab:hover { background: #b8922a; transform: scale(1.05); }
+  .cart-fab__count {
+    position: absolute; top: -4px; right: -4px;
+    background: #b8922a; color: #fff;
+    width: 20px; height: 20px; border-radius: 50%;
+    font-size: .7rem; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  /* PANEL CARRITO */
+  .cart-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.35); z-index: 110; display: none; }
+  .cart-overlay.open { display: block; }
+  .cart-panel {
+    position: fixed; top: 0; right: -420px; bottom: 0; width: 420px;
+    background: #fff; z-index: 120;
+    display: flex; flex-direction: column;
+    box-shadow: -8px 0 40px rgba(0,0,0,.12);
+    transition: right .3s ease;
+  }
+  .cart-panel.open { right: 0; }
+  .cart-panel__header { display: flex; justify-content: space-between; align-items: center; padding: 1.5rem; border-bottom: 1px solid #e8dfd4; }
+  .cart-panel__header h3 { font-family: 'Cormorant Garamond', serif; font-size: 1.3rem; font-weight: 700; color: #1a1612; }
+  .cart-close { background: none; border: none; font-size: 1.1rem; cursor: pointer; color: #8c7e70; padding: .25rem; }
+  .cart-panel__items { flex: 1; overflow-y: auto; padding: 1rem 1.5rem; display: flex; flex-direction: column; gap: .75rem; }
+  .cart-empty { text-align: center; color: #8c7e70; font-size: .9rem; padding: 2rem 0; }
+  .cart-item { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: .75rem 0; border-bottom: 1px solid #f3ede6; }
+  .cart-item__info { flex: 1; }
+  .cart-item__name { font-size: .9rem; font-weight: 500; color: #1a1612; }
+  .cart-item__price { font-size: .82rem; color: #8c7e70; margin-top: .1rem; }
+  .cart-item__qty { display: flex; align-items: center; gap: .4rem; }
+  .qty-btn { width: 24px; height: 24px; border-radius: 4px; border: 1px solid #e8dfd4; background: #fff; cursor: pointer; font-size: .9rem; display: flex; align-items: center; justify-content: center; color: #3d342a; }
+  .qty-btn:hover { border-color: #b8922a; color: #b8922a; }
+  .qty-num { font-size: .85rem; font-weight: 500; min-width: 20px; text-align: center; }
+  .cart-item__remove { background: none; border: none; color: #8c7e70; cursor: pointer; font-size: .85rem; }
+  .cart-item__remove:hover { color: #ef4444; }
+  .cart-panel__footer { padding: 1.5rem; border-top: 1px solid #e8dfd4; }
+  .cart-total { display: flex; justify-content: space-between; font-size: 1rem; font-weight: 600; color: #1a1612; margin-bottom: 1rem; }
+  .cart-checkout { width: 100%; background: #1a1612; color: #fff; border: none; border-radius: 7px; padding: .85rem; font-size: .9rem; font-weight: 500; font-family: 'DM Sans', sans-serif; cursor: pointer; transition: background .15s; }
+  .cart-checkout:hover { background: #b8922a; }
+
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+
+  @media (max-width: 1024px) { .products-grid { grid-template-columns: repeat(3,1fr); } }
+  @media (max-width: 768px) {
+    .products-grid { grid-template-columns: repeat(2,1fr); }
+    .contact-grid { grid-template-columns: 1fr; gap: 2.5rem; }
+    .hero { flex-direction: column; padding: 5rem 2rem 3rem; text-align: center; min-height: auto; }
+    .hero__ornament { display: none; }
+    .cart-panel { width: 100%; right: -100%; }
+  }
+  @media (max-width: 480px) { .products-grid { grid-template-columns: 1fr; } }
+</style>
+
+<script>
+  // Filtro por categoría
+  function filterCat(btn, catId) {
+    document.querySelectorAll('.cat-pill').forEach(p => p.classList.remove('cat-pill--active'));
+    btn.classList.add('cat-pill--active');
+    const cards = document.querySelectorAll('.product-card');
+    cards.forEach(c => {
+      const match = catId === '' || c.dataset.cat === catId;
+      c.style.display = match ? '' : 'none';
+    });
+    checkEmpty();
+  }
+
+  // Buscador
+  function filterSearch(q) {
+    const cards = document.querySelectorAll('.product-card');
+    const term = q.toLowerCase().trim();
+    cards.forEach(c => {
+      c.style.display = c.dataset.name.includes(term) ? '' : 'none';
+    });
+    checkEmpty();
+  }
+
+  function checkEmpty() {
+    const visible = [...document.querySelectorAll('.product-card')].filter(c => c.style.display !== 'none');
+    document.getElementById('noResults').style.display = visible.length === 0 ? 'block' : 'none';
+  }
+
+  // Carrito
+  let cart = {};
+
+  function addToCart(id, name, price) {
+    if (cart[id]) { cart[id].qty++; }
+    else { cart[id] = { name, price: parseFloat(price), qty: 1 }; }
+    renderCart();
+    openCart();
+  }
+
+  function renderCart() {
+    const items = Object.entries(cart);
+    const container = document.getElementById('cartItems');
+    const countEl = document.getElementById('cartCount');
+    const totalEl = document.getElementById('cartTotal');
+
+    const totalQty = items.reduce((s, [,v]) => s + v.qty, 0);
+    const totalPrice = items.reduce((s, [,v]) => s + v.qty * v.price, 0);
+
+    countEl.textContent = totalQty;
+    totalEl.textContent = '$' + totalPrice.toLocaleString('es-AR');
+
+    if (items.length === 0) {
+      container.innerHTML = '<div class="cart-empty">Tu carrito está vacío.</div>';
+      return;
+    }
+
+    container.innerHTML = items.map(([id, item]) => `
+      <div class="cart-item">
+        <div class="cart-item__info">
+          <div class="cart-item__name">${item.name}</div>
+          <div class="cart-item__price">$${(item.price * item.qty).toLocaleString('es-AR')}</div>
+        </div>
+        <div class="cart-item__qty">
+          <button class="qty-btn" onclick="changeQty(${id}, -1)">−</button>
+          <span class="qty-num">${item.qty}</span>
+          <button class="qty-btn" onclick="changeQty(${id}, 1)">+</button>
+        </div>
+        <button class="cart-item__remove" onclick="removeItem(${id})">✕</button>
+      </div>
+    `).join('');
+  }
+
+  function changeQty(id, delta) {
+    if (!cart[id]) return;
+    cart[id].qty += delta;
+    if (cart[id].qty <= 0) delete cart[id];
+    renderCart();
+  }
+
+  function removeItem(id) { delete cart[id]; renderCart(); }
+
+  function toggleCart() {
+    document.getElementById('cartPanel').classList.toggle('open');
+    document.getElementById('cartOverlay').classList.toggle('open');
+  }
+  function openCart() {
+    document.getElementById('cartPanel').classList.add('open');
+    document.getElementById('cartOverlay').classList.add('open');
+  }
+
+  function checkout() {
+    if (Object.keys(cart).length === 0) return;
+    // Acá va la lógica de checkout / POST al servidor
+    alert('Funcionalidad de checkout próximamente!');
+  }
+</script>
+
+{% endblock %}

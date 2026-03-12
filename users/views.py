@@ -184,7 +184,7 @@ def login_view(request):
                 auth_login(request, user)
                 if user.is_superuser:
                     return redirect('dashboard_admin')
-                return redirect('dashboard_cliente')
+                return redirect('home:home')
             else:
                 error = 'DNI o contraseña incorrectos.'
     return render(request, 'users/login.html', {'error': error})
