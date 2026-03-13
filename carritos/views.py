@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from django.contrib import messages
+from django.http import HttpRequest
 from django.shortcuts import render
 from django.urls import resolve, reverse
 from django.views.decorators.http import require_POST
@@ -23,6 +24,15 @@ def _get_session_cart(session) -> dict[str, int]:
 	return normalized
 
 
+def _is_ajax(request: HttpRequest) -> bool:
+	return request.headers.get("X-Requested-With") == "XMLHttpRequest"
+
+
+def _render_cart_fragment(request: HttpRequest):
+	ctx = _build_home_context(request)
+	return render(request, "carritos/_cart_fragment.html", ctx)
+
+
 @require_POST
 def agregar_producto(request):
 	producto_id = request.POST.get("producto_id") or request.POST.get("id")
@@ -34,16 +44,22 @@ def agregar_producto(request):
 		producto_id_int = int(producto_id)
 	except (TypeError, ValueError):
 		messages.error(request, "Producto inválido.")
+		if _is_ajax(request):
+			return _render_cart_fragment(request)
 		return _render_next(request, next_url)
 
 	try:
 		producto = Producto.objects.get(pk=producto_id_int, activo=True)
 	except Producto.DoesNotExist:
 		messages.error(request, "Producto no encontrado.")
+		if _is_ajax(request):
+			return _render_cart_fragment(request)
 		return _render_next(request, next_url)
 
 	if producto.stock <= 0:
 		messages.error(request, "Este producto no tiene stock.")
+		if _is_ajax(request):
+			return _render_cart_fragment(request)
 		return _render_next(request, next_url)
 
 	cart = _get_session_cart(request.session)
@@ -53,6 +69,8 @@ def agregar_producto(request):
 
 	if new_qty > producto.stock:
 		messages.error(request, "Stock insuficiente para agregar otra unidad.")
+		if _is_ajax(request):
+			return _render_cart_fragment(request)
 		return _render_next(request, next_url)
 
 	cart[key] = new_qty
@@ -60,6 +78,8 @@ def agregar_producto(request):
 	request.session.modified = True
 
 	messages.success(request, f"{producto.nombre} agregado al carrito.")
+	if _is_ajax(request):
+		return _render_cart_fragment(request)
 	return _render_next(request, next_url)
 
 
@@ -74,6 +94,8 @@ def eliminar_producto(request):
 		producto_id_int = int(producto_id)
 	except (TypeError, ValueError):
 		messages.error(request, "Producto inválido.")
+		if _is_ajax(request):
+			return _render_cart_fragment(request)
 		return _render_next(request, next_url)
 
 	cart = _get_session_cart(request.session)
@@ -86,6 +108,9 @@ def eliminar_producto(request):
 		messages.success(request, "Producto eliminado del carrito.")
 	else:
 		messages.info(request, "Ese producto no está en tu carrito.")
+
+	if _is_ajax(request):
+		return _render_cart_fragment(request)
 
 	return _render_next(request, next_url)
 
@@ -123,6 +148,10 @@ def _render_next(request, next_url: str):
 
 def _build_home_context(request):
 	productos = Producto.objects.filter(activo=True)
+	productos_destacados = productos.order_by("-created_at")[:8]
+	# Fallback simple: si por algún motivo no hay destacados, reutilizamos los primeros del catálogo
+	if not productos_destacados:
+		productos_destacados = productos[:8]
 	categorias = Categoria.objects.all()
 
 	cart = request.session.get("carrito")
@@ -165,6 +194,7 @@ def _build_home_context(request):
 
 	return {
 		"productos": productos,
+		"productos_destacados": productos_destacados,
 		"categorias": categorias,
 		"cart_items": items,
 		"cart_count": total_qty,

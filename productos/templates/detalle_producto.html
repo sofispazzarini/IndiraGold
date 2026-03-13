@@ -26,7 +26,7 @@
         </div>
 
         {% if producto.stock > 0 %}
-            <form method="post" action="{% url 'carritos:agregar_producto' %}">
+            <form method="post" action="/carritos/agregar/">
                 {% csrf_token %}
                 <input type="hidden" name="producto_id" value="{{ producto.pk }}" />
                 <input type="hidden" name="next" value="{{ request.get_full_path }}" />

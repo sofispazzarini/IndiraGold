@@ -5,7 +5,13 @@ class HomePublicaView(TemplateView):
     template_name = 'home_publico.html'
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
-        ctx['productos'] = Producto.objects.filter(activo=True)
+        productos = Producto.objects.filter(activo=True)
+        productos_destacados = productos.order_by('-created_at')[:8]
+        if not productos_destacados:
+            productos_destacados = productos[:8]
+
+        ctx['productos'] = productos
+        ctx['productos_destacados'] = productos_destacados
         ctx['categorias'] = Categoria.objects.all()
 
         cart = self.request.session.get('carrito')

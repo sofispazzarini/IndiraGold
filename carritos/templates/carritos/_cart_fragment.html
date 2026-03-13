@@ -1,0 +1,37 @@
+<div id="cartFragment" data-cart-count="{{ cart_count|default:0 }}" data-cart-total="${{ cart_total|default:'0' }}">
+  {% if messages %}
+    <div style="display:none" aria-hidden="true">
+      {% for message in messages %}
+        <span class="cart-flash-message" data-level="{{ message.tags }}">{{ message }}</span>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  {% if cart_items %}
+    {% for item in cart_items %}
+      <div class="cart-item">
+        <div class="cart-item__info">
+          <div class="cart-item__name">{{ item.nombre }}</div>
+          <div class="cart-item__price">${{ item.subtotal }}</div>
+        </div>
+        <div class="cart-item__qty">
+          <span class="qty-num">{{ item.cantidad }}</span>
+        </div>
+
+        <form method="post" action="{% url 'carritos:eliminar_producto' %}" class="js-cart-form" style="display:inline">
+          {% csrf_token %}
+          <input type="hidden" name="producto_id" value="{{ item.id }}" />
+          <input type="hidden" name="next" value="{{ request.get_full_path }}" />
+          <button type="submit" class="cart-item__remove" aria-label="Eliminar del carrito" title="Eliminar" style="color:#ef4444">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">
+              <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5Zm2.5 0A.5.5 0 0 1 8.5 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5Zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6Z"/>
+              <path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1Z"/>
+            </svg>
+          </button>
+        </form>
+      </div>
+    {% endfor %}
+  {% else %}
+    <div class="cart-empty">Tu carrito está vacío.</div>
+  {% endif %}
+</div>

@@ -14,7 +14,7 @@ from django.contrib.auth.decorators import login_required
 
 @login_required
 def dashboard_cliente(request):
-    return render(request, 'users/dashboard_cliente.html')
+    return redirect('home:home')
 
 from django.contrib.auth.decorators import login_required, user_passes_test
 
@@ -169,7 +169,7 @@ def confirmar_direccion(request):
     return render(request, "users/confirmar_direccion.html", {"data": data})
 
 def home(request):
-    return render(request, 'users/home.html')
+    return redirect('home:home')
 
 def login_view(request):
     error = None
