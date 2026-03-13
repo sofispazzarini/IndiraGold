@@ -2,6 +2,7 @@ from django.test import TestCase
 from django.urls import reverse
 
 from productos.models import Categoria, Proveedor, Producto
+from decimal import Decimal
 
 
 class AgregarProductoCarritoTests(TestCase):
@@ -37,3 +38,19 @@ class AgregarProductoCarritoTests(TestCase):
 		self.assertEqual(res.status_code, 200)
 		session = self.client.session
 		self.assertEqual(session["carrito"].get(str(self.producto.id)), 1)
+
+	def test_eliminar_producto_lo_quita_del_carrito_y_recalcula(self):
+		agregar_url = reverse("carritos:agregar_producto")
+		eliminar_url = reverse("carritos:eliminar_producto")
+
+		self.client.post(agregar_url, {"producto_id": self.producto.id, "next": "/home/"})
+		res = self.client.post(eliminar_url, {"producto_id": self.producto.id, "next": "/home/"})
+		self.assertEqual(res.status_code, 200)
+
+		session = self.client.session
+		self.assertNotIn(str(self.producto.id), session.get("carrito", {}))
+
+		# Al renderizar home_publico.html, el total y count deben quedar en 0
+		self.assertIsNotNone(res.context)
+		self.assertEqual(res.context["cart_count"], 0)
+		self.assertIn(res.context["cart_total"], (0, Decimal("0")))

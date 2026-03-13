@@ -63,6 +63,33 @@ def agregar_producto(request):
 	return _render_next(request, next_url)
 
 
+@require_POST
+def eliminar_producto(request):
+	producto_id = request.POST.get("producto_id") or request.POST.get("id")
+	next_url = request.POST.get("next") or request.GET.get("next")
+	if not next_url:
+		next_url = reverse("home:home")
+
+	try:
+		producto_id_int = int(producto_id)
+	except (TypeError, ValueError):
+		messages.error(request, "Producto inválido.")
+		return _render_next(request, next_url)
+
+	cart = _get_session_cart(request.session)
+	key = str(producto_id_int)
+
+	if key in cart:
+		del cart[key]
+		request.session["carrito"] = cart
+		request.session.modified = True
+		messages.success(request, "Producto eliminado del carrito.")
+	else:
+		messages.info(request, "Ese producto no está en tu carrito.")
+
+	return _render_next(request, next_url)
+
+
 def _render_next(request, next_url: str):
 	"""Renderiza una página de destino (sin JSON) luego del POST.
 

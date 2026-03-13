@@ -6,4 +6,5 @@ app_name = "carritos"
 
 urlpatterns = [
     path("agregar/", views.agregar_producto, name="agregar_producto"),
+    path("eliminar/", views.eliminar_producto, name="eliminar_producto"),
 ]
