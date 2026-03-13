@@ -82,12 +82,17 @@
           <div class="product-card__footer">
             <span class="product-card__price">${{ producto.precio }}</span>
             {% if producto.stock > 0 %}
-              <button class="product-card__btn" onclick="addToCart({{ producto.pk }}, '{{ producto.nombre }}', {{ producto.precio }})">
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
-                  <path d="M8 1a2.5 2.5 0 0 1 2.5 2.5V4h-5v-.5A2.5 2.5 0 0 1 8 1zm3.5 3v-.5a3.5 3.5 0 1 0-7 0V4H1v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V4h-3.5zM2 5h12v9a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V5z"/>
-                </svg>
-                Agregar
-              </button>
+              <form method="post" action="{% url 'carritos:agregar_producto' %}" style="display:inline">
+                {% csrf_token %}
+                <input type="hidden" name="producto_id" value="{{ producto.pk }}" />
+                <input type="hidden" name="next" value="{{ request.get_full_path }}" />
+                <button type="submit" class="product-card__btn">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                    <path d="M8 1a2.5 2.5 0 0 1 2.5 2.5V4h-5v-.5A2.5 2.5 0 0 1 8 1zm3.5 3v-.5a3.5 3.5 0 1 0-7 0V4H1v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V4h-3.5zM2 5h12v9a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V5z"/>
+                  </svg>
+                  Agregar
+                </button>
+              </form>
             {% else %}
               <span class="product-card__agotado">Sin stock</span>
             {% endif %}
@@ -140,7 +145,7 @@
   <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" viewBox="0 0 16 16">
     <path d="M8 1a2.5 2.5 0 0 1 2.5 2.5V4h-5v-.5A2.5 2.5 0 0 1 8 1zm3.5 3v-.5a3.5 3.5 0 1 0-7 0V4H1v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V4h-3.5z"/>
   </svg>
-  <span class="cart-fab__count" id="cartCount">0</span>
+  <span class="cart-fab__count" id="cartCount">{{ cart_count|default:0 }}</span>
 </div>
 
 <!-- PANEL CARRITO -->
@@ -150,12 +155,26 @@
     <button onclick="toggleCart()" class="cart-close">✕</button>
   </div>
   <div class="cart-panel__items" id="cartItems">
-    <div class="cart-empty">Tu carrito está vacío.</div>
+    {% if cart_items %}
+      {% for item in cart_items %}
+        <div class="cart-item">
+          <div class="cart-item__info">
+            <div class="cart-item__name">{{ item.nombre }}</div>
+            <div class="cart-item__price">${{ item.subtotal }}</div>
+          </div>
+          <div class="cart-item__qty">
+            <span class="qty-num">{{ item.cantidad }}</span>
+          </div>
+        </div>
+      {% endfor %}
+    {% else %}
+      <div class="cart-empty">Tu carrito está vacío.</div>
+    {% endif %}
   </div>
   <div class="cart-panel__footer">
     <div class="cart-total">
       <span>Total</span>
-      <span id="cartTotal">$0</span>
+      <span id="cartTotal">${{ cart_total|default:"0" }}</span>
     </div>
     <button class="cart-checkout" onclick="checkout()">Confirmar pedido</button>
   </div>
@@ -358,69 +377,14 @@
     document.getElementById('noResults').style.display = visible.length === 0 ? 'block' : 'none';
   }
 
-  // Carrito
-  let cart = {};
-
-  function addToCart(id, name, price) {
-    if (cart[id]) { cart[id].qty++; }
-    else { cart[id] = { name, price: parseFloat(price), qty: 1 }; }
-    renderCart();
-    openCart();
-  }
-
-  function renderCart() {
-    const items = Object.entries(cart);
-    const container = document.getElementById('cartItems');
-    const countEl = document.getElementById('cartCount');
-    const totalEl = document.getElementById('cartTotal');
-
-    const totalQty = items.reduce((s, [,v]) => s + v.qty, 0);
-    const totalPrice = items.reduce((s, [,v]) => s + v.qty * v.price, 0);
-
-    countEl.textContent = totalQty;
-    totalEl.textContent = '$' + totalPrice.toLocaleString('es-AR');
-
-    if (items.length === 0) {
-      container.innerHTML = '<div class="cart-empty">Tu carrito está vacío.</div>';
-      return;
-    }
-
-    container.innerHTML = items.map(([id, item]) => `
-      <div class="cart-item">
-        <div class="cart-item__info">
-          <div class="cart-item__name">${item.name}</div>
-          <div class="cart-item__price">$${(item.price * item.qty).toLocaleString('es-AR')}</div>
-        </div>
-        <div class="cart-item__qty">
-          <button class="qty-btn" onclick="changeQty(${id}, -1)">−</button>
-          <span class="qty-num">${item.qty}</span>
-          <button class="qty-btn" onclick="changeQty(${id}, 1)">+</button>
-        </div>
-        <button class="cart-item__remove" onclick="removeItem(${id})">✕</button>
-      </div>
-    `).join('');
-  }
-
-  function changeQty(id, delta) {
-    if (!cart[id]) return;
-    cart[id].qty += delta;
-    if (cart[id].qty <= 0) delete cart[id];
-    renderCart();
-  }
-
-  function removeItem(id) { delete cart[id]; renderCart(); }
-
   function toggleCart() {
     document.getElementById('cartPanel').classList.toggle('open');
     document.getElementById('cartOverlay').classList.toggle('open');
   }
-  function openCart() {
-    document.getElementById('cartPanel').classList.add('open');
-    document.getElementById('cartOverlay').classList.add('open');
-  }
 
   function checkout() {
-    if (Object.keys(cart).length === 0) return;
+    const count = parseInt(document.getElementById('cartCount').textContent || '0');
+    if (count <= 0) return;
     // Acá va la lógica de checkout / POST al servidor
     alert('Funcionalidad de checkout próximamente!');
   }
