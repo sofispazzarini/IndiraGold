@@ -1,4 +1,13 @@
+
 from django.db import models
+# Tipos de medida globales (ej: Largo, Ancho, Circunferencia)
+class TipoMedida(models.Model):
+    nombre = models.CharField(max_length=50, unique=True)
+    descripcion = models.CharField(max_length=200, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.nombre
 
 
 class Categoria(models.Model):
@@ -10,9 +19,20 @@ class Categoria(models.Model):
         return self.nombre
 
 
+class Subcategoria(models.Model):
+    nombre = models.CharField(max_length=100)
+    categoria = models.ForeignKey(Categoria, on_delete=models.CASCADE, related_name='subcategorias')
+    activa = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.nombre} ({self.categoria.nombre})"
+
+
 class Proveedor(models.Model):
     nombre = models.CharField(max_length=100)
     telefono = models.CharField(max_length=20)
+    informacion_adicional = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -28,6 +48,7 @@ class Producto(models.Model):
     precio = models.DecimalField(max_digits=10, decimal_places=2)
     stock = models.PositiveIntegerField()
     categoria = models.ForeignKey(Categoria, on_delete=models.CASCADE)
+    subcategoria = models.ForeignKey(Subcategoria, on_delete=models.CASCADE, null=True, blank=True, related_name='productos')
     proveedor = models.ForeignKey(Proveedor, on_delete=models.CASCADE)
     activo = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)

@@ -1,0 +1,32 @@
+{% extends 'users/base.html' %}
+{% block content %}
+<div class="container mt-4" style="max-width: 600px;">
+    <div class="mb-3">
+        <a href="{% url 'gestion_productos' %}" class="btn btn-link p-0" style="font-size: 1.5rem; text-decoration: none;">&#8592;</a>
+    </div>
+    <h2>Gestión de tipos de medida</h2>
+    {% if mensaje %}
+        <div class="alert {% if 'correctamente' in mensaje %}alert-success{% else %}alert-danger{% endif %} mt-3">{{ mensaje }}</div>
+    {% endif %}
+    <form method="post" class="mb-4">
+        {% csrf_token %}
+        <div class="mb-3">
+            {{ form.nombre.label_tag }}
+            {{ form.nombre }}
+        </div>
+        <div class="mb-3">
+            {{ form.descripcion.label_tag }}
+            {{ form.descripcion }}
+        </div>
+        <button type="submit" class="btn btn-primary">Agregar medida</button>
+    </form>
+    {% if medidas %}
+        <h5>Medidas existentes</h5>
+        <div class="d-flex flex-wrap gap-2">
+            {% for medida in medidas %}
+                <span class="btn btn-outline-secondary">{{ medida.nombre }}</span>
+            {% endfor %}
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

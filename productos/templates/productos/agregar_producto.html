@@ -1,0 +1,12 @@
+{% extends 'users/base.html' %}
+{% block content %}
+<div class="container mt-4" style="max-width: 600px;">
+    <h3>Agregar producto a la subcategoría: <span class="fw-bold">{{ subcategoria.nombre }}</span></h3>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit" class="btn btn-success">Guardar producto</button>
+        <a href="{% url 'productos_por_subcategoria' subcategoria.id %}" class="btn btn-secondary">Cancelar</a>
+    </form>
+</div>
+{% endblock %}

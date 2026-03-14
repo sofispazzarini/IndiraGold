@@ -1,0 +1,43 @@
+{% extends 'users/base.html' %}
+{% block content %}
+<div class="container mt-4" style="max-width: 700px;">
+    <div class="mb-3">
+        <a href="{% url 'gestion_productos' %}" class="btn btn-link p-0" style="font-size: 1.5rem; text-decoration: none;">
+            &#8592;
+        </a>
+    </div>
+    <h3>Productos de la subcategoría: <span class="fw-bold">{{ subcategoria.nombre }}</span></h3>
+    <a href="{% url 'agregar_producto' subcategoria.id %}" class="btn btn-success my-3">Agregar nuevo producto</a>
+    {% if productos %}
+        <table class="table table-bordered table-hover">
+            <thead>
+                <tr>
+                    <th>Código</th>
+                    <th>Nombre</th>
+                    <th>Tipo</th>
+                    <th>Precio</th>
+                    <th>Stock</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for prod in productos %}
+                <tr>
+                    <td>{{ prod.codigo }}</td>
+                    <td>{{ prod.nombre }}</td>
+                    <td>{{ prod.tipo }}</td>
+                    <td>${{ prod.precio }}</td>
+                    <td>{{ prod.stock }}</td>
+                    <td>
+                        <a href="#" class="btn btn-sm btn-outline-primary">Editar</a>
+                        <a href="#" class="btn btn-sm btn-outline-danger">Eliminar</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <div class="alert alert-info">No hay productos registrados en esta subcategoría.</div>
+    {% endif %}
+</div>
+{% endblock %}

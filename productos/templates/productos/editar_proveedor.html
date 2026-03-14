@@ -1,0 +1,33 @@
+{% extends 'users/base.html' %}
+{% block content %}
+<div class="container mt-4" style="max-width: 600px;">
+    <div class="mb-3">
+        <a href="{% url 'agregar_proveedor' %}" class="btn btn-link p-0" style="font-size: 1.5rem; text-decoration: none;">&#8592;</a>
+    </div>
+    <h2>Editar proveedor: {{ proveedor.nombre }}</h2>
+    {% if mensaje %}
+        <div class="alert {% if 'correctamente' in mensaje %}alert-success{% else %}alert-danger{% endif %} mt-3">{{ mensaje }}</div>
+    {% endif %}
+    <form method="post">
+        {% csrf_token %}
+        <div class="mb-3">
+            {{ form.nombre.label_tag }}
+            {{ form.nombre }}
+        </div>
+        <div class="mb-3">
+            {{ form.telefono.label_tag }}
+            {{ form.telefono }}
+        </div>
+        <div class="mb-3">
+            {{ form.informacion_adicional.label_tag }}
+            {{ form.informacion_adicional }}
+        </div>
+        <div class="mb-3">
+            {{ form.medidas.label_tag }}
+            {{ form.medidas }}
+        </div>
+        <button type="submit" class="btn btn-success">Guardar cambios</button>
+        <a href="{% url 'agregar_proveedor' %}" class="btn btn-secondary">Cancelar</a>
+    </form>
+</div>
+{% endblock %}

@@ -1,3 +1,4 @@
+from productos.views import gestion_productos
 from django.urls import path
 from . import views
 from django.contrib.auth import views as auth_views
@@ -16,4 +17,5 @@ urlpatterns = [
     path('admin/clientes/', views.listado_clientes, name='listado_clientes'),
     path('admin/clientes/<int:cliente_id>/editar/', views.editar_cliente, name='editar_cliente'),
     path('admin/clientes/<int:cliente_id>/agregar-direccion/', views.agregar_direccion, name='agregar_direccion'),
+    path('admin/productos/', gestion_productos, name='gestion_productos'),
 ]
