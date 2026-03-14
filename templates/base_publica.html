@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>{% block title %}IndiraGold — Tienda{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --gold: #b8922a;
+      --dark: #1a1612;
+      --text-muted: #8c7e70;
+      --border: #e8dfd4;
+      --text: #3d342a;
+      --white: #fff;
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    body { margin: 0; font-family: 'DM Sans', sans-serif; background: #faf7f4; color: var(--text); }
+
+    .navbar {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: rgba(255,255,255,.95);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--border);
+      height: 64px;
+    }
+    .navbar__inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 2rem;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .nb-name {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--dark);
+      letter-spacing: .03em;
+      text-decoration: none;
+    }
+    .navbar__links { display: flex; align-items: center; gap: 2rem; }
+    .nb-link {
+      font-size: .875rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      text-decoration: none;
+      transition: color .15s;
+    }
+    .nb-link:hover { color: var(--dark); }
+
+    .messages-wrap { max-width: 1200px; margin: 1rem auto 0; padding: 0 2rem; }
+    .message-item {
+      border: 1px solid var(--border);
+      background: var(--white);
+      padding: .75rem 1rem;
+      border-radius: 10px;
+      margin-bottom: .5rem;
+      color: var(--text);
+    }
+  </style>
+</head>
+<body>
+
+{% if messages %}
+  <div class="messages-wrap">
+    {% for message in messages %}
+      <div class="message-item">{{ message }}</div>
+    {% endfor %}
+  </div>
+{% endif %}
+
+<header class="navbar">
+  <div class="navbar__inner">
+    <a class="nb-name" href="{% url 'home:home' %}">IndiraGold</a>
+    <nav class="navbar__links">
+      <a href="{% url 'home:home' %}#catalogo" class="nb-link">Catálogo</a>
+      <a href="{% url 'home:home' %}#contacto" class="nb-link">Contacto</a>
+    </nav>
+  </div>
+</header>
+
+{% block content %}{% endblock %}
+
+</body>
+</html>

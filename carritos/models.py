@@ -1,4 +1,6 @@
 from django.db import models
+from django.utils import timezone
+from datetime import timedelta
 from users.models import Cliente
 from productos.models import Producto
 from productos.models import Variante

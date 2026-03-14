@@ -71,6 +71,10 @@ python manage.py makemigrations
 python manage.py migrate
 
 paso 7:cargar datos de prueba
+Opción recomendada (idempotente, no duplica datos):
+python manage.py seed_demo
+
+Alternativa (fixtures):
 python manage.py loaddata fixtures/datos_iniciales.json
 
 paso 8:crear superusuarios

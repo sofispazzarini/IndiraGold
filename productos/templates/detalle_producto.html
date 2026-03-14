@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Detalle del Producto</title>
+</head>
+<body>
+
+        {% if messages %}
+            <div>
+                {% for message in messages %}
+                    <p>{{ message }}</p>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        {% if not producto %}
+            <h1>Producto no encontrado</h1>
+            <a href="/home/">Volver</a>
+        {% else %}
+    <h1>{{ producto.nombre }}</h1>
+    
+    <div>
+        <p><strong>Descripción:</strong> {{ producto.descripcion }}</p>
+        <p><strong>Precio:</strong> ${{ producto.precio }}</p>
+        </div>
+
+        {% if producto.stock > 0 %}
+            <form method="post" action="/carritos/agregar/">
+                {% csrf_token %}
+                <input type="hidden" name="producto_id" value="{{ producto.pk }}" />
+                <input type="hidden" name="next" value="{{ request.get_full_path }}" />
+                <button type="submit">Agregar al carrito</button>
+            </form>
+        {% else %}
+            <p><strong>Sin stock</strong></p>
+        {% endif %}
+
+    <a href="/productos/">Volver a la lista</a>
+    {% endif %}
+</body>
+</html>

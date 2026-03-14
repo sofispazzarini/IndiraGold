@@ -4,6 +4,27 @@
     "pk": 1,
     "fields": {
       "nombre": "Anillos",
+      "activa": true,
+      "created_at": "2025-01-01T12:00:00Z"
+    }
+  },
+
+  {
+    "model": "productos.categoria",
+    "pk": 2,
+    "fields": {
+      "nombre": "Pulseras",
+      "activa": true,
+      "created_at": "2025-01-01T12:00:00Z"
+    }
+  },
+
+  {
+    "model": "productos.categoria",
+    "pk": 3,
+    "fields": {
+      "nombre": "Collares",
+      "activa": true,
       "created_at": "2025-01-01T12:00:00Z"
     }
   },
@@ -22,7 +43,10 @@
     "model": "productos.producto",
     "pk": 1,
     "fields": {
+      "codigo": "ANI-001",
       "nombre": "Anillo Dorado",
+      "tipo": "Anillo",
+      "tela": "Acero",
       "descripcion": "Anillo de acero dorado",
       "precio": "15000.00",
       "stock": 10,
@@ -30,6 +54,60 @@
       "proveedor": 1,
       "activo": true,
       "created_at": "2025-01-01T12:00:00Z"
+    }
+  },
+
+  {
+    "model": "productos.producto",
+    "pk": 2,
+    "fields": {
+      "codigo": "ANI-002",
+      "nombre": "Anillo Minimalista",
+      "tipo": "Anillo",
+      "tela": "Acero",
+      "descripcion": "Anillo minimalista, ideal para uso diario.",
+      "precio": "12000.00",
+      "stock": 6,
+      "categoria": 1,
+      "proveedor": 1,
+      "activo": true,
+      "created_at": "2025-01-02T12:00:00Z"
+    }
+  },
+
+  {
+    "model": "productos.producto",
+    "pk": 3,
+    "fields": {
+      "codigo": "PUL-001",
+      "nombre": "Pulsera Eslabones",
+      "tipo": "Pulsera",
+      "tela": "Acero",
+      "descripcion": "Pulsera de eslabones con acabado brillante.",
+      "precio": "18000.00",
+      "stock": 3,
+      "categoria": 2,
+      "proveedor": 1,
+      "activo": true,
+      "created_at": "2025-01-03T12:00:00Z"
+    }
+  },
+
+  {
+    "model": "productos.producto",
+    "pk": 4,
+    "fields": {
+      "codigo": "COL-001",
+      "nombre": "Collar Dije",
+      "tipo": "Collar",
+      "tela": "Acero",
+      "descripcion": "Collar con dije, diseño elegante.",
+      "precio": "21000.00",
+      "stock": 0,
+      "categoria": 3,
+      "proveedor": 1,
+      "activo": true,
+      "created_at": "2025-01-04T12:00:00Z"
     }
   },
 

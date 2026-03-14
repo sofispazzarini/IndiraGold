@@ -1,0 +1,170 @@
+{% extends 'base.html' %}
+
+{% block title %}Productos{% endblock %}
+{% block topbar_title %}Productos{% endblock %}
+{% block nav_productos %}active{% endblock %}
+
+{% block content %}
+<!-- La lista de fondo (atenuada) -->
+<div class="bg-screen">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Productos</h1>
+    </div>
+  </div>
+  <div class="table-wrapper">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Código</th><th>Nombre</th><th>Tipo</th><th>Tela</th>
+          <th>Categoría</th><th>Proveedor</th><th>Precio</th><th>Stock</th><th>Estado</th><th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="row-highlight">
+          <td><span class="code">{{ object.codigo }}</span></td>
+          <td class="fw5">{{ object.nombre }}</td>
+          <td>{{ object.tipo }}</td>
+          <td>{{ object.tela }}</td>
+          <td>{{ object.categoria.nombre }}</td>
+          <td>{{ object.proveedor.nombre }}</td>
+          <td>${{ object.precio }}</td>
+          <td>{{ object.stock }}</td>
+          <td>{% if object.activo %}Activo{% else %}Inactivo{% endif %}</td>
+          <td>—</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Overlay -->
+<div class="overlay"></div>
+
+<!-- Modal -->
+<div class="modal">
+
+  <div class="modal__icon">
+    <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" fill="currentColor" viewBox="0 0 16 16">
+      <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
+      <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
+    </svg>
+  </div>
+
+  <h2 class="modal__title">Eliminar producto</h2>
+  <p class="modal__sub">Estás por eliminar permanentemente:</p>
+
+  <div class="product-chip">
+    <span class="chip-code">{{ object.codigo }}</span>
+    <span class="chip-name">{{ object.nombre }}</span>
+    {% if object.activo %}
+      <span class="chip-badge chip-active">Activo</span>
+    {% else %}
+      <span class="chip-badge chip-inactive">Inactivo</span>
+    {% endif %}
+  </div>
+
+  <div class="modal__detail">
+    <div class="detail-row"><span>Categoría</span><span>{{ object.categoria.nombre }}</span></div>
+    <div class="detail-row"><span>Proveedor</span><span>{{ object.proveedor.nombre }}</span></div>
+    <div class="detail-row"><span>Precio</span><span>${{ object.precio }}</span></div>
+    <div class="detail-row">
+      <span>Stock</span>
+      <span class="{% if object.stock == 0 %}val-red{% elif object.stock < 10 %}val-yellow{% else %}val-green{% endif %}">
+        {{ object.stock }} unidades
+      </span>
+    </div>
+  </div>
+
+  {% if object.stock > 0 %}
+  <div class="modal__warning">
+    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+      <path d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767L8.982 1.566zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5zm.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2z"/>
+    </svg>
+    <span>Quedan <strong>{{ object.stock }} unidades</strong> en stock. Este registro se perderá.</span>
+  </div>
+  {% endif %}
+
+  <p class="modal__confirm-text">Esta acción <strong>no se puede deshacer</strong>.</p>
+
+  <form method="post" class="modal__actions">
+    {% csrf_token %}
+    <a href="{% url 'productos:producto_list' %}" class="btn btn-ghost">Cancelar</a>
+    <button type="submit" class="btn btn-danger">Sí, eliminar</button>
+  </form>
+
+</div>
+
+<style>
+  /* Fondo atenuado */
+  .bg-screen { filter: blur(2px) brightness(.85); pointer-events: none; user-select: none; }
+  .page-title { font-family: 'Cormorant Garamond', serif; font-size: 1.75rem; font-weight: 700; color: var(--dark); margin-bottom: 1.5rem; }
+  .table-wrapper { overflow-x: auto; border: 1px solid var(--border); border-radius: 10px; }
+  .table { width: 100%; border-collapse: collapse; font-size: .875rem; }
+  .table thead tr { background: var(--gold-pale); }
+  .table th { padding: .65rem 1rem; font-size: .75rem; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--gold); border-bottom: 1px solid var(--border); }
+  .table td { padding: .7rem 1rem; border-bottom: 1px solid #f3ede6; color: var(--text); }
+  .row-highlight td { background: #fff8ee; }
+  .code { background: #f3ede6; padding: .18rem .45rem; border-radius: 4px; font-family: monospace; font-size: .8rem; }
+  .fw5 { font-weight: 500; }
+
+  /* Overlay */
+  .overlay { position: fixed; inset: 0; background: rgba(26,22,18,.45); z-index: 200; backdrop-filter: blur(1px); }
+
+  /* Modal */
+  .modal {
+    position: fixed;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 300;
+    background: var(--white);
+    border-radius: 14px;
+    padding: 2rem;
+    width: 100%;
+    max-width: 420px;
+    box-shadow: 0 24px 60px rgba(0,0,0,.2);
+    animation: pop .2s ease;
+  }
+  @keyframes pop {
+    from { transform: translate(-50%, -48%); opacity: 0; }
+    to   { transform: translate(-50%, -50%); opacity: 1; }
+  }
+
+  .modal__icon {
+    width: 52px; height: 52px;
+    background: #fee2e2; color: #ef4444;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 1rem;
+  }
+
+  .modal__title { font-family: 'Cormorant Garamond', serif; font-size: 1.4rem; font-weight: 700; color: var(--dark); margin-bottom: .25rem; }
+  .modal__sub { font-size: .85rem; color: var(--text-muted); margin-bottom: 1rem; }
+
+  .product-chip { display: flex; align-items: center; gap: .5rem; background: var(--gold-pale); border: 1px solid var(--border); border-radius: 8px; padding: .6rem .85rem; margin-bottom: 1rem; flex-wrap: wrap; }
+  .chip-code { font-family: monospace; font-size: .8rem; background: #e8dfd4; padding: .15rem .4rem; border-radius: 4px; color: var(--text); }
+  .chip-name { font-size: .9rem; font-weight: 600; color: var(--dark); flex: 1; }
+  .chip-badge { font-size: .72rem; font-weight: 500; padding: .15rem .5rem; border-radius: 10px; }
+  .chip-active   { background: #d1fae5; color: #065f46; }
+  .chip-inactive { background: #fee2e2; color: #991b1b; }
+
+  .modal__detail { display: flex; flex-direction: column; gap: 0; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; margin-bottom: 1rem; }
+  .detail-row { display: flex; justify-content: space-between; padding: .45rem .85rem; font-size: .84rem; border-bottom: 1px solid #f3ede6; }
+  .detail-row:last-child { border-bottom: none; }
+  .detail-row span:first-child { color: var(--text-muted); }
+  .detail-row span:last-child  { color: var(--text); font-weight: 500; }
+  .val-green  { color: #065f46 !important; }
+  .val-yellow { color: #92400e !important; }
+  .val-red    { color: #991b1b !important; }
+
+  .modal__warning { display: flex; align-items: flex-start; gap: .5rem; background: #fffbeb; border: 1px solid #fcd34d; border-radius: 7px; padding: .65rem .85rem; font-size: .82rem; color: #92400e; margin-bottom: .85rem; }
+  .modal__warning svg { flex-shrink: 0; margin-top: 1px; }
+
+  .modal__confirm-text { font-size: .82rem; color: var(--text-muted); margin-bottom: 1.25rem; }
+
+  .modal__actions { display: flex; justify-content: flex-end; gap: .65rem; }
+  .btn { display: inline-flex; align-items: center; gap: .4rem; padding: .48rem 1.1rem; border-radius: 7px; font-size: .875rem; font-weight: 500; cursor: pointer; border: none; text-decoration: none; font-family: 'DM Sans', sans-serif; transition: all .15s; }
+  .btn-ghost  { background: transparent; color: var(--text-muted); border: 1px solid var(--border); } .btn-ghost:hover  { background: var(--gold-pale); }
+  .btn-danger { background: #ef4444; color: #fff; } .btn-danger:hover { background: #dc2626; }
+</style>
+{% endblock %}
