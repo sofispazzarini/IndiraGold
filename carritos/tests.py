@@ -1,8 +1,10 @@
 from django.test import TestCase
 from django.urls import reverse
+from django.utils import timezone
 
 from productos.models import Categoria, Proveedor, Producto
 from decimal import Decimal
+from carritos.utils import SESSION_CART_STARTED_AT_KEY
 
 
 class AgregarProductoCarritoTests(TestCase):
@@ -54,3 +56,31 @@ class AgregarProductoCarritoTests(TestCase):
 		self.assertIsNotNone(res.context)
 		self.assertEqual(res.context["cart_count"], 0)
 		self.assertIn(res.context["cart_total"], (0, Decimal("0")))
+
+	def test_carrito_expirado_se_limpia_y_se_reinicia_al_agregar(self):
+		url = reverse("carritos:agregar_producto")
+		session = self.client.session
+		session["carrito"] = {str(self.producto.id): 1}
+		session[SESSION_CART_STARTED_AT_KEY] = int(timezone.now().timestamp()) - 3700
+		session.save()
+
+		res = self.client.post(url, {"producto_id": self.producto.id, "next": "/home/"})
+		self.assertEqual(res.status_code, 200)
+
+		session = self.client.session
+		self.assertEqual(session["carrito"].get(str(self.producto.id)), 1)
+		self.assertIn(SESSION_CART_STARTED_AT_KEY, session)
+
+	def test_expirar_carrito_endpoint_vacia_carrito(self):
+		session = self.client.session
+		session["carrito"] = {str(self.producto.id): 1}
+		session[SESSION_CART_STARTED_AT_KEY] = int(timezone.now().timestamp())
+		session.save()
+
+		url = reverse("carritos:expirar_carrito")
+		res = self.client.post(url, {"next": "/home/"}, HTTP_X_REQUESTED_WITH="XMLHttpRequest")
+		self.assertEqual(res.status_code, 200)
+
+		session = self.client.session
+		self.assertEqual(session.get("carrito", {}), {})
+		self.assertNotIn(SESSION_CART_STARTED_AT_KEY, session)

@@ -1,10 +1,13 @@
 from django.views.generic import TemplateView
 from productos.models import Producto, Categoria, Talle, Color
+from carritos.utils import clear_cart_session, expire_cart_if_needed, get_cart_seconds_left
 
 class HomePublicaView(TemplateView):
     template_name = 'home_publico.html'
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
+        expire_cart_if_needed(self.request.session)
+
         productos = Producto.objects.filter(activo=True).prefetch_related('variantes__talle', 'variantes__color')
         productos_destacados = productos.order_by('-created_at')[:8]
         if not productos_destacados:
@@ -30,6 +33,7 @@ class HomePublicaView(TemplateView):
         cart = self.request.session.get('carrito')
         if not isinstance(cart, dict):
             cart = {}
+            clear_cart_session(self.request.session)
 
         quantities: dict[int, int] = {}
         for key, value in cart.items():
@@ -67,4 +71,5 @@ class HomePublicaView(TemplateView):
         ctx['cart_items'] = items
         ctx['cart_count'] = total_qty
         ctx['cart_total'] = total_price
+        ctx['cart_expires_in'] = get_cart_seconds_left(self.request.session)
         return ctx

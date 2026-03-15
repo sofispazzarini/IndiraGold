@@ -9,6 +9,7 @@ from django.views.decorators.http import require_POST
 from productos.models import Categoria
 from productos.models import Producto
 from productos.models import Talle, Color
+from .utils import clear_cart_session, expire_cart_if_needed, get_cart_seconds_left, set_cart_started_at_if_missing
 
 
 def _get_session_cart(session) -> dict[str, int]:
@@ -40,6 +41,9 @@ def agregar_producto(request):
 	next_url = request.POST.get("next") or request.GET.get("next")
 	if not next_url:
 		next_url = reverse("home:home")
+
+	if expire_cart_if_needed(request.session):
+		messages.info(request, "Tu carrito expiró luego de 1 hora y fue reiniciado.")
 
 	try:
 		producto_id_int = int(producto_id)
@@ -75,6 +79,7 @@ def agregar_producto(request):
 		return _render_next(request, next_url)
 
 	cart[key] = new_qty
+	set_cart_started_at_if_missing(request.session)
 	request.session["carrito"] = cart
 	request.session.modified = True
 
@@ -104,8 +109,11 @@ def eliminar_producto(request):
 
 	if key in cart:
 		del cart[key]
-		request.session["carrito"] = cart
-		request.session.modified = True
+		if cart:
+			request.session["carrito"] = cart
+			request.session.modified = True
+		else:
+			clear_cart_session(request.session)
 		messages.success(request, "Producto eliminado del carrito.")
 	else:
 		messages.info(request, "Ese producto no está en tu carrito.")
@@ -113,6 +121,17 @@ def eliminar_producto(request):
 	if _is_ajax(request):
 		return _render_cart_fragment(request)
 
+	return _render_next(request, next_url)
+
+
+@require_POST
+def expirar_carrito(request):
+	next_url = request.POST.get("next") or request.GET.get("next") or reverse("home:home")
+	clear_cart_session(request.session)
+	messages.info(request, "El tiempo del carrito expiró y los productos fueron eliminados.")
+
+	if _is_ajax(request):
+		return _render_cart_fragment(request)
 	return _render_next(request, next_url)
 
 
@@ -148,6 +167,8 @@ def _render_next(request, next_url: str):
 
 
 def _build_home_context(request):
+	expire_cart_if_needed(request.session)
+
 	productos = Producto.objects.filter(activo=True).prefetch_related('variantes__talle', 'variantes__color')
 	productos_destacados = productos.order_by("-created_at")[:8]
 	# Fallback simple: si por algún motivo no hay destacados, reutilizamos los primeros del catálogo
@@ -212,4 +233,5 @@ def _build_home_context(request):
 		"cart_items": items,
 		"cart_count": total_qty,
 		"cart_total": total_price,
+		"cart_expires_in": get_cart_seconds_left(request.session),
 	}

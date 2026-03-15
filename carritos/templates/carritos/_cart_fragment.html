@@ -1,4 +1,4 @@
-<div id="cartFragment" data-cart-count="{{ cart_count|default:0 }}" data-cart-total="${{ cart_total|default:'0' }}">
+<div id="cartFragment" data-cart-count="{{ cart_count|default:0 }}" data-cart-total="${{ cart_total|default:'0' }}" data-cart-expires-in="{{ cart_expires_in|default:0 }}">
   {% if messages %}
     <div style="display:none" aria-hidden="true">
       {% for message in messages %}

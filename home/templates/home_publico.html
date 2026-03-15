@@ -286,6 +286,9 @@
   </div>
   <div class="cart-panel__items" id="cartItems">{% include 'carritos/_cart_fragment.html' %}</div>
   <div class="cart-panel__footer">
+    <div class="cart-expire" id="cartExpire" style="display:none">
+      Expira en <span id="cartExpireValue">--:--</span>
+    </div>
     <div class="cart-total">
       <span>Total</span>
       <span id="cartTotal">${{ cart_total|default:"0" }}</span>
@@ -471,6 +474,8 @@
   .cart-item__remove { background: none; border: none; color: #8c7e70; cursor: pointer; font-size: .85rem; }
   .cart-item__remove:hover { color: #ef4444; }
   .cart-panel__footer { padding: 1.5rem; border-top: 1px solid #e8dfd4; }
+  .cart-expire { font-size: .8rem; color: #8c7e70; margin-bottom: .6rem; }
+  .cart-expire span { color: #1a1612; font-weight: 600; }
   .cart-total { display: flex; justify-content: space-between; font-size: 1rem; font-weight: 600; color: #1a1612; margin-bottom: 1rem; }
   .cart-checkout { width: 100%; background: #1a1612; color: #fff; border: none; border-radius: 7px; padding: .85rem; font-size: .9rem; font-weight: 500; font-family: 'DM Sans', sans-serif; cursor: pointer; transition: background .15s; }
   .cart-checkout:hover { background: #b8922a; }
@@ -518,6 +523,9 @@
 
 <script>
   const isAuthenticated = {{ request.user.is_authenticated|yesno:"true,false" }};
+  let cartExpiresIn = parseInt('{{ cart_expires_in|default:0 }}', 10) || 0;
+  let cartExpireTimer = null;
+  let expiringNow = false;
 
   let activeCategory = '';
   let searchTerm = '';
@@ -598,6 +606,107 @@
     window.location.href = `/users/login/?next=${encodeURIComponent(window.location.pathname + window.location.search)}`;
   }
 
+  function formatCountdown(seconds) {
+    const safe = Math.max(0, parseInt(seconds || 0, 10));
+    const mm = String(Math.floor((safe % 3600) / 60)).padStart(2, '0');
+    const ss = String(safe % 60).padStart(2, '0');
+    return `${mm}:${ss}`;
+  }
+
+  function renderCartExpiry() {
+    const expireWrap = document.getElementById('cartExpire');
+    const expireValue = document.getElementById('cartExpireValue');
+    const cartCount = parseInt(document.getElementById('cartCount')?.textContent || '0', 10);
+    if (!expireWrap || !expireValue) return;
+
+    if (cartCount <= 0 || cartExpiresIn <= 0) {
+      expireWrap.style.display = 'none';
+      return;
+    }
+
+    expireWrap.style.display = 'block';
+    expireValue.textContent = formatCountdown(cartExpiresIn);
+  }
+
+  function startCartExpiryTicker() {
+    if (cartExpireTimer) clearInterval(cartExpireTimer);
+    cartExpireTimer = setInterval(() => {
+      const cartCount = parseInt(document.getElementById('cartCount')?.textContent || '0', 10);
+      if (cartCount <= 0) {
+        renderCartExpiry();
+        return;
+      }
+
+      if (cartExpiresIn > 0) {
+        cartExpiresIn -= 1;
+        renderCartExpiry();
+      }
+
+      if (cartExpiresIn <= 0 && !expiringNow && cartCount > 0) {
+        expiringNow = true;
+        expireCartNow();
+      }
+    }, 1000);
+  }
+
+  function getCsrfToken() {
+    const match = document.cookie.match(/(?:^|; )csrftoken=([^;]+)/);
+    return match ? decodeURIComponent(match[1]) : '';
+  }
+
+  async function expireCartNow() {
+    try {
+      const response = await fetch('/carritos/expirar/', {
+        method: 'POST',
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest',
+          'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+        },
+        body: new URLSearchParams({
+          csrfmiddlewaretoken: getCsrfToken(),
+          next: window.location.pathname + window.location.search,
+        }),
+      });
+
+      if (!response.ok) return;
+      const html = await response.text();
+      applyCartFromHtml(html);
+    } finally {
+      expiringNow = false;
+    }
+  }
+
+  function applyCartFromHtml(html) {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
+    const fragment = doc.getElementById('cartFragment');
+    if (!fragment) return false;
+
+    const cartItems = document.getElementById('cartItems');
+    const cartCount = document.getElementById('cartCount');
+    const cartTotal = document.getElementById('cartTotal');
+
+    if (cartItems) {
+      cartItems.innerHTML = fragment.innerHTML;
+    }
+    if (cartCount) {
+      cartCount.textContent = fragment.dataset.cartCount || '0';
+    }
+    if (cartTotal) {
+      cartTotal.textContent = fragment.dataset.cartTotal || '$0';
+    }
+
+    cartExpiresIn = parseInt(fragment.dataset.cartExpiresIn || '0', 10) || 0;
+    renderCartExpiry();
+
+    const flashMessages = doc.querySelectorAll('.cart-flash-message');
+    flashMessages.forEach((node) => {
+      showToast(node.textContent?.trim() || '', node.dataset.level || '');
+    });
+
+    return true;
+  }
+
   async function submitCartForm(form) {
     const formData = new FormData(form);
     try {
@@ -613,32 +722,10 @@
       }
 
       const html = await response.text();
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(html, 'text/html');
-      const fragment = doc.getElementById('cartFragment');
-      if (!fragment) {
+      const applied = applyCartFromHtml(html);
+      if (!applied) {
         form.submit();
-        return;
       }
-
-      const cartItems = document.getElementById('cartItems');
-      const cartCount = document.getElementById('cartCount');
-      const cartTotal = document.getElementById('cartTotal');
-
-      if (cartItems) {
-        cartItems.innerHTML = fragment.innerHTML;
-      }
-      if (cartCount) {
-        cartCount.textContent = fragment.dataset.cartCount || '0';
-      }
-      if (cartTotal) {
-        cartTotal.textContent = fragment.dataset.cartTotal || '$0';
-      }
-
-      const flashMessages = doc.querySelectorAll('.cart-flash-message');
-      flashMessages.forEach((node) => {
-        showToast(node.textContent?.trim() || '', node.dataset.level || '');
-      });
     } catch (error) {
       form.submit();
     }
@@ -669,6 +756,9 @@
     event.preventDefault();
     submitCartForm(form);
   });
+
+  renderCartExpiry();
+  startCartExpiryTicker();
 </script>
 
 {% endblock %}
