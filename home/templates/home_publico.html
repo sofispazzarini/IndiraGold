@@ -157,17 +157,37 @@
 
     <div class="catalog-top">
       <h2 class="catalog-title">Catálogo</h2>
-      <div class="search-wrap">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-          <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.099zm-5.242 1.656a5.5 5.5 0 1 1 0-11 5.5 5.5 0 0 1 0 11z"/>
-        </svg>
-        <input type="text" id="searchInput" placeholder="Buscar productos…" oninput="filterSearch(this.value)" />
+      <div class="catalog-actions">
+        <div class="search-wrap">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+            <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.099zm-5.242 1.656a5.5 5.5 0 1 1 0-11 5.5 5.5 0 0 1 0 11z"/>
+          </svg>
+          <input type="text" id="searchInput" placeholder="Buscar productos…" oninput="filterSearch(this.value)" />
+        </div>
+        <div class="variant-filters">
+          <select id="talleFilter" onchange="filterTalle(this.value)">
+            <option value="">Todos los talles</option>
+            {% for talle in talles %}
+              <option value="{{ talle.id }}">{{ talle.nombre }}</option>
+            {% endfor %}
+          </select>
+          <select id="colorFilter" onchange="filterColor(this.value)">
+            <option value="">Todos los colores</option>
+            {% for color in colores %}
+              <option value="{{ color.id }}">{{ color.nombre }}</option>
+            {% endfor %}
+          </select>
+        </div>
       </div>
     </div>
 
     <div class="products-grid" id="productsGrid">
       {% for producto in productos %}
-      <div class="product-card" data-cat="{{ producto.categoria.id }}" data-name="{{ producto.nombre|lower }} {{ producto.tipo|lower }} {{ producto.tela|lower }}">
+      <div class="product-card"
+           data-cat="{{ producto.categoria.id }}"
+           data-name="{{ producto.nombre|lower }} {{ producto.tipo|lower }} {{ producto.tela|lower }}"
+           data-talles="{% for variante in producto.variantes.all %}{% if variante.activa and variante.stock > 0 %}{{ variante.talle_id }},{% endif %}{% endfor %}"
+           data-colores="{% for variante in producto.variantes.all %}{% if variante.activa and variante.stock > 0 %}{{ variante.color_id }},{% endif %}{% endfor %}">
         <a href="{% url 'productos:producto_detail' producto.pk %}" class="product-card__img-wrap">
           {% if producto.imagen %}
             <img src="{{ producto.imagen.url }}" alt="{{ producto.nombre }}" class="product-card__img" />
@@ -336,9 +356,22 @@
   .container { max-width: 1200px; margin: 0 auto; padding: 0 2rem; }
   .catalog-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2.5rem; flex-wrap: wrap; gap: 1rem; }
   .catalog-title { font-family: 'Cormorant Garamond', serif; font-size: 1.75rem; font-weight: 700; color: #1a1612; }
+  .catalog-actions { display: flex; align-items: center; gap: .75rem; flex-wrap: wrap; }
   .search-wrap { display: flex; align-items: center; gap: .5rem; background: #fff; border: 1px solid #e8dfd4; border-radius: 8px; padding: .45rem .85rem; }
   .search-wrap svg { color: #8c7e70; flex-shrink: 0; }
   .search-wrap input { border: none; outline: none; font-size: .875rem; font-family: 'DM Sans', sans-serif; color: #1a1612; width: 220px; background: transparent; }
+  .variant-filters { display: flex; gap: .5rem; }
+  .variant-filters select {
+    border: 1px solid #e8dfd4;
+    background: #fff;
+    color: #1a1612;
+    border-radius: 8px;
+    padding: .45rem .65rem;
+    font-size: .82rem;
+    font-family: 'DM Sans', sans-serif;
+    outline: none;
+  }
+  .variant-filters select:focus { border-color: #b8922a; }
 
   .products-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.5rem; }
 
@@ -484,30 +517,64 @@
 </style>
 
 <script>
+  let activeCategory = '';
+  let searchTerm = '';
+  let selectedTalle = '';
+  let selectedColor = '';
+
+  function getCatalogCards() {
+    return document.querySelectorAll('#productsGrid .product-card');
+  }
+
+  function parseList(datasetValue) {
+    return (datasetValue || '')
+      .split(',')
+      .map(v => v.trim())
+      .filter(Boolean);
+  }
+
+  function applyFilters() {
+    const cards = getCatalogCards();
+    cards.forEach(card => {
+      const matchCategory = activeCategory === '' || card.dataset.cat === activeCategory;
+      const matchSearch = card.dataset.name.includes(searchTerm);
+
+      const talles = parseList(card.dataset.talles);
+      const colores = parseList(card.dataset.colores);
+      const matchTalle = selectedTalle === '' || talles.includes(selectedTalle);
+      const matchColor = selectedColor === '' || colores.includes(selectedColor);
+
+      card.style.display = (matchCategory && matchSearch && matchTalle && matchColor) ? '' : 'none';
+    });
+    checkEmpty();
+  }
+
   // Filtro por categoría
   function filterCat(btn, catId) {
     document.querySelectorAll('.cat-pill').forEach(p => p.classList.remove('cat-pill--active'));
     btn.classList.add('cat-pill--active');
-    const cards = document.querySelectorAll('.product-card');
-    cards.forEach(c => {
-      const match = catId === '' || c.dataset.cat === catId;
-      c.style.display = match ? '' : 'none';
-    });
-    checkEmpty();
+    activeCategory = catId;
+    applyFilters();
   }
 
   // Buscador
   function filterSearch(q) {
-    const cards = document.querySelectorAll('.product-card');
-    const term = q.toLowerCase().trim();
-    cards.forEach(c => {
-      c.style.display = c.dataset.name.includes(term) ? '' : 'none';
-    });
-    checkEmpty();
+    searchTerm = q.toLowerCase().trim();
+    applyFilters();
+  }
+
+  function filterTalle(talleId) {
+    selectedTalle = talleId;
+    applyFilters();
+  }
+
+  function filterColor(colorId) {
+    selectedColor = colorId;
+    applyFilters();
   }
 
   function checkEmpty() {
-    const visible = [...document.querySelectorAll('.product-card')].filter(c => c.style.display !== 'none');
+    const visible = [...getCatalogCards()].filter(c => c.style.display !== 'none');
     document.getElementById('noResults').style.display = visible.length === 0 ? 'block' : 'none';
   }
 

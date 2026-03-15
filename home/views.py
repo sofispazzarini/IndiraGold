@@ -1,18 +1,31 @@
 from django.views.generic import TemplateView
-from productos.models import Producto, Categoria
+from productos.models import Producto, Categoria, Talle, Color
 
 class HomePublicaView(TemplateView):
     template_name = 'home_publico.html'
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
-        productos = Producto.objects.filter(activo=True)
+        productos = Producto.objects.filter(activo=True).prefetch_related('variantes__talle', 'variantes__color')
         productos_destacados = productos.order_by('-created_at')[:8]
         if not productos_destacados:
             productos_destacados = productos[:8]
 
+        talles = (
+            Talle.objects.filter(variante__activa=True, variante__stock__gt=0, variante__producto__activo=True)
+            .distinct()
+            .order_by('nombre')
+        )
+        colores = (
+            Color.objects.filter(variante__activa=True, variante__stock__gt=0, variante__producto__activo=True)
+            .distinct()
+            .order_by('nombre')
+        )
+
         ctx['productos'] = productos
         ctx['productos_destacados'] = productos_destacados
         ctx['categorias'] = Categoria.objects.all()
+        ctx['talles'] = talles
+        ctx['colores'] = colores
 
         cart = self.request.session.get('carrito')
         if not isinstance(cart, dict):

@@ -8,6 +8,7 @@ from django.views.decorators.http import require_POST
 
 from productos.models import Categoria
 from productos.models import Producto
+from productos.models import Talle, Color
 
 
 def _get_session_cart(session) -> dict[str, int]:
@@ -147,12 +148,22 @@ def _render_next(request, next_url: str):
 
 
 def _build_home_context(request):
-	productos = Producto.objects.filter(activo=True)
+	productos = Producto.objects.filter(activo=True).prefetch_related('variantes__talle', 'variantes__color')
 	productos_destacados = productos.order_by("-created_at")[:8]
 	# Fallback simple: si por algún motivo no hay destacados, reutilizamos los primeros del catálogo
 	if not productos_destacados:
 		productos_destacados = productos[:8]
 	categorias = Categoria.objects.all()
+	talles = (
+		Talle.objects.filter(variante__activa=True, variante__stock__gt=0, variante__producto__activo=True)
+		.distinct()
+		.order_by("nombre")
+	)
+	colores = (
+		Color.objects.filter(variante__activa=True, variante__stock__gt=0, variante__producto__activo=True)
+		.distinct()
+		.order_by("nombre")
+	)
 
 	cart = request.session.get("carrito")
 	if not isinstance(cart, dict):
@@ -196,6 +207,8 @@ def _build_home_context(request):
 		"productos": productos,
 		"productos_destacados": productos_destacados,
 		"categorias": categorias,
+		"talles": talles,
+		"colores": colores,
 		"cart_items": items,
 		"cart_count": total_qty,
 		"cart_total": total_price,
