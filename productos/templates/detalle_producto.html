@@ -43,6 +43,36 @@
 
                     <p class="detalle-desc">{{ producto.descripcion }}</p>
 
+                    {% if tabla_medidas %}
+                        <div class="detalle-medidas">
+                            <h3>Tabla de medidas</h3>
+                            <div class="detalle-medidas__wrap">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Talle</th>
+                                            <th>Alto</th>
+                                            <th>Ancho</th>
+                                            <th>Largo</th>
+                                            <th>Tiro</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for row in tabla_medidas %}
+                                            <tr>
+                                                <td>{{ row.talle }}</td>
+                                                <td>{% if row.alto is not None %}{{ row.alto }}{% else %}-{% endif %}</td>
+                                                <td>{% if row.ancho is not None %}{{ row.ancho }}{% else %}-{% endif %}</td>
+                                                <td>{% if row.largo is not None %}{{ row.largo }}{% else %}-{% endif %}</td>
+                                                <td>{% if row.tiro is not None %}{{ row.tiro }}{% else %}-{% endif %}</td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    {% endif %}
+
                     {% if producto.stock > 0 %}
                         <form method="post" action="/carritos/agregar/" class="detalle-form">
                             {% csrf_token %}
@@ -110,6 +140,42 @@
     .detalle-stock { display: inline-flex; align-items: center; border-radius: 999px; padding: .35rem .75rem; font-size: .8rem; font-weight: 600; }
     .detalle-stock--ok { background: #ecfdf3; color: #166534; }
     .detalle-stock--out { background: #fef2f2; color: #991b1b; }
+
+    .detalle-medidas {
+        margin: .35rem 0 .2rem;
+        border: 1px solid #e8dfd4;
+        border-radius: 10px;
+        overflow: hidden;
+        background: #fff;
+    }
+    .detalle-medidas h3 {
+        margin: 0;
+        padding: .7rem .9rem;
+        font-size: .92rem;
+        color: #1a1612;
+        border-bottom: 1px solid #e8dfd4;
+        background: #faf7f4;
+    }
+    .detalle-medidas__wrap { overflow-x: auto; }
+    .detalle-medidas table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 460px;
+    }
+    .detalle-medidas th,
+    .detalle-medidas td {
+        text-align: left;
+        padding: .55rem .8rem;
+        border-bottom: 1px solid #f1ebe3;
+        font-size: .83rem;
+        color: #3d342a;
+    }
+    .detalle-medidas th {
+        font-weight: 600;
+        color: #1a1612;
+        background: #fff;
+    }
+    .detalle-medidas tbody tr:last-child td { border-bottom: none; }
 
     .detalle-form { margin-top: .25rem; }
     .detalle-btn {

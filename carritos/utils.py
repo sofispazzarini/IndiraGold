@@ -4,7 +4,7 @@ from django.utils import timezone
 
 SESSION_CART_KEY = "carrito"
 SESSION_CART_STARTED_AT_KEY = "carrito_started_at"
-CART_EXPIRATION_SECONDS = 60 
+CART_EXPIRATION_SECONDS = 60 * 60
 
 
 def _to_int(value) -> int | None:

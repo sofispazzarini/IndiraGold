@@ -156,14 +156,54 @@ def _render_next(request, next_url: str):
 
 	if match and match.view_name == "productos:producto_detail":
 		pk = match.kwargs.get("pk")
-		producto = Producto.objects.filter(pk=pk, activo=True).first()
-		if not producto:
-			producto = None
-		return render(request, "detalle_producto.html", {"producto": producto})
+		producto = (
+			Producto.objects
+			.filter(pk=pk, activo=True)
+			.prefetch_related("variantes__talle", "variantes__medida")
+			.first()
+		)
+		ctx = _build_producto_detail_context(producto)
+		return render(request, "detalle_producto.html", ctx)
 
 	# Default: home pública
 	ctx = _build_home_context(request)
 	return render(request, "home_publico.html", ctx)
+
+
+def _build_producto_detail_context(producto: Producto | None):
+	if not producto:
+		return {"producto": None, "tabla_medidas": []}
+
+	tabla_medidas = []
+	seen_talles = set()
+
+	variantes = (
+		producto.variantes
+		.filter(activa=True, medida__isnull=False)
+		.select_related("talle", "medida")
+		.order_by("talle__nombre", "medida_id")
+	)
+
+	for variante in variantes:
+		if variante.talle_id in seen_talles:
+			continue
+
+		medida = variante.medida
+		tabla_medidas.append(
+			{
+				"talle": variante.talle.nombre,
+				"alto": medida.alto,
+				"ancho": medida.ancho,
+				"largo": medida.largo,
+				"tiro": medida.tiro,
+			}
+		)
+		seen_talles.add(variante.talle_id)
+
+	return {
+		"producto": producto,
+		"tabla_medidas": tabla_medidas,
+	}
 
 
 def _build_home_context(request):
