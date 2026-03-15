@@ -517,6 +517,8 @@
 </style>
 
 <script>
+  const isAuthenticated = {{ request.user.is_authenticated|yesno:"true,false" }};
+
   let activeCategory = '';
   let searchTerm = '';
   let selectedTalle = '';
@@ -593,8 +595,7 @@
   function checkout() {
     const count = parseInt(document.getElementById('cartCount').textContent || '0');
     if (count <= 0) return;
-    // Acá va la lógica de checkout / POST al servidor
-    alert('Funcionalidad de checkout próximamente!');
+    window.location.href = `/users/login/?next=${encodeURIComponent(window.location.pathname + window.location.search)}`;
   }
 
   async function submitCartForm(form) {
