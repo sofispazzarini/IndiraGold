@@ -1,8 +1,8 @@
-{% extends 'users/base.html' %}
+{% extends 'users/dashboard_admin.html' %}
 {% block content %}
 <div class="container mt-4" style="max-width: 500px;">
     <div class="mb-3">
-        <a href="{% url 'gestion_productos' %}" class="btn btn-link p-0" style="font-size: 1.5rem; text-decoration: none;">
+        <a href="{% url 'productos:gestion_productos' %}" class="btn btn-link p-0" style="font-size: 1.5rem; text-decoration: none;">
             &#8592;
         </a>
     </div>

@@ -1,12 +1,125 @@
-{% extends 'users/base.html' %}
+{% extends 'users/dashboard_admin.html' %}
 {% block content %}
-<div class="container mt-4" style="max-width: 600px;">
-    <h3>Agregar producto a la subcategoría: <span class="fw-bold">{{ subcategoria.nombre }}</span></h3>
-    <form method="post">
-        {% csrf_token %}
-        {{ form.as_p }}
-        <button type="submit" class="btn btn-success">Guardar producto</button>
-        <a href="{% url 'productos_por_subcategoria' subcategoria.id %}" class="btn btn-secondary">Cancelar</a>
-    </form>
-</div>
+<!-- ...aquí va el contenido del formulario y los modales... -->
+<!-- El resto del HTML ya existente va aquí -->
+</form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    <!-- Aquí termina el modal de colores -->
+
+
 {% endblock %}
+
+<script>
+// Listas temporales para mostrar colores y medidas
+let colores = [];
+let medidas = [];
+
+// Botón agregar color
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('btnAgregarColor').addEventListener('click', function() {
+        document.getElementById('color_nombre').value = '';
+        document.getElementById('colorNinguno').checked = false;
+        var modal = new bootstrap.Modal(document.getElementById('modalColores'));
+        modal.show();
+    });
+    document.getElementById('formColores').addEventListener('submit', function(e) {
+        e.preventDefault();
+        let colorNinguno = document.getElementById('colorNinguno').checked;
+        let color = colorNinguno ? 'Ninguno' : document.getElementById('color_nombre').value.trim();
+        if (color && !colores.includes(color)) {
+            colores.push(color);
+            actualizarListadoColores();
+        }
+        bootstrap.Modal.getInstance(document.getElementById('modalColores')).hide();
+    });
+    // Botón agregar medida (modal)
+    document.getElementById('formMedidas').addEventListener('submit', function(e) {
+        e.preventDefault();
+        let nombre = document.getElementById('medida_nombre').value.trim();
+        let valor = document.getElementById('medida_valor').value.trim();
+        let unidad = document.getElementById('medida_unidad').value.trim();
+        if (nombre && valor && unidad) {
+            medidas.push({nombre, valor, unidad});
+            actualizarListadoMedidas();
+        }
+        bootstrap.Modal.getInstance(document.getElementById('modalMedidas')).hide();
+        document.getElementById('formMedidas').reset();
+    });
+});
+
+function actualizarListadoColores() {
+    let cont = document.getElementById('listadoColores');
+    cont.innerHTML = colores.map(c => `<span class='badge bg-primary me-1 mb-1'>${c}</span>`).join('');
+}
+function actualizarListadoMedidas() {
+    let cont = document.getElementById('listadoMedidas');
+    cont.innerHTML = medidas.map(m => `<span class='badge bg-secondary me-1 mb-1'>${m.nombre}: ${m.valor} ${m.unidad}</span>`).join('');
+}
+
+// Variantes
+let variantes = [];
+// Abrir modal variante
+document.addEventListener('DOMContentLoaded', function() {
+    if(document.getElementById('btnAgregarVariante')){
+        document.getElementById('btnAgregarVariante').addEventListener('click', function() {
+            // Reset modal
+            document.getElementById('variante_talle').value = '';
+            document.getElementById('variante_color_picker').value = '#000000';
+            document.getElementById('variante_color_nombre').value = '';
+            document.getElementById('variante_color_ninguno').checked = false;
+            document.getElementById('variante_alto').value = '';
+            document.getElementById('variante_ancho').value = '';
+            document.getElementById('variante_largo').value = '';
+            document.getElementById('variante_tiro').value = '';
+            document.getElementById('variante_stock').value = '';
+            document.getElementById('variante_precio').value = '';
+            var modal = new bootstrap.Modal(document.getElementById('modalVariante'));
+            modal.show();
+        });
+    }
+    // Guardar variante
+    if(document.getElementById('formVariante')){
+        document.getElementById('formVariante').addEventListener('submit', function(e) {
+            e.preventDefault();
+            let talle = document.getElementById('variante_talle').value;
+            let colorNinguno = document.getElementById('variante_color_ninguno').checked;
+            let colorHex = colorNinguno ? null : document.getElementById('variante_color_picker').value;
+            let colorNombre = colorNinguno ? 'Sin color' : document.getElementById('variante_color_nombre').value.trim();
+            let alto = document.getElementById('variante_alto').value;
+            let ancho = document.getElementById('variante_ancho').value;
+            let largo = document.getElementById('variante_largo').value;
+            let tiro = document.getElementById('variante_tiro').value;
+            let stock = document.getElementById('variante_stock').value;
+            let precio = document.getElementById('variante_precio').value;
+            if(talle && stock && precio) {
+                variantes.push({
+                    talle, colorHex, colorNombre, alto, ancho, largo, tiro, stock, precio
+                });
+                actualizarListadoVariantes();
+                bootstrap.Modal.getInstance(document.getElementById('modalVariante')).hide();
+            }
+        });
+    }
+});
+
+function actualizarListadoVariantes() {
+    let cont = document.getElementById('listadoVariantes');
+    if(!cont) return;
+    cont.innerHTML = variantes.map(v => `
+        <div class='d-flex align-items-center mb-1' style='font-size:0.95em;'>
+            <span class='badge bg-light text-dark border me-1'>Talle: ${v.talle}</span>
+            ${v.colores && v.colores.length ? v.colores.map(c => c.colorNinguno ? `<span class='badge bg-secondary me-1 mb-1'>Sin color</span>` : `<span class='badge bg-primary me-1 mb-1'><span style='display:inline-block;width:14px;height:14px;border-radius:50%;background:${c.colorHex};border:1px solid #888;margin-right:4px;'></span>${c.colorNombre}</span>`).join('') : ''}
+            ${v.medidas && v.medidas.length ? v.medidas.map(m => `<span class='badge bg-secondary me-1 mb-1'>${['Alto: '+m.alto, 'Ancho: '+m.ancho, 'Largo: '+m.largo, 'Tiro: '+m.tiro].filter(x=>!x.endsWith(': ')).join(' / ')}</span>`).join('') : ''}
+            <span class='badge bg-success me-1'>Stock: ${v.stock}</span>
+            <span class='badge bg-info text-dark'>Precio: $${v.precio}</span>
+        </div>
+    `).join('');
+}
+// Serializar variantes antes de enviar el formulario
+document.getElementById('formProducto').addEventListener('submit', function(e) {
+    document.getElementById('variantes_json').value = JSON.stringify(variantes);
+});
+</script>

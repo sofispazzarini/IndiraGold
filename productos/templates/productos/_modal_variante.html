@@ -1,0 +1,52 @@
+<!-- Modal para agregar variante -->
+<div class="modal fade" id="modalVariante" tabindex="-1" aria-labelledby="modalVarianteLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalVarianteLabel">Agregar Variante</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body">
+        <form id="formVariante">
+          <div class="mb-2">
+            <label for="variante_talle" class="form-label">Talle</label>
+            <select class="form-select" id="variante_talle" name="talle" required></select>
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Colores</label>
+            <div class="input-group mb-2">
+              <input type="color" class="form-control form-control-color" id="variante_color_picker" value="#000000" title="Elegir color">
+              <input type="text" class="form-control" id="variante_color_nombre" placeholder="Nombre del color (opcional)">
+              <button type="button" class="btn btn-outline-primary btn-sm" id="btnAgregarColorVariante">Agregar color</button>
+            </div>
+            <div class="form-check mb-2">
+              <input class="form-check-input" type="checkbox" value="ninguno" id="variante_color_ninguno">
+              <label class="form-check-label" for="variante_color_ninguno">Sin color</label>
+            </div>
+            <div id="listadoColoresVariante" style="max-height: 60px; overflow-y: auto; border: 1px solid #ccc; border-radius: 4px; padding: 4px; font-size: 0.95em;"></div>
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Medidas</label>
+            <div class="row g-1 mb-2">
+              <div class="col"><input type="number" step="0.01" min="0" class="form-control" id="variante_alto" placeholder="Alto"></div>
+              <div class="col"><input type="number" step="0.01" min="0" class="form-control" id="variante_ancho" placeholder="Ancho"></div>
+              <div class="col"><input type="number" step="0.01" min="0" class="form-control" id="variante_largo" placeholder="Largo"></div>
+              <div class="col"><input type="number" step="0.01" min="0" class="form-control" id="variante_tiro" placeholder="Tiro"></div>
+              <div class="col"><button type="button" class="btn btn-outline-secondary btn-sm" id="btnAgregarMedidaVariante">Agregar medida</button></div>
+            </div>
+            <div id="listadoMedidasVariante" style="max-height: 60px; overflow-y: auto; border: 1px solid #ccc; border-radius: 4px; padding: 4px; font-size: 0.95em;"></div>
+          </div>
+          <div class="mb-2">
+            <label for="variante_stock" class="form-label">Stock</label>
+            <input type="number" min="0" class="form-control" id="variante_stock" required>
+          </div>
+          <div class="mb-2">
+            <label for="variante_precio" class="form-label">Precio</label>
+            <input type="number" step="0.01" min="0" class="form-control" id="variante_precio" required>
+          </div>
+          <button type="submit" class="btn btn-primary">Agregar variante</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,13 +1,13 @@
-{% extends 'users/base.html' %}
+{% extends 'users/dashboard_admin.html' %}
 {% block content %}
 <div class="container mt-4" style="max-width: 700px;">
     <div class="mb-3">
-        <a href="{% url 'gestion_productos' %}" class="btn btn-link p-0" style="font-size: 1.5rem; text-decoration: none;">
+        <a href="{% url 'productos:gestion_productos' %}" class="btn btn-link p-0" style="font-size: 1.5rem; text-decoration: none;">
             &#8592;
         </a>
     </div>
     <h3>Productos de la subcategoría: <span class="fw-bold">{{ subcategoria.nombre }}</span></h3>
-    <a href="{% url 'agregar_producto' subcategoria.id %}" class="btn btn-success my-3">Agregar nuevo producto</a>
+    <a href="{% url 'productos:agregar_producto' subcategoria.id %}" class="btn btn-success my-3">Agregar nuevo producto</a>
     {% if productos %}
         <table class="table table-bordered table-hover">
             <thead>

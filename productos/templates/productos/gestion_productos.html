@@ -1,9 +1,9 @@
-{% extends 'users/base.html' %}
+{% extends 'users/dashboard_admin.html' %}
 {% load categoria_extras %}
 {% block content %}
 <div class="container mt-4" style="max-width: 600px;">
     <div class="mb-3">
-        <a href="{% url 'dashboard_admin' %}" class="btn btn-link p-0" style="font-size: 1.5rem; text-decoration: none;">
+        <a href="{% url 'users:dashboard_admin' %}" class="btn btn-link p-0" style="font-size: 1.5rem; text-decoration: none;">
             &#8592;
         </a>
     </div>
@@ -21,10 +21,10 @@
         {% endwith %}
         {% if categories %}
             {% for cat in categories %}
-                <a href="{% url 'gestion_subcategorias' cat.id %}" class="btn btn-primary btn-lg">{{ cat.nombre }}</a>
+                <a href="{% url 'productos:gestion_subcategorias' cat.id %}" class="btn btn-primary btn-lg">{{ cat.nombre }}</a>
             {% endfor %}
         {% endif %}
-        <a href="{% url 'agregar_categoria' %}" class="btn btn-outline-secondary btn-lg mt-2">Agregar categoría</a>
+        <a href="{% url 'productos:agregar_categoria' %}" class="btn btn-outline-secondary btn-lg mt-2">Agregar categoría</a>
     </div>
 </div>
 {% endblock %}

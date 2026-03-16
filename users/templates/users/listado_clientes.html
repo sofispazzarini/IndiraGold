@@ -1,10 +1,7 @@
-{% extends 'users/base.html' %}
+{% extends 'users/dashboard_admin.html' %}
 {% block content %}
 <div class="container mt-4">
     <div class="d-flex align-items-center mb-2">
-        <a href="{% url 'dashboard_admin' %}" class="btn btn-light me-2" style="font-size: 1.2rem; border: none;">
-            <span style="font-size:1.5rem; vertical-align:middle;">&#8592;</span>
-        </a>
         <h2 class="mb-0">Listado de Clientes</h2>
     </div>
     <form method="get" class="form-inline mb-3">
@@ -33,8 +30,8 @@
                 <td>{{ cliente.user.email }}</td>
                 <td>{{ cliente.telefono }}</td>
                 <td>
-                    <a href="{% url 'editar_cliente' cliente.id %}" class="btn btn-sm btn-warning">Editar</a>
-                    <a href="{% url 'agregar_direccion' cliente.id %}" class="btn btn-sm btn-outline-primary ms-2">+ Dirección</a>
+                    <a href="{% url 'users:editar_cliente' cliente.id %}" class="btn btn-sm btn-warning">Editar</a>
+                    <a href="{% url 'users:agregar_direccion' cliente.id %}" class="btn btn-sm btn-outline-primary ms-2">+ Dirección</a>
                 </td>
             </tr>
             {% empty %}

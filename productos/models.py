@@ -1,4 +1,3 @@
-
 from django.db import models
 # Tipos de medida globales (ej: Largo, Ancho, Circunferencia)
 class TipoMedida(models.Model):
@@ -82,26 +81,21 @@ class Color(models.Model):
 class Variante(models.Model):
     producto = models.ForeignKey(Producto, on_delete=models.CASCADE, related_name='variantes')
     talle = models.ForeignKey(Talle, on_delete=models.CASCADE)
-    color = models.ForeignKey(Color, on_delete=models.CASCADE)
+    colores = models.ManyToManyField(Color, blank=True)
+    medidas = models.ManyToManyField(Medida, blank=True)
     stock = models.PositiveIntegerField()
     precio = models.DecimalField(max_digits=10, decimal_places=2)
     activa = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
-    medida = models.ForeignKey(
-        Medida,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True
-    )
     qr_code = models.CharField(
         max_length=100,
         unique=True
     )
     class Meta:
-        unique_together = ('producto', 'talle', 'color','medida')
+        unique_together = ('producto', 'talle')
 
     def __str__(self):
-        return f"{self.producto.nombre} - {self.talle} - {self.color}"
+        return f"{self.producto.nombre} - {self.talle}"
 
 
 class CategoriaOrden(models.Model):

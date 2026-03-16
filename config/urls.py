@@ -20,11 +20,11 @@ from django.shortcuts import redirect
 
 
 urlpatterns = [
-    path('', lambda request: redirect('registro')),
+    path('', include('home.urls')),
     path('admin/', admin.site.urls),
-    path('productos/', include('productos.urls')), 
+    path('productos/', include(('productos.urls', 'productos'), namespace='productos')),
     path('carritos/', include('carritos.urls')),
     path('consultas/', include('consultas.urls')),
-    path("users/", include("users.urls")),
-    path('home/', include('home.urls')),
+    path("users/", include(("users.urls", "users"), namespace="users")),
+   
 ]

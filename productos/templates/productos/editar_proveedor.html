@@ -1,8 +1,8 @@
-{% extends 'users/base.html' %}
+{% extends 'users/dashboard_admin.html' %}
 {% block content %}
 <div class="container mt-4" style="max-width: 600px;">
     <div class="mb-3">
-        <a href="{% url 'agregar_proveedor' %}" class="btn btn-link p-0" style="font-size: 1.5rem; text-decoration: none;">&#8592;</a>
+        <a href="{% url 'productos:agregar_proveedor' %}" class="btn btn-link p-0" style="font-size: 1.5rem; text-decoration: none;">&#8592;</a>
     </div>
     <h2>Editar proveedor: {{ proveedor.nombre }}</h2>
     {% if mensaje %}

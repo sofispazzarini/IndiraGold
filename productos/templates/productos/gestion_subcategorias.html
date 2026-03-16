@@ -1,8 +1,8 @@
-{% extends 'users/base.html' %}
+{% extends 'users/dashboard_admin.html' %}
 {% block content %}
 <div class="container mt-4" style="max-width: 600px;">
     <div class="mb-3">
-        <a href="{% url 'gestion_productos' %}" class="btn btn-link p-0" style="font-size: 1.5rem; text-decoration: none;">
+        <a href="{% url 'productos:gestion_productos' %}" class="btn btn-link p-0" style="font-size: 1.5rem; text-decoration: none;">
             &#8592;
         </a>
     </div>
@@ -22,7 +22,7 @@
         <h5>Subcategorías existentes</h5>
         <div class="d-flex flex-wrap gap-2">
             {% for sub in subcategorias %}
-                <a href="{% url 'productos_por_subcategoria' sub.id %}" class="btn btn-outline-secondary">{{ sub.nombre }}</a>
+                <a href="{% url 'productos:productos_por_subcategoria' sub.id %}" class="btn btn-outline-secondary">{{ sub.nombre }}</a>
             {% endfor %}
         </div>
     {% endif %}
