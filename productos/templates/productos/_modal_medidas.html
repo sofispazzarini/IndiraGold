@@ -1,0 +1,28 @@
+<!-- Modal para agregar medidas -->
+<div class="modal fade" id="modalMedidas" tabindex="-1" aria-labelledby="modalMedidasLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalMedidasLabel">Agregar Medida</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body">
+        <form id="formMedidas">
+          <div class="mb-2">
+            <label for="medida_nombre" class="form-label">Nombre</label>
+            <input type="text" class="form-control" id="medida_nombre" name="nombre" required>
+          </div>
+          <div class="mb-2">
+            <label for="medida_valor" class="form-label">Valor</label>
+            <input type="text" class="form-control" id="medida_valor" name="valor" required>
+          </div>
+          <div class="mb-2">
+            <label for="medida_unidad" class="form-label">Unidad</label>
+            <input type="text" class="form-control" id="medida_unidad" name="unidad" required>
+          </div>
+          <button type="submit" class="btn btn-primary">Agregar medida</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>

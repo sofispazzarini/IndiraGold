@@ -1,12 +1,28 @@
-{% extends 'users/base.html' %}
+{% extends 'users/dashboard_admin.html' %}
 {% block content %}
 <style>
     body { background: #faf8ee; }
     .centered-form {
         display: flex;
-        justify-content: center;
-        align-items: flex-start;
-        min-height: 80vh;
+        justify-content: flex-end;
+        align-items: center;
+        height: 100vh;
+        min-height: 100vh;
+        box-sizing: border-box;
+        padding-right: 8vw;
+    }
+    @media (max-width: 900px) {
+        .centered-form {
+            justify-content: center;
+            padding-right: 0;
+        }
+    }
+    @media (max-width: 600px) {
+        .centered-form {
+            padding: 24px 0;
+            height: auto;
+            min-height: 100vh;
+        }
     }
     .card {
         background: #fff;
@@ -27,7 +43,7 @@
     .btn-primary, .btn-secondary { width: 100%; margin-bottom: 0.5rem; }
 </style>
 <div class="centered-form">
-    <a href="{% url 'dashboard_admin' %}" style="position:absolute;left:40px;top:40px;text-decoration:none;z-index:10;" title="Volver al panel">
+    <a href="{% url 'users:dashboard_admin' %}" style="position:absolute;left:40px;top:40px;text-decoration:none;z-index:10;" title="Volver al panel">
         <span style="font-size:2rem;vertical-align:middle;">&#8592;</span>
     </a>
     <div class="card">

@@ -1,3 +1,10 @@
+from django.contrib.auth import logout
+from django.urls import reverse
+from django.http import HttpResponseRedirect
+# --- LOGOUT VIEW ---
+def logout_view(request):
+    logout(request)
+    return HttpResponseRedirect(reverse('home:home'))
 from django.contrib.auth.views import PasswordChangeView
 from django.contrib import messages
 # Vista personalizada para cambio de contraseña con mensaje de éxito en la misma página
@@ -14,7 +21,7 @@ from django.contrib.auth.decorators import login_required
 
 @login_required
 def dashboard_cliente(request):
-    return redirect('home:home')
+    return render(request, 'users/dashboard_cliente.html')
 
 from django.contrib.auth.decorators import login_required, user_passes_test
 
@@ -148,7 +155,7 @@ def confirmar_direccion(request):
     data = request.session.get("registro_data")
 
     if not data:
-        return redirect("registro")
+        return redirect("users:registro")
 
     # Permitir edición por POST o GET
     params = request.POST if request.method == "POST" else request.GET
@@ -164,7 +171,7 @@ def confirmar_direccion(request):
         if form.is_valid():
             form.save()
             del request.session["registro_data"]
-            return redirect("login")  # o donde quieras redirigir
+            return redirect("users:login")  # o donde quieras redirigir
 
     return render(request, "users/confirmar_direccion.html", {"data": data})
 
@@ -183,8 +190,8 @@ def login_view(request):
             if user is not None:
                 auth_login(request, user)
                 if user.is_superuser:
-                    return redirect('dashboard_admin')
-                return redirect('home:home')
+                    return redirect('users:dashboard_admin')
+                return redirect('users:dashboard_cliente')
             else:
                 error = 'DNI o contraseña incorrectos.'
     return render(request, 'users/login.html', {'error': error})
@@ -193,6 +200,7 @@ def login_view(request):
 # Vista para registro manual de cliente (solo admin)
 @user_passes_test(lambda u: u.is_superuser)
 def registro_manual_cliente(request):
+    
     mensaje = None
     if request.method == 'POST':
         form = RegistroManualClienteForm(request.POST)
@@ -215,12 +223,13 @@ def registro_manual_cliente(request):
             # Enviar email con usuario y contraseña
             from django.core.mail import send_mail
             from django.conf import settings
+            print('Enviando mail de registro manual a:', email)
             send_mail(
                 'Bienvenido a Indira Gold',
                 f'Hola {nombre},\n\nTu usuario ha sido registrado correctamente.\n\nUsuario: {dni}\nContraseña: {password}\n\nPuedes iniciar sesión en el sistema con estos datos.\n\nPor seguridad, te recomendamos cambiar tu contraseña después de ingresar por primera vez desde el panel de tu cuenta.',
                 settings.EMAIL_HOST_USER,
                 [email],
-                fail_silently=True
+                fail_silently=False,
             )
 
             mensaje = 'Cliente registrado correctamente.'

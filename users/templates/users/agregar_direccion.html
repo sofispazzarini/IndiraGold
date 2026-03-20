@@ -1,8 +1,8 @@
-{% extends 'users/base.html' %}
+{% extends 'users/dashboard_admin.html' %}
 {% block content %}
-<div class="container mt-4 d-flex justify-content-center">
-    <div style="background: #fff; max-width: 500px; width: 100%; border-radius: 16px; box-shadow: 0 4px 24px rgba(180,140,80,0.10); padding: 32px 28px 24px 28px;">
-        <a href="{% url 'editar_cliente' cliente.id %}" class="btn btn-light mb-3" style="font-size: 1.5rem; border: none; padding: 4px 16px 4px 10px;">&#8592;</a>
+<div class="agregar-direccion-right">
+    <div class="agregar-direccion-card">
+        <a href="{% url 'users:listado_clientes' %}" class="btn btn-light mb-3" style="font-size: 1.5rem; border: none; padding: 4px 16px 4px 10px;">&#8592;</a>
         <h2>Agregar dirección</h2>
         <div class="mb-2 d-flex align-items-center">
             <span><b>Cliente:</b> {{ cliente.user.first_name }} (DNI: {{ cliente.dni }})</span>
@@ -68,50 +68,39 @@
                 <label for="id_codigo_postal" class="form-label">Código Postal</label>
                 {{ form.codigo_postal }}
             </div>
-            <div class="mb-3">
-                <label class="form-label">Confirma la ubicación en el mapa:</label>
-                <div style="width:100%; height:260px; border-radius:10px; overflow:hidden; box-shadow:0 2px 8px #eee;">
-                    <iframe id="mapaDireccion" width="100%" height="260" frameborder="0" style="border:0" allowfullscreen loading="lazy"
-                        referrerpolicy="no-referrer-when-downgrade"
-                        src="https://www.google.com/maps?q=Argentina&output=embed">
-                    </iframe>
-                </div>
-            </div>
+            <!-- Mapa eliminado -->
             <button type="submit" class="btn btn-primary">Agregar dirección</button>
         </form>
-        <script>
-        function actualizarMapa() {
-            const calle = document.getElementById('id_calle').value.trim();
-            const numero = document.getElementById('id_numero').value.trim();
-            const ciudad = document.getElementById('id_ciudad').value.trim();
-            const provincia = document.getElementById('id_provincia').value.trim();
-            const cp = document.getElementById('id_codigo_postal').value.trim();
-            // Mejorar formato: Calle y número juntos, luego ciudad, provincia, CP
-            let direccion = '';
-            if (calle && numero) {
-                direccion = `${calle} ${numero}`;
-            } else if (calle) {
-                direccion = calle;
-            }
-            if (ciudad) direccion += `, ${ciudad}`;
-            if (provincia) direccion += `, ${provincia}`;
-            if (cp) direccion += `, ${cp}`;
-            direccion += ', Argentina';
-            const url = 'https://www.google.com/maps?q=' + encodeURIComponent(direccion) + '&output=embed';
-            document.getElementById('mapaDireccion').src = url;
-        }
-        document.getElementById('id_calle').addEventListener('input', actualizarMapa);
-        document.getElementById('id_numero').addEventListener('input', actualizarMapa);
-        document.getElementById('id_ciudad').addEventListener('input', actualizarMapa);
-        document.getElementById('id_provincia').addEventListener('input', actualizarMapa);
-        document.getElementById('id_codigo_postal').addEventListener('input', actualizarMapa);
-        // Prevenir submit accidental con Enter en inputs
-        document.getElementById('direccionForm').addEventListener('keydown', function(e) {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-            }
-        });
-        </script>
+        <!-- Script de mapa eliminado -->
     </div>
+        </div>
 </div>
+<style>
+.agregar-direccion-right {
+    padding-top: 32px;
+    padding-bottom: 32px;
+    padding-left: 28vw;
+    display: flex;
+    justify-content: flex-start;
+}
+@media (max-width: 1100px) {
+    .agregar-direccion-right {
+        padding-left: 10vw;
+    }
+}
+@media (max-width: 900px) {
+    .agregar-direccion-right {
+        padding-left: 0;
+        justify-content: center;
+    }
+}
+.agregar-direccion-card {
+    background: #fff;
+    max-width: 500px;
+    width: 100%;
+    border-radius: 16px;
+    box-shadow: 0 4px 24px rgba(180,140,80,0.10);
+    padding: 32px 28px 24px 28px;
+}
+</style>
 {% endblock %}

@@ -1,0 +1,81 @@
+{% extends 'users/dashboard_admin.html' %}
+{% block content %}
+<div class="container mt-4" style="max-width: 700px;">
+    <div class="mb-3">
+        <a href="{% url 'productos:gestion_productos' %}" class="btn btn-link p-0" style="font-size: 1.5rem; text-decoration: none;">
+            &#8592;
+        </a>
+    </div>
+    <h3>Productos de la subcategoría: <span class="fw-bold">{{ subcategoria.nombre }}</span></h3>
+    <a href="{% url 'productos:agregar_producto' subcategoria.id %}" class="btn btn-gestion-bordo my-3" style="display:inline-flex;align-items:center;gap:10px;min-width:200px;justify-content:center;">
+        <span class="icono-btn">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+            </svg>
+        </span>
+        Agregar nuevo producto
+    </a>
+
+  
+        <style>
+    .btn-gestion-bordo {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background: linear-gradient(90deg, #800020 0%, #b8860b 100%);
+        color: #fff;
+        font-size: 1.08rem;
+        font-weight: 600;
+        border: none;
+        border-radius: 28px;
+        box-shadow: 0 2px 12px rgba(128,0,32,0.10);
+        padding: 14px 28px;
+        transition: background 0.2s, box-shadow 0.2s, transform 0.1s;
+        cursor: pointer;
+        min-width: 180px;
+        max-width: 240px;
+        min-height: 48px;
+        justify-content: center;
+        width: auto;
+        box-sizing: border-box;
+        text-decoration: none;
+    }
+    .btn-gestion-bordo:hover {
+        background: linear-gradient(90deg, #b8860b 0%, #800020 100%);
+        box-shadow: 0 4px 18px rgba(128,0,32,0.18);
+        transform: translateY(-2px) scale(1.04);
+        color: #fff;
+        text-decoration: none;
+    }
+    .icono-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    </style>
+    {% if productos %}
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+            {% for prod in productos %}
+            <div class="col">
+                <div class="card h-100 shadow-sm border-0" style="background:#faf8f6;">
+                    <div class="card-body d-flex flex-column">
+                        <h5 class="card-title mb-1">{{ prod.nombre }}</h5>
+                        <div class="mb-2 text-muted" style="font-size:0.98em;">Código: <span class="fw-bold">{{ prod.codigo }}</span></div>
+                        <div class="mb-2">Tipo: <span class="fw-bold">{{ prod.tipo }}</span></div>
+                        <div class="mb-2">Precio: <span class="fw-bold">${{ prod.precio }}</span></div>
+                        <div class="mb-2">Stock: <span class="fw-bold">{{ prod.stock }}</span></div>
+                        <div class="mb-2">Descripción: <span>{{ prod.descripcion }}</span></div>
+                        <div class="mt-auto d-flex gap-2 justify-content-end">
+                            <a href="{% url 'productos:editar_producto' prod.id %}" class="btn btn-outline-primary btn-sm">Editar</a>
+                            <a href="{% url 'productos:eliminar_producto' prod.id %}" class="btn btn-outline-danger btn-sm">Eliminar</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="alert alert-info">No hay productos registrados en esta subcategoría.</div>
+    {% endif %}
+</div>
+{% endblock %}

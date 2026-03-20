@@ -1,0 +1,320 @@
+{% extends 'users/dashboard_admin.html' %}
+
+{% block content %}
+
+<div class="container mt-4">
+
+    <h2 class="mb-4">Agregar proveedor</h2>
+
+    {% if mensaje %}
+        <div class="alert {% if 'correctamente' in mensaje %}alert-success{% else %}alert-danger{% endif %}">
+            {{ mensaje }}
+        </div>
+    {% endif %}
+
+    <!-- FORMULARIO -->
+
+    <div class="card mb-4 shadow-sm">
+        <div class="card-body">
+
+            <form method="post">
+                {% csrf_token %}
+
+                <div class="mb-3">
+                    <label class="form-label">Nombre</label>
+                    {{ form.nombre }}
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Teléfono</label>
+                    {{ form.telefono }}
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Información adicional</label>
+                    {{ form.informacion_adicional }}
+                </div>
+
+                
+
+                <button type="submit" class="btn btn-dark">
+                    Agregar proveedor
+                </button>
+
+            </form>
+
+        </div>
+    </div>
+
+    <!-- TABLA PROVEEDORES -->
+
+    <div class="card shadow-sm">
+
+        <div class="card-body">
+
+            <h4 class="mb-3">
+                Proveedores registrados ({{ proveedores.paginator.count }})
+            </h4>
+
+            <div class="table-responsive">
+
+                <table class="table table-hover align-middle">
+
+                    <thead class="table-light">
+                        <tr>
+                            <th>Nombre</th>
+                            <th>Teléfono</th>
+                            <th>Información adicional</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+
+                    {% for proveedor in proveedores %}
+
+                        <tr>
+
+                            <td>{{ proveedor.nombre }}</td>
+
+                            <td>{{ proveedor.telefono }}</td>
+
+                            <td>{{ proveedor.informacion_adicional|default:"-" }}</td>
+
+                            
+
+                            <td>
+
+                                                                <button type="button"
+                                                                    class="btn btn-sm btn-outline-dark btn-edit-proveedor"
+                                                                    data-id="{{ proveedor.id }}"
+                                                                    data-nombre="{{ proveedor.nombre|escapejs }}"
+                                                                    data-telefono="{{ proveedor.telefono|escapejs }}"
+                                                                    data-info="{{ proveedor.informacion_adicional|default:''|escapejs }}">
+                                                                    Editar
+                                                                </button>
+
+                                <button
+                                    class="btn btn-sm btn-outline-danger"
+                                    onclick="showDeleteProveedorModal('{{ proveedor.id }}','{{ proveedor.nombre|escapejs }}')">
+                                    Eliminar
+                                </button>
+
+                            </td>
+
+                        </tr>
+
+                    {% empty %}
+
+                        <tr>
+                            <td colspan="5" class="text-center text-muted">
+                                No hay proveedores registrados
+                            </td>
+                        </tr>
+
+                    {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+            <!-- PAGINACIÓN -->
+
+            {% if proveedores.has_other_pages %}
+
+            <nav class="mt-4">
+
+                <ul class="pagination justify-content-center">
+
+                    {% if proveedores.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ proveedores.previous_page_number }}">
+                                Anterior
+                            </a>
+                        </li>
+                    {% endif %}
+
+                    {% for num in proveedores.paginator.page_range %}
+
+                        {% if proveedores.number == num %}
+
+                            <li class="page-item active">
+                                <span class="page-link">{{ num }}</span>
+                            </li>
+
+                        {% else %}
+
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ num }}">
+                                    {{ num }}
+                                </a>
+                            </li>
+
+                        {% endif %}
+
+                    {% endfor %}
+
+                    {% if proveedores.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ proveedores.next_page_number }}">
+                                Siguiente
+                            </a>
+                        </li>
+                    {% endif %}
+
+                </ul>
+
+            </nav>
+
+            {% endif %}
+
+        </div>
+
+    </div>
+
+</div>
+
+<!-- MODAL EDITAR PROVEEDOR -->
+<div class="modal fade" id="editProveedorModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Editar proveedor</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="editProveedorForm" method="post" action="">
+                <div class="modal-body">
+                      {% csrf_token %}
+                      <input type="hidden" name="edit_id" id="edit_id_input">
+                    <div class="mb-3">
+                        <label class="form-label">Nombre</label>
+                        <input type="text" class="form-control" name="nombre" id="edit_nombre" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Teléfono</label>
+                        <input type="text" class="form-control" name="telefono" id="edit_telefono" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Información adicional</label>
+                        <input type="text" class="form-control" name="informacion_adicional" id="edit_informacion_adicional">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary">Guardar cambios</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+
+<!-- MODAL ELIMINAR -->
+
+<div class="modal fade" id="deleteProveedorModal" tabindex="-1">
+
+    <div class="modal-dialog">
+
+        <div class="modal-content">
+
+            <div class="modal-header">
+
+                <h5 class="modal-title">
+                    Eliminar proveedor
+                </h5>
+
+                <button type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal">
+                </button>
+
+            </div>
+
+            <form method="post">
+
+                <div class="modal-body">
+
+                    {% csrf_token %}
+
+                    <input type="hidden"
+                           name="delete_id"
+                           id="delete_id_input">
+
+                    <p>
+                        ¿Seguro que deseas eliminar el proveedor
+                        <strong id="deleteProveedorNombre"></strong>?
+                    </p>
+
+                </div>
+
+                <div class="modal-footer">
+
+                    <button type="submit"
+                            class="btn btn-danger">
+                        Sí, eliminar
+                    </button>
+
+                    <button type="button"
+                            class="btn btn-secondary"
+                            data-bs-dismiss="modal">
+                        Cancelar
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<script>
+
+document.addEventListener('DOMContentLoaded', function() {
+
+    // --- BOTONES EDITAR ---
+    document.querySelectorAll('.btn-edit-proveedor').forEach(function(btn) {
+
+        btn.addEventListener('click', function(){
+
+            document.getElementById('edit_id_input').value = this.dataset.id
+            document.getElementById('edit_nombre').value = this.dataset.nombre
+            document.getElementById('edit_telefono').value = this.dataset.telefono
+            document.getElementById('edit_informacion_adicional').value = this.dataset.info || ''
+
+            var modal = new bootstrap.Modal(
+                document.getElementById('editProveedorModal')
+            )
+
+            modal.show()
+
+        })
+
+    })
+
+})
+
+
+// --- ELIMINAR ---
+function showDeleteProveedorModal(id, nombre){
+
+    document.getElementById("delete_id_input").value = id
+
+    document.getElementById("deleteProveedorNombre").textContent = nombre
+
+    var modal = new bootstrap.Modal(
+        document.getElementById("deleteProveedorModal")
+    )
+
+    modal.show()
+
+}
+
+</script>
+
+{% endblock %}

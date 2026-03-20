@@ -1,8 +1,8 @@
-{% extends 'users/base.html' %}
+{% extends 'users/dashboard_admin.html' %}
 {% block content %}
-<div class="container mt-4 d-flex justify-content-center">
-    <div style="background: #fff; max-width: 500px; width: 100%; border-radius: 16px; box-shadow: 0 4px 24px rgba(180,140,80,0.10); padding: 32px 28px 24px 28px;">
-        <a href="{% url 'listado_clientes' %}" class="btn btn-light mb-3" style="font-size: 1.5rem; border: none; padding: 4px 16px 4px 10px;">
+<div class="editar-cliente-right">
+    <div class="editar-cliente-card">
+        <a href="{% url 'users:listado_clientes' %}" class="btn btn-light mb-3" style="font-size: 1.5rem; border: none; padding: 4px 16px 4px 10px;">
             &#8592;
         </a>
         <h2>Editar Cliente</h2>
@@ -10,7 +10,7 @@
             <div class="alert {% if 'correctamente' in mensaje %}alert-success{% else %}alert-danger{% endif %} mt-3">{{ mensaje }}</div>
         {% endif %}
         <div class="mb-3 text-end">
-            <a href="{% url 'agregar_direccion' cliente.id %}" class="btn btn-outline-secondary">+ Agregar dirección</a>
+            <a href="{% url 'users:agregar_direccion' cliente.id %}" class="btn btn-outline-secondary">+ Agregar dirección</a>
         </div>
         <form method="post">
             {% csrf_token %}
@@ -33,5 +33,34 @@
             <button type="submit" class="btn btn-primary">Guardar cambios</button>
         </form>
     </div>
+        </div>
 </div>
+<style>
+.editar-cliente-right {
+    padding-top: 32px;
+    padding-bottom: 32px;
+    padding-left: 28vw;
+    display: flex;
+    justify-content: flex-start;
+}
+@media (max-width: 1100px) {
+    .editar-cliente-right {
+        padding-left: 10vw;
+    }
+}
+@media (max-width: 900px) {
+    .editar-cliente-right {
+        padding-left: 0;
+        justify-content: center;
+    }
+}
+.editar-cliente-card {
+    background: #fff;
+    max-width: 500px;
+    width: 100%;
+    border-radius: 16px;
+    box-shadow: 0 4px 24px rgba(180,140,80,0.10);
+    padding: 32px 28px 24px 28px;
+}
+</style>
 {% endblock %}

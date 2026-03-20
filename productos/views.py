@@ -1,3 +1,328 @@
+
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.shortcuts import redirect, get_object_or_404
+from django.contrib import messages
+from .models import Categoria, Producto, Subcategoria
+from django.views.decorators.http import require_POST
+
+@login_required
+@user_passes_test(lambda u: u.is_superuser)
+@require_POST
+def eliminar_subcategoria(request, subcat_id):
+    subcategoria = get_object_or_404(Subcategoria, id=subcat_id)
+    subcategoria.delete()
+    messages.success(request, "Subcategoría eliminada correctamente.")
+    return redirect(request.META.get('HTTP_REFERER', 'productos:gestion_productos'))
+
+@login_required
+@user_passes_test(lambda u: u.is_superuser)
+@require_POST
+def eliminar_categoria(request, cat_id):
+    categoria = get_object_or_404(Categoria, id=cat_id)
+    tiene_productos = Producto.objects.filter(categoria=categoria).exists()
+    tiene_subcategorias = Subcategoria.objects.filter(categoria=categoria).exists()
+    if tiene_productos or tiene_subcategorias:
+        messages.error(request, "No se puede eliminar la categoría porque tiene productos o subcategorías asociadas.")
+    else:
+        categoria.delete()
+        messages.success(request, "Categoría eliminada correctamente.")
+    return redirect('productos:gestion_productos')
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.shortcuts import get_object_or_404, redirect, render
+from .forms import ProductoForm, SubcategoriaForm, CategoriaForm, TipoMedidaForm, ProveedorForm
+from .models import Subcategoria, Producto, Categoria, TipoMedida, Proveedor, Talle, Color, Medida, Variante
+from django.core.paginator import Paginator
+
+# Vista para agregar proveedor
+from django.shortcuts import render, get_object_or_404
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.core.paginator import Paginator
+from .models import Proveedor
+from .forms import ProveedorForm
+
+
+@login_required
+@user_passes_test(lambda u: u.is_superuser)
+def agregar_proveedor(request):
+
+    mensaje = None
+    edit_form = None
+    edit_id = request.GET.get('edit')
+
+    # -------- EDITAR --------
+
+    if request.method == "POST" and "edit_id" in request.POST:
+
+        proveedor = get_object_or_404(Proveedor, id=request.POST["edit_id"])
+        edit_form = ProveedorForm(request.POST, instance=proveedor)
+
+        if edit_form.is_valid():
+            edit_form.save()
+            mensaje = "Proveedor actualizado correctamente."
+            edit_form = None
+            edit_id = None
+        else:
+            mensaje = "Por favor revisa los datos ingresados."
+
+        form = ProveedorForm()
+
+    # -------- ELIMINAR --------
+
+    elif request.method == "POST" and "delete_id" in request.POST:
+
+        proveedor = get_object_or_404(Proveedor, id=request.POST["delete_id"])
+        proveedor.delete()
+
+        mensaje = "Proveedor eliminado correctamente."
+        form = ProveedorForm()
+
+    # -------- AGREGAR --------
+
+    elif request.method == "POST":
+
+        form = ProveedorForm(request.POST)
+
+        if form.is_valid():
+
+            telefono = form.cleaned_data["telefono"]
+
+            if Proveedor.objects.filter(telefono=telefono).exists():
+                mensaje = "Ya existe un proveedor con ese teléfono."
+            else:
+                form.save()
+                mensaje = "Proveedor agregado correctamente."
+                form = ProveedorForm()
+
+        else:
+            mensaje = "Por favor revisa los datos ingresados."
+
+    else:
+        form = ProveedorForm()
+
+    # -------- FORMULARIO DE EDICIÓN --------
+
+    if edit_id and not edit_form:
+        proveedor = get_object_or_404(Proveedor, id=edit_id)
+        edit_form = ProveedorForm(instance=proveedor)
+
+    # -------- PAGINACIÓN --------
+
+    proveedores_list = Proveedor.objects.all().order_by("-created_at")
+
+    paginator = Paginator(proveedores_list, 10)  # 10 proveedores por página
+
+    page_number = request.GET.get("page")
+
+    proveedores = paginator.get_page(page_number)
+
+    # -------- RENDER --------
+
+    return render(
+        request,
+        "productos/agregar_proveedor.html",
+        {
+            "form": form,
+            "mensaje": mensaje,
+            "proveedores": proveedores,
+            "edit_form": edit_form,
+            "edit_id": edit_id,
+        },
+    )
+
+# Vista para editar proveedor
+@login_required
+@user_passes_test(lambda u: u.is_superuser)
+def editar_proveedor(request, proveedor_id):
+	proveedor = get_object_or_404(Proveedor, id=proveedor_id)
+	mensaje = None
+	if request.method == 'POST':
+		form = ProveedorForm(request.POST, instance=proveedor)
+		if form.is_valid():
+			form.save()
+			mensaje = 'Proveedor actualizado correctamente.'
+		else:
+			mensaje = 'Por favor revisa los datos ingresados.'
+	else:
+		form = ProveedorForm(instance=proveedor)
+	return render(request, 'productos/editar_proveedor.html', {'form': form, 'mensaje': mensaje, 'proveedor': proveedor})
+
+
+
+# Vista para gestionar tipos de medida globales
+@login_required
+@user_passes_test(lambda u: u.is_superuser)
+def gestion_medidas(request):
+	mensaje = None
+	if request.method == 'POST':
+		form = TipoMedidaForm(request.POST)
+		if form.is_valid():
+			form.save()
+			mensaje = 'Medida agregada correctamente.'
+			form = TipoMedidaForm()
+		else:
+			mensaje = 'Por favor revisa los datos ingresados.'
+	else:
+		form = TipoMedidaForm()
+	medidas = TipoMedida.objects.all().order_by('nombre')
+	return render(request, 'productos/gestion_medidas.html', {'form': form, 'mensaje': mensaje, 'medidas': medidas})
+from django.shortcuts import get_object_or_404, redirect, render
+
+# Formularios y modelos
+
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.shortcuts import get_object_or_404, redirect, render
+
+from .forms import ProductoForm, SubcategoriaForm, CategoriaForm, TipoMedidaForm, ProveedorForm
+from .models import Subcategoria, Producto, Categoria, TipoMedida, Proveedor, Talle, Color, Medida, Variante
+
+# Vista para gestionar subcategorías de una categoría
+@login_required
+@user_passes_test(lambda u: u.is_superuser)
+def gestion_subcategorias(request, cat_id):
+    categoria = get_object_or_404(Categoria, id=cat_id, activa=True)
+    mensaje = None
+    from .forms import SubcategoriaSoloNombreForm
+    if request.method == 'POST':
+        form = SubcategoriaSoloNombreForm(request.POST, categoria=categoria)
+        if form.is_valid():
+            subcat = form.save(commit=False)
+            subcat.categoria = categoria
+            subcat.save()
+            mensaje = 'Subcategoría agregada correctamente.'
+            form = SubcategoriaSoloNombreForm(categoria=categoria)
+        else:
+            # Si el error es por duplicado, mostrar ese mensaje
+            if 'nombre' in form.errors and 'Ya existe una subcategoría' in str(form.errors['nombre']):
+                mensaje = form.errors['nombre'][0]
+            else:
+                mensaje = 'Por favor revisa los datos ingresados.'
+    else:
+        form = SubcategoriaSoloNombreForm(categoria=categoria)
+    subcategorias = categoria.subcategorias.all().order_by('nombre')
+    return render(request, 'productos/gestion_subcategorias.html', {
+        'categoria': categoria,
+        'form': form,
+        'mensaje': mensaje,
+        'subcategorias': subcategorias
+    })
+ # Vista para agregar producto desde una subcategoría
+@login_required
+@user_passes_test(lambda u: u.is_superuser)
+def agregar_producto(request, subcat_id):
+    subcategoria = get_object_or_404(Subcategoria, id=subcat_id, activa=True)
+    if request.method == 'POST':
+        form = ProductoForm(request.POST)
+        variantes_json = request.POST.get('variantes_json')
+        if form.is_valid():
+            producto = form.save(commit=False)
+            producto.subcategoria = subcategoria
+            producto.categoria = subcategoria.categoria
+            producto.save()
+            # Guardar variantes
+            import json
+            if variantes_json:
+                variantes = json.loads(variantes_json)
+                for v in variantes:
+                    # Talle
+                    talle = Talle.objects.filter(nombre=v['talle']).first()
+                    if not talle:
+                        talle = Talle.objects.create(nombre=v['talle'])
+                    # Crear variante sin colores ni medidas aún
+                    import uuid
+                    qr_code = str(uuid.uuid4())
+                    variante = Variante.objects.create(
+                        producto=producto,
+                        talle=talle,
+                        stock=int(v.get('stock', 0)),
+                        precio=float(v.get('precio', 0)),
+                        qr_code=qr_code
+                    )
+                    # Colores (ManyToMany)
+                    for c in v.get('colores', []):
+                        if c.get('colorNinguno'):
+                            continue  # O puedes crear un color especial 'Sin color' si lo deseas
+                        color_nombre = c.get('colorNombre') or c.get('colorHex')
+                        color = Color.objects.filter(nombre=color_nombre).first()
+                        if not color:
+                            color = Color.objects.create(nombre=color_nombre)
+                        variante.colores.add(color)
+                    # Medidas (ManyToMany)
+                    for m in v.get('medidas', []):
+                        if not (m.get('alto') or m.get('ancho') or m.get('largo') or m.get('tiro')):
+                            continue
+                        medida = Medida.objects.create(
+                            alto=m.get('alto') or None,
+                            ancho=m.get('ancho') or None,
+                            largo=m.get('largo') or None,
+                            tiro=m.get('tiro') or None
+                        )
+                        variante.medidas.add(medida)
+            return redirect('productos_por_subcategoria', subcat_id=subcat_id)
+    else:
+        form = ProductoForm(initial={'subcategoria': subcategoria, 'categoria': subcategoria.categoria})
+    return render(request, 'productos/agregar_producto.html', {'form': form, 'subcategoria': subcategoria})
+from .forms import SubcategoriaForm
+from .models import Subcategoria, Producto
+from django.shortcuts import get_object_or_404, redirect
+# Vista para mostrar productos de una subcategoría y permitir agregar nuevos
+@login_required
+@user_passes_test(lambda u: u.is_superuser)
+def productos_por_subcategoria(request, subcat_id):
+        subcategoria = get_object_or_404(Subcategoria, id=subcat_id, activa=True)
+        productos = Producto.objects.filter(subcategoria=subcategoria, activo=True)
+        return render(request, 'productos/productos_por_subcategoria.html', {
+            'subcategoria': subcategoria,
+            'productos': productos
+        })
+# Vista para agregar subcategoría y mostrar subcategorías
+@login_required
+@user_passes_test(lambda u: u.is_superuser)
+def agregar_subcategoria(request):
+	mensaje = None
+	if request.method == 'POST':
+		form = SubcategoriaForm(request.POST)
+		if form.is_valid():
+			form.save()
+			mensaje = 'Subcategoría agregada correctamente.'
+			form = SubcategoriaForm()
+		else:
+			mensaje = 'Por favor revisa los datos ingresados.'
+	else:
+		form = SubcategoriaForm()
+	subcategorias = Subcategoria.objects.select_related('categoria').filter(activa=True).order_by('categoria__nombre', 'nombre')
+	return render(request, 'productos/agregar_subcategoria.html', {'form': form, 'mensaje': mensaje, 'subcategorias': subcategorias})
+
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.shortcuts import render
+from .forms import CategoriaForm
+from .models import Categoria
+
+@login_required
+@user_passes_test(lambda u: u.is_superuser)
+def agregar_categoria(request):
+	mensaje = None
+	if request.method == 'POST':
+		form = CategoriaForm(request.POST)
+		if form.is_valid():
+			form.save()
+			mensaje = 'Categoría agregada correctamente.'
+			form = CategoriaForm()
+		else:
+			mensaje = 'Por favor revisa los datos ingresados.'
+	else:
+		form = CategoriaForm()
+	categorias = Categoria.objects.filter(activa=True).order_by('nombre')
+	return render(request, 'productos/agregar_categoria.html', {'form': form, 'mensaje': mensaje, 'categorias': categorias})
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.shortcuts import render
+# Vista para gestión de productos (solo admin)
+@login_required
+@user_passes_test(lambda u: u.is_superuser)
+def gestion_productos(request):
+	from .models import Categoria
+	categories = Categoria.objects.filter(activa=True).order_by('nombre')
+	return render(request, 'productos/gestion_productos.html', {'categories': categories})
+from django.shortcuts import render
 from django.urls import reverse_lazy
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
 from .models import Producto
