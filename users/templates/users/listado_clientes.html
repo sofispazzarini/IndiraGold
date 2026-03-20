@@ -1,6 +1,78 @@
 {% extends 'users/dashboard_admin.html' %}
+
+<style>
+    .listado-clientes-center {
+        display: flex;
+        justify-content: flex-end;
+        padding-top: 24px;
+        padding-bottom: 32px;
+        padding-right: 13vw;
+    }
+        .acciones-flex {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+    @media (max-width: 900px) {
+        .listado-clientes-center {
+            justify-content: center;
+            padding-right: 0;
+        }
+    }
+        .listado-clientes-center {
+            display: flex;
+            justify-content: flex-start;
+            padding-top: 24px;
+            padding-bottom: 32px;
+            padding-left: 32vw;
+        }
+        @media (max-width: 1400px) {
+            .listado-clientes-center {
+                padding-left: 50vw;
+            }
+        }
+        @media (max-width: 1100px) {
+            .listado-clientes-center {
+                padding-left: 6vw;
+            }
+        }
+        @media (max-width: 900px) {
+            .listado-clientes-center {
+                justify-content: center;
+                padding-left: 0;
+            }
+        }
+    .listado-clientes-card {
+        background: #fff;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+        padding: 2.5rem 2.5rem 2rem 2.5rem;
+        max-width: 1000px;
+        width: 100%;
+        margin: 0;
+        overflow-x: visible;
+    }
+    .listado-clientes-card table {
+        width: 100%;
+        min-width: 0;
+        margin: 0 auto;
+        table-layout: auto;
+    }
+    .acciones-flex {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        justify-content: flex-end;
+    }
+    td:last-child {
+        text-align: right;
+        vertical-align: middle;
+        white-space: nowrap;
+    }
+</style>
 {% block content %}
-<div class="container mt-4">
+<div class="listado-clientes-center">
+  <div class="listado-clientes-card">
     <div class="d-flex align-items-center mb-2">
         <h2 class="mb-0">Listado de Clientes</h2>
     </div>
@@ -30,8 +102,10 @@
                 <td>{{ cliente.user.email }}</td>
                 <td>{{ cliente.telefono }}</td>
                 <td>
-                    <a href="{% url 'users:editar_cliente' cliente.id %}" class="btn btn-sm btn-warning">Editar</a>
-                    <a href="{% url 'users:agregar_direccion' cliente.id %}" class="btn btn-sm btn-outline-primary ms-2">+ Dirección</a>
+                    <div class="acciones-flex">
+                        <a href="{% url 'users:editar_cliente' cliente.id %}" class="btn btn-sm btn-warning">Editar</a>
+                        <a href="{% url 'users:agregar_direccion' cliente.id %}" class="btn btn-sm btn-outline-primary" style="white-space:nowrap;">+ Dirección</a>
+                    </div>
                 </td>
             </tr>
             {% empty %}
@@ -41,5 +115,6 @@
             {% endfor %}
         </tbody>
     </table>
+  </div>
 </div>
 {% endblock %}

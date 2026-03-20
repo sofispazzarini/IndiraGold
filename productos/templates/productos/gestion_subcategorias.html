@@ -1,30 +1,449 @@
+<style>
+.gestion-grid-botones {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 18px;
+    justify-items: stretch;
+    margin-bottom: 24px;
+    max-height: calc(5 * 90px + 4 * 18px); /* 5 filas de 90px + 4 gaps */
+    overflow-y: auto;
+    padding-right: 8px;
+}
+.btn-gestion-bordo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: linear-gradient(90deg, #800020 0%, #b8860b 100%);
+    color: #fff;
+    font-size: 1.08rem;
+    font-weight: 600;
+    border: none;
+    border-radius: 32px;
+    box-shadow: 0 2px 12px rgba(128,0,32,0.10);
+    padding: 18px 0 18px 18px;
+    transition: background 0.2s, box-shadow 0.2s, transform 0.1s;
+    cursor: pointer;
+    min-width: 180px;
+    max-width: 220px;
+    min-height: 70px;
+    max-height: 90px;
+    justify-content: flex-start;
+    width: 100%;
+    box-sizing: border-box;
+}
+/* Botón agregar arriba y modal */
+.btn-agregar-modal {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: linear-gradient(90deg, #800020 0%, #b8860b 100%);
+    color: #fff;
+    font-size: 1.08rem;
+    font-weight: 600;
+    border: none;
+    border-radius: 22px;
+    box-shadow: 0 2px 12px rgba(128,0,32,0.10);
+    padding: 12px 28px;
+    margin-bottom: 28px;
+    cursor: pointer;
+    transition: background 0.2s, box-shadow 0.2s, transform 0.1s;
+}
+.btn-agregar-modal:hover {
+    background: linear-gradient(90deg, #b8860b 0%, #800020 100%);
+    box-shadow: 0 4px 18px rgba(128,0,32,0.18);
+    transform: translateY(-2px) scale(1.04);
+}
+.modal-bg {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; width: 100vw; height: 100vh;
+    background: rgba(0,0,0,0.25);
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+}
+.modal-bg.active {
+    display: flex;
+}
+.modal-contenido {
+    background: #fff;
+    border-radius: 18px;
+    padding: 32px 28px 24px 28px;
+    box-shadow: 0 6px 32px rgba(0,0,0,0.18);
+    min-width: 320px;
+    max-width: 90vw;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+.modal-contenido input[type="text"] {
+    width: 100%;
+    padding: 10px 14px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    margin-bottom: 18px;
+    font-size: 1rem;
+}
+.modal-contenido .modal-btns {
+    display: flex;
+    gap: 16px;
+    margin-top: 8px;
+}
+.modal-contenido button {
+    padding: 8px 22px;
+    border-radius: 8px;
+    border: none;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+}
+.modal-contenido .btn-cancelar {
+    background: #eee;
+    color: #333;
+}
+.modal-contenido .btn-guardar {
+    background: linear-gradient(90deg, #800020 0%, #b8860b 100%);
+    color: #fff;
+}
+.btn-gestion-bordo:hover {
+    background: linear-gradient(90deg, #b8860b 0%, #800020 100%);
+    box-shadow: 0 6px 24px rgba(128,0,32,0.18);
+    transform: translateY(-2px) scale(1.04);
+}
+.icono-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+</style>
 {% extends 'users/dashboard_admin.html' %}
+{% block extra_css %}
+<style>
+.subcat-caja-blanca {
+    background: #fff;
+    border-radius: 18px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.07);
+    padding: 38px 32px 32px 32px;
+    margin: 0 auto;
+    max-width: 600px;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+}
+.subcat-titulo {
+    text-align: center;
+    margin-bottom: 18px;
+    font-size: 2rem;
+    font-weight: 700;
+    color: #800020;
+}
+.subcat-form {
+    margin-bottom: 24px;
+}
+.subcat-form .form-label {
+    font-weight: 600;
+    color: #800020;
+}
+.subcat-btn-agregar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: linear-gradient(90deg, #800020 0%, #b8860b 100%);
+    color: #fff;
+    font-size: 1.18rem;
+    font-weight: 600;
+    border: none;
+    border-radius: 10px;
+    box-shadow: 0 2px 12px rgba(128,0,32,0.10);
+    padding: 14px 0 14px 18px;
+    transition: background 0.2s, box-shadow 0.2s, transform 0.1s;
+    cursor: pointer;
+    justify-content: center;
+    width: 100%;
+    margin-top: 8px;
+}
+.subcat-btn-agregar:hover {
+    background: linear-gradient(90deg, #b8860b 0%, #800020 100%);
+    box-shadow: 0 4px 18px rgba(128,0,32,0.18);
+    transform: translateY(-2px) scale(1.03);
+}
+.subcat-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-top: 18px;
+    margin-bottom: 8px;
+}
+.subcat-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(90deg, #800020 0%, #b8860b 100%);
+    color: #fff;
+    font-size: 1.08rem;
+    font-weight: 500;
+    border: none;
+    border-radius: 10px;
+    box-shadow: 0 2px 12px rgba(128,0,32,0.10);
+    padding: 16px 0;
+    transition: background 0.2s, box-shadow 0.2s, transform 0.1s;
+    cursor: pointer;
+    min-width: 0;
+    min-height: 48px;
+    text-align: center;
+    word-break: break-word;
+}
+.subcat-btn:hover {
+    background: linear-gradient(90deg, #b8860b 0%, #800020 100%);
+    box-shadow: 0 4px 18px rgba(128,0,32,0.18);
+    transform: translateY(-2px) scale(1.03);
+}
+.subcat-volver {
+    font-size: 1.5rem;
+    text-decoration: none;
+    color: #800020;
+    margin-bottom: 8px;
+    display: inline-block;
+}
+.subcat-volver:hover {
+    color: #b8860b;
+}
+</style>
+{% endblock %}
 {% block content %}
-<div class="container mt-4" style="max-width: 600px;">
-    <div class="mb-3">
-        <a href="{% url 'productos:gestion_productos' %}" class="btn btn-link p-0" style="font-size: 1.5rem; text-decoration: none;">
-            &#8592;
-        </a>
+<div class="container mt-4" style="max-width: 900px; margin-left: auto; margin-right: 40px;">
+    <div class="gestion-caja-blanca">
+        <a href="{% url 'productos:gestion_productos' %}" class="subcat-volver">&#8592;</a>
+        <h2 class="gestion-titulo-negro" style="margin-bottom: 18px;">Subcategorías de {{ categoria.nombre }}</h2>
+        {% if mensaje %}
+            <div class="alert {% if 'correctamente' in mensaje %}alert-success{% else %}alert-danger{% endif %} mt-3">{{ mensaje }}</div>
+        {% endif %}
+        <div style="display: flex; justify-content: flex-start; align-items: center; margin-bottom: 18px;">
+            <button type="button" class="btn-agregar-modal" onclick="abrirModalAgregar()">
+                <span class="icono-btn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                    </svg>
+                </span>
+                Agregar subcategoría
+            </button>
+        </div>
+
+        <!-- Modal para agregar subcategoría -->
+        <div class="modal-bg" id="modalAgregar">
+            <div class="modal-contenido">
+                <h3 style="margin-bottom: 18px; color: #800020;">Agregar subcategoría</h3>
+                <form method="post" id="formularioSubcat">
+                    {% csrf_token %}
+                    <input type="text" id="inputNombreSubcat" name="nombre" placeholder="Nombre de la subcategoría">
+                    <div class="modal-btns">
+                        <button type="button" class="btn-cancelar" onclick="cerrarModalAgregar()">Cancelar</button>
+                        <button type="submit" class="btn-guardar">Guardar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <script>
+        function abrirModalAgregar() {
+            document.getElementById('modalAgregar').classList.add('active');
+            setTimeout(function() {
+                document.getElementById('inputNombreSubcat').focus();
+            }, 100);
+        }
+        function cerrarModalAgregar() {
+            document.getElementById('modalAgregar').classList.remove('active');
+        }
+        // Cerrar modal con Escape
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') cerrarModalAgregar();
+        });
+        // Validar y submit modal
+        document.getElementById('formularioSubcat').addEventListener('submit', function(e) {
+            var nombre = document.getElementById('inputNombreSubcat').value.trim();
+            if (!nombre) {
+                e.preventDefault();
+                alert('Por favor ingresa un nombre para la subcategoría.');
+                return false;
+            }
+            cerrarModalAgregar();
+        });
+        </script>
+        {% if subcategorias %}
+            <h5 style="margin-top: 18px; text-align:center;">Subcategorías existentes</h5>
+            <div class="gestion-caja-blanca" style="margin: 0 auto; max-width: 760px; padding: 32px 28px 28px 28px; border-radius: 22px; box-shadow: 0 4px 24px rgba(0,0,0,0.07); background: #fff;">
+                <div class="gestion-grid-botones gestion-botones-cerca">
+                    {% for sub in subcategorias %}
+                    <form method="post" action="{% url 'productos:eliminar_subcategoria' sub.id %}" class="form-eliminar-categoria-inside js-eliminar-subcat-form" style="margin:0; width:100%;">
+                        {% csrf_token %}
+                        <a href="{% url 'productos:productos_por_subcategoria' sub.id %}" class="btn btn-gestion-bordo categoria-con-cruz" style="position:relative;">
+                            <span class="icono-btn">
+                                <svg width="22" height="22" fill="none" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="6" stroke="#fff" stroke-width="2"/></svg>
+                            </span>
+                            <span class="nombre-categoria-ellipsis-multiline">{{ sub.nombre }}</span>
+                            <button type="button" class="btn-eliminar-categoria-inside js-eliminar-subcat-btn" title="Eliminar subcategoría">
+                                <span class="cruz-bg">
+                                    <svg width="15" height="15" viewBox="0 0 20 20" fill="none"><path d="M6 6l8 8M6 14L14 6" stroke="#800020" stroke-width="2" stroke-linecap="round"/></svg>
+                                </span>
+                            </button>
+                        </a>
+                    </form>
+                    {% endfor %}
+                </div>
+            <style>
+            .form-eliminar-categoria-inside {
+                margin: 0;
+                width: 100%;
+            }
+            .categoria-con-cruz {
+                position: relative;
+                width: 100%;
+                display: flex;
+                align-items: center;
+                justify-content: flex-start;
+                gap: 10px;
+            }
+            .btn-eliminar-categoria-inside {
+                background: none;
+                border: none;
+                padding: 0 0 0 12px;
+                margin-left: auto;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                height: 40px;
+                transition: transform 0.1s;
+                position: absolute;
+                right: 12px;
+                top: 50%;
+                transform: translateY(-50%);
+                z-index: 2;
+            }
+            .btn-eliminar-categoria-inside:focus {
+                outline: none;
+            }
+            .cruz-bg {
+                background: #fff;
+                border-radius: 50%;
+                box-shadow: 0 1px 4px #b8860b22;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                width: 24px;
+                height: 24px;
+                padding: 0;
+            }
+            .btn-eliminar-categoria-inside:hover .cruz-bg {
+                background: #ffe6e6;
+                box-shadow: 0 2px 8px #b8860b44;
+            }
+            .cruz-bg svg {
+                display: block;
+                margin: 0 auto;
+            }
+            .modal-eliminar-categoria-bg {
+                position: fixed;
+                top: 0; left: 0; right: 0; bottom: 0;
+                background: rgba(30,0,30,0.18);
+                z-index: 1000;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            .modal-eliminar-categoria {
+                background: #fff;
+                border-radius: 18px;
+                padding: 32px 28px 24px 28px;
+                box-shadow: 0 6px 32px rgba(0,0,0,0.18);
+                min-width: 320px;
+                max-width: 90vw;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+            }
+            .modal-eliminar-titulo {
+                font-size: 1.18rem;
+                font-weight: 600;
+                color: #800020;
+                margin-bottom: 18px;
+                text-align: center;
+            }
+            .modal-eliminar-botones {
+                display: flex;
+                gap: 16px;
+                margin-top: 8px;
+                justify-content: center;
+            }
+            .btn-modal-cancelar {
+                background: #eee;
+                color: #333;
+                border: none;
+                border-radius: 8px;
+                padding: 8px 22px;
+                font-size: 1rem;
+                font-weight: 500;
+                cursor: pointer;
+            }
+            .btn-modal-confirmar {
+                background: linear-gradient(90deg, #800020 0%, #b8860b 100%);
+                color: #fff;
+                border: none;
+                border-radius: 8px;
+                padding: 8px 22px;
+                font-size: 1rem;
+                font-weight: 500;
+                cursor: pointer;
+            }
+            </style>
+
+            <!-- Modal de confirmación de eliminación -->
+            <div id="modalConfirmarEliminarSubcat" class="modal-eliminar-categoria-bg" style="display:none;">
+                <div class="modal-eliminar-categoria">
+                    <div class="modal-eliminar-titulo">¿Seguro que deseas eliminar esta subcategoría?</div>
+                    <div class="modal-eliminar-botones">
+                        <button id="btnCancelarEliminarSubcat" type="button" class="btn-modal-cancelar">Cancelar</button>
+                        <button id="btnConfirmarEliminarSubcat" type="button" class="btn-modal-confirmar">Eliminar</button>
+                    </div>
+                </div>
+            </div>
+
+            <script>
+            let formAEliminarSubcat = null;
+            document.querySelectorAll('.js-eliminar-subcat-btn').forEach(function(btn) {
+                btn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    formAEliminarSubcat = btn.closest('form');
+                    document.getElementById('modalConfirmarEliminarSubcat').style.display = 'flex';
+                });
+            });
+            document.getElementById('btnCancelarEliminarSubcat').onclick = function() {
+                document.getElementById('modalConfirmarEliminarSubcat').style.display = 'none';
+                formAEliminarSubcat = null;
+            };
+            document.getElementById('btnConfirmarEliminarSubcat').onclick = function() {
+                if (formAEliminarSubcat) formAEliminarSubcat.submit();
+                document.getElementById('modalConfirmarEliminarSubcat').style.display = 'none';
+            };
+            </script>
+            </div>
+        <style>
+        .nombre-categoria-ellipsis-multiline {
+            display: -webkit-box;
+            width: 100%;
+            color: #fff;
+            font-weight: 600;
+            font-size: 1.08rem;
+            line-height: 1.18;
+            text-align: left;
+            padding-right: 32px;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: normal;
+            max-height: 3.6em;
+        }
+        </style>
+        {% endif %}
     </div>
-    <h2>Subcategorías de {{ categoria.nombre }}</h2>
-    {% if mensaje %}
-        <div class="alert {% if 'correctamente' in mensaje %}alert-success{% else %}alert-danger{% endif %} mt-3">{{ mensaje }}</div>
-    {% endif %}
-    <form method="post" class="mb-4">
-        {% csrf_token %}
-        <div class="mb-3">
-            {{ form.nombre.label_tag }}
-            {{ form.nombre }}
-        </div>
-        <button type="submit" class="btn btn-primary">Agregar subcategoría</button>
-    </form>
-    {% if subcategorias %}
-        <h5>Subcategorías existentes</h5>
-        <div class="d-flex flex-wrap gap-2">
-            {% for sub in subcategorias %}
-                <a href="{% url 'productos:productos_por_subcategoria' sub.id %}" class="btn btn-outline-secondary">{{ sub.nombre }}</a>
-            {% endfor %}
-        </div>
-    {% endif %}
 </div>
 {% endblock %}

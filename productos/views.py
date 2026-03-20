@@ -1,3 +1,32 @@
+
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.shortcuts import redirect, get_object_or_404
+from django.contrib import messages
+from .models import Categoria, Producto, Subcategoria
+from django.views.decorators.http import require_POST
+
+@login_required
+@user_passes_test(lambda u: u.is_superuser)
+@require_POST
+def eliminar_subcategoria(request, subcat_id):
+    subcategoria = get_object_or_404(Subcategoria, id=subcat_id)
+    subcategoria.delete()
+    messages.success(request, "Subcategoría eliminada correctamente.")
+    return redirect(request.META.get('HTTP_REFERER', 'productos:gestion_productos'))
+
+@login_required
+@user_passes_test(lambda u: u.is_superuser)
+@require_POST
+def eliminar_categoria(request, cat_id):
+    categoria = get_object_or_404(Categoria, id=cat_id)
+    tiene_productos = Producto.objects.filter(categoria=categoria).exists()
+    tiene_subcategorias = Subcategoria.objects.filter(categoria=categoria).exists()
+    if tiene_productos or tiene_subcategorias:
+        messages.error(request, "No se puede eliminar la categoría porque tiene productos o subcategorías asociadas.")
+    else:
+        categoria.delete()
+        messages.success(request, "Categoría eliminada correctamente.")
+    return redirect('productos:gestion_productos')
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.shortcuts import get_object_or_404, redirect, render
 from .forms import ProductoForm, SubcategoriaForm, CategoriaForm, TipoMedidaForm, ProveedorForm
@@ -150,28 +179,32 @@ from .models import Subcategoria, Producto, Categoria, TipoMedida, Proveedor, Ta
 @login_required
 @user_passes_test(lambda u: u.is_superuser)
 def gestion_subcategorias(request, cat_id):
-	categoria = get_object_or_404(Categoria, id=cat_id, activa=True)
-	mensaje = None
-	from .forms import SubcategoriaSoloNombreForm
-	if request.method == 'POST':
-		form = SubcategoriaSoloNombreForm(request.POST)
-		if form.is_valid():
-			subcat = form.save(commit=False)
-			subcat.categoria = categoria
-			subcat.save()
-			mensaje = 'Subcategoría agregada correctamente.'
-			form = SubcategoriaSoloNombreForm()
-		else:
-			mensaje = 'Por favor revisa los datos ingresados.'
-	else:
-		form = SubcategoriaSoloNombreForm()
-	subcategorias = categoria.subcategorias.all().order_by('nombre')
-	return render(request, 'productos/gestion_subcategorias.html', {
-		'categoria': categoria,
-		'form': form,
-		'mensaje': mensaje,
-		'subcategorias': subcategorias
-	})
+    categoria = get_object_or_404(Categoria, id=cat_id, activa=True)
+    mensaje = None
+    from .forms import SubcategoriaSoloNombreForm
+    if request.method == 'POST':
+        form = SubcategoriaSoloNombreForm(request.POST, categoria=categoria)
+        if form.is_valid():
+            subcat = form.save(commit=False)
+            subcat.categoria = categoria
+            subcat.save()
+            mensaje = 'Subcategoría agregada correctamente.'
+            form = SubcategoriaSoloNombreForm(categoria=categoria)
+        else:
+            # Si el error es por duplicado, mostrar ese mensaje
+            if 'nombre' in form.errors and 'Ya existe una subcategoría' in str(form.errors['nombre']):
+                mensaje = form.errors['nombre'][0]
+            else:
+                mensaje = 'Por favor revisa los datos ingresados.'
+    else:
+        form = SubcategoriaSoloNombreForm(categoria=categoria)
+    subcategorias = categoria.subcategorias.all().order_by('nombre')
+    return render(request, 'productos/gestion_subcategorias.html', {
+        'categoria': categoria,
+        'form': form,
+        'mensaje': mensaje,
+        'subcategorias': subcategorias
+    })
  # Vista para agregar producto desde una subcategoría
 @login_required
 @user_passes_test(lambda u: u.is_superuser)
@@ -235,14 +268,12 @@ from django.shortcuts import get_object_or_404, redirect
 @login_required
 @user_passes_test(lambda u: u.is_superuser)
 def productos_por_subcategoria(request, subcat_id):
-	subcategoria = get_object_or_404(Subcategoria, id=subcat_id, activa=True)
-	productos = Producto.objects.filter(categoria=subcategoria.categoria, activo=True)
-	# Filtrar productos que pertenezcan a la subcategoría si hay relación directa
-	# Si Producto tiene FK a Subcategoria, usar: Producto.objects.filter(subcategoria=subcategoria, activo=True)
-	return render(request, 'productos/productos_por_subcategoria.html', {
-		'subcategoria': subcategoria,
-		'productos': productos
-	})
+        subcategoria = get_object_or_404(Subcategoria, id=subcat_id, activa=True)
+        productos = Producto.objects.filter(subcategoria=subcategoria, activo=True)
+        return render(request, 'productos/productos_por_subcategoria.html', {
+            'subcategoria': subcategoria,
+            'productos': productos
+        })
 # Vista para agregar subcategoría y mostrar subcategorías
 @login_required
 @user_passes_test(lambda u: u.is_superuser)

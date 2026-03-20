@@ -27,7 +27,7 @@
     </a>
     <div class="nav-section">Catálogo</div>
 
-    <a href="{% url 'productos:gestion_productos' % }" class="nav-link">
+    <a href="{% url 'productos:gestion_productos' %}" class="nav-link">
       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
         <path d="M0 2.5A.5.5 0 0 1 .5 2H2a.5.5 0 0 1 .485.379L2.89 4H14.5a.5.5 0 0 1 .485.621l-1.5 6A.5.5 0 0 1 13 11H4a.5.5 0 0 1-.485-.379L1.61 3H.5a.5.5 0 0 1-.5-.5z"/>
       </svg>
@@ -79,10 +79,60 @@
 {% endblock %}
 
 {% block content %}
-    <h2>Panel de administración</h2>
-    <p>Bienvenido, aquí puedes gestionar las funcionalidades de administrador.</p>
-    
+  <div class="admin-panel-header">
+    <div class="admin-panel-icon">
+      <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" fill="#fff" viewBox="0 0 16 16">
+        <path d="M8.354 1.146a.5.5 0 0 0-.708 0l-6 6-.354.354.708.708L3 7.207V13.5A1.5 1.5 0 0 0 4.5 15h7a1.5 1.5 0 0 0 1.5-1.5V7.207l.646.647.708-.708-.354-.354-6-6zM13 7.207V13.5a.5.5 0 0 1-.5.5h-2v-3.5A.5.5 0 0 0 10 10H6a.5.5 0 0 0-.5.5V14h-2a.5.5 0 0 1-.5-.5V7.207l5-5 5 5z"/>
+      </svg>
+    </div>
+    <div>
+      <h2 class="admin-title">Panel de Administración</h2>
+      <p class="admin-desc">Bienvenido/a, aquí puedes gestionar todas las funcionalidades administrativas de la plataforma de forma centralizada y eficiente.</p>
+    </div>
+  </div>
 {% endblock %}
+
+<style>
+.sidebar {
+  border-right: 1px solid #ddd;
+  height: 100vh;
+}
+.admin-panel-header {
+  display: flex;
+  align-items: center;
+  background: linear-gradient(90deg, #4e54c8 0%, #8f94fb 100%);
+  border-radius: 12px;
+  padding: 32px 28px 28px 28px;
+  margin: 32px 0 24px 0;
+  box-shadow: 0 4px 16px rgba(78,84,200,0.08);
+}
+.admin-panel-icon {
+  background: #6c70e5;
+  border-radius: 50%;
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 24px;
+  box-shadow: 0 2px 8px rgba(78,84,200,0.12);
+}
+.admin-title {
+  color: #fff;
+  font-size: 2.2rem;
+  font-weight: 700;
+  margin: 0 0 8px 0;
+  letter-spacing: 1px;
+  text-shadow: 0 2px 8px rgba(78,84,200,0.18);
+}
+.admin-desc {
+  color: #f3f3ff;
+  font-size: 1.1rem;
+  margin: 0;
+  font-weight: 400;
+  letter-spacing: 0.2px;
+}
+</style>
 <style>
 .sidebar {
   border-right: 1px solid #ddd;

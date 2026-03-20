@@ -1,30 +1,407 @@
 {% extends 'users/dashboard_admin.html' %}
 {% load categoria_extras %}
+{% block extra_css %}
+<style>
+.form-eliminar-categoria-inside {
+    margin: 0;
+    width: 100%;
+}
+.categoria-con-cruz {
+    position: relative;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 10px;
+}
+.btn-eliminar-categoria-inside {
+    background: none;
+    border: none;
+    padding: 0 0 0 12px;
+    margin-left: auto;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    height: 40px;
+    transition: transform 0.1s;
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 2;
+}
+.btn-eliminar-categoria-inside:focus {
+    outline: none;
+}
+.cruz-bg {
+    background: #fff;
+    border-radius: 50%;
+    box-shadow: 0 1px 4px #b8860b22;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+}
+.btn-eliminar-categoria-inside:hover .cruz-bg {
+    background: #ffe6e6;
+    box-shadow: 0 2px 8px #b8860b44;
+}
+.cruz-bg svg {
+    display: block;
+    margin: 0 auto;
+}
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="container mt-4" style="max-width: 600px;">
-    <div class="mb-3">
-        <a href="{% url 'users:dashboard_admin' %}" class="btn btn-link p-0" style="font-size: 1.5rem; text-decoration: none;">
-            &#8592;
-        </a>
-    </div>
-    <h2>Gestión de productos</h2>
-    <div class="d-flex flex-column gap-3 mt-4">
+<div class="container mt-4" style="max-width: 900px; margin-left: auto; margin-right: 40px;">
+    <h2 class="gestion-titulo-negro">Gestión de productos</h2>
+    <div class="gestion-caja-blanca">
+        <div class="gestion-grid-scroll-vertical">
+            <div class="gestion-grid-botones-3x5 gestion-botones-cerca">
         {% with indum_id=categories|get_cat_id:'Indumentaria' %}
             {% if indum_id %}
-                <a href="{% url 'gestion_subcategorias' indum_id %}" class="btn btn-primary btn-lg">Agregar indumentaria</a>
+                <a href="{% url 'gestion_subcategorias' indum_id %}" class="btn btn-gestion-bordo">
+                    <span class="icono-btn">
+                        <svg width="22" height="22" fill="none" viewBox="0 0 24 24"><path d="M12 5v14m7-7H5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </span>
+                    Indumentaria
+                </a>
             {% endif %}
         {% endwith %}
         {% with acc_id=categories|get_cat_id:'Accesorio' %}
             {% if acc_id %}
-                <a href="{% url 'gestion_subcategorias' acc_id %}" class="btn btn-primary btn-lg">Agregar accesorio</a>
+                <a href="{% url 'gestion_subcategorias' acc_id %}" class="btn btn-gestion-bordo">
+                    <span class="icono-btn">
+                        <svg width="22" height="22" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="#fff" stroke-width="2"/><path d="M12 8v4l2 2" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </span>
+                    Accesorio
+                </a>
             {% endif %}
         {% endwith %}
         {% if categories %}
             {% for cat in categories %}
-                <a href="{% url 'productos:gestion_subcategorias' cat.id %}" class="btn btn-primary btn-lg">{{ cat.nombre }}</a>
+                                <form method="post" action="{% url 'productos:eliminar_categoria' cat.id %}" class="form-eliminar-categoria-inside js-eliminar-categoria-form">
+                                    {% csrf_token %}
+                                    <a href="{% url 'productos:gestion_subcategorias' cat.id %}" class="btn btn-gestion-bordo categoria-con-cruz">
+                                            <span class="icono-btn">
+                                                    <svg width="22" height="22" fill="none" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="4" stroke="#fff" stroke-width="2"/></svg>
+                                            </span>
+                                            <span class="nombre-categoria-ellipsis-multiline">{{ cat.nombre }}</span>
+                                            <button type="button" class="btn-eliminar-categoria-inside js-eliminar-categoria-btn" title="Eliminar categoría">
+                                                <span class="cruz-bg">
+                                                    <svg width="15" height="15" viewBox="0 0 20 20" fill="none"><path d="M6 6l8 8M6 14L14 6" stroke="#800020" stroke-width="2" stroke-linecap="round"/></svg>
+                                                </span>
+                                            </button>
+                                    </a>
+                                </form>
+                        <!-- Modal de confirmación de eliminación -->
+                        <div id="modalConfirmarEliminar" class="modal-eliminar-categoria-bg" style="display:none;">
+                            <div class="modal-eliminar-categoria">
+                                <div class="modal-eliminar-titulo">¿Seguro que deseas eliminar esta categoría?</div>
+                                <div class="modal-eliminar-botones">
+                                    <button id="btnCancelarEliminar" type="button" class="btn-modal-cancelar">Cancelar</button>
+                                    <button id="btnConfirmarEliminar" type="button" class="btn-modal-confirmar">Eliminar</button>
+                                </div>
+                            </div>
+                        </div>
+            <style>
+            .modal-eliminar-categoria-bg {
+                position: fixed;
+                top: 0; left: 0; right: 0; bottom: 0;
+                background: rgba(30,0,30,0.18);
+                z-index: 1000;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            .modal-eliminar-categoria {
+                background: #fff;
+                border-radius: 16px;
+                box-shadow: 0 8px 32px #80002022;
+                padding: 32px 32px 24px 32px;
+                min-width: 320px;
+                max-width: 90vw;
+                text-align: center;
+            }
+            .modal-eliminar-titulo {
+                font-size: 1.25rem;
+                font-weight: 600;
+                color: #800020;
+                margin-bottom: 24px;
+            }
+            .modal-eliminar-botones {
+                display: flex;
+                gap: 18px;
+                justify-content: center;
+            }
+            .btn-modal-cancelar {
+                background: #fff;
+                color: #800020;
+                border: 2px solid #800020;
+                border-radius: 8px;
+                font-size: 1.08rem;
+                font-weight: 600;
+                padding: 8px 22px;
+                cursor: pointer;
+                transition: background 0.15s, color 0.15s;
+            }
+            .btn-modal-cancelar:hover {
+                background: #f8e6e6;
+            }
+            .btn-modal-confirmar {
+                background: linear-gradient(90deg, #800020 0%, #b8860b 100%);
+                color: #fff;
+                border: none;
+                border-radius: 8px;
+                font-size: 1.08rem;
+                font-weight: 600;
+                padding: 8px 22px;
+                cursor: pointer;
+                box-shadow: 0 2px 8px #80002022;
+                transition: background 0.15s;
+            }
+            .btn-modal-confirmar:hover {
+                background: linear-gradient(90deg, #b8860b 0%, #800020 100%);
+            }
+            .gestion-titulo-negro {
+    text-align: center;
+    margin-bottom: 12px;
+    font-size: 2.4rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: #222;
+}
+/* Grid de botones */
+/* Grid de botones más cerca del título */
+            .gestion-grid-scroll-vertical {
+                max-height: 480px; /* 5 filas de 80px + gaps */
+                overflow-y: auto;
+                margin-bottom: 24px;
+            }
+            .gestion-grid-botones-3x5 {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 18px;
+                width: 100%;
+                justify-items: stretch;
+                align-items: stretch;
+            }
+            .btn-gestion-bordo {
+                height: 80px;
+                min-width: 160px;
+                max-width: 220px;
+                width: 100%;
+                display: flex;
+                align-items: center;
+                justify-content: flex-start;
+            }
+            .btn-gestion-bordo {
+                height: 80px;
+                min-width: 160px;
+                max-width: 220px;
+                width: 100%;
+                display: flex;
+                align-items: center;
+                justify-content: flex-start;
+                /* ...resto de estilos... */
+            }
+.gestion-botones-cerca {
+    margin-top: 0px;
+}
+.btn-gestion-bordo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: linear-gradient(90deg, #800020 0%, #b8860b 100%);
+    color: #fff;
+    font-size: 1.08rem;
+    font-weight: 500;
+    border: none;
+    border-radius: 10px;
+    box-shadow: 0 2px 12px rgba(128,0,32,0.10);
+    padding: 12px 18px;
+    transition: background 0.2s, box-shadow 0.2s, transform 0.1s;
+    cursor: pointer;
+    min-width: 160px;
+    max-width: 220px;
+    justify-content: flex-start;
+}
+.btn-gestion-bordo:hover {
+    background: linear-gradient(90deg, #b8860b 0%, #800020 100%);
+    box-shadow: 0 4px 18px rgba(128,0,32,0.18);
+    transform: translateY(-2px) scale(1.04);
+}
+.gestion-categoria-bottom {
+    display: flex;
+    justify-content: center;
+    margin-top: 18px;
+}
+/* Botón de agregar categoría con texto más grande */
+.btn-outline-categoria-bordo {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    background: #fff;
+    color: #800020;
+    font-size: 1.45rem;
+    font-weight: 600;
+    border: 2px solid #800020;
+    border-radius: 10px;
+    box-shadow: 0 2px 12px rgba(128,0,32,0.07);
+    padding: 20px 38px;
+    transition: background 0.2s, color 0.2s, box-shadow 0.2s, transform 0.1s;
+    cursor: pointer;
+    justify-content: flex-start;
+}
+.btn-outline-categoria-bordo:hover {
+    background: #f8e6e6;
+    color: #b8860b;
+    box-shadow: 0 4px 18px rgba(128,0,32,0.13);
+    transform: translateY(-2px) scale(1.04);
+}
+.icono-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+            </style>
+            <script>
+            let formAEliminar = null;
+            document.addEventListener('DOMContentLoaded', function() {
+                const modal = document.getElementById('modalConfirmarEliminar');
+                const btnCancelar = document.getElementById('btnCancelarEliminar');
+                const btnConfirmar = document.getElementById('btnConfirmarEliminar');
+                document.querySelectorAll('.js-eliminar-categoria-btn').forEach(btn => {
+                    btn.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        formAEliminar = btn.closest('form');
+                        modal.style.display = 'flex';
+                    });
+                });
+                btnCancelar.addEventListener('click', function() {
+                    modal.style.display = 'none';
+                    formAEliminar = null;
+                });
+                btnConfirmar.addEventListener('click', function() {
+                    if (formAEliminar) {
+                        formAEliminar.submit();
+                        modal.style.display = 'none';
+                        formAEliminar = null;
+                    }
+                });
+                // Cerrar modal con Escape
+                document.addEventListener('keydown', function(e) {
+                    if (e.key === 'Escape') {
+                        modal.style.display = 'none';
+                        formAEliminar = null;
+                    }
+                });
+            });
+            </script>
             {% endfor %}
         {% endif %}
-        <a href="{% url 'productos:agregar_categoria' %}" class="btn btn-outline-secondary btn-lg mt-2">Agregar categoría</a>
+            </style>
+            <style>
+            .nombre-categoria-ellipsis-multiline {
+                display: -webkit-box;
+                width: 100%;
+                color: #fff;
+                font-weight: 600;
+                font-size: 1.08rem;
+                line-height: 1.18;
+                text-align: left;
+                padding-right: 32px;
+                -webkit-line-clamp: 3;
+                -webkit-box-orient: vertical;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: normal;
+                max-height: 3.6em;
+            }
+            
+            .form-eliminar-categoria-inside {
+                margin: 0;
+                width: 100%;
+            }
+            .categoria-con-cruz {
+                position: relative;
+                width: 100%;
+                display: flex;
+                align-items: center;
+                justify-content: flex-start;
+                gap: 10px;
+            }
+            .btn-eliminar-categoria-inside {
+                background: none;
+                border: none;
+                padding: 0 0 0 12px;
+                margin-left: auto;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                height: 40px;
+                transition: transform 0.1s;
+                position: absolute;
+                right: 12px;
+                top: 50%;
+                transform: translateY(-50%);
+                z-index: 2;
+            }
+            .btn-eliminar-categoria-inside:focus {
+                outline: none;
+            }
+             .gestion-categoria-bottom-fixed {
+                    display: flex;
+                    justify-content: center;
+                    margin-top: 18px;
+                    position: sticky;
+                    bottom: 0;
+                    background: #fff;
+                    z-index: 2;
+                    padding-bottom: 10px;
+                }
+            .cruz-bg {
+                background: #fff;
+                border-radius: 50%;
+                box-shadow: 0 1px 4px #b8860b22;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                width: 28px;
+                height: 28px;
+            }
+            .btn-eliminar-categoria-inside:hover .cruz-bg {
+                background: #ffe6e6;
+                box-shadow: 0 2px 8px #b8860b44;
+            }
+            .gestion-caja-blanca {
+                background: #fff;
+                border-radius: 18px;
+                box-shadow: 0 4px 24px rgba(0,0,0,0.07);
+                padding: 38px 32px 32px 32px;
+                margin: 0 auto 0 auto;
+                max-width: 700px;
+                display: flex;
+                flex-direction: column;
+                align-items: stretch;
+            }
+            </style>
+            </div>
+
+        <div class="gestion-categoria-bottom-fixed">
+            <a href="{% url 'productos:agregar_categoria' %}" class="btn btn-outline-categoria-bordo mt-2">
+                <span class="icono-btn">
+                    <svg width="22" height="22" fill="none" viewBox="0 0 24 24"><path d="M12 5v14m7-7H5" stroke="#800020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </span>
+                Agregar categoría
+            </a>
+        </div>
+               
     </div>
 </div>
+            
+
 {% endblock %}

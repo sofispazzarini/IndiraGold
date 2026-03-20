@@ -31,6 +31,17 @@ class SubcategoriaSoloNombreForm(forms.ModelForm):
             'nombre': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nombre de la subcategoría'})
         }
 
+    def __init__(self, *args, **kwargs):
+        self.categoria = kwargs.pop('categoria', None)
+        super().__init__(*args, **kwargs)
+
+    def clean_nombre(self):
+        nombre = self.cleaned_data['nombre'].strip()
+        if self.categoria:
+            if Subcategoria.objects.filter(nombre__iexact=nombre, categoria=self.categoria).exists():
+                raise forms.ValidationError('Ya existe una subcategoría con ese nombre en esta categoría.')
+        return nombre
+
 from django import forms
 from .models import Producto
 
@@ -61,6 +72,12 @@ class CategoriaForm(forms.ModelForm):
         widgets = {
             'nombre': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nombre de la categoría'})
         }
+
+    def clean_nombre(self):
+        nombre = self.cleaned_data['nombre'].strip()
+        if Categoria.objects.filter(nombre__iexact=nombre).exists():
+            raise forms.ValidationError("Ya existe una categoría con ese nombre.")
+        return nombre
 
 class SubcategoriaForm(forms.ModelForm):
     class Meta:

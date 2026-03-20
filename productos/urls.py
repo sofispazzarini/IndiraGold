@@ -1,7 +1,10 @@
+
 from django.urls import path
 from . import views
 
 urlpatterns = [
+    path('subcategoria/<int:subcat_id>/eliminar/', views.eliminar_subcategoria, name='eliminar_subcategoria'),
+    path('categoria/<int:cat_id>/eliminar/', views.eliminar_categoria, name='eliminar_categoria'),
     path('gestion/', views.gestion_productos, name='gestion_productos'),
     path('agregar-categoria/', views.agregar_categoria, name='agregar_categoria'),
     path('agregar-subcategoria/', views.agregar_subcategoria, name='agregar_subcategoria'),
