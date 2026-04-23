@@ -1,0 +1,125 @@
+<div class="modal fade" id="modalPreviewAdmin" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content border-0" style="border-radius: 20px; background: #fafaf8;">
+            <div class="modal-header border-0 pb-0 px-4 pt-4">
+                <div class="d-flex align-items-center">
+                    <span class="badge bg-white text-muted border px-3 py-2 me-3" id="previewCodigo" style="border-radius: 10px;">CÓDIGO</span>
+                    <h4 class="modal-title text-dark fw-bold" id="previewNombre" style="font-family: 'Cormorant Garamond';">Nombre del Producto</h4>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            
+            <div class="modal-body p-4">
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <div class="p-3 bg-white rounded shadow-sm">
+                            <div class="mb-3 border rounded overflow-hidden" style="height: 500px; background: #fff;">
+                                <img id="imgPrincipalPreview" src="" class="w-100 h-100" style="object-fit: contain;">
+                            </div>
+                            <div id="containerThumbsPreview" class="d-flex flex-wrap gap-2 justify-content-center">
+                                </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6 d-flex flex-column">
+                        <div class="p-4 bg-white rounded shadow-sm flex-grow-1">
+                            
+                            <div class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom">
+                                <h3 class="fw-bold mb-0 text-dark-ig" style="color: #6E0E2E; font-size: 2.5rem;">$ <span id="previewPrecio">0.00</span></h3>
+                                <div id="previewStatus">
+                                </div>
+                            </div>
+
+                            <p class="text-muted small">Datos comerciales de venta:</p>
+                            <div class="row mb-4 g-3">
+                                <div class="col-6">
+                                    <div class="border p-3 rounded" style="background: #fafafa;">
+                                        <div class="text-muted small fw-bold text-uppercase mb-1" style="font-size: 0.65rem; letter-spacing: 1px;">TIPOLOGÍA</div>
+                                        <div class="fw-bold text-dark" id="previewTipo">-</div>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="border p-3 rounded" style="background: #fafafa;">
+                                        <div class="text-muted small fw-bold text-uppercase mb-1" style="font-size: 0.65rem; letter-spacing: 1px;">STOCK GENERAL</div>
+                                        <div class="fw-bold text-dark" id="previewStock">0</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <hr class="my-4">
+
+                            <div class="card border-0 p-3 mb-4" style="background: rgba(184, 146, 42, 0.05); border: 1.5px solid rgba(184, 146, 42, 0.2) !important; border-radius: 15px;">
+                                <label class="fw-bold mb-3 text-dark-ig" style="color: #b8922a;">PANEL DE ACCIONES (ADMIN)</label>
+                                <div class="d-grid gap-2 d-md-flex justify-content-md-start">
+                                    <a href="#" id="btnEditarAdmin" class="btn btn-dark px-4 py-2" style="background: #b8922a; border:none; border-radius: 10px;">
+                                        <svg width="18" height="18" fill="currentColor" viewBox="0 0 16 16" class="me-2"><path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 5 12.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.468-.325z"/></svg>
+                                        Editar Ficha y Producto
+                                    </a>
+                                    <form action="" method="post" id="formEliminarAdmin">
+                                        {% csrf_token %}
+                                        <button type="button" class="btn btn-outline-danger px-4 py-2" style="border-radius: 10px;" data-bs-toggle="modal" data-bs-target="#modalConfirmarEliminar">
+                                            <svg width="18" height="18" fill="currentColor" viewBox="0 0 16 16" class="me-2"><path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 1-1 0v6a.5.5 0 0 1 1 0z"/><path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3h11V2h-11z"/></svg>
+                                            Eliminar
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row mt-5">
+                    <div class="col-12 p-3 bg-white rounded shadow-sm">
+                        <ul class="nav nav-tabs border-0 mb-4" id="previewTabs" role="tablist">
+                            <li class="nav-tab-ig" role="presentation">
+                                <button class="nav-link active" id="tab-ficha-tab" data-bs-toggle="tab" data-bs-target="#tab-ficha" type="button" role="tab" aria-selected="true">
+                                    DESCRIPCIÓN Y FICHA TÉCNICA
+                                </button>
+                            </li>
+                        </ul>
+                        <div class="tab-content" id="previewTabsContent">
+                            <div class="tab-pane fade show active p-2" id="tab-ficha" role="tabpanel">
+                                <div id="containerFichaTecnicaInject"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="modalConfirmarEliminar" tabindex="-1" aria-hidden="true" style="z-index: 1060;">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
+            <div class="modal-body text-center p-4">
+                
+                <div class="mb-3 d-flex justify-content-center">
+                    <div style="background: #ffe5e5; width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#dc3545" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                            <line x1="12" y1="9" x2="12" y2="13"></line>
+                            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                        </svg>
+                    </div>
+                </div>
+                
+                <h5 class="fw-bold text-dark mb-2">¿Eliminar producto?</h5>
+                <p class="text-muted small mb-4">Esta acción no se puede deshacer. Se borrará la ficha técnica, las fotos y todas sus variantes de stock de forma definitiva.</p>
+                
+                <div class="d-flex justify-content-center gap-2">
+                    <button type="button" class="btn btn-light px-4" data-bs-dismiss="modal" style="border-radius: 10px; font-weight: 600;">Cancelar</button>
+                    <button type="button" class="btn btn-danger px-4 shadow-sm" style="border-radius: 10px; font-weight: 600;" onclick="document.getElementById('formEliminarAdmin').submit();">
+                        Sí, eliminar
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+<style>
+    #modalPreviewAdmin .nav-tabs .nav-link { color: #8c7e70; border: none; font-weight: 700; font-size: 0.9rem; padding: 10px 20px; text-transform: uppercase; letter-spacing: 1px; }
+    #modalPreviewAdmin .nav-tabs .nav-link.active { color: #1a1612; border-bottom: 3px solid #b8922a; background: transparent; }
+    .thumb-preview { width: 70px; height: 70px; object-fit: cover; border-radius: 10px; cursor: pointer; border: 2px solid transparent; transition: 0.2s; }
+    .thumb-preview:hover, .thumb-preview.active { border-color: #b8922a; }
+</style>

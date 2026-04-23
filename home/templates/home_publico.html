@@ -47,7 +47,7 @@
         {% for producto in productos_destacados %}
           <div class="featured-item">
             <div class="product-card" data-cat="{{ producto.categoria.id }}" data-name="{{ producto.nombre|lower }} {{ producto.tipo|lower }} {{ producto.tela|lower }}">
-              <a href="{% url 'productos:producto_detail' producto.pk %}" class="product-card__img-wrap">
+              <a href="#" class="product-card__img-wrap">
                 {% if producto.imagen %}
                   <img src="{{ producto.imagen.url }}" alt="{{ producto.nombre }}" class="product-card__img" />
                 {% else %}
@@ -168,7 +168,7 @@
     <div class="products-grid" id="productsGrid">
       {% for producto in productos %}
       <div class="product-card" data-cat="{{ producto.categoria.id }}" data-name="{{ producto.nombre|lower }} {{ producto.tipo|lower }} {{ producto.tela|lower }}">
-        <a href="{% url 'productos:producto_detail' producto.pk %}" class="product-card__img-wrap">
+        <a href="#" class="product-card__img-wrap">
           {% if producto.imagen %}
             <img src="{{ producto.imagen.url }}" alt="{{ producto.nombre }}" class="product-card__img" />
           {% else %}
