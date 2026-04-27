@@ -1,42 +1,82 @@
 {% extends 'base.html' %}
+{% load static %}
+
 {% block sidebar_menu %}
 <div class="nav-section">Mi Cuenta</div>
-<div class="sidebar">
-    <h4>Mi cuenta</h4>
-    
-    <nav class="sidebar__nav">
-    <div class="nav-section">Principal</div>
-
-    <a href="{% url 'users:dashboard_cliente' %}" class="nav-link">
-      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-        <path d="M8.354 1.146a.5.5 0 0 0-.708 0l-6 6-.354.354.708.708L3 7.207V13.5A1.5 1.5 0 0 0 4.5 15h7a1.5 1.5 0 0 0 1.5-1.5V7.207l.646.647.708-.708-.354-.354-6-6zM13 7.207V13.5a.5.5 0 0 1-.5.5h-2v-3.5A.5.5 0 0 0 10 10H6a.5.5 0 0 0-.5.5V14h-2a.5.5 0 0 1-.5-.5V7.207l5-5 5 5z"/>
-      </svg>
-      Inicio
+<nav class="sidebar__nav">
+    <a href="{% url 'users:dashboard_cliente' %}" class="nav-link active">
+      <i class="bi bi-grid-1x2-fill me-2"></i> Inicio
     </a>
-    <div class="nav-section">Funcionalidades</div>
     <a href="{% url 'users:password_change' %}" class="nav-link">
-      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-        <path d="M0 2.5A.5.5 0 0 1 .5 2H2a.5.5 0 0 1 .485.379L2.89 4H14.5a.5.5 0 0 1 .485.621l-1.5 6A.5.5 0 0 1 13 11H4a.5.5 0 0 1-.485-.379L1.61 3H.5a.5.5 0 0 1-.5-.5z"/>
-      </svg>
-      Cambiar Contraseña
+      <i class="bi bi-shield-lock-fill me-2"></i> Seguridad
     </a>
-  </nav>
-</div>
+    <hr class="mx-3 opacity-10">
+    <a href="{% url 'users:logout' %}" class="nav-link text-danger">
+      <i class="bi bi-box-arrow-right me-2"></i> Cerrar Sesión
+    </a>
+</nav>
 {% endblock %}
 
 {% block content %}
-<div class="main-content">
-    {% if request.user.first_name %}
-        <h2>Bienvenido/a, {{ request.user.first_name }}</h2>
-    {% else %}
-        <h2>Bienvenido/a</h2>
-    {% endif %}
-    <p>Desde aquí puedes gestionar tu cuenta y acceder a las funcionalidades disponibles.</p>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+<link rel="stylesheet" href="{% static 'css/users.css' %}">
+
+<div class="client-dashboard-wrapper" style="padding: 2rem; background: radial-gradient(circle at top right, rgba(184, 146, 42, 0.05), transparent);">
+    
+    <div class="welcome-header mb-5 p-5 rounded-5 shadow-sm" style="background: linear-gradient(135deg, var(--dark-ig) 0%, var(--bordo-ig) 100%); position: relative; overflow: hidden;">
+        <div style="position: absolute; top: -20px; right: -20px; font-size: 10rem; color: rgba(255,255,255,0.03); transform: rotate(-15deg);">
+            <i class="bi bi-gem"></i>
+        </div>
+        <div class="position-relative">
+            <h1 style="font-family: 'Cormorant Garamond', serif; font-size: 3.5rem; color: #fff; font-weight: 700; margin: 0;">
+                Bienvenido/a, <span style="color: var(--gold-bright);">{{ request.user.first_name|default:request.user.username }}</span>
+            </h1>
+            <p style="color: rgba(255,255,255,0.7); font-size: 1.1rem; letter-spacing: 1px;">
+                Gestioná tu seguridad y seguí tus compras desde tu panel exclusivo.
+            </p>
+        </div>
+    </div>
+
+    <div class="row g-4 justify-content-center">
+        
+        <div class="col-md-6 col-lg-5">
+            <div class="ig-card h-100 shadow-sm border-0" style="border-radius: 30px;">
+                <div class="p-5">
+                    <div class="d-inline-flex align-items-center justify-content-center mb-4" 
+                         style="width: 70px; height: 70px; background: rgba(184, 146, 42, 0.1); border-radius: 20px; color: var(--gold-ig);">
+                        <i class="bi bi-shield-lock-fill fs-2"></i>
+                    </div>
+                    <h3 class="fw-bold h4 mb-3" style="color: var(--dark-ig);">Seguridad de Cuenta</h3>
+                    <p class="text-muted mb-4" style="font-size: 0.95rem; line-height: 1.6;">
+                        Mantené tu cuenta protegida. Te recomendamos actualizar tu contraseña periódicamente para garantizar la privacidad de tus datos.
+                    </p>
+                    
+                    <a href="{% url 'users:password_change' %}" class="btn-ig-pill">
+                        CAMBIAR MI CLAVE <i class="bi bi-arrow-right-circle-fill ms-2"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-lg-5">
+            <div class="ig-card h-100 shadow-sm border-0" style="border-radius: 30px; background: #fafafa;">
+                <div class="p-5">
+                    <div class="d-inline-flex align-items-center justify-content-center mb-4" 
+                         style="width: 70px; height: 70px; background: rgba(110, 14, 46, 0.05); border-radius: 20px; color: var(--bordo-ig);">
+                        <i class="bi bi-bag-heart-fill fs-2"></i>
+                    </div>
+                    <h3 class="fw-bold h4 mb-3" style="color: var(--dark-ig);">Mis Compras</h3>
+                    <p class="text-muted mb-4" style="font-size: 0.95rem; line-height: 1.6;">
+                        Revisá el historial de tus pedidos, hacé el seguimiento de tus envíos y descargá tus facturas de Indira Gold.
+                    </p>
+                    
+                    <div class="d-inline-block px-4 py-2 rounded-pill bg-white border text-muted small fw-bold">
+                        <i class="bi bi-clock-history me-2"></i> PRÓXIMAMENTE
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
 </div>
 {% endblock %}
-<style>
-.sidebar {
-  border-right: 1px solid #ddd;
-  height: 100vh;
-}
-</style>

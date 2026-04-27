@@ -1,120 +1,72 @@
 {% extends 'users/dashboard_admin.html' %}
+{% load static %}
 
-<style>
-    .listado-clientes-center {
-        display: flex;
-        justify-content: flex-end;
-        padding-top: 24px;
-        padding-bottom: 32px;
-        padding-right: 13vw;
-    }
-        .acciones-flex {
-            display: flex;
-            gap: 8px;
-            align-items: center;
-        }
-    @media (max-width: 900px) {
-        .listado-clientes-center {
-            justify-content: center;
-            padding-right: 0;
-        }
-    }
-        .listado-clientes-center {
-            display: flex;
-            justify-content: flex-start;
-            padding-top: 24px;
-            padding-bottom: 32px;
-            padding-left: 32vw;
-        }
-        @media (max-width: 1400px) {
-            .listado-clientes-center {
-                padding-left: 50vw;
-            }
-        }
-        @media (max-width: 1100px) {
-            .listado-clientes-center {
-                padding-left: 6vw;
-            }
-        }
-        @media (max-width: 900px) {
-            .listado-clientes-center {
-                justify-content: center;
-                padding-left: 0;
-            }
-        }
-    .listado-clientes-card {
-        background: #fff;
-        border-radius: 12px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.07);
-        padding: 2.5rem 2.5rem 2rem 2.5rem;
-        max-width: 1000px;
-        width: 100%;
-        margin: 0;
-        overflow-x: visible;
-    }
-    .listado-clientes-card table {
-        width: 100%;
-        min-width: 0;
-        margin: 0 auto;
-        table-layout: auto;
-    }
-    .acciones-flex {
-        display: flex;
-        gap: 8px;
-        align-items: center;
-        justify-content: flex-end;
-    }
-    td:last-child {
-        text-align: right;
-        vertical-align: middle;
-        white-space: nowrap;
-    }
-</style>
+{% block extra_head %}
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="{% static 'css/users.css' %}">
+{% endblock %}
+
 {% block content %}
-<div class="listado-clientes-center">
-  <div class="listado-clientes-card">
-    <div class="d-flex align-items-center mb-2">
-        <h2 class="mb-0">Listado de Clientes</h2>
-    </div>
-    <form method="get" class="form-inline mb-3">
-        <div class="input-group">
-            <input type="text" name="q" class="form-control" placeholder="Buscar por DNI o correo" value="{{ request.GET.q }}">
-            <div class="input-group-append">
-                <button class="btn btn-primary" type="submit">Buscar</button>
-            </div>
+<div class="container-fluid py-4" style="max-width: 1200px;">
+    
+    <div class="d-flex justify-content-between align-items-center mb-5">
+        <div>
+            <h2 class="display-6 fw-bold mb-0" style="font-family: 'Cormorant Garamond'; color: var(--dark-ig);">Gestión de Clientes</h2>
+            <p class="text-muted small text-uppercase letter-spacing-1">Base de datos de socios Indira Gold</p>
         </div>
-    </form>
-    <table class="table table-striped table-bordered">
-        <thead>
-            <tr>
-                <th>Nombre</th>
-                <th>DNI</th>
-                <th>Email</th>
-                <th>Teléfono</th>
-                <th>Acciones</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for cliente in clientes %}
-            <tr>
-                <td>{{ cliente.user.first_name }}</td>
-                <td>{{ cliente.dni }}</td>
-                <td>{{ cliente.user.email }}</td>
-                <td>{{ cliente.telefono }}</td>
-                <td>
-                    <div class="acciones-flex">
-                        <a href="{% url 'users:editar_cliente' cliente.id %}" class="btn btn-sm btn-warning">Editar</a>
-                        <a href="{% url 'users:agregar_direccion' cliente.id %}" class="btn btn-sm btn-outline-primary" style="white-space:nowrap;">+ Dirección</a>
-                    </div>
-                </td>
-            </tr>
-            {% empty %}
-            <tr>
-                <td colspan="5" class="text-center">No se encontraron clientes.</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-  </div>
+        <a href="{% url 'users:registro_manual_cliente' %}" class="btn btn-dark rounded-pill px-4 shadow-sm border-gold" style="border: 1px solid var(--gold-ig); color: var(--gold-light);">
+            <i class="bi bi-person-plus-fill me-2"></i> NUEVO CLIENTE
+        </a>
+    </div>
+
+    <div class="ig-table-card">
+        <form method="get" class="search-container-ig mb-4">
+            <div class="input-group" style="max-width: 500px;">
+                <input type="text" name="q" class="form-control" placeholder="Buscar por DNI o correo..." value="{{ request.GET.q }}">
+                <button class="btn" type="submit">
+                    <i class="bi bi-search"></i>
+                </button>
+            </div>
+        </form>
+
+        <div class="table-responsive">
+            <table class="table align-middle">
+                <thead>
+                    <tr>
+                        <th><i class="bi bi-person me-2"></i>Nombre</th>
+                        <th><i class="bi bi-card-text me-2"></i>DNI</th>
+                        <th><i class="bi bi-envelope me-2"></i>Email</th>
+                        <th class="text-end">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for cliente in clientes %}
+                    <tr>
+                        <td class="fw-bold">{{ cliente.user.first_name }}</td>
+                        <td><span class="badge bg-light text-dark border px-3 py-2 rounded-pill" style="font-size: 0.8rem;">{{ cliente.dni }}</span></td>
+                        <td class="text-muted">{{ cliente.user.email }}</td>
+                        <td>
+                            <div class="d-flex gap-2 justify-content-end">
+                                <a href="{% url 'users:editar_cliente' cliente.id %}" class="btn-action btn-edit-ig text-decoration-none">
+                                    <i class="bi bi-pencil-square"></i> Editar
+                                </a>
+                                <a href="{% url 'users:agregar_direccion' cliente.id %}" class="btn-action btn-address-ig text-decoration-none">
+                                    <i class="bi bi-geo-alt-fill"></i> + Dirección
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="text-center py-5">
+                            <i class="bi bi-people text-muted display-1 opacity-25"></i>
+                            <p class="mt-3 text-muted">No se encontraron clientes registrados.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
 </div>
 {% endblock %}

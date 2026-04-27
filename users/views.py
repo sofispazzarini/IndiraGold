@@ -1,12 +1,27 @@
 from django.contrib.auth import logout
 from django.urls import reverse
 from django.http import HttpResponseRedirect
+from django.contrib.auth.views import PasswordChangeView
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required, user_passes_test
+import random
+from django.core.mail import send_mail
+from django.conf import settings
+from django.shortcuts import render, redirect
+from django.contrib.auth import authenticate, login as auth_login
+from .forms import RegistroUsuarioForm
+from .models import Cliente, Direccion
+from django.db.models import Q
+from django.contrib.auth.models import User
+from .forms_manual import RegistroManualClienteForm, EditarClienteForm, NuevaDireccionForm
+from django.views.decorators.csrf import csrf_exempt
+from django.http import JsonResponse
+from django.contrib.auth.decorators import user_passes_test
+
 # --- LOGOUT VIEW ---
 def logout_view(request):
     logout(request)
-    return HttpResponseRedirect(reverse('home:home'))
-from django.contrib.auth.views import PasswordChangeView
-from django.contrib import messages
+    return redirect(reverse('home:home'))
 # Vista personalizada para cambio de contraseña con mensaje de éxito en la misma página
 class CustomPasswordChangeView(PasswordChangeView):
     template_name = 'users/password_change.html'
@@ -17,26 +32,16 @@ class CustomPasswordChangeView(PasswordChangeView):
         messages.success(self.request, '¡Tu contraseña se cambió correctamente!')
         return response
 # Vista dashboard para cliente normal
-from django.contrib.auth.decorators import login_required
 
 @login_required
 def dashboard_cliente(request):
     return render(request, 'users/dashboard_cliente.html')
 
-from django.contrib.auth.decorators import login_required, user_passes_test
 
 @login_required
 @user_passes_test(lambda u: u.is_superuser)
 def dashboard_admin(request):
     return render(request, 'users/dashboard_admin.html')
-import random
-from django.core.mail import send_mail
-from django.conf import settings
-from django.shortcuts import render, redirect
-from django.contrib.auth import authenticate, login as auth_login
-from .forms import RegistroUsuarioForm
-from .models import Cliente, Direccion
-from django.db.models import Q
 # Vista para listado y búsqueda de clientes (solo admin)
 @login_required
 @user_passes_test(lambda u: u.is_superuser)
@@ -49,10 +54,6 @@ def listado_clientes(request):
             Q(user__email__icontains=query)
         )
     return render(request, 'users/listado_clientes.html', {'clientes': clientes})
-from django.contrib.auth.models import User
-
-# Importar el nuevo formulario manual
-from .forms_manual import RegistroManualClienteForm, EditarClienteForm, NuevaDireccionForm
 # Vista para agregar nueva dirección a un cliente (solo admin)
 @login_required
 @user_passes_test(lambda u: u.is_superuser)
@@ -96,7 +97,6 @@ def editar_cliente(request, cliente_id):
     else:
         form = EditarClienteForm(instance=cliente, user_instance=user)
     return render(request, 'users/editar_cliente.html', {'form': form, 'cliente': cliente, 'mensaje': mensaje})
-from django.contrib.auth.decorators import user_passes_test
 
 
 def registro(request):
@@ -136,8 +136,6 @@ def registro(request):
     })
 
 
-from django.views.decorators.csrf import csrf_exempt
-from django.http import JsonResponse
 
 @csrf_exempt
 def verificar_codigo_email(request):
