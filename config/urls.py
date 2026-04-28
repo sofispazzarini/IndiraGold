@@ -16,13 +16,9 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import include, path
-<<<<<<< HEAD
-
-=======
 from django.shortcuts import redirect
 from django.conf import settings
 from django.conf.urls.static import static
->>>>>>> origin/feature/comienzo
 
 urlpatterns = [
     path('', include('home.urls')),

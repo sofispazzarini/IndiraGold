@@ -183,17 +183,8 @@
 
     <div class="products-grid" id="productsGrid">
       {% for producto in productos %}
-<<<<<<< HEAD
-      <div class="product-card"
-           data-cat="{{ producto.categoria.id }}"
-           data-name="{{ producto.nombre|lower }} {{ producto.tipo|lower }} {{ producto.tela|lower }}"
-           data-talles="{% for variante in producto.variantes.all %}{% if variante.activa and variante.stock > 0 %}{{ variante.talle_id }},{% endif %}{% endfor %}"
-           data-colores="{% for variante in producto.variantes.all %}{% if variante.activa and variante.stock > 0 %}{{ variante.color_id }},{% endif %}{% endfor %}">
-        <a href="{% url 'productos:producto_detail' producto.pk %}" class="product-card__img-wrap">
-=======
       <div class="product-card" data-cat="{{ producto.categoria.id }}" data-name="{{ producto.nombre|lower }} {{ producto.tipo|lower }} {{ producto.tela|lower }}">
         <a href="#" class="product-card__img-wrap">
->>>>>>> origin/feature/comienzo
           {% if producto.imagen %}
             <img src="{{ producto.imagen.url }}" alt="{{ producto.nombre }}" class="product-card__img" />
           {% else %}

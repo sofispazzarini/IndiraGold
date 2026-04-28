@@ -350,54 +350,7 @@ def editar_proveedor(request, proveedor_id):
         form = ProveedorForm(instance=proveedor)
     return render(request, 'productos/editar_proveedor.html', {'form': form, 'mensaje': mensaje, 'proveedor': proveedor})
 
-<<<<<<< HEAD
-    def get_queryset(self):
-        return (
-            Producto.objects
-            .select_related('categoria')
-            .prefetch_related('variantes__talle', 'variantes__medida')
-        )
-
-    def get_context_data(self, **kwargs):
-        ctx = super().get_context_data(**kwargs)
-        producto = ctx['producto']
-
-        tabla_medidas = []
-        seen_talles = set()
-
-        variantes = (
-            producto.variantes
-            .filter(activa=True, medida__isnull=False)
-            .select_related('talle', 'medida')
-            .order_by('talle__nombre', 'medida_id')
-        )
-
-        for variante in variantes:
-            if variante.talle_id in seen_talles:
-                continue
-
-            medida = variante.medida
-            tabla_medidas.append({
-                'talle': variante.talle.nombre,
-                'alto': medida.alto,
-                'ancho': medida.ancho,
-                'largo': medida.largo,
-                'tiro': medida.tiro,
-            })
-            seen_talles.add(variante.talle_id)
-
-        ctx['tabla_medidas'] = tabla_medidas
-        return ctx
-
-# 3. CREATE (Crear producto)
-class ProductoCreateView(CreateView):
-    model = Producto
-    form_class = ProductoForm
-    template_name = 'producto_form.html'
-    success_url = reverse_lazy('productos:lista') # Redirige a la lista al terminar
-=======
 # --- MEDIDAS ---
->>>>>>> origin/feature/comienzo
 
 @admin_required
 def gestion_medidas(request):

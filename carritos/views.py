@@ -209,7 +209,7 @@ def _build_producto_detail_context(producto: Producto | None):
 def _build_home_context(request):
 	expire_cart_if_needed(request.session)
 
-	productos = Producto.objects.filter(activo=True).prefetch_related('variantes__talle', 'variantes__color')
+	productos = Producto.objects.filter(activo=True).prefetch_related('variantes__talle', 'variantes__colores')
 	productos_destacados = productos.order_by("-created_at")[:8]
 	# Fallback simple: si por algún motivo no hay destacados, reutilizamos los primeros del catálogo
 	if not productos_destacados:

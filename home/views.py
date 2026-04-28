@@ -8,7 +8,7 @@ class HomePublicaView(TemplateView):
         ctx = super().get_context_data(**kwargs)
         expire_cart_if_needed(self.request.session)
 
-        productos = Producto.objects.filter(activo=True).prefetch_related('variantes__talle', 'variantes__color')
+        productos = Producto.objects.filter(activo=True).prefetch_related('variantes__talle', 'variantes__colores')
         productos_destacados = productos.order_by('-created_at')[:8]
         if not productos_destacados:
             productos_destacados = productos[:8]
