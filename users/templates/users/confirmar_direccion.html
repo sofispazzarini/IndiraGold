@@ -5,40 +5,141 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <link rel="stylesheet" href="{% static 'css/users.css' %}">
+    <style>
+        body {
+            background: #fdfaf5;
+        }
+        .membership-grid-card {
+            background: #fff;
+            max-width: 900px;
+            margin: 48px auto;
+            border-radius: 20px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.05);
+            border: 1.5px solid rgba(184, 146, 42, 0.18);
+            padding: 0;
+            overflow: hidden;
+        }
+        .header-minimal {
+            text-align: center;
+            padding: 3rem 2rem 2rem 2rem;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .header-minimal h1 {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 2.3rem;
+            font-weight: 700;
+            color: #1a1612;
+            margin-bottom: 0.5rem;
+        }
+        .header-minimal p {
+            color: #b8922a;
+            font-size: 0.9rem;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+        }
+        .ubicacion-content {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0;
+        }
+        .col-left-ubicacion, .col-right-ubicacion {
+            flex: 1 1 0;
+            min-width: 320px;
+            padding: 3rem 2.5rem;
+        }
+        .col-left-ubicacion {
+            background: #fcfcfc;
+            border-right: 1px solid #f0f0f0;
+        }
+        .col-right-ubicacion {
+            background: #fff;
+        }
+        .domicilio-box {
+            background: #fffbe6;
+            border-left: 5px solid #b8922a;
+            border-radius: 12px;
+            padding: 1.2rem 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .domicilio-box h6 {
+            font-weight: 700;
+            margin-bottom: 0.3rem;
+            color: #8c7e70;
+        }
+        .domicilio-box p {
+            margin-bottom: 0;
+            color: #1a1612;
+            font-size: 1.1rem;
+        }
+        .btn-ig-submit {
+            background: #1a1612;
+            color: #e8c96a;
+            padding: 16px 0;
+            border: 2px solid #b8922a;
+            border-radius: 100px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            width: 100%;
+            margin-bottom: 0.7rem;
+            transition: 0.3s;
+        }
+        .btn-ig-submit:hover {
+            background: #b8922a;
+            color: #fff;
+        }
+        .btn-corrige {
+            color: #b8922a;
+            font-weight: 700;
+            text-decoration: none;
+            display: inline-block;
+            margin-top: 0.5rem;
+        }
+        .btn-corrige:hover {
+            text-decoration: underline;
+            color: #7c2a3a;
+        }
+        #map {
+            height: 340px;
+            border-radius: 18px;
+            border: 2px solid #e8c96a;
+            box-shadow: 0 4px 24px rgba(184,146,42,0.08);
+        }
+        @media (max-width: 900px) {
+            .ubicacion-content {
+                flex-direction: column;
+            }
+            .col-left-ubicacion, .col-right-ubicacion {
+                border-right: none;
+                padding: 2rem 1rem;
+            }
+        }
+    </style>
 {% endblock %}
 
 {% block content %}
-<div class="form-container" style="max-width: 800px;">
-    <div class="ig-card">
-        <div class="ig-card-header">
-            <h2 class="text-uppercase">Confirmar Ubicación</h2>
-        </div>
-        
-        <div class="ig-card-body">
-            <div class="alert alert-info border-0 shadow-sm rounded-4 mb-4 small">
+<div class="membership-grid-card">
+    <div class="header-minimal">
+        <h1>Confirmar Ubicación</h1>
+        <p>Indira Gold Exclusive</p>
+    </div>
+    <div class="ubicacion-content">
+        <div class="col-left-ubicacion">
+            <div class="alert alert-info border-0 shadow-sm rounded-4 mb-4 small" style="background:#fffbe6; color:#7c2a3a;">
                 <i class="bi bi-info-circle me-2"></i> Por favor, verificá que el marcador en el mapa coincida con tu domicilio.
             </div>
-
-            <div class="row g-4 align-items-center">
-                <div class="col-md-5">
-                    <div class="p-3 bg-light rounded-4 border-start border-gold border-4 mb-3">
-                        <h6 class="fw-bold mb-1">Domicilio Registrado:</h6>
-                        <p class="mb-0 text-muted">{{ data.calle }} {{ data.numero }}<br>{{ data.ciudad }}, {{ data.provincia }}</p>
-                    </div>
-                    
-                    <form method="POST">
-                        {% csrf_token %}
-                        <button type="submit" class="btn-ig-submit w-100">CONFIRMAR DIRECCIÓN</button>
-                    </form>
-                    <a href="{% url 'users:registro' %}" class="btn btn-link text-muted small w-100 mt-3 text-decoration-none">
-                        <i class="bi bi-pencil me-1"></i> Corregir datos
-                    </a>
-                </div>
-                
-                <div class="col-md-7">
-                    <div id="map" style="height: 350px; border-radius: 20px; border: 2px solid var(--gold-soft); z-index: 1;"></div>
-                </div>
+            <div class="domicilio-box">
+                <h6>Domicilio Registrado:</h6>
+                <p>{{ data.calle }} {{ data.numero }}<br>{{ data.ciudad }}, {{ data.provincia }}</p>
             </div>
+            <form method="POST">
+                {% csrf_token %}
+                <button type="submit" class="btn-ig-submit">CONFIRMAR DIRECCIÓN</button>
+            </form>
+            <a href="{% url 'users:registro' %}" class="btn-corrige"><i class="bi bi-pencil me-1"></i> Corregir datos</a>
+        </div>
+        <div class="col-right-ubicacion">
+            <div id="map"></div>
         </div>
     </div>
 </div>

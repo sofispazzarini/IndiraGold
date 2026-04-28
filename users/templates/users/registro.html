@@ -5,109 +5,214 @@
     <link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <link rel="stylesheet" href="{% static 'css/users.css' %}">
+    <style>
+        /* Contenedor que centra todo el bloque en la pantalla */
+        .master-flex-center {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: #fdfaf5;
+            padding: 3rem 1rem;
+        }
+
+        /* Tarjeta con GRID forzado para las dos columnas */
+        .membership-grid-card {
+            background: #ffffff;
+            width: 100%;
+            max-width: 1200px; /* Aumentamos el ancho para que entren bien */
+            border-radius: 20px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.05);
+            border: 1px solid rgba(184, 146, 42, 0.2);
+            overflow: hidden;
+        }
+
+        /* La grilla que obliga al contenido a estar uno al lado del otro */
+        .dual-column-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr; /* 50% y 50% exactos */
+            gap: 0;
+        }
+
+        /* Columna Izquierda: Dirección */
+        .col-left-shipping {
+            padding: 4rem;
+            background: #fcfcfc;
+            border-right: 1px solid #f0f0f0;
+        }
+
+        /* Columna Derecha: Datos */
+        .col-right-personal {
+            padding: 4rem;
+            background: #ffffff;
+        }
+
+        .header-minimal {
+            text-align: center;
+            padding: 3rem;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        /* Estilo de inputs */
+        .membership-grid-card input, 
+        .membership-grid-card select {
+            width: 100%;
+            padding: 14px;
+            border: 1.5px solid #eee;
+            border-radius: 8px;
+            background: #fafafa;
+            outline: none;
+            margin-bottom: 5px;
+        }
+
+        .membership-grid-card input:focus {
+            border-color: #b8922a;
+            background: #fff;
+        }
+
+        .section-label-ig {
+            font-family: 'Cormorant Garamond', serif;
+            color: #1a1612;
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* Responsive: solo se apilan en celulares */
+        @media (max-width: 992px) {
+            .dual-column-layout {
+                grid-template-columns: 1fr;
+            }
+            .col-left-shipping {
+                border-right: none;
+                border-bottom: 1px solid #f0f0f0;
+            }
+        }
+    </style>
 {% endblock %}
 
 {% block content %}
-<div class="form-container" style="max-width: 950px;">
-    <div class="ig-card">
-        <div class="ig-card-header">
-            <h2 class="text-uppercase">Crear Cuenta</h2>
-            <div class="small mt-2" style="color: var(--gold-light); letter-spacing: 4px;">UNITE A INDIRA GOLD</div>
+<div class="master-flex-center">
+    <div class="membership-grid-card">
+        
+        <div class="header-minimal">
+            <h1 style="font-family: 'Cormorant Garamond', serif; margin: 0; font-size: 2.5rem;">Registro de Cliente</h1>
+            <p style="color: #b8922a; font-size: 0.8rem; letter-spacing: 5px; text-transform: uppercase; margin-top: 5px;">Indira Gold Exclusive</p>
         </div>
 
-        <div class="ig-card-body">
-            <form method="POST" autocomplete="off">
-                {% csrf_token %}
-                <div class="row g-5">
-                    <div class="col-md-6">
-                        <div class="form-section-header">
-                            <i class="bi bi-person-fill"></i>
-                            <h3 class="form-section-title">Datos Personales</h3>
+            {% if error %}
+                <div class="alert alert-danger" style="margin: 2rem 0;">
+                    {{ error }}
+                </div>
+            {% endif %}
+            {% if form.errors %}
+                <div class="alert alert-danger" style="margin: 2rem 0;">
+                    <ul class="mb-0 small">
+                        {% for field, errors in form.errors.items %}
+                            {% for error in errors %}
+                                <li><strong>{{ field|capfirst }}:</strong> {{ error }}</li>
+                            {% endfor %}
+                        {% endfor %}
+                        {% for error in form.non_field_errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% endif %}
+
+        <form method="POST" autocomplete="off">
+            {% csrf_token %}
+
+            <div class="dual-column-layout">
+                
+                <div class="col-left-shipping">
+                    <div class="section-label-ig">
+                        <i class="bi bi-geo-alt" style="color: #b8922a;"></i> Dirección de Envío
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 30px; margin-bottom: 1.5rem;">
+                        <div>
+                            <label style="font-weight: 700; font-size: 0.7rem; color: #8c7e70; text-transform: uppercase;">Calle</label>
+                            {{ form.calle }}
                         </div>
-                        <div class="mb-3">
-                            <label class="form-label">Nombre Completo</label>
-                            {{ form.nombre }}
+                        <div>
+                            <label style="font-weight: 700; font-size: 0.7rem; color: #8c7e70; text-transform: uppercase;">Altura</label>
+                            {{ form.numero }}
                         </div>
-                        <div class="mb-3">
-                            <label class="form-label">DNI</label>
+                    </div>
+
+                    <div class="mb-4">
+                        <label style="font-weight: 700; font-size: 0.7rem; color: #8c7e70; text-transform: uppercase;">Provincia</label>
+                        {{ form.provincia }}
+                    </div>
+
+                    <div class="mb-4">
+                        <label style="font-weight: 700; font-size: 0.7rem; color: #8c7e70; text-transform: uppercase;">Ciudad</label>
+                        <input list="lista_ciudades" name="ciudad" id="id_ciudad" placeholder="Seleccioná tu ciudad" value="{{ form.ciudad.value|default:'' }}">
+                        <datalist id="lista_ciudades"></datalist>
+                    </div>
+
+                    <div>
+                        <label style="font-weight: 700; font-size: 0.7rem; color: #8c7e70; text-transform: uppercase;">Código Postal</label>
+                        {{ form.codigo_postal }}
+                    </div>
+                </div>
+
+                <div class="col-right-personal">
+                    <div class="section-label-ig">
+                        <i class="bi bi-person-circle" style="color: #b8922a;"></i> Datos Personales
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label style="font-weight: 700; font-size: 0.7rem; color: #8c7e70; text-transform: uppercase;">Nombre Completo</label>
+                        {{ form.nombre }}
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 1.5rem;">
+                        <div>
+                            <label style="font-weight: 700; font-size: 0.7rem; color: #8c7e70; text-transform: uppercase;">DNI</label>
                             {{ form.dni }}
                         </div>
-                        <div class="mb-3">
-                            <label class="form-label">Email</label>
+                        <div>
+                            <label style="font-weight: 700; font-size: 0.7rem; color: #8c7e70; text-transform: uppercase;">Email</label>
                             {{ form.email }}
                         </div>
-                        <div class="mb-3">
-                            <label class="form-label">Contraseña</label>
-                            {{ form.password1 }}
-                            <div id="password-error" class="text-danger x-small mt-1" style="display:none;"></div>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Repetir Contraseña</label>
-                            {{ form.password2 }}
-                        </div>
                     </div>
-
-                    <div class="col-md-6">
-                        <div class="form-section-header">
-                            <i class="bi bi-geo-alt-fill"></i>
-                            <h3 class="form-section-title">Dirección de Envío</h3>
-                        </div>
-                        <div class="row g-3">
-                            <div class="col-8">
-                                <label class="form-label">Calle</label>
-                                {{ form.calle }}
-                            </div>
-                            <div class="col-4">
-                                <label class="form-label">Número</label>
-                                {{ form.numero }}
-                            </div>
-                            <div class="col-12">
-                                <label class="form-label">Provincia</label>
-                                {{ form.provincia }}
-                            </div>
-                            <div class="col-12">
-                                <label class="form-label">Ciudad</label>
-                                <input list="lista_ciudades" name="ciudad" id="id_ciudad" class="form-control" value="{{ form.ciudad.value|default:'' }}">
-                                <datalist id="lista_ciudades"></datalist>
-                            </div>
-                            <div class="col-12">
-                                <label class="form-label">Código Postal</label>
-                                {{ form.codigo_postal }}
-                            </div>
-                        </div>
+                    <div class="mb-4">
+                        <label style="font-weight: 700; font-size: 0.7rem; color: #8c7e70; text-transform: uppercase;">Teléfono</label>
+                        {{ form.telefono }}
+                    </div>
+                    <div class="mb-4">
+                        <label style="font-weight: 700; font-size: 0.7rem; color: #8c7e70; text-transform: uppercase;">Contraseña</label>
+                        {{ form.password1 }}
+                    </div>
+                    
+                    <div>
+                        <label style="font-weight: 700; font-size: 0.7rem; color: #8c7e70; text-transform: uppercase;">Repetir Contraseña</label>
+                        {{ form.password2 }}
                     </div>
                 </div>
 
-                <div class="text-center mt-5">
-                    <button type="submit" class="btn-ig-submit">CREAR MI CUENTA</button>
-                    <p class="mt-4 small text-muted">¿Ya tenés cuenta? <a href="{% url 'users:login' %}" class="text-gold fw-bold text-decoration-none">Iniciá sesión</a></p>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
+            </div>
 
-<div class="modal-bg" id="codigoModalBg">
-    <div class="ig-card" style="max-width: 400px; padding: 0; border: none;">
-        <div class="ig-card-header" style="padding: 1.5rem;">
-            <h3 class="h5 text-white mb-0">Verificá tu Email</h3>
-        </div>
-        <div class="p-4 text-center">
-            <p class="small text-muted mb-4">Ingresá el código de 6 dígitos que enviamos a tu correo.</p>
-            <input type="text" id="codigo-verificacion" class="form-control text-center fs-2 fw-bold mb-3" maxlength="6" style="letter-spacing: 10px;">
-            <div id="codigo-modal-error" class="text-danger small mb-3"></div>
-            <button class="btn-ig-submit w-100" onclick="enviarCodigoVerificacion()" style="margin-top: 0;">VERIFICAR</button>
-        </div>
+            <div style="text-align: center; padding: 3rem; background: #fff; border-top: 1px solid #f0f0f0;">
+                <button type="submit" style="background: #1a1612; color: #e8c96a; padding: 18px 80px; border: 2px solid #b8922a; border-radius: 100px; font-weight: 700; text-transform: uppercase; letter-spacing: 3px; cursor: pointer; transition: 0.3s;" onmouseover="this.style.background='#b8922a'; this.style.color='#fff'">
+                    Confirmar Registro
+                </button>
+                <p class="mt-3 small text-muted">¿Ya sos parte? <a href="{% url 'users:login' %}" style="color: #b8922a; font-weight: 700; text-decoration: none;">Iniciá sesión</a></p>
+            </div>
+        </form>
     </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
 <script>
-    // Lógica de TomSelect y Validación se mantiene igual pero se integra al nuevo diseño
     document.addEventListener("DOMContentLoaded", function() {
         const prov = document.getElementById("id_provincia");
-        const ts = new TomSelect("#id_ciudad",{ create: true, persist: false });
-        
+        const ts = new TomSelect("#id_ciudad",{ create: true, persist: false, maxItems:1});
         prov.addEventListener("change", function() {
             ts.clear(); ts.clearOptions();
             if (!this.value) return;
@@ -118,21 +223,58 @@
                 });
         });
     });
+</script>
+<!-- Modal de verificación de código -->
+<div class="modal-bg" id="codigoModalBg" style="display:none; position:fixed;z-index:1000;left:0;top:0;width:100vw;height:100vh;background:rgba(110,14,46,0.18);align-items:center;justify-content:center;">
+    <div class="modal" style="background:#fff;border-radius:18px;box-shadow:0 8px 32px 0 rgba(198,167,94,0.18);border:2px solid #C6A75E;max-width:370px;padding:36px 32px 28px 32px;text-align:center;position:relative;margin:auto;">
+        <div class="modal-title" style="margin-bottom:10px;font-weight:700;font-size:1.2rem;">Verifica tu correo electrónico</div>
+        <div class="modal-message" style="margin-bottom:18px;">Ingresa el código que te enviamos a tu email para continuar.</div>
+        <input type="text" id="codigo-verificacion" maxlength="6" class="modal-input" placeholder="Código de verificación" style="font-size:1.2rem;letter-spacing:0.2rem;text-align:center;border:2px solid #e2cfa2;border-radius:8px;padding:6px 10px;margin:18px 0 18px 0;background:#fff;color:#7c5a3a;outline:none;width:180px;max-width:200px;box-sizing:border-box;">
+        <div id="codigo-modal-error" class="modal-error" style="color:#6E0E2E;font-size:15px;margin-bottom:10px;font-family:'Lora',serif;"></div>
+        <button type="button" class="modal-btn" id="btn-verificar-codigo" style="display:block;margin:0 auto;min-width:140px;font-size:1.1rem;padding:10px 0;background:linear-gradient(90deg,#d6b97b 60%,#e7cfa2 100%);color:#800020;font-family:'Playfair Display',serif;font-weight:600;border:none;border-radius:10px;box-shadow:0 2px 8px rgba(180,140,80,0.08);margin-top:10px;">Verificar</button>
+    </div>
+</div>
 
-    {% if show_verification_modal %}
-    document.getElementById('codigoModalBg').classList.add('active');
-    {% endif %}
+<script>
+        // Mostrar el modal si el backend lo indica
+        {% if show_verification_modal %}
+            document.addEventListener('DOMContentLoaded', function() {
+                var modal = document.getElementById('codigoModalBg');
+                if (modal) { modal.style.display = 'flex'; }
+            });
+        {% endif %}
 
-    function enviarCodigoVerificacion() {
-        const codigo = document.getElementById('codigo-verificacion').value;
-        fetch("{% url 'users:verificar_codigo_email' %}", {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-CSRFToken': '{{ csrf_token }}' },
-            body: `codigo=${codigo}`
-        }).then(r => r.json()).then(data => {
-            if (data.success) window.location.href = "{% url 'users:confirmar_direccion' %}";
-            else document.getElementById('codigo-modal-error').textContent = 'Código incorrecto.';
+        // AJAX para verificar código
+        document.addEventListener('DOMContentLoaded', function() {
+            var btn = document.getElementById('btn-verificar-codigo');
+            var input = document.getElementById('codigo-verificacion');
+            var errorDiv = document.getElementById('codigo-modal-error');
+            if (btn) {
+                btn.addEventListener('click', function() {
+                    var codigo = input.value;
+                    errorDiv.textContent = '';
+                    fetch("{% url 'users:verificar_codigo_email' %}", {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                            'X-CSRFToken': '{{ csrf_token }}'
+                        },
+                        body: `codigo=${codigo}`
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            document.getElementById('codigoModalBg').style.display = 'none';
+                            window.location.href = "{% url 'users:confirmar_direccion' %}";
+                        } else {
+                            errorDiv.textContent = data.error || 'Código incorrecto. Intenta nuevamente.';
+                        }
+                    })
+                    .catch(() => {
+                        errorDiv.textContent = 'Error de conexión.';
+                    });
+                });
+            }
         });
-    }
 </script>
 {% endblock %}
