@@ -1,485 +1,345 @@
 {% extends 'users/dashboard_admin.html' %}
 
 {% block content %}
-
-<div class="container mt-4" style="max-width: 900px;">
-    <h2 class="mb-4">Agregar producto{% if subcategoria %} a la subcategoría: <span class="fw-bold">{{ subcategoria.nombre }}</span>{% endif %}</h2>
-    
-    <form id="formProducto" method="post">
-        {% csrf_token %}
-        <div class="row mb-3">
-            <div class="col-md-6">
-                <label for="nombre" class="form-label">Nombre</label>
-                <input type="text" class="form-control" id="nombre" name="nombre" required>
-            </div>
-            <div class="col-md-3">
-                <label for="codigo" class="form-label">Código</label>
-                <input type="text" class="form-control" id="codigo" name="codigo">
-            </div>
-            <div class="col-md-3">
-                <label for="tipo" class="form-label">Tipo</label>
-                <input type="text" class="form-control" id="tipo" name="tipo">
-            </div>
+{% if form.errors %}
+    <div class="alert alert-danger shadow-sm border-0 mb-4" style="border-radius: 15px;">
+        <div class="d-flex align-items-center">
+            <svg width="24" height="24" fill="currentColor" class="me-2" viewBox="0 0 16 16">
+                <path d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767L8.982 1.566zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5zm.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2z"/>
+            </svg>
+            <h6 class="mb-0 fw-bold">No se pudo guardar el producto:</h6>
         </div>
-        <div class="row mb-3">
-            <div class="col-md-4">
-                <label for="precio" class="form-label">Precio base</label>
-                <input type="number" class="form-control" id="precio" name="precio" min="0" step="0.01">
-            </div>
-            <div class="col-md-4">
-                <label for="stock" class="form-label">Stock total</label>
-                <input type="number" class="form-control" id="stock" name="stock" min="0">
-            </div>
-            <div class="col-md-4">
-                <label for="descripcion" class="form-label">Descripción</label>
-                <input type="text" class="form-control" id="descripcion" name="descripcion">
-            </div>
-        </div>
-
-        <hr>
-
-        <h4 class="mb-2">Talles, medidas y colores</h4>
-        <div id="tallesContainer"></div>
-        <button type="button" class="btn btn-gestion-bordo my-2" onclick="agregarTalle()">
-            <span class="icono-btn">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
-            </span>
-            Agregar talle
-        </button>
-        <div class="mt-3">
-            <h5>Talles guardados</h5>
-            <div id="listadoTalles"></div>
-        </div>
-        <input type="hidden" name="variantes_json" id="variantes_json">
-        <div class="mt-4">
-            <button type="submit" class="btn btn-gestion-bordo">Guardar producto</button>
-        </div>
-    </form>
-</div>
-
-<template id="tplTalle">
-    <div class="card mb-3 talle-block" style="background:#faf8f6; border:1.5px solid #e0d6d0;">
-        <div class="card-body">
-            <div class="mb-2">
-                <label class="form-label mb-1" style="font-weight:600; color:#800020;">Nombre del talle</label>
-                <input type="text" class="form-control talle-nombre" placeholder="Ej: S, M, L, 10, 12" required style="max-width:180px; background:#fff; border:1.5px solid #b8860b;">
-            </div>
-            <div class="medidasContainer"></div>
-            <div class="mt-2" style="margin-left:2px;">
-                <div class="listadoMedidas"></div>
-            </div>
-            <div class="d-flex flex-wrap gap-2 justify-content-end mt-3">
-                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="agregarMedida(this)">Agregar medida</button>
-                <button type="button" class="btn btn-success btn-sm" onclick="guardarTalle(this)">Guardar talle</button>
-                <button type="button" class="btn btn-sm btn-danger" onclick="eliminarTalle(this)">Eliminar talle</button>
-            </div>
-        </div>
+        <ul class="mt-2 mb-0 small">
+            {% for field in form %}
+                {% for error in field.errors %}
+                    <li><strong>{{ field.label }}:</strong> {{ error }}</li>
+                {% endfor %}
+            {% endfor %}
+            {% for error in form.non_field_errors %}
+                <li>{{ error }}</li>
+            {% endfor %}
+        </ul>
     </div>
-</template>
-<template id="tplMedida">
-    <div class="card mb-2 medida-block">
-        <div class="card-body py-2 px-3">
-            <div class="d-flex align-items-center mb-2 gap-2 flex-wrap">
-                <input type="number" step="0.01" class="form-control form-control-sm medida-alto" placeholder="Alto" style="max-width:90px;">
-                <input type="number" step="0.01" class="form-control form-control-sm medida-ancho" placeholder="Ancho" style="max-width:90px;">
-                <input type="number" step="0.01" class="form-control form-control-sm medida-largo" placeholder="Largo" style="max-width:90px;">
-                <input type="number" step="0.01" class="form-control form-control-sm medida-tiro" placeholder="Tiro" style="max-width:90px;">
-                <button type="button" class="btn btn-success btn-sm" onclick="guardarMedida(this)">Guardar medida</button>
-                <button type="button" class="btn btn-sm btn-danger" onclick="eliminarMedida(this)">Eliminar medida</button>
-            </div>
-            <div class="coloresContainer"></div>
-            <button type="button" class="btn btn-outline-secondary btn-sm mt-2" onclick="agregarColor(this)">Agregar color</button>
+{% endif %}
+<div class="container-fluid d-flex justify-content-center py-4">
+    <div style="width: 100%; max-width: 1050px;">
+        
+        <div class="d-flex align-items-center mb-4">
+            <a href="{% url 'productos:productos_por_subcategoria' subcategoria.id %}" class="btn border-0 p-2">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+            </a>
+            <h2 class="ms-2 mb-0" style="font-family: 'Cormorant Garamond';">Crear Ficha: <span style="color: #b8922a;">{{ subcategoria.nombre }}</span></h2>
         </div>
-    </div>
-</template>
-<template id="tplColor">
-    <div class="input-group mb-1 color-block align-items-center" style="max-width:370px;">
-        <input type="color" class="form-control form-control-color color-picker" style="width: 48px; height: 32px; padding: 2px; border: none; background: none;" value="#000000" title="Elegir color">
-        <input type="text" class="form-control form-control-sm color-nombre ms-2" placeholder="Nombre del color" required style="max-width:120px;">
-        <span class="color-preview ms-2" style="display:inline-block;width:28px;height:28px;border-radius:50%;border:1px solid #888;"></span>
-        <div class="form-check ms-2">
-            <input class="form-check-input color-ninguno" type="checkbox" id="colorNinguno" style="margin-top:0.5em;">
-            <label class="form-check-label" for="colorNinguno" style="font-size:0.95em;">Ninguno</label>
-        </div>
-        <button type="button" class="btn btn-sm btn-danger ms-2" onclick="eliminarColor(this)">X</button>
-    </div>
-</template>
 
-<style>
-.btn-gestion-bordo {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    background: linear-gradient(90deg, #800020 0%, #b8860b 100%);
-    color: #fff;
-    font-size: 1.08rem;
-    font-weight: 600;
-    border: none;
-    border-radius: 28px;
-    box-shadow: 0 2px 12px rgba(128,0,32,0.10);
-    padding: 14px 28px;
-    transition: background 0.2s, box-shadow 0.2s, transform 0.1s;
-    cursor: pointer;
-    min-width: 180px;
-    max-width: 240px;
-    min-height: 48px;
-    justify-content: center;
-    width: auto;
-    box-sizing: border-box;
-    text-decoration: none;
-    margin-right: 8px;
-}
-.btn-gestion-bordo:hover {
-    background: linear-gradient(90deg, #b8860b 0%, #800020 100%);
-    box-shadow: 0 4px 18px rgba(128,0,32,0.18);
-    transform: translateY(-2px) scale(1.04);
-    color: #fff;
-    text-decoration: none;
-}
-.icono-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-</style>
+        <form id="formProductoFinal" method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            
+            <div style="background: #fff; border: 2px solid #1a1612; box-shadow: 15px 15px 0 rgba(0,0,0,0.03);">
+                <div style="background: #1a1612; color: #b8922a; padding: 15px 25px; display: flex; justify-content: space-between; align-items: center;">
+                    <div style="font-family: 'Cormorant Garamond'; font-size: 1.8rem; font-weight: 700;">INDIRA GOLD</div>
+                    <div style="font-size: 0.8rem; letter-spacing: 3px;">FICHA TÉCNICA</div>
+                </div>
 
-<script>
-// Manejar opción 'Ninguno' para color
-document.addEventListener('change', function(e) {
-    if (e.target.classList.contains('color-ninguno')) {
-        const block = e.target.closest('.color-block');
-        const picker = block.querySelector('.color-picker');
-        const nombre = block.querySelector('.color-nombre');
-        const preview = block.querySelector('.color-preview');
-        if (e.target.checked) {
-            picker.disabled = true;
-            nombre.disabled = true;
-            preview.style.background = '#eee';
-            nombre.value = 'Sin color';
-        } else {
-            picker.disabled = false;
-            nombre.disabled = false;
-            preview.style.background = picker.value;
-            nombre.value = '';
-        }
-    }
-});
-// Diccionario simple de nombres de colores estándar
-const COLOR_NAMES = {
-    '#000000': 'Negro', '#ffffff': 'Blanco', '#ff0000': 'Rojo', '#00ff00': 'Verde', '#0000ff': 'Azul',
-    '#ffff00': 'Amarillo', '#00ffff': 'Cian', '#ff00ff': 'Magenta', '#808080': 'Gris', '#800000': 'Bordó',
-    '#008000': 'Verde oscuro', '#000080': 'Azul oscuro', '#ffa500': 'Naranja', '#a52a2a': 'Marrón', '#ffc0cb': 'Rosa'
-};
-
-// Al agregar color, inicializar eventos
-document.addEventListener('input', function(e) {
-    if (e.target.classList.contains('color-picker')) {
-        const colorInput = e.target;
-        const colorBlock = colorInput.closest('.color-block');
-        const nombreInput = colorBlock.querySelector('.color-nombre');
-        const colorPreview = colorBlock.querySelector('.color-preview');
-        colorPreview.style.background = colorInput.value;
-        // Si el nombre está vacío o coincide con el anterior, autocompletar
-        if (!nombreInput.value || COLOR_NAMES[colorInput.value.toLowerCase()]) {
-            nombreInput.value = COLOR_NAMES[colorInput.value.toLowerCase()] || colorInput.value;
-        }
-    }
-});
-document.addEventListener('DOMContentLoaded', function() {
-    // Inicializar previews para los ya existentes
-    document.querySelectorAll('.color-block').forEach(function(block) {
-        const picker = block.querySelector('.color-picker');
-        const preview = block.querySelector('.color-preview');
-        if (picker && preview) preview.style.background = picker.value;
-    });
-});
-
-// Guardar medida y mostrar en listado
-function guardarMedida(btn) {
-    const medidaDiv = btn.closest('.medida-block');
-    let alto = medidaDiv.querySelector('.medida-alto').value;
-    let ancho = medidaDiv.querySelector('.medida-ancho').value;
-    let largo = medidaDiv.querySelector('.medida-largo').value;
-    let tiro = medidaDiv.querySelector('.medida-tiro').value;
-    if (!alto && !ancho && !largo && !tiro) {
-        alert('Debe ingresar al menos un valor para la medida.');
-        return;
-    }
-    let coloresArr = [];
-    medidaDiv.querySelectorAll('.color-block').forEach(function(colorDiv) {
-        const ninguno = colorDiv.querySelector('.color-ninguno')?.checked;
-        if (ninguno) {
-            coloresArr.push({ nombre: 'Sin color', color: null, ninguno: true });
-        } else {
-            coloresArr.push({
-                nombre: colorDiv.querySelector('.color-nombre').value.trim(),
-                color: colorDiv.querySelector('.color-picker').value,
-                ninguno: false
-            });
-        }
-    });
-    // Guardar en listado visual
-    const listado = medidaDiv.closest('.talle-block').querySelector('.listadoMedidas');
-    let idx = Date.now() + Math.floor(Math.random()*10000); // id único
-    let html = `<div class='d-flex align-items-center mb-1' data-medida-idx='${idx}'>` +
-        `<span class='badge bg-secondary me-2'>A:${alto||'-'} An:${ancho||'-'} L:${largo||'-'} T:${tiro||'-'}` +
-        (coloresArr.length ? ' | Colores: ' + coloresArr.map(c=>c.nombre).join(', ') : '') +
-        `</span>` +
-        `<button type='button' class='btn btn-sm btn-danger ms-2' onclick='eliminarMedidaGuardada(this)'>X</button></div>`;
-    listado.innerHTML += html;
-    // Guardar datos en el div para serializar luego
-    if (!listado._medidas) listado._medidas = [];
-    listado._medidas.push({idx, alto, ancho, largo, tiro, colores: coloresArr});
-    // Limpiar inputs
-    medidaDiv.querySelector('.medida-alto').value = '';
-    medidaDiv.querySelector('.medida-ancho').value = '';
-    medidaDiv.querySelector('.medida-largo').value = '';
-    medidaDiv.querySelector('.medida-tiro').value = '';
-    medidaDiv.querySelectorAll('.color-block').forEach(cb => cb.remove());
-}
-
-function eliminarMedidaGuardada(btn) {
-    const div = btn.closest('[data-medida-idx]');
-    const listado = btn.closest('.listadoMedidas');
-    let idx = parseInt(div.getAttribute('data-medida-idx'));
-    if (listado._medidas) {
-        listado._medidas = listado._medidas.filter(m => m.idx !== idx);
-    }
-    div.remove();
-}
-
-
-// Listado de talles guardados
-let tallesGuardados = [];
-
-function agregarTalle() {
-    const tpl = document.getElementById('tplTalle').content.cloneNode(true);
-    document.getElementById('tallesContainer').appendChild(tpl);
-}
-function eliminarTalle(btn) {
-    btn.closest('.talle-block').remove();
-}
-function agregarMedida(btn) {
-    const medidasContainer = btn.closest('.talle-block').querySelector('.medidasContainer');
-    // Si ya hay una medida sin guardar (inputs visibles), no permitir agregar otra
-    if (medidasContainer.querySelector('.medida-block input:not([disabled])')) {
-        mostrarModalMedida();
-        return;
-    }
-    const tpl = document.getElementById('tplMedida').content.cloneNode(true);
-    medidasContainer.appendChild(tpl);
-    // Modal Bootstrap para advertencia de medida no guardada
-    function mostrarModalMedida() {
-        let modal = document.getElementById('modalMedidaNoGuardada');
-        if (!modal) {
-            modal = document.createElement('div');
-            modal.className = 'modal fade';
-            modal.id = 'modalMedidaNoGuardada';
-            modal.tabIndex = -1;
-            modal.innerHTML = `
-            <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">Atención</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                <div class="row g-0 border-bottom border-dark">
+                    <div class="col-3 border-end border-dark p-2">
+                        <label class="d-block small fw-bold text-muted" style="font-size: 0.6rem;">NOMBRE DEL PRODUCTO</label>
+                        <input type="text" name="nombre" class="form-control border-0 bg-transparent p-0" placeholder="Ej: Bota Génesis" required>
                     </div>
-                    <div class="modal-body">
-                        <p>Debe guardar o eliminar la medida actual antes de agregar una nueva.</p>
+                    <div class="col-3 border-end border-dark p-2">
+                        <label class="d-block small fw-bold text-muted">TIPOLOGÍA</label>
+                        <input type="text" name="tipo" class="form-control border-0 bg-transparent p-0" required>
                     </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Aceptar</button>
+                    <div class="col-3 border-end border-dark p-2">
+                        <label class="d-block small fw-bold text-muted">ARTÍCULO</label>
+                        <input type="text" name="codigo" class="form-control border-0 bg-transparent p-0" required>
+                    </div>
+                    <div class="col-3 border-end border-dark p-2">
+                        <label class="d-block small fw-bold text-muted">TEMPORADA</label>
+                        <input type="text" name="temporada" class="form-control border-0 bg-transparent p-0">
+                    </div>
+                    <div class="col-3 p-2">
+                        <label class="d-block small fw-bold text-muted">TELA</label>
+                        <input type="text" name="tela" class="form-control border-0 bg-transparent p-0" required>
                     </div>
                 </div>
-            </div>`;
-            document.body.appendChild(modal);
-        }
-        var bsModal = new bootstrap.Modal(modal);
-        bsModal.show();
-    }
-    // Al guardar, deshabilitar los inputs y botones de la medida guardada
-    const medidaDiv = btn.closest('.medida-block');
-    medidaDiv.querySelectorAll('input').forEach(inp => inp.disabled = true);
-    medidaDiv.querySelectorAll('button').forEach(b => b.disabled = true);
-}
-function eliminarMedida(btn) {
-    btn.closest('.medida-block').remove();
-}
-function agregarColor(btn) {
-    const tpl = document.getElementById('tplColor').content.cloneNode(true);
-    btn.closest('.medida-block').querySelector('.coloresContainer').appendChild(tpl);
-}
-function eliminarColor(btn) {
-    btn.closest('.color-block').remove();
-}
 
-function guardarTalle(btn) {
-    const talleDiv = btn.closest('.talle-block');
-    let nombreTalle = talleDiv.querySelector('.talle-nombre').value.trim();
-    if (!nombreTalle) {
-        alert('El talle debe tener nombre.');
-        return;
-    }
-    let medidasArr = [];
-    // Solo las medidas guardadas
-    const listado = talleDiv.querySelector('.listadoMedidas');
-    if (listado && listado._medidas) {
-        medidasArr = listado._medidas;
-    }
-    tallesGuardados.push({nombre: nombreTalle, medidas: medidasArr});
-    actualizarListadoTalles();
-    talleDiv.remove();
-}
+                <div class="row g-0 border-bottom border-dark">
+                    <div class="col-12 p-2">
+                        <label class="d-block small fw-bold text-muted">DESCRIPCIÓN TÉCNICA</label>
+                        <textarea name="descripcion" class="form-control border-0 bg-transparent p-0" rows="2"></textarea>
+                    </div>
+                </div>
 
-function actualizarListadoTalles() {
-    let cont = document.getElementById('listadoTalles');
-    cont.innerHTML = '';
-    tallesGuardados.forEach(function(talle, idx) {
-        let html = `<div class='d-flex align-items-center mb-2'><strong class='me-2'>Talle: ${talle.nombre}</strong>`;
-        if (talle.medidas.length) {
-            html += `<span class='me-2'>Medidas:</span>`;
-            talle.medidas.forEach(function(medida) {
-                html += `<span class='badge bg-secondary me-1'>A:${medida.alto||'-'} An:${medida.ancho||'-'} L:${medida.largo||'-'} T:${medida.tiro||'-'}`;
-                if (medida.colores.length) {
-                    html += ' | ' + medida.colores.map(c =>
-                        c.ninguno ?
-                        `<span style='display:inline-block;text-align:center;margin:0 2px;'>
-                            <span title='Sin color' style='display:inline-block;width:18px;height:18px;border-radius:4px;vertical-align:middle;border:1px solid #888;background:#eee;'></span><br>
-                            <span style='font-size:0.75em;line-height:1;'>Sin color</span>
-                        </span>` :
-                        `<span style='display:inline-block;text-align:center;margin:0 2px;'>
-                            <span title='${c.nombre||c.color||""}' style='display:inline-block;width:18px;height:18px;border-radius:4px;vertical-align:middle;border:1px solid #888;background:${c.color||c.nombre||'#000'}'></span><br>
-                            <span style='font-size:0.75em;line-height:1;'>${c.nombre||''}</span>
-                        </span>`
-                    ).join('');
-                }
-                html += `</span>`;
-            });
-        }
-        html += `<button type='button' class='btn btn-sm btn-danger ms-2' onclick='eliminarTalleGuardado(${idx})'>X</button></div>`;
-        cont.innerHTML += html;
-    });
-}
+                <div class="row g-0" style="min-height: 450px;">
+                    <div class="col-3 border-end border-dark p-2 d-flex flex-column">
+                        <label class="d-block small fw-bold text-muted">AVÍOS</label>
+                        <textarea name="avios" class="form-control border-0 bg-transparent p-0 flex-grow-1"></textarea>
+                    </div>
+                    <div class="col-6 border-end border-dark p-3 d-flex flex-column align-items-center justify-content-center bg-light">
+                        <label class="small fw-bold text-muted mb-3">DIBUJO TÉCNICO</label>
+                        <input type="file" name="imagen_tecnica" id="inputImgTecnica" class="d-none" accept="image/*">
+                        <label for="inputImgTecnica" id="labelUpload" class="text-center" style="cursor:pointer; border: 2px dashed #b8922a; padding: 40px; border-radius: 15px; color: #b8922a;">
+                            <svg width="40" height="40" fill="currentColor" viewBox="0 0 16 16"><path d="M8 2a.5.5 0 0 1 .5.5V7h4.5a.5.5 0 0 1 0 1H8.5v4.5a.5.5 0 0 1-1 0V8h-4.5a.5.5 0 0 1 0-1H7.5V2.5A.5.5 0 0 1 8 2z"/></svg>
+                            <div class="mt-2 fw-bold">Subir dibujo</div>
+                        </label>
+                        <img id="viewTecnica" class="d-none w-100 h-100" style="object-fit: contain;">
+                    </div>
+                    <div class="col-3 p-2 d-flex flex-column">
+                        <label class="d-block small fw-bold text-muted">DETALLE DE ETIQUETA (AUTO)</label>
+                        <div id="autoEtiquetaDiv" class="form-control border-0 bg-transparent p-0 flex-grow-1 text-muted" style="overflow-y: auto; font-size: 0.9rem;">
+                            </div>
+                        <input type="hidden" name="etiquetas" id="autoEtiquetaInput">
+                    </div>
+                </div>
+            </div>
 
-function eliminarTalleGuardado(idx) {
-    tallesGuardados.splice(idx, 1);
-    actualizarListadoTalles();
-}
+            <div class="row mt-5 g-4">
+                <div class="col-md-6">
+                    <div class="card p-3 border-0 shadow-sm">
+                        <label class="fw-bold mb-2">GALERÍA COMERCIAL (Máx 5)</label>
+                        <input type="file" name="imagenes" id="inputGaleria" multiple accept="image/*" class="form-control">
+                        <div id="viewGaleria" class="d-flex flex-wrap gap-2 mt-3"></div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="card p-3 border-0 shadow-sm">
+                        <div class="row g-3">
+                            <div class="col-6"><label class="small fw-bold">Precio ($)</label><input type="number" step="0.01" name="precio" class="form-control" required></div>
+                            <div class="col-6"><label class="small fw-bold">Stock Inicial</label><input type="number" name="stock" class="form-control" required></div>
+                            <div class="col-12">
+                                <label class="small fw-bold">Proveedor</label>
+                                <select name="proveedor" class="form-select">
+                                    {% for p in proveedores %}<option value="{{ p.id }}">{{ p.nombre }}</option>{% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Categoría</label>
+                    <input type="text" class="form-control bg-light" value="{{ categoria.nombre }}" readonly>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Subcategoría</label>
+                    <input type="text" class="form-control bg-light" value="{{ subcategoria.nombre }}" readonly>
+                </div>
+            </div>
 
-// Serializar solo los talles guardados
-document.getElementById('formProducto').addEventListener('submit', function(e) {
-    document.getElementById('variantes_json').value = JSON.stringify(tallesGuardados);
-});
-</script>
-{% endblock %}
+            <div style="display: none;">
+                {{ form.categoria }}
+                {{ form.subcategoria }}
+            </div>
+            <div class="mt-5 border-top pt-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h4 style="font-family: 'Cormorant Garamond'; font-weight: 700;">Variantes de Stock</h4>
+                    <button type="button" class="btn btn-dark px-4" data-bs-toggle="modal" data-bs-target="#modalVariante" 
+                            style="background: #b8922a; border:none; border-radius: 20px;">+ Agregar Variante</button>
+                </div>
+                <div id="listadoVariantesGlobal" class="d-flex flex-wrap gap-2"></div>
+            </div>
 
+            <input type="hidden" name="variantes_json" id="variantes_json_input">
+            
+            <div class="mt-5 text-center">
+                <button type="submit" class="btn btn-dark py-3 px-5" style="background: linear-gradient(135deg, #6E0E2E, #b8922a); border:none; border-radius: 50px; font-weight: 700; letter-spacing: 2px;">
+                    GUARDAR PRODUCTO COMPLETO
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% include 'productos/_modal_variante.html' %}
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-// Listas temporales para mostrar colores y medidas
-let colores = [];
-let medidas = [];
+    let variantes = [];
+    let tempColores = [];
+    let tempMedidas = [];
 
-// Botón agregar color
-document.addEventListener('DOMContentLoaded', function() {
-    document.getElementById('btnAgregarColor').addEventListener('click', function() {
-        document.getElementById('color_nombre').value = '';
-        document.getElementById('colorNinguno').checked = false;
-        var modal = new bootstrap.Modal(document.getElementById('modalColores'));
-        modal.show();
-    });
-    document.getElementById('formColores').addEventListener('submit', function(e) {
-        e.preventDefault();
-        let colorNinguno = document.getElementById('colorNinguno').checked;
-        let color = colorNinguno ? 'Ninguno' : document.getElementById('color_nombre').value.trim();
-        if (color && !colores.includes(color)) {
-            colores.push(color);
-            actualizarListadoColores();
-        }
-        bootstrap.Modal.getInstance(document.getElementById('modalColores')).hide();
-    });
-    // Botón agregar medida (modal)
-    document.getElementById('formMedidas').addEventListener('submit', function(e) {
-        e.preventDefault();
-        let nombre = document.getElementById('medida_nombre').value.trim();
-        let valor = document.getElementById('medida_valor').value.trim();
-        let unidad = document.getElementById('medida_unidad').value.trim();
-        if (nombre && valor && unidad) {
-            medidas.push({nombre, valor, unidad});
-            actualizarListadoMedidas();
-        }
-        bootstrap.Modal.getInstance(document.getElementById('modalMedidas')).hide();
-        document.getElementById('formMedidas').reset();
-    });
-});
+    const dicColors = { 'azul': '#0000ff', 'rojo': '#ff0000', 'verde': '#00ff00', 'negro': '#000000', 'blanco': '#ffffff', 'rosa': '#ffc0cb', 'amarillo': '#ffff00', 'celeste': '#87ceeb' };
 
-function actualizarListadoColores() {
-    let cont = document.getElementById('listadoColores');
-    cont.innerHTML = colores.map(c => `<span class='badge bg-primary me-1 mb-1'>${c}</span>`).join('');
-}
-function actualizarListadoMedidas() {
-    let cont = document.getElementById('listadoMedidas');
-    cont.innerHTML = medidas.map(m => `<span class='badge bg-secondary me-1 mb-1'>${m.nombre}: ${m.valor} ${m.unidad}</span>`).join('');
-}
+    document.addEventListener('DOMContentLoaded', function() {
+        
+        // --- 1. PREVISUALIZACIONES ---
+        document.getElementById('inputImgTecnica').onchange = (e) => {
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                document.getElementById('viewTecnica').src = ev.target.result;
+                document.getElementById('viewTecnica').classList.remove('d-none');
+                document.getElementById('labelUpload').classList.add('d-none');
+            };
+            reader.readAsDataURL(e.target.files[0]);
+        };
 
-// Variantes
-let variantes = [];
-// Abrir modal variante
-document.addEventListener('DOMContentLoaded', function() {
-    if(document.getElementById('btnAgregarVariante')){
-        document.getElementById('btnAgregarVariante').addEventListener('click', function() {
-            // Reset modal
-            document.getElementById('variante_talle').value = '';
-            document.getElementById('variante_color_picker').value = '#000000';
-            document.getElementById('variante_color_nombre').value = '';
-            document.getElementById('variante_color_ninguno').checked = false;
-            document.getElementById('variante_alto').value = '';
-            document.getElementById('variante_ancho').value = '';
-            document.getElementById('variante_largo').value = '';
-            document.getElementById('variante_tiro').value = '';
-            document.getElementById('variante_stock').value = '';
-            document.getElementById('variante_precio').value = '';
-            var modal = new bootstrap.Modal(document.getElementById('modalVariante'));
-            modal.show();
-        });
-    }
-    // Guardar variante
-    if(document.getElementById('formVariante')){
-        document.getElementById('formVariante').addEventListener('submit', function(e) {
-            e.preventDefault();
-            let talle = document.getElementById('variante_talle').value;
-            let colorNinguno = document.getElementById('variante_color_ninguno').checked;
-            let colorHex = colorNinguno ? null : document.getElementById('variante_color_picker').value;
-            let colorNombre = colorNinguno ? 'Sin color' : document.getElementById('variante_color_nombre').value.trim();
-            let alto = document.getElementById('variante_alto').value;
-            let ancho = document.getElementById('variante_ancho').value;
-            let largo = document.getElementById('variante_largo').value;
-            let tiro = document.getElementById('variante_tiro').value;
-            let stock = document.getElementById('variante_stock').value;
-            let precio = document.getElementById('variante_precio').value;
-            if(talle && stock && precio) {
-                variantes.push({
-                    talle, colorHex, colorNombre, alto, ancho, largo, tiro, stock, precio
-                });
-                actualizarListadoVariantes();
-                bootstrap.Modal.getInstance(document.getElementById('modalVariante')).hide();
+        document.getElementById('inputGaleria').onchange = (e) => {
+            const cont = document.getElementById('viewGaleria');
+            cont.innerHTML = '';
+            Array.from(e.target.files).slice(0, 5).forEach(f => {
+                const r = new FileReader();
+                r.onload = (ev) => {
+                    cont.innerHTML += `<img src="${ev.target.result}" style="width:60px; height:60px; object-fit:cover; border-radius:8px; border:1px solid #ddd;">`;
+                };
+                r.readAsDataURL(f);
+            });
+        };
+
+        // --- 2. LÓGICA DEL MODAL ---
+
+        // Autocolor al escribir
+        document.getElementById('colorNombreModal').oninput = (e) => {
+            let val = e.target.value.toLowerCase().trim();
+            if(dicColors[val]) document.getElementById('colorPickerModal').value = dicColors[val];
+        };
+
+        // Botón Agregar Color (DENTRO DEL MODAL)
+        document.getElementById('btnPostColor').onclick = () => {
+            let picker = document.getElementById('colorPickerModal').value;
+            let nombre = document.getElementById('colorNombreModal').value.trim() || picker;
+            let ninguno = document.getElementById('colorNingunoModal').checked;
+            
+            tempColores.push({ colorNombre: ninguno ? 'Sin color' : nombre, colorHex: ninguno ? null : picker, colorNinguno: ninguno });
+            renderTempColores();
+            document.getElementById('colorNombreModal').value = '';
+        };
+
+        // Botón Agregar Medida (DENTRO DEL MODAL)
+        document.getElementById('btnPostMedida').onclick = () => {
+            let a = document.getElementById('medAlto').value, n = document.getElementById('medAncho').value, 
+                l = document.getElementById('medLargo').value, t = document.getElementById('medTiro').value;
+            if(a || n || l || t) {
+                tempMedidas.push({ alto: a, ancho: n, largo: l, tiro: t });
+                renderTempMedidas();
+                document.querySelectorAll('#medAlto, #medAncho, #medLargo, #medTiro').forEach(i => i.value = '');
             }
-        });
-    }
-});
+        };
 
-function actualizarListadoVariantes() {
-    let cont = document.getElementById('listadoVariantes');
-    if(!cont) return;
-    cont.innerHTML = variantes.map(v => `
-        <div class='d-flex align-items-center mb-1' style='font-size:0.95em;'>
-            <span class='badge bg-light text-dark border me-1'>Talle: ${v.talle}</span>
-            ${v.colores && v.colores.length ? v.colores.map(c => c.colorNinguno ? `<span class='badge bg-secondary me-1 mb-1'>Sin color</span>` : `<span class='badge bg-primary me-1 mb-1'><span style='display:inline-block;width:14px;height:14px;border-radius:50%;background:${c.colorHex};border:1px solid #888;margin-right:4px;'></span>${c.colorNombre}</span>`).join('') : ''}
-            ${v.medidas && v.medidas.length ? v.medidas.map(m => `<span class='badge bg-secondary me-1 mb-1'>${['Alto: '+m.alto, 'Ancho: '+m.ancho, 'Largo: '+m.largo, 'Tiro: '+m.tiro].filter(x=>!x.endsWith(': ')).join(' / ')}</span>`).join('') : ''}
-            <span class='badge bg-success me-1'>Stock: ${v.stock}</span>
-            <span class='badge bg-info text-dark'>Precio: $${v.precio}</span>
-        </div>
-    `).join('');
-}
-// Serializar variantes antes de enviar el formulario
-document.getElementById('formProducto').addEventListener('submit', function(e) {
-    document.getElementById('variantes_json').value = JSON.stringify(variantes);
-});
-</script>
+        // Guardar Variante Completa
+        document.getElementById('formVarianteInternal').onsubmit = (e) => {
+            e.preventDefault();
+            let talle = document.getElementById('inputTalleLibre').value;
+            if(talle) {
+                variantes.push({ talle, colores: [...tempColores], medidas: [...tempMedidas], stock: 0, precio: 0 });
+                actualizarUI();
+                bootstrap.Modal.getInstance(document.getElementById('modalVariante')).hide();
+                // Reset
+                tempColores = []; tempMedidas = [];
+                e.target.reset();
+                renderTempColores(); renderTempMedidas();
+            }
+        };
+    });
+
+    function renderTempColores() {
+        const contenedor = document.getElementById('displayColoresTemp');
+        
+        // Si hay colores, removemos el d-none para que se vea el cuadrado gris
+        if (tempColores.length > 0) {
+            contenedor.classList.remove('d-none');
+        } else {
+            contenedor.classList.add('d-none');
+        }
+
+        // Armamos la pastilla visual con el círculo de color al lado del nombre
+        contenedor.innerHTML = tempColores.map((c, i) => `
+            <span class="badge bg-dark me-2 mb-1 d-inline-flex align-items-center" style="font-size: 0.85rem; padding: 6px 10px;">
+                ${c.colorNinguno 
+                    ? 'Sin color' 
+                    : `<span style="display:inline-block; width:12px; height:12px; background-color:${c.colorHex}; border-radius:50%; margin-right:6px; border:1px solid #fff;"></span>${c.colorNombre}`
+                }
+                <button type="button" class="btn-close btn-close-white ms-2" style="font-size:0.5rem" onclick="tempColores.splice(${i},1); renderTempColores()"></button>
+            </span>
+        `).join('');
+    }
+
+    function renderTempMedidas() {
+        const contenedor = document.getElementById('displayMedidasTemp');
+        
+        // Mostrar/ocultar el contenedor según si hay medidas
+        if (tempMedidas.length > 0) {
+            contenedor.classList.remove('d-none');
+        } else {
+            contenedor.classList.add('d-none');
+        }
+
+        contenedor.innerHTML = tempMedidas.map((m, i) => `
+            <span class="badge bg-secondary me-2 mb-1 d-inline-flex align-items-center" style="font-size: 0.85rem; padding: 6px 10px;">
+                Medida ${i+1}: A:${m.alto||'-'} An:${m.ancho||'-'} L:${m.largo||'-'} T:${m.tiro||'-'}
+                <button type="button" class="btn-close btn-close-white ms-2" style="font-size:0.5rem" onclick="tempMedidas.splice(${i},1); renderTempMedidas()"></button>
+            </span>
+        `).join('');
+    }
+    function actualizarUI() {
+        // Listado en la página (Las tarjetas blancas de abajo)
+        document.getElementById('listadoVariantesGlobal').innerHTML = variantes.map((v, i) => {
+            let coloresHtml = v.colores.map(c => 
+                c.colorNinguno ? '<span class="badge bg-secondary ms-1">Sin color</span>' : 
+                `<span class="badge bg-dark ms-1 d-inline-flex align-items-center"><span style="display:inline-block; width:10px; height:10px; background-color:${c.colorHex}; border-radius:50%; margin-right:4px; border:1px solid #fff;"></span>${c.colorNombre}</span>`
+            ).join('');
+            
+            let medidasHtml = v.medidas.map((m, j) => 
+                `<span class="badge bg-secondary ms-1">A:${m.alto||'-'} An:${m.ancho||'-'} L:${m.largo||'-'} T:${m.tiro||'-'}</span>`
+            ).join('');
+
+            return `
+            <div class="bg-white border p-2 mb-2 d-flex flex-column align-items-start shadow-sm" style="border-radius:10px; min-width: 250px;">
+                <div class="d-flex w-100 justify-content-between align-items-center mb-1">
+                    <span class="fw-bold" style="font-size: 1.1rem; color: #1a1612;">Talle: ${v.talle}</span>
+                    <button type="button" class="btn-close" style="font-size:0.7rem" onclick="variantes.splice(${i},1); actualizarUI();"></button>
+                </div>
+                ${coloresHtml ? `<div class="mt-1" style="font-size: 0.85rem;"><span class="text-muted fw-bold">Colores:</span> ${coloresHtml}</div>` : ''}
+                ${medidasHtml ? `<div class="mt-1" style="font-size: 0.85rem;"><span class="text-muted fw-bold">Medidas:</span> ${medidasHtml}</div>` : ''}
+            </div>
+            `;
+        }).join('');
+
+        // ----------------------------------------------------
+        // LÓGICA PARA EL DETALLE DE ETIQUETA (AGRUPADO POR TALLE)
+        // ----------------------------------------------------
+        let htmlEtiqueta = '';
+        let textoEtiqueta = '';
+
+        // Recorremos cada variante guardada
+        variantes.forEach(v => {
+            let talleName = v.talle.toUpperCase();
+            
+            // Filtramos los colores (ignorando "Sin color") y armamos HTML y Texto
+            let colHtml = v.colores.filter(c => !c.colorNinguno).map(c => 
+                `<span class="d-inline-flex align-items-center me-2"><span style="display:inline-block; width:10px; height:10px; background-color:${c.colorHex}; border-radius:50%; border:1px solid #ccc; margin-right:4px;"></span>${c.colorNombre}</span>`
+            ).join('');
+            let colText = v.colores.filter(c => !c.colorNinguno).map(c => c.colorNombre).join(', ');
+
+            // Armamos Medidas
+            let medList = v.medidas.map(m => `A:${m.alto||'-'} An:${m.ancho||'-'} L:${m.largo||'-'} T:${m.tiro||'-'}`);
+            let medHtml = medList.join(' | ');
+            
+            // Empezamos a armar el bloque visual para este Talle
+            htmlEtiqueta += `<div class="mb-2 pb-2" style="border-bottom: 1px dashed #e8dfd4;">`;
+            htmlEtiqueta += `<div style="color: #1a1612; font-weight: 700; font-size: 0.95rem;">TALLE: ${talleName}</div>`;
+            
+            // Empezamos a armar el texto oculto
+            textoEtiqueta += `TALLE: ${talleName}\n`;
+            
+            if (colHtml) {
+                htmlEtiqueta += `<div class="mt-1" style="font-size: 0.85rem;"><strong style="color: #8c7e70;">Colores:</strong> <br>${colHtml}</div>`;
+                textoEtiqueta += `Colores: ${colText}\n`;
+            }
+            if (medHtml) {
+                htmlEtiqueta += `<div class="mt-1" style="font-size: 0.85rem;"><strong style="color: #8c7e70;">Medidas:</strong> <br>${medHtml}</div>`;
+                textoEtiqueta += `Medidas: ${medHtml}\n`;
+            }
+            
+            htmlEtiqueta += `</div>`;
+            textoEtiqueta += `\n`; // Espacio extra entre talles para la Base de Datos
+        });
+
+        // Mostrar en pantalla (DIV) y guardar para enviar a Django (INPUT OCULTO)
+        document.getElementById('autoEtiquetaDiv').innerHTML = htmlEtiqueta || '<span class="text-muted">Se generará al cargar variantes...</span>';
+        document.getElementById('autoEtiquetaInput').value = textoEtiqueta;
+        document.getElementById('variantes_json_input').value = JSON.stringify(variantes);
+    }
+    </script>
+{% endblock %}

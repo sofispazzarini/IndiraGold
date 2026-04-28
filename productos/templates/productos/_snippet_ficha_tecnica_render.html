@@ -1,0 +1,72 @@
+<div class="ficha-tecnica-papel-render">
+    <div class="ficha-head-ig">
+        <div class="ig-brand">INDIRA GOLD</div>
+        <div class="ig-doc-label">FICHA TÉCNICA DE PRODUCTO</div>
+    </div>
+
+    <div class="ficha-row-ig">
+        <div class="ficha-col-ig col-3">
+            <label>TIPOLOGÍA</label>
+            <div class="val">{{ producto.tipo|default:"-" }}</div>
+        </div>
+        <div class="ficha-col-ig col-3">
+            <label>ARTÍCULO</label>
+            <div class="val">{{ producto.codigo|default:"-" }}</div>
+        </div>
+        <div class="ficha-col-ig col-3">
+            <label>TEMPORADA</label>
+            <div class="val">{{ producto.temporada|default:"-" }}</div>
+        </div>
+        <div class="ficha-col-ig col-3">
+            <label>TELA / MATERIAL</label>
+            <div class="val">{{ producto.tela|default:"-" }}</div>
+        </div>
+    </div>
+
+    <div class="ficha-row-ig border-bottom-0">
+        <div class="ficha-col-ig col-12">
+            <label>DESCRIPCIÓN CONSTRUCTIVA</label>
+            <div class="val area">{{ producto.descripcion|default:"Sin descripción técnica."|linebreaks }}</div>
+        </div>
+    </div>
+
+    <div class="ficha-row-ig h-500-ig">
+        <div class="ficha-col-ig col-3 d-flex flex-column">
+            <label>AVÍOS</label>
+            <div class="val area flex-grow-1">{{ producto.avios|default:"-"|linebreaks }}</div>
+        </div>
+        
+        <div class="ficha-col-ig col-6 d-flex flex-column align-items-center justify-content-center bg-ficha-soft">
+            <label class="mb-2">ESQUEMA DE DISEÑO</label>
+            {% if producto.imagen_tecnica %}
+                <img src="{{ producto.imagen_tecnica.url }}" class="img-ficha-fluid-ig">
+            {% else %}
+                <div class="text-muted small">Sin dibujo cargado</div>
+            {% endif %}
+        </div>
+
+        <div class="ficha-col-ig col-3 d-flex flex-column">
+            <label>DETALLE DE ETIQUETA (AUTO)</label>
+            <div class="val area flex-grow-1 text-muted" style="font-size: 0.85rem;">
+                {{ producto.etiquetas|default:"-"|linebreaks }}
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .ficha-tecnica-papel-render { background: #fff; border: 2px solid #1a1612; font-family: 'DM Sans', sans-serif; }
+    .ficha-head-ig { background: #1a1612; color: #b8922a; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; }
+    .ig-brand { font-family: 'Cormorant Garamond', serif; font-size: 1.6rem; font-weight: 700; }
+    .ig-doc-label { font-size: 0.75rem; letter-spacing: 3px; font-weight: 400; }
+    .ficha-row-ig { display: flex; border-bottom: 1px solid #1a1612; }
+    .ficha-col-ig { border-right: 1px solid #1a1612; padding: 10px; }
+    .ficha-col-ig:last-child { border-right: none; }
+    .ficha-col-ig label { display: block; font-size: 0.6rem; font-weight: 800; color: #8c7e70; text-transform: uppercase; margin-bottom: 3px; }
+    .ficha-col-ig .val { font-size: 0.9rem; color: #1a1612; }
+    .ficha-col-ig .val.area { min-height: 50px; }
+    .h-500-ig { min-height: 400px; }
+    .bg-ficha-soft { background: #fdfdfd; }
+    .img-ficha-fluid-ig { max-width: 100%; max-height: 380px; object-fit: contain; }
+    .border-bottom-0 { border-bottom: none !important; }
+</style>

@@ -1,0 +1,20 @@
+<div class="modal fade" id="modalConfirmarEliminar" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow" style="border-radius: 20px;">
+            <div class="modal-header border-0 pt-4 px-4">
+                <h5 class="modal-title fw-bold">¿Eliminar producto?</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body px-4">
+                <p class="text-muted">Esta acción no se puede deshacer. Se eliminarán todos los datos técnicos y las variantes de stock de <strong>{{ producto.nombre }}</strong>.</p>
+            </div>
+            <div class="modal-footer border-0 pb-4 px-4">
+                <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
+                <form action="{% url 'productos:eliminar_producto' producto.id %}" method="post">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger rounded-pill px-4">Sí, eliminar definitivamente</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

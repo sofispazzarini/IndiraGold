@@ -1,0 +1,76 @@
+{% extends 'users/dashboard_admin.html' %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="card shadow-sm border-0 p-4 mx-auto" style="max-width: 600px; border-radius: 20px;">
+        
+        <div class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom">
+            <h3 class="fw-bold text-dark mb-0" style="font-family: 'Cormorant Garamond';">
+                Editar Talle: <span style="color: #b8922a;">{{ variante.talle.nombre }}</span>
+            </h3>
+            <a href="{% url 'productos:editar_producto' producto.id %}" class="btn btn-sm btn-outline-secondary rounded-pill">← Volver</a>
+        </div>
+        
+        <form method="post">
+            {% csrf_token %}
+            <div class="row g-4">
+                
+                <div class="col-12">
+                    <label class="small fw-bold text-muted text-uppercase mb-1">Talle (Letra / Número)</label>
+                    {{ form.talle }}
+                </div>
+
+                <div class="col-12">
+                    <label class="small fw-bold text-muted text-uppercase mb-1">Color (Hexadecimal o Nombre)</label>
+                    <input type="text" name="color_nombre" class="form-control" value="{{ color_actual.nombre|default:'' }}" placeholder="Ej: #ac6868 o Dorado">
+                </div>
+
+                <div class="col-12">
+                    <label class="small fw-bold text-muted text-uppercase mb-2">Medidas en CM</label>
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text bg-light text-muted">Alto</span>
+                                <input type="number" step="0.01" name="alto" class="form-control" value="{{ medida_actual.alto|default:'' }}">
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text bg-light text-muted">Ancho</span>
+                                <input type="number" step="0.01" name="ancho" class="form-control" value="{{ medida_actual.ancho|default:'' }}">
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text bg-light text-muted">Largo</span>
+                                <input type="number" step="0.01" name="largo" class="form-control" value="{{ medida_actual.largo|default:'' }}">
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text bg-light text-muted">Tiro</span>
+                                <input type="number" step="0.01" name="tiro" class="form-control" value="{{ medida_actual.tiro|default:'' }}">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            
+            <div class="mt-4 pt-4 border-top d-flex justify-content-end gap-2">
+                <a href="{% url 'productos:editar_producto' producto.id %}" class="btn btn-light rounded-pill px-4">Cancelar</a>
+                <button type="submit" class="btn btn-dark px-5 rounded-pill shadow-sm" style="background: #1a1612; border: none;">Guardar Cambios</button>
+            </div>
+        </form>
+        
+    </div>
+</div>
+
+<style>
+    .form-control, .form-select { border-radius: 12px; border: 1px solid #eee; background-color: #fafafa; }
+    .form-control:focus, .form-select:focus { border-color: #b8922a; box-shadow: none; background-color: #fff; }
+    .input-group-text { border-radius: 12px 0 0 12px; border: 1px solid #eee; font-size: 0.8rem; font-weight: bold; }
+    .input-group .form-control { border-radius: 0 12px 12px 0; }
+</style>    
+
+{% endblock %}

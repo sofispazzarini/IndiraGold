@@ -1,42 +1,88 @@
 {% extends 'base.html' %}
+{% load static %}
+
 {% block sidebar_menu %}
 <div class="nav-section">Mi Cuenta</div>
-<div class="sidebar">
-    <h4>Mi cuenta</h4>
-    
-    <nav class="sidebar__nav">
-    <div class="nav-section">Principal</div>
-
-    <a href="{% url 'users:dashboard_cliente' %}" class="nav-link">
-      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-        <path d="M8.354 1.146a.5.5 0 0 0-.708 0l-6 6-.354.354.708.708L3 7.207V13.5A1.5 1.5 0 0 0 4.5 15h7a1.5 1.5 0 0 0 1.5-1.5V7.207l.646.647.708-.708-.354-.354-6-6zM13 7.207V13.5a.5.5 0 0 1-.5.5h-2v-3.5A.5.5 0 0 0 10 10H6a.5.5 0 0 0-.5.5V14h-2a.5.5 0 0 1-.5-.5V7.207l5-5 5 5z"/>
-      </svg>
-      Inicio
+<nav class="sidebar__nav">
+    <a href="{% url 'users:dashboard_cliente' %}" class="nav-link active">
+      <i class="bi bi-grid-1x2-fill me-2"></i> Inicio
     </a>
-    <div class="nav-section">Funcionalidades</div>
     <a href="{% url 'users:password_change' %}" class="nav-link">
-      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-        <path d="M0 2.5A.5.5 0 0 1 .5 2H2a.5.5 0 0 1 .485.379L2.89 4H14.5a.5.5 0 0 1 .485.621l-1.5 6A.5.5 0 0 1 13 11H4a.5.5 0 0 1-.485-.379L1.61 3H.5a.5.5 0 0 1-.5-.5z"/>
-      </svg>
-      Cambiar Contraseña
+      <i class="bi bi-shield-lock-fill me-2"></i> Seguridad
     </a>
-  </nav>
-</div>
+    <hr class="mx-3 opacity-10">
+    <a href="{% url 'users:logout' %}" class="nav-link text-danger">
+      <i class="bi bi-box-arrow-right me-2"></i> Cerrar Sesión
+    </a>
+</nav>
 {% endblock %}
 
 {% block content %}
-<div class="main-content">
-    {% if request.user.first_name %}
-        <h2>Bienvenido/a, {{ request.user.first_name }}</h2>
-    {% else %}
-        <h2>Bienvenido/a</h2>
-    {% endif %}
-    <p>Desde aquí puedes gestionar tu cuenta y acceder a las funcionalidades disponibles.</p>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+<link rel="stylesheet" href="{% static 'css/users.css' %}">
+
+<div class="client-dashboard-wrapper" style="display: flex; flex-direction: column; align-items: center; justify-content: flex-start; min-height: 90vh; padding: 3rem 2rem; background: #fdfaf5;margin-left: 300px;">
+    
+    <div class="welcome-header mb-5" style="width: 150%; max-width: 2000px; background: linear-gradient(135deg, #1a1612 0%, #6E0E2E 100%); border-radius: 24px; padding: 4rem; position: relative; overflow: hidden; box-shadow: 0 15px 35px rgba(110, 14, 46, 0.2); border-bottom: 5px solid #b8922a;">
+        
+        <div style="position: absolute; top: -10px; right: -10px; font-size: 12rem; color: rgba(255,255,255,0.03); transform: rotate(-15deg); font-family: 'Cormorant Garamond', serif; pointer-events: none;">
+            IG
+        </div>
+
+        <div class="position-relative" style="z-index: 1;">
+            <p style="color: #e8c96a; text-transform: uppercase; letter-spacing: 4px; font-size: 0.8rem; font-weight: 700; margin-bottom: 1rem;">
+                Panel de Gestión Exclusiva
+            </p>
+            <h1 style="font-family: 'Cormorant Garamond', serif; font-size: 3.5rem; color: #fff; font-weight: 700; margin: 0; line-height: 1.1;">
+                Bienvenido/a, <span style="color: #e8c96a;">{{ request.user.first_name|default:request.user.username }}</span>
+            </h1>
+            <div style="width: 50px; height: 3px; background: #b8922a; margin: 1.5rem 0;"></div>
+            <p style="color: rgba(255,255,255,0.8); font-size: 1.1rem; max-width: 500px; line-height: 1.5;">
+                Desde aquí podés proteger tu cuenta y próximamente gestionar todos tus pedidos de alta gama.
+            </p>
+        </div>
+    </div>
+
+    <div class="row g-4 justify-content-center" style="width: 100%; max-width: 1000px;">
+        
+        <div class="col-md-6">
+            <div class="ig-card h-100 border-0" style="background: #ffffff; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.04); border: 1px solid rgba(184, 146, 42, 0.15); transition: 0.3s;" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='translateY(0)'">
+                <div class="p-5 text-center">
+                    <div class="d-inline-flex align-items-center justify-content-center mb-4" 
+                         style="width: 80px; height: 80px; background: #fdfaf5; border-radius: 50%; color: #b8922a; border: 1px solid rgba(184, 146, 42, 0.2);">
+                        <i class="bi bi-shield-lock fs-1"></i>
+                    </div>
+                    <h3 class="fw-bold h4 mb-3" style="font-family: 'Cormorant Garamond', serif; color: #1a1612; font-size: 1.8rem;">Seguridad de Cuenta</h3>
+                    <p class="text-muted mb-4" style="font-size: 0.9rem; line-height: 1.6;">
+                        Actualizá tu contraseña periódicamente para mantener tus datos protegidos.
+                    </p>
+                    
+                    <a href="{% url 'users:password_change' %}" class="btn-ig-pill" style="background: #6E0E2E; color: #fff; padding: 14px 30px; border-radius: 100px; text-decoration: none; font-weight: 700; font-size: 0.85rem; letter-spacing: 2px; display: inline-block; border: 1.5px solid #b8922a;">
+                        CAMBIAR MI CLAVE <i class="bi bi-chevron-right ms-2"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="ig-card h-100 border-0" style="background: #ffffff; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.04); border: 1px solid rgba(184, 146, 42, 0.15); transition: 0.3s;" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='translateY(0)'">
+                <div class="p-5 text-center">
+                    <div class="d-inline-flex align-items-center justify-content-center mb-4" 
+                         style="width: 80px; height: 80px; background: #fdfaf5; border-radius: 50%; color: #6E0E2E; border: 1px solid rgba(110, 14, 46, 0.1);">
+                        <i class="bi bi-bag-heart fs-1"></i>
+                    </div>
+                    <h3 class="fw-bold h4 mb-3" style="font-family: 'Cormorant Garamond', serif; color: #1a1612; font-size: 1.8rem;">Mis Compras</h3>
+                    <p class="text-muted mb-4" style="font-size: 0.9rem; line-height: 1.6;">
+                        Revisá el historial de tus pedidos y el estado de tus envíos exclusivos.
+                    </p>
+                    
+                    <div class="d-inline-block px-4 py-2 rounded-pill bg-light border text-muted small fw-bold" style="letter-spacing: 2px;">
+                        <i class="bi bi-clock-history me-2"></i> PRÓXIMAMENTE
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
 </div>
 {% endblock %}
-<style>
-.sidebar {
-  border-right: 1px solid #ddd;
-  height: 100vh;
-}
-</style>

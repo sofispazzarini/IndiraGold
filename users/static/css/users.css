@@ -1,0 +1,84 @@
+/* static/css/users.css - Paleta Intensa Indira Gold */
+:root {
+    --gold-ig: #b8922a;
+    --gold-bright: #e8c96a;
+    --bordo-ig: #6E0E2E;
+    --dark-ig: #1a1612;
+    --bg-cream: #fdfaf5;
+}
+
+/* 1. CONTENEDOR MAESTRO */
+.client-dashboard-wrapper {
+    background: radial-gradient(circle at center, rgba(184, 146, 42, 0.08) 0%, var(--bg-cream) 100%);
+    min-height: 90vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+}
+
+/* 2. TARJETA DE DOS COLUMNAS (CONTORNO DEFINIDO) */
+.premium-split-card {
+    display: flex;
+    flex-wrap: wrap;
+    width: 100%;
+    max-width: 1000px;
+    background: #ffffff;
+    border-radius: 35px;
+    overflow: hidden;
+    box-shadow: 0 30px 70px rgba(26, 22, 18, 0.12); /* Sombra más pesada para dar profundidad */
+    border: 2px solid var(--gold-ig); /* Borde dorado firme */
+}
+
+/* 3. COLUMNA IZQUIERDA (BRANDING VIBRANTE) */
+.branding-side {
+    flex: 1 1 45%;
+    background: linear-gradient(135deg, var(--dark-ig) 0%, var(--bordo-ig) 100%);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 4rem;
+    position: relative;
+    color: #fff;
+}
+
+.branding-side h3 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 2.5rem;
+    color: var(--gold-bright) !important; /* Dorado brillante sobre fondo oscuro */
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+}
+
+/* 4. COLUMNA DERECHA (FORMULARIO LIMPIO) */
+.form-side {
+    flex: 1 1 55%;
+    padding: 4rem;
+    background: #fff;
+}
+
+.form-side h2 {
+    color: var(--dark-ig);
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 2.8rem;
+    border-bottom: 3px solid var(--bordo-ig);
+    display: inline-block;
+    margin-bottom: 2rem;
+}
+
+/* 5. INPUTS CON FOCO BORDÓ */
+.form-control-ig {
+    border-radius: 12px;
+    border: 2px solid #eee;
+    padding: 14px 18px;
+    background: #fafafa;
+    width: 100%;
+    transition: 0.3s;
+}
+
+.form-control-ig:focus {
+    border-color: var(--bordo-ig);
+    background: #fff;
+    box-shadow: 0 0 0 4px rgba(110, 14, 46, 0.08);
+    outline: none;
+}

@@ -1,0 +1,192 @@
+{% extends 'users/dashboard_admin.html' %}
+
+{% block content %}
+<div class="container-fluid py-4 d-flex justify-content-center">
+    <div style="width: 100%; max-width: 1200px;">
+        
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags|default:'danger' }} alert-dismissible fade show rounded-pill px-4 mb-4 shadow-sm" role="alert">
+                    <i class="bi bi-exclamation-circle me-2"></i> {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <form method="post" enctype="multipart/form-data" id="formEditar">
+            {% csrf_token %}
+
+            <div class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom">
+                <div>
+                    <a href="{% url 'productos:productos_por_subcategoria' subcategoria.id %}" class="btn btn-sm btn-outline-secondary rounded-pill mb-2">
+                        ← Volver al listado
+                    </a>
+                    <h2 class="fw-bold text-dark" style="font-family: 'Cormorant Garamond';">Editar: <span style="color: #b8922a;">{{ producto.nombre }}</span></h2>
+                </div>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-outline-danger px-4 rounded-pill" data-bs-toggle="modal" data-bs-target="#modalConfirmarEliminar">Eliminar Producto</button>
+                    <button type="submit" class="btn btn-dark px-5 rounded-pill shadow-sm" style="background: #1a1612; border: none;">
+                        Guardar Cambios
+                    </button>
+                </div>
+            </div>
+
+            <div class="row g-4">
+                <div class="col-md-7">
+                    <div class="card border-0 shadow-sm p-4 mb-4" style="border-radius: 20px;">
+                        <h6 class="fw-bold text-muted small mb-4 text-uppercase">Ficha Técnica Constructiva</h6>
+                        <div class="row g-3">
+                            <div class="col-12"><label class="small fw-bold">Nombre Comercial</label>{{ form.nombre }}</div>
+                            <div class="col-md-4"><label class="small fw-bold">Artículo / Código</label>{{ form.codigo }}</div>
+                            <div class="col-md-4"><label class="small fw-bold">Temporada</label>{{ form.temporada }}</div>
+                            <div class="col-md-4"><label class="small fw-bold">Tipología</label>{{ form.tipo }}</div>
+                            <div class="col-md-6"><label class="small fw-bold">Tela / Material Principal</label>{{ form.tela }}</div>
+                            <div class="col-md-6"><label class="small fw-bold">Proveedor Principal</label>{{ form.proveedor }}</div>
+                            <div class="col-12"><label class="small fw-bold">Avíos (Botones, cierres, hilos)</label>{{ form.avios }}</div>
+                            <div class="col-12"><label class="small fw-bold">Descripción / Notas de Calce</label>{{ form.descripcion }}</div>
+                        </div>
+                    </div>
+
+                    <div class="card border-0 shadow-sm p-4" style="border-radius: 20px;">
+                        <h6 class="fw-bold text-muted small mb-3 text-uppercase">Fotos de Portada (Máx 5)</h6>
+                        <div class="row g-2 mb-3">
+                            {% for foto in producto.imagenes.all %}
+                                <div class="col-3 position-relative">
+                                    <img src="{{ foto.imagen.url }}" class="img-fluid rounded border shadow-sm" style="height: 110px; width: 100%; object-fit: cover;">
+                                    <a href="{% url 'productos:eliminar_foto' foto.id %}" class="btn btn-danger btn-sm position-absolute top-0 end-0 m-1 p-0 d-flex align-items-center justify-content-center shadow" style="width: 24px; height: 24px; border-radius: 50%; border: 2px solid white; z-index: 10;">×</a>
+                                </div>
+                            {% endfor %}
+                        </div>
+                        {% if producto.imagenes.count < 5 %}
+                            <label class="small fw-bold mb-1">Añadir más fotos comerciales</label>
+                            <input type="file" name="fotos_galeria" multiple class="form-control form-control-sm">
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="col-md-5">
+                    <div class="card border-0 shadow-sm p-4 mb-4" style="border-radius: 20px; border-left: 5px solid #b8922a;">
+                        <h6 class="fw-bold text-muted small mb-3 text-uppercase">Valores Globales</h6>
+                        <div class="row g-3">
+                            <div class="col-6"><label class="small fw-bold">Precio ($)</label>{{ form.precio }}</div>
+                            <div class="col-6"><label class="small fw-bold">Stock Global</label>{{ form.stock }}</div>
+                            <div class="col-12 pt-2">
+                                <div class="form-check form-switch">
+                                    {{ form.activo }} 
+                                    <label class="form-check-label small fw-bold">Producto Visible en Tienda</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card border-0 shadow-sm p-4 mb-4" style="border-radius: 20px;">
+                        <h6 class="fw-bold text-muted small mb-3 text-uppercase">Esquema Técnico / Dibujo</h6>
+                        <div class="text-center mb-3">
+                            {% if producto.imagen_tecnica %}
+                                <div class="position-relative d-inline-block">
+                                    <img src="{{ producto.imagen_tecnica.url }}" class="img-fluid rounded border shadow-sm mb-2" style="max-height: 180px;">
+                                    <button type="button" class="btn btn-danger btn-sm position-absolute top-0 end-0 m-1 p-0 d-flex align-items-center justify-content-center shadow" 
+                                            style="width: 26px; height: 26px; border-radius: 50%; border: 2px solid white; z-index: 10;" 
+                                            data-bs-toggle="modal" data-bs-target="#modalEliminarEsquema">
+                                        ×
+                                    </button>
+                                </div>
+                            {% else %}
+                                <div class="py-4 bg-light rounded border border-dashed text-muted small text-center">Sin esquema cargado</div>
+                            {% endif %}
+                        </div>
+                        <label class="small fw-bold text-dark mb-1">Cargar / Reemplazar Esquema Técnico</label>
+                        <input type="file" name="imagen_tecnica" class="form-control form-control-sm">
+                    </div>
+
+                    <div class="card border-0 shadow-sm p-4" style="border-radius: 20px;">
+                        <h6 class="fw-bold text-muted small mb-3 text-uppercase">Configuración de Talles</h6>
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle" style="font-size: 0.85rem;">
+                                <thead>
+                                    <tr class="text-muted border-bottom small">
+                                        <th>Talle</th>
+                                        <th>Detalle (Color / Medidas)</th>
+                                        <th class="text-end">Acción</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for variante in producto.variantes.all %}
+                                    <tr>
+                                        <td class="fw-bold text-dark" style="font-size: 1rem;">{{ variante.talle.nombre }}</td>
+                                        <td>
+                                            <div class="small mb-1">
+                                                <span class="text-dark fw-bold">Color:</span> 
+                                                {% for c in variante.colores.all %}
+                                                    <span class="badge bg-light text-dark border fw-normal me-1">{{ c.nombre }}</span>
+                                                {% empty %}
+                                                    <span class="text-muted italic">No cargado</span>
+                                                {% endfor %}
+                                            </div>
+                                            <div class="text-muted x-small">
+                                                <span class="text-dark fw-bold">Medidas:</span> 
+                                                {% if variante.medidas.exists %}
+                                                    {% for m in variante.medidas.all %}
+                                                        {{ m.alto|default:"0" }} / {{ m.ancho|default:"0" }} / {{ m.largo|default:"0" }} / {{ m.tiro|default:"0" }}
+                                                    {% endfor %}
+                                                {% elif variante.medida_set.exists %}
+                                                    {% for m in variante.medida_set.all %}
+                                                        {{ m.alto|default:"0" }} / {{ m.ancho|default:"0" }}
+                                                    {% endfor %}
+                                                {% else %}
+                                                    <span class="text-muted italic">No cargadas</span>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                        <td class="text-end">
+                                            <div class="d-flex gap-1 justify-content-end">
+                                                <a href="{% url 'productos:editar_variante' variante.id %}" class="btn btn-sm btn-light text-primary border shadow-sm">✎</a>
+                                                <form action="{% url 'productos:eliminar_variante' variante.id %}" method="post">
+                                                    {% csrf_token %}
+                                                    <button type="submit" class="btn btn-sm btn-light text-danger border shadow-sm" onclick="return confirm('¿Borrar este talle?')">×</button>
+                                                </form>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+        </div>
+</div>
+
+<div class="modal fade" id="modalEliminarEsquema" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow" style="border-radius: 20px;">
+            <div class="modal-body text-center p-4">
+                <div class="text-danger mb-3">
+                    <svg width="48" height="48" fill="currentColor" viewBox="0 0 16 16">
+                        <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
+                        <path d="M7.002 11a1 1 0 1 1 2 0 1 1 0 0 1-2 0zM7.1 4.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 4.995z"/>
+                    </svg>
+                </div>
+                <h5 class="fw-bold mb-2">¿Eliminar dibujo técnico?</h5>
+                <p class="text-muted small">Esta acción quitará la imagen actual de la ficha técnica de forma permanente.</p>
+                <div class="d-flex gap-2 justify-content-center mt-4">
+                    <button type="button" class="btn btn-light px-4 rounded-pill" data-bs-dismiss="modal">Cancelar</button>
+                    <a href="{% url 'productos:eliminar_esquema' producto.id %}" class="btn btn-danger px-4 rounded-pill">Sí, eliminar</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% include 'productos/_modal_confirmar_eliminar.html' %}
+
+<style>
+    .form-control, .form-select { border-radius: 12px; padding: 10px; border: 1px solid #eee; background-color: #fafafa; font-size: 0.9rem; }
+    .form-control:focus { border-color: #b8922a; background-color: #fff; box-shadow: none; }
+    .x-small { font-size: 0.72rem; }
+    .border-dashed { border: 2px dashed #e9ecef !important; }
+    .badge { font-size: 0.7rem; }
+</style>
+{% endblock %}
