@@ -38,6 +38,7 @@ def _render_cart_fragment(request: HttpRequest):
 @require_POST
 def agregar_producto(request):
 	producto_id = request.POST.get("producto_id") or request.POST.get("id")
+	cantidad = request.POST.get("cantidad", "1")
 	next_url = request.POST.get("next") or request.GET.get("next")
 	if not next_url:
 		next_url = reverse("home:home")
@@ -47,8 +48,11 @@ def agregar_producto(request):
 
 	try:
 		producto_id_int = int(producto_id)
+		cantidad_int = int(cantidad)
+		if cantidad_int < 1:
+			raise ValueError("La cantidad debe ser mayor a 0")
 	except (TypeError, ValueError):
-		messages.error(request, "Producto inválido.")
+		messages.error(request, "Cantidad inválida.")
 		if _is_ajax(request):
 			return _render_cart_fragment(request)
 		return _render_next(request, next_url)
@@ -70,10 +74,10 @@ def agregar_producto(request):
 	cart = _get_session_cart(request.session)
 	key = str(producto.id)
 	current_qty = int(cart.get(key, 0))
-	new_qty = current_qty + 1
+	new_qty = current_qty + cantidad_int
 
 	if new_qty > producto.stock:
-		messages.error(request, "Stock insuficiente para agregar otra unidad.")
+		messages.error(request, f"Stock insuficiente. Disponibles: {producto.stock}, intentas: {new_qty}")
 		if _is_ajax(request):
 			return _render_cart_fragment(request)
 		return _render_next(request, next_url)
@@ -83,7 +87,7 @@ def agregar_producto(request):
 	request.session["carrito"] = cart
 	request.session.modified = True
 
-	messages.success(request, f"{producto.nombre} agregado al carrito.")
+	messages.success(request, f"{producto.nombre} x{cantidad_int} agregado al carrito.")
 	if _is_ajax(request):
 		return _render_cart_fragment(request)
 	return _render_next(request, next_url)

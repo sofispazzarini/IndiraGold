@@ -47,7 +47,7 @@
         {% for producto in productos_destacados %}
           <div class="featured-item">
             <div class="product-card" data-cat="{{ producto.categoria.id }}" data-name="{{ producto.nombre|lower }} {{ producto.tipo|lower }} {{ producto.tela|lower }}">
-              <a href="#" class="product-card__img-wrap">
+              <a href="{% url 'productos:detalle_producto' producto.id %}" class="product-card__img-wrap">
                 {% if producto.imagen %}
                   <img src="{{ producto.imagen.url }}" alt="{{ producto.nombre }}" class="product-card__img" />
                 {% else %}
@@ -72,17 +72,12 @@
                 <div class="product-card__footer">
                   <span class="product-card__price">${{ producto.precio }}</span>
                   {% if producto.stock > 0 %}
-                    <form method="post" action="/carritos/agregar/" class="js-cart-form" style="display:inline">
-                      {% csrf_token %}
-                      <input type="hidden" name="producto_id" value="{{ producto.pk }}" />
-                      <input type="hidden" name="next" value="{{ request.get_full_path }}" />
-                      <button type="submit" class="product-card__btn">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
-                          <path d="M8 1a2.5 2.5 0 0 1 2.5 2.5V4h-5v-.5A2.5 2.5 0 0 1 8 1zm3.5 3v-.5a3.5 3.5 0 1 0-7 0V4H1v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V4h-3.5zM2 5h12v9a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V5z"/>
-                        </svg>
-                        Agregar
-                      </button>
-                    </form>
+                    <button type="button" class="product-card__btn" onclick="abrirModalCantidad({{ producto.pk }}, '{{ producto.nombre }}', {{ producto.stock }})">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                        <path d="M8 1a2.5 2.5 0 0 1 2.5 2.5V4h-5v-.5A2.5 2.5 0 0 1 8 1zm3.5 3v-.5a3.5 3.5 0 1 0-7 0V4H1v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V4h-3.5zM2 5h12v9a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V5z"/>
+                      </svg>
+                      Agregar
+                    </button>
                   {% else %}
                     <span class="product-card__agotado">Sin stock</span>
                   {% endif %}
@@ -183,8 +178,8 @@
 
     <div class="products-grid" id="productsGrid">
       {% for producto in productos %}
-      <div class="product-card" data-cat="{{ producto.categoria.id }}" data-name="{{ producto.nombre|lower }} {{ producto.tipo|lower }} {{ producto.tela|lower }}">
-        <a href="#" class="product-card__img-wrap">
+          <div class="product-card" data-cat="{{ producto.categoria.id }}" data-name="{{ producto.nombre|lower }} {{ producto.tipo|lower }} {{ producto.tela|lower }}">
+            <a href="{% url 'productos:detalle_producto' producto.id %}" class="product-card__img-wrap">
           {% if producto.imagen %}
             <img src="{{ producto.imagen.url }}" alt="{{ producto.nombre }}" class="product-card__img" />
           {% else %}
@@ -208,17 +203,12 @@
           <div class="product-card__footer">
             <span class="product-card__price">${{ producto.precio }}</span>
             {% if producto.stock > 0 %}
-              <form method="post" action="/carritos/agregar/" class="js-cart-form" style="display:inline">
-                {% csrf_token %}
-                <input type="hidden" name="producto_id" value="{{ producto.pk }}" />
-                <input type="hidden" name="next" value="{{ request.get_full_path }}" />
-                <button type="submit" class="product-card__btn">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
-                    <path d="M8 1a2.5 2.5 0 0 1 2.5 2.5V4h-5v-.5A2.5 2.5 0 0 1 8 1zm3.5 3v-.5a3.5 3.5 0 1 0-7 0V4H1v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V4h-3.5zM2 5h12v9a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V5z"/>
-                  </svg>
-                  Agregar
-                </button>
-              </form>
+              <button type="button" class="product-card__btn" onclick="abrirModalCantidad({{ producto.pk }}, '{{ producto.nombre }}', {{ producto.stock }})">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                  <path d="M8 1a2.5 2.5 0 0 1 2.5 2.5V4h-5v-.5A2.5 2.5 0 0 1 8 1zm3.5 3v-.5a3.5 3.5 0 1 0-7 0V4H1v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V4h-3.5zM2 5h12v9a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V5z"/>
+                </svg>
+                Agregar
+              </button>
             {% else %}
               <span class="product-card__agotado">Sin stock</span>
             {% endif %}
@@ -293,6 +283,33 @@
   </div>
 </div>
 <div class="cart-overlay" id="cartOverlay" onclick="toggleCart()"></div>
+
+<!-- MODAL CANTIDAD -->
+<div id="modalCantidad" style="display:none; position:fixed; inset:0; z-index:1200; background:rgba(0,0,0,.55); align-items:center; justify-content:center; padding:1rem;">
+  <div style="width:min(420px, 100%); background:#fff; border-radius:16px; box-shadow:0 24px 60px rgba(0,0,0,.25); overflow:hidden;">
+    <div style="padding:1rem 1.25rem; border-bottom:1px solid #e8dfd4; display:flex; align-items:center; justify-content:space-between; gap:1rem;">
+      <div>
+        <div style="font-size:.75rem; text-transform:uppercase; letter-spacing:.14em; color:#8c7e70; font-weight:600;">Agregar al carrito</div>
+        <div id="modalCantidadProducto" style="font-family:'Cormorant Garamond', serif; font-size:1.6rem; font-weight:700; color:#1a1612;"></div>
+      </div>
+      <button type="button" onclick="cerrarModalCantidad()" style="border:none; background:transparent; font-size:1.5rem; line-height:1; cursor:pointer; color:#8c7e70;">×</button>
+    </div>
+    <form id="modalCantidadForm" method="post" action="/carritos/agregar/" style="padding:1.25rem; display:grid; gap:1rem;">
+      {% csrf_token %}
+      <input type="hidden" name="producto_id" id="modalCantidadProductoId">
+      <input type="hidden" name="next" value="{{ request.get_full_path }}">
+      <div>
+        <label for="modalCantidadInput" style="display:block; margin-bottom:.5rem; font-size:.9rem; font-weight:600; color:#3d342a;">Cantidad</label>
+        <input id="modalCantidadInput" name="cantidad" type="number" min="1" value="1" class="form-control" style="border:1px solid #e8dfd4; border-radius:10px; padding:.8rem 1rem; font-size:1rem; width:100%;">
+        <small id="modalCantidadStock" style="display:block; margin-top:.5rem; color:#8c7e70;"></small>
+      </div>
+      <div style="display:flex; gap:.75rem; justify-content:flex-end;">
+        <button type="button" onclick="cerrarModalCantidad()" style="padding:.8rem 1.1rem; border-radius:10px; border:1px solid #e8dfd4; background:#fff; color:#3d342a; font-weight:600; cursor:pointer;">Cancelar</button>
+        <button type="submit" style="padding:.8rem 1.1rem; border-radius:10px; border:none; background:#1a1612; color:#fff; font-weight:600; cursor:pointer;">Agregar</button>
+      </div>
+    </form>
+  </div>
+</div>
 
 <style>
   /* HERO */
@@ -755,6 +772,24 @@
 
   renderCartExpiry();
   startCartExpiryTicker();
+
+  function abrirModalCantidad(productoId, productoNombre, stock) {
+    const modal = document.getElementById('modalCantidad');
+    document.getElementById('modalCantidadProductoId').value = productoId;
+    document.getElementById('modalCantidadProducto').textContent = productoNombre;
+    document.getElementById('modalCantidadInput').value = 1;
+    document.getElementById('modalCantidadInput').max = stock;
+    document.getElementById('modalCantidadStock').textContent = `Disponibles: ${stock}`;
+    modal.style.display = 'flex';
+  }
+
+  function cerrarModalCantidad() {
+    document.getElementById('modalCantidad').style.display = 'none';
+  }
+
+  document.getElementById('modalCantidad').addEventListener('click', function (event) {
+    if (event.target === this) cerrarModalCantidad();
+  });
 </script>
 
 {% endblock %}

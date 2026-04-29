@@ -5,6 +5,9 @@ from . import views
 app_name = 'productos'
 
 urlpatterns = [
+    # --- VISTAS PÚBLICAS ---
+    path('producto/<int:producto_id>/', views.detalle_producto, name='detalle_producto'),
+    
     # --- GESTIÓN GENERAL Y NAVEGACIÓN ---
     path('gestion/', views.gestion_productos, name='gestion_productos'),
     path('categoria/<int:categoria_id>/', views.lista_subcategorias, name='lista_subcategorias'),
@@ -17,6 +20,7 @@ urlpatterns = [
     
     # AJAX para el modal de previsualización
     path('ajax/detalle-producto/<int:producto_id>/', views.obtener_detalle_producto_ajax, name='get_detalle_producto_ajax'),
+    path('ajax/tabla-medidas/<int:producto_id>/', views.obtener_tabla_medidas_ajax, name='obtener_tabla_medidas'),
 
     # --- VARIANTES ---
     path('variante/<int:variante_id>/eliminar/', views.eliminar_variante, name='eliminar_variante'),
