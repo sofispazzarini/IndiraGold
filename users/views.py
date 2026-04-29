@@ -102,6 +102,8 @@ def editar_cliente(request, cliente_id):
 def registro(request):
     error = None
     show_verification_modal = False
+    initial_data = request.session.get('registro_data')
+
     if request.method == 'POST':
         form = RegistroUsuarioForm(request.POST)
         if form.is_valid():
@@ -128,7 +130,10 @@ def registro(request):
         else:
             error = 'Por favor revisa los datos ingresados.'
     else:
-        form = RegistroUsuarioForm()
+        if initial_data:
+            form = RegistroUsuarioForm(initial=initial_data)
+        else:
+            form = RegistroUsuarioForm()
     return render(request, 'users/registro.html', {
         'form': form,
         'error': error,
@@ -155,23 +160,27 @@ def confirmar_direccion(request):
     if not data:
         return redirect("users:registro")
 
-    # Permitir edición por POST o GET
-    params = request.POST if request.method == "POST" else request.GET
-    if 'calle' in params:
-        data['calle'] = params.get('calle', data.get('calle'))
-        data['numero'] = params.get('numero', data.get('numero'))
-        data['ciudad'] = params.get('ciudad', data.get('ciudad'))
-        data['provincia'] = params.get('provincia', data.get('provincia'))
-        data['codigo_postal'] = params.get('codigo_postal', data.get('codigo_postal'))
+    # Si POST con campos de dirección: actualizar sesión y devolver JSON
+    if request.method == "POST" and all(k in request.POST for k in ["calle", "numero", "ciudad", "provincia", "codigo_postal"]):
+        data['calle'] = request.POST.get('calle', data.get('calle'))
+        data['numero'] = request.POST.get('numero', data.get('numero'))
+        data['ciudad'] = request.POST.get('ciudad', data.get('ciudad'))
+        data['provincia'] = request.POST.get('provincia', data.get('provincia'))
+        data['codigo_postal'] = request.POST.get('codigo_postal', data.get('codigo_postal'))
         request.session['registro_data'] = data
+        return JsonResponse({'success': True})
+
+    # Confirmación final de dirección (POST sin campos de dirección)
     elif request.method == "POST":
         form = RegistroUsuarioForm(data)
         if form.is_valid():
             form.save()
             del request.session["registro_data"]
-            return redirect("users:login")  # o donde quieras redirigir
+            return redirect("users:login")
 
-    return render(request, "users/confirmar_direccion.html", {"data": data})
+    # Render normal
+    form = RegistroUsuarioForm(initial=data)
+    return render(request, "users/confirmar_direccion.html", {"data": data, "form": form})
 
 def home(request):
     return redirect('home:home')
