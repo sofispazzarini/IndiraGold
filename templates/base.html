@@ -15,6 +15,7 @@
       --gold:        #b8922a;
       --gold-light:  #e8c96a;
       --gold-pale:   #fdf6e3;
+      --sidebar-bg:  #ede9e3; /* gris cálido */
       --dark:        #1a1612;
       --dark-mid:    #2e2720;
       --text:        #3d342a;
@@ -37,24 +38,25 @@
     /* ── SIDEBAR ── */
     .sidebar {
       width: var(--sidebar-w);
-      background: var(--dark);
+      background: var(--sidebar-bg);
       min-height: 100vh;
       display: flex;
       flex-direction: column;
       position: fixed;
       top: 0; left: 0; bottom: 0;
-      z-index: 100;
+      z-index: 101;
+      border-right: 2px solid var(--border);
     }
 
     .sidebar__brand {
       padding: 1.5rem 1.25rem 1rem;
-      border-bottom: 1px solid rgba(184,146,42,.2);
+      border-bottom: none;
     }
     .brand-name {
       font-family: 'Cormorant Garamond', serif;
       font-size: 1.6rem;
       font-weight: 700;
-      color: var(--gold-light);
+      color: var(--gold);
       letter-spacing: .04em;
       line-height: 1;
     }
@@ -78,39 +80,66 @@
       font-weight: 600;
       letter-spacing: .12em;
       text-transform: uppercase;
-      color: rgba(255,255,255,.25);
+      color: var(--text-muted);
     }
 
     .nav-link {
       display: flex;
       align-items: center;
       gap: .65rem;
-      padding: .6rem 1.25rem;
-      color: rgba(255,255,255,.65);
+      padding: 0.7rem 1.3rem;
+      color: var(--text);
       text-decoration: none;
-      font-size: .875rem;
-      font-weight: 400;
-      transition: all .15s;
-      border-left: 2px solid transparent;
+      font-size: .97rem;
+      font-weight: 500;
+      border-radius: 18px;
+      margin: 0.22rem 0.3rem;
+      background: transparent;
+      border: none;
+      box-shadow: none;
+      position: relative;
+      transition: color .18s cubic-bezier(.4,0,.2,1);
+      overflow: hidden;
     }
-    .nav-link:hover {
-      color: var(--white);
-      background: rgba(255,255,255,.05);
+    .nav-link::after {
+      content: '';
+      display: block;
+      position: absolute;
+      left: 1.3rem;
+      right: 1.3rem;
+      bottom: 8px;
+      height: 2.5px;
+      background: linear-gradient(90deg, #e8c96a 0%, #b8922a 100%);
+      border-radius: 2px;
+      opacity: 0;
+      transform: scaleX(0.5);
+      transition: all .18s cubic-bezier(.4,0,.2,1);
+    }
+    .nav-link:hover, .nav-link:focus {
+      color: var(--gold);
+    }
+    .nav-link:hover::after, .nav-link:focus::after {
+      opacity: 1;
+      transform: scaleX(1);
     }
     .nav-link.active {
-      color: var(--gold-light);
-      background: rgba(184,146,42,.12);
-      border-left-color: var(--gold);
-      font-weight: 500;
+      color: var(--gold);
+      background: linear-gradient(90deg, #fffbe6 60%, #fbeec1 100%);
+      font-weight: 700;
+      box-shadow: 0 2px 12px 0 rgba(184,146,42,0.10);
+      border: 1.5px solid var(--gold);
+    }
+    .nav-link.active::after {
+      opacity: 0;
     }
     .nav-link svg { opacity: .7; flex-shrink: 0; }
     .nav-link.active svg { opacity: 1; }
 
     .sidebar__footer {
       padding: 1rem 1.25rem;
-      border-top: 1px solid rgba(255,255,255,.07);
+      border-top: 1px solid var(--border);
       font-size: .78rem;
-      color: rgba(255,255,255,.3);
+      color: var(--text-muted);
     }
 
     /* ── MAIN LAYOUT ── */
@@ -125,14 +154,15 @@
     .topbar {
       height: var(--header-h);
       background: var(--white);
-      border-bottom: 1px solid var(--border);
+      border-bottom: 2px solid var(--border);
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 0 1.75rem;
+      padding: 0 2.5rem 0 2.5rem;
+      /* Alinea con el main y el sidebar */
       position: sticky;
       top: 0;
-      z-index: 50;
+      z-index: 100;
     }
 
     .topbar__left { display: flex; align-items: center; gap: .5rem; font-size: .9rem; color: var(--text-muted); }
@@ -144,12 +174,19 @@
       background: var(--gold);
       border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
-      font-size: .75rem; font-weight: 600; color: var(--white);
+      font-size: .95rem; font-weight: 700; color: var(--white);
+      border: none;
+      cursor: pointer;
+      transition: box-shadow .15s;
+    }
+    .avatar:focus, .avatar:hover {
+      box-shadow: 0 0 0 2px #e8c96a55;
+      outline: none;
     }
 
     .main {
       flex: 1;
-      padding: 1.75rem;
+      padding: 2.5rem;
       max-width: 1200px;
       width: 100%;
     }
@@ -193,28 +230,28 @@
     {% endblock %}
   </nav>
 
-  <div class="sidebar__footer">IndiraGold © 2025</div>
+  <div class="sidebar__footer">IndiraGold © 2026</div>
 </aside>
 
 <!-- Main layout -->
 <div class="layout">
   <header class="topbar">
     <div class="topbar__left">
-      <strong>{% block topbar_title %}Panel de Gestión{% endblock %}</strong>
+      {% block topbar_title %}{% endblock %}
     </div>
     <div class="topbar__right">
       <div class="d-flex align-items-center gap-3">
         <span class="small fw-bold text-muted d-none d-md-inline">
           {{ user.first_name|default:user.username }}
         </span>
-        
-        <div class="avatar">IG</div>
-        
-        <a href="{% url 'users:logout' %}" class="btn btn-sm btn-outline-danger rounded-pill px-3 ms-2" 
-          style="font-size: 0.75rem; font-weight: 700; border-width: 1.5px;">
-          SALIR
-        </a>
-      </div>
+        <div class="dropdown">
+          <button class="avatar dropdown-toggle" type="button" id="avatarDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+            {{ user.first_name|default:''|slice:":1" }}{{ user.last_name|default:''|slice:":1" }}
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="avatarDropdown">
+            <li><a class="dropdown-item text-danger fw-bold" href="{% url 'users:logout' %}">Cerrar sesión</a></li>
+          </ul>
+        </div>
     </div>
   </header>
 

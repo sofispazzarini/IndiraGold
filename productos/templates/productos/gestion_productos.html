@@ -56,14 +56,19 @@
 {% endblock %}
 
 {% block content %}
-<div class="container mt-4" style="max-width: 900px; margin-left: auto; margin-right: 40px;">
-    <h2 class="gestion-titulo-negro">Gestión de productos</h2>
-    <div class="gestion-caja-blanca">
-        <div class="gestion-grid-scroll-vertical">
-            <div class="gestion-grid-botones-3x5 gestion-botones-cerca">
+<div class="container mt-4" style="max-width: 980px; margin: 0 auto 0 auto;">
+    <div style="display: flex; align-items: center; gap: 18px; margin-bottom: 18px;">
+        <span style="display: flex; align-items: center; justify-content: center; background: #fffbe6; border: 2.5px solid #e8c96a; border-radius: 50%; width: 54px; height: 54px; box-shadow: 0 2px 12px 0 #e8c96a33;">
+            <i class="bi bi-box-seam" style="font-size: 2rem; color: #b8922a;"></i>
+        </span>
+        <h2 class="gestion-titulo-negro" style="margin-bottom:0; font-size:2.1rem; color:#b8922a; letter-spacing:1px; font-family:'Cormorant Garamond',serif; font-weight:700;">Gestión de productos</h2>
+    </div>
+    <div class="gestion-caja-blanca" style="border:2.5px solid #e8c96a; box-shadow:0 8px 32px 0 rgba(184,146,42,0.08);">
+        <div class="gestion-grid-scroll-vertical" style="margin-bottom:32px;">
+            <div class="gestion-grid-botones-3x5 gestion-botones-cerca" style="margin-bottom:18px;">
         {% with indum_id=categories|get_cat_id:'Indumentaria' %}
             {% if indum_id %}
-                <a href="{% url 'gestion_subcategorias' indum_id %}" class="btn btn-gestion-bordo">
+                <a href="{% url 'gestion_subcategorias' indum_id %}" class="btn btn-gestion-bordo" style="font-size:1.13rem;">
                     <span class="icono-btn">
                         <svg width="22" height="22" fill="none" viewBox="0 0 24 24"><path d="M12 5v14m7-7H5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
                     </span>
@@ -73,7 +78,7 @@
         {% endwith %}
         {% with acc_id=categories|get_cat_id:'Accesorio' %}
             {% if acc_id %}
-                <a href="{% url 'gestion_subcategorias' acc_id %}" class="btn btn-gestion-bordo">
+                <a href="{% url 'gestion_subcategorias' acc_id %}" class="btn btn-gestion-bordo" style="font-size:1.13rem;">
                     <span class="icono-btn">
                         <svg width="22" height="22" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="#fff" stroke-width="2"/><path d="M12 8v4l2 2" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
                     </span>
@@ -85,7 +90,7 @@
             {% for cat in categories %}
                                 <form method="post" action="{% url 'productos:eliminar_categoria' cat.id %}" class="form-eliminar-categoria-inside js-eliminar-categoria-form">
                                     {% csrf_token %}
-                                    <a href="{% url 'productos:gestion_subcategorias' cat.id %}" class="btn btn-gestion-bordo categoria-con-cruz">
+                                    <a href="{% url 'productos:gestion_subcategorias' cat.id %}" class="btn btn-gestion-bordo categoria-con-cruz" style="font-size:1.13rem;">
                                             <span class="icono-btn">
                                                     <svg width="22" height="22" fill="none" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="4" stroke="#fff" stroke-width="2"/></svg>
                                             </span>
@@ -391,10 +396,10 @@
             </style>
             </div>
 
-        <div class="gestion-categoria-bottom-fixed">
-            <a href="{% url 'productos:agregar_categoria' %}" class="btn btn-outline-categoria-bordo mt-2">
+        <div class="gestion-categoria-bottom-fixed" style="background:#fffbe6; border-top:1.5px solid #e8c96a; box-shadow:0 -2px 12px #e8c96a11;">
+            <a href="{% url 'productos:agregar_categoria' %}" class="btn btn-outline-categoria-bordo mt-2" style="font-size:1.18rem; border:2.5px solid #b8922a; color:#b8922a; background:#fff;">
                 <span class="icono-btn">
-                    <svg width="22" height="22" fill="none" viewBox="0 0 24 24"><path d="M12 5v14m7-7H5" stroke="#800020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    <svg width="22" height="22" fill="none" viewBox="0 0 24 24"><path d="M12 5v14m7-7H5" stroke="#b8922a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
                 </span>
                 Agregar categoría
             </a>
