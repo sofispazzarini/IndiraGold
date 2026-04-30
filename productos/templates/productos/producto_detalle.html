@@ -1,0 +1,639 @@
+{% extends 'base_publica.html' %}
+{% load static %}
+
+{% block title %}{{ producto.nombre }} — IndiraGold{% endblock %}
+
+{% block content %}
+<style>
+    .detalle-hero {
+        max-width: 1200px;
+        margin: 2rem auto;
+        padding: 0 2rem;
+    }
+    
+    .detalle-container {
+        display: grid;
+        grid-template-columns: 1.2fr 1fr;
+        gap: 3rem;
+        margin-bottom: 4rem;
+    }
+    
+    @media (max-width: 768px) {
+        .detalle-container {
+            grid-template-columns: 1fr;
+            gap: 2rem;
+        }
+    }
+    
+    /* --- GALERÍA DE IMÁGENES --- */
+    .detalle-galeria {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .imagen-principal {
+        width: 100%;
+        aspect-ratio: 4/5;
+        background: #fafafa;
+        border-radius: 12px;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid #e8dfd4;
+    }
+    
+    .imagen-principal img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+    }
+    
+    .miniaturas {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 0.75rem;
+    }
+    
+    .miniatura {
+        width: 100%;
+        aspect-ratio: 1;
+        border-radius: 8px;
+        overflow: hidden;
+        cursor: pointer;
+        border: 2px solid transparent;
+        transition: all .2s;
+        background: #fafafa;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .miniatura img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+    }
+    
+    .miniatura:hover, .miniatura.activa {
+        border-color: #b8922a;
+        box-shadow: 0 2px 8px rgba(184,146,42,.2);
+    }
+    
+    /* --- INFORMACIÓN DEL PRODUCTO --- */
+    .detalle-info {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+    
+    .breadcrumb-custom {
+        display: flex;
+        gap: 0.5rem;
+        font-size: 0.85rem;
+        color: #8c7e70;
+        margin-bottom: 1rem;
+    }
+    
+    .breadcrumb-custom a {
+        color: #b8922a;
+        text-decoration: none;
+    }
+    
+    .breadcrumb-custom a:hover { text-decoration: underline; }
+    
+    .detalle-titulo {
+        font-family: 'Cormorant Garamond', serif;
+        font-size: 2.2rem;
+        font-weight: 700;
+        color: #1a1612;
+        line-height: 1.2;
+        margin: 0;
+    }
+    
+    .detalle-meta {
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+    
+    .meta-item {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+    
+    .meta-label {
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: #8c7e70;
+    }
+    
+    .meta-valor {
+        font-size: 0.95rem;
+        color: #3d342a;
+        font-weight: 500;
+    }
+    
+    .precio-principal {
+        display: flex;
+        align-items: baseline;
+        gap: 0.75rem;
+        padding: 1.5rem;
+        background: linear-gradient(135deg, rgba(184,146,42,.08) 0%, rgba(232,201,106,.08) 100%);
+        border-radius: 12px;
+        border: 1px solid rgba(184,146,42,.15);
+    }
+    
+    .precio-valor {
+        font-family: 'Cormorant Garamond', serif;
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: #b8922a;
+    }
+    
+    .precio-moneda {
+        font-size: 1rem;
+        color: #8c7e70;
+    }
+    
+    /* --- DESCRIPCIÓN --- */
+    .descripcion-section {
+        padding: 1.5rem;
+        background: #fdf6e3;
+        border-radius: 12px;
+        border: 1px solid #e8c96a;
+    }
+    
+    .descripcion-titulo {
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: #b8922a;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 0.75rem;
+    }
+    
+    .descripcion-texto {
+        font-size: 0.95rem;
+        line-height: 1.6;
+        color: #3d342a;
+        margin: 0;
+    }
+    
+    /* --- VARIANTES --- */
+    .variantes-section {
+        border-top: 1px solid #e8dfd4;
+        padding-top: 1.5rem;
+    }
+    
+    .variantes-titulo {
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: #1a1612;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 1rem;
+    }
+    
+    .talles-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+        gap: 0.75rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .talle-btn {
+        padding: 0.75rem;
+        border: 2px solid #e8dfd4;
+        background: white;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 0.85rem;
+        transition: all .2s;
+        text-align: center;
+        color: #3d342a;
+    }
+    
+    .talle-btn:hover {
+        border-color: #b8922a;
+        background: rgba(184,146,42,.05);
+    }
+    
+    .talle-btn.seleccionado {
+        background: #b8922a;
+        color: white;
+        border-color: #b8922a;
+    }
+    
+    /* --- BOTONES --- */
+    .botones-compra {
+        display: flex;
+        gap: 1rem;
+        margin-top: 1.5rem;
+    }
+    
+    .btn-compra {
+        flex: 1;
+        padding: 1rem 1.5rem;
+        border: none;
+        border-radius: 10px;
+        font-weight: 600;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: all .2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+    }
+    
+    .btn-compra-primary {
+        background: linear-gradient(135deg, #b8922a 0%, #d4a574 100%);
+        color: white;
+    }
+    
+    .btn-compra-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 16px rgba(184,146,42,.3);
+    }
+    
+    .btn-compra-secondary {
+        background: white;
+        color: #b8922a;
+        border: 2px solid #b8922a;
+    }
+    
+    .btn-compra-secondary:hover {
+        background: rgba(184,146,42,.05);
+    }
+    
+    /* --- FICHA TÉCNICA --- */
+    .ficha-tecnica-section {
+        margin-top: 2rem;
+        padding: 1.5rem;
+        background: white;
+        border-radius: 12px;
+        border: 1px solid #e8dfd4;
+    }
+    
+    .ficha-titulo {
+        font-size: 1rem;
+        font-weight: 600;
+        color: #1a1612;
+        margin-bottom: 1rem;
+    }
+    
+    .ficha-detalles {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 1rem;
+    }
+    
+    .ficha-item {
+        padding: 0.75rem;
+        background: #fdf6e3;
+        border-radius: 8px;
+    }
+    
+    .ficha-item-label {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: #b8922a;
+        text-transform: uppercase;
+        margin-bottom: 0.25rem;
+    }
+    
+    .ficha-item-valor {
+        font-size: 0.9rem;
+        color: #3d342a;
+    }
+    
+    /* --- RELACIONADOS --- */
+    .relacionados-section {
+        max-width: 1200px;
+        margin: 3rem auto;
+        padding: 0 2rem;
+        border-top: 2px solid #e8dfd4;
+        padding-top: 3rem;
+    }
+    
+    .relacionados-titulo {
+        font-family: 'Cormorant Garamond', serif;
+        font-size: 1.8rem;
+        font-weight: 700;
+        margin-bottom: 2rem;
+        color: #1a1612;
+    }
+    
+    .relacionados-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: 1.5rem;
+    }
+    
+    .relacionado-card {
+        border-radius: 10px;
+        overflow: hidden;
+        background: white;
+        border: 1px solid #e8dfd4;
+        transition: all .2s;
+        text-decoration: none;
+        color: inherit;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .relacionado-card:hover {
+        box-shadow: 0 8px 16px rgba(0,0,0,.1);
+        border-color: #b8922a;
+    }
+    
+    .relacionado-img {
+        width: 100%;
+        aspect-ratio: 1;
+        background: #fafafa;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+    }
+    
+    .relacionado-img img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+    }
+    
+    .relacionado-body {
+        padding: 1rem;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .relacionado-nombre {
+        font-weight: 600;
+        font-size: 0.9rem;
+        margin-bottom: 0.5rem;
+        line-height: 1.3;
+    }
+    
+    .relacionado-precio {
+        font-size: 1.1rem;
+        color: #b8922a;
+        font-weight: 700;
+        margin-top: auto;
+    }
+</style>
+
+<div class="detalle-hero">
+    <!-- BREADCRUMB -->
+    <div class="breadcrumb-custom">
+        <a href="/">Inicio</a>
+        <span>/</span>
+        <a href="#">Productos</a>
+        <span>/</span>
+        <span class="text-muted">{{ producto.nombre }}</span>
+    </div>
+
+    <!-- CONTENIDO PRINCIPAL -->
+    <div class="detalle-container">
+        <!-- GALERÍA -->
+        <div class="detalle-galeria">
+            <div class="imagen-principal">
+                {% if producto.imagenes.all %}
+                    <img id="imagenPrincipal" src="{{ producto.imagenes.all.0.imagen.url }}" alt="{{ producto.nombre }}">
+                {% else %}
+                    <div style="text-align: center; color: #bbb;">
+                        <svg width="60" height="60" fill="currentColor" viewBox="0 0 16 16" style="opacity: 0.3; margin-bottom: 1rem;">
+                            <path d="M6.002 5.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z"/>
+                            <path d="M2.002 1a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V3a2 2 0 0 0-2-2h-12zm12 1a1 1 0 0 1 1 1v6.5l-3.777-1.947a.5.5 0 0 0-.577.093l-3.71 3.71-2.66-1.772a.5.5 0 0 0-.63.062L1.002 12V3a1 1 0 0 1 1-1h12z"/>
+                        </svg>
+                        <div>Sin imagen</div>
+                    </div>
+                {% endif %}
+            </div>
+            
+            {% if producto.imagenes.all|length > 1 %}
+                <div class="miniaturas">
+                    {% for imagen in producto.imagenes.all|slice:":4" %}
+                        <div class="miniatura {% if forloop.first %}activa{% endif %}" onclick="cambiarImagen(this, '{{ imagen.imagen.url }}')">
+                            <img src="{{ imagen.imagen.url }}" alt="Miniatura">
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- INFORMACIÓN -->
+        <div class="detalle-info">
+            <h1 class="detalle-titulo">{{ producto.nombre }}</h1>
+            
+            <div class="detalle-meta">
+                <div class="meta-item">
+                    <div class="meta-label">Código</div>
+                    <div class="meta-valor">{{ producto.codigo }}</div>
+                </div>
+                <div class="meta-item">
+                    <div class="meta-label">Tipo</div>
+                    <div class="meta-valor">{{ producto.tipo }}</div>
+                </div>
+                <div class="meta-item">
+                    <div class="meta-label">Tela</div>
+                    <div class="meta-valor">{{ producto.tela }}</div>
+                </div>
+            </div>
+
+            <div class="precio-principal">
+                <span class="precio-moneda">$</span>
+                <span class="precio-valor">{{ producto.precio }}</span>
+            </div>
+
+            {% if producto.descripcion %}
+                <div class="descripcion-section">
+                    <div class="descripcion-titulo">Descripción</div>
+                    <p class="descripcion-texto">{{ producto.descripcion }}</p>
+                </div>
+            {% endif %}
+
+            {% if variantes %}
+                <div class="variantes-section">
+                    <div class="variantes-titulo">Selecciona tu talle</div>
+                    <div class="talles-grid">
+                        {% for variante in variantes %}
+                            <button class="talle-btn {% if forloop.first %}seleccionado{% endif %}" 
+                                    onclick="seleccionarTalle(this, {{ variante.id }})">
+                                {{ variante.talle.nombre|upper }}
+                            </button>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+
+            <!-- BOTONES -->
+            <div class="botones-compra">
+                <button type="button" class="btn-compra btn-compra-primary" onclick="abrirModalCantidadDetalle({{ producto.id }}, '{{ producto.nombre }}', {{ variantes|length }})">
+                    <svg width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
+                        <path d="M8 1a2.5 2.5 0 0 1 2.5 2.5V4h-5v-.5A2.5 2.5 0 0 1 8 1zm3.5 3v-.5a3.5 3.5 0 1 0-7 0V4H1v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V4h-3.5zM2 5h12v9a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V5z"/>
+                    </svg>
+                    Agregar al Carrito
+                </button>
+                <button class="btn-compra btn-compra-secondary" onclick="abrirTablamedidas()">
+                    <svg width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
+                        <path d="M1 3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1H1zm7 8a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"/>
+                        <path d="M0 5a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H1a1 1 0 0 1-1-1V5zm3-1a.5.5 0 0 0-.5.5v5a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-5a.5.5 0 0 0-.5-.5H3z"/>
+                    </svg>
+                    Ver Medidas
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- FICHA TÉCNICA -->
+    {% if producto.imagen_tecnica %}
+        <div class="ficha-tecnica-section">
+            <div class="ficha-titulo">Ficha Técnica</div>
+            <img src="{{ producto.imagen_tecnica.url }}" alt="Ficha técnica" style="width: 100%; border-radius: 8px;">
+        </div>
+    {% endif %}
+
+    <!-- TABLA DE MEDIDAS (AJAX) -->
+    <div id="tabla-medidas-container" style="margin-top: 2rem;"></div>
+</div>
+
+<!-- PRODUCTOS RELACIONADOS -->
+{% if productos_relacionados %}
+    <div class="relacionados-section">
+        <h2 class="relacionados-titulo">Productos Relacionados</h2>
+        <div class="relacionados-grid">
+            {% for prod in productos_relacionados %}
+                <a href="{% url 'productos:detalle_producto' prod.id %}" class="relacionado-card">
+                    <div class="relacionado-img">
+                        {% if prod.imagenes.all %}
+                            <img src="{{ prod.imagenes.all.0.imagen.url }}" alt="{{ prod.nombre }}">
+                        {% else %}
+                            <svg width="60" height="60" fill="#ddd" viewBox="0 0 16 16">
+                                <path d="M6.002 5.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z"/>
+                                <path d="M2.002 1a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V3a2 2 0 0 0-2-2h-12zm12 1a1 1 0 0 1 1 1v6.5l-3.777-1.947a.5.5 0 0 0-.577.093l-3.71 3.71-2.66-1.772a.5.5 0 0 0-.63.062L1.002 12V3a1 1 0 0 1 1-1h12z"/>
+                            </svg>
+                        {% endif %}
+                    </div>
+                    <div class="relacionado-body">
+                        <div class="relacionado-nombre">{{ prod.nombre }}</div>
+                        <div class="relacionado-precio">${{ prod.precio }}</div>
+                    </div>
+                </a>
+            {% endfor %}
+        </div>
+    </div>
+{% endif %}
+
+<!-- MODAL DE MEDIDAS -->
+<div id="modalMedidas" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,.5); z-index:999; overflow-y:auto;">
+    <div style="background:white; max-width:900px; margin:2rem auto; border-radius:12px; padding:2rem;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
+            <h2 style="margin:0; font-family:'Cormorant Garamond'; font-size:1.8rem;">Tabla de Medidas</h2>
+            <button onclick="cerrarTablamedidas()" style="background:none; border:none; font-size:1.5rem; cursor:pointer;">×</button>
+        </div>
+        <div id="medidas-content"></div>
+    </div>
+</div>
+
+<!-- MODAL CANTIDAD -->
+<div id="modalCantidadDetalle" style="display:none; position:fixed; inset:0; z-index:1200; background:rgba(0,0,0,.55); align-items:center; justify-content:center; padding:1rem;">
+    <div style="width:min(420px, 100%); background:#fff; border-radius:16px; box-shadow:0 24px 60px rgba(0,0,0,.25); overflow:hidden;">
+        <div style="padding:1rem 1.25rem; border-bottom:1px solid #e8dfd4; display:flex; align-items:center; justify-content:space-between; gap:1rem;">
+            <div>
+                <div style="font-size:.75rem; text-transform:uppercase; letter-spacing:.14em; color:#8c7e70; font-weight:600;">Agregar al carrito</div>
+                <div id="modalCantidadDetalleProducto" style="font-family:'Cormorant Garamond', serif; font-size:1.6rem; font-weight:700; color:#1a1612;"></div>
+            </div>
+            <button type="button" onclick="cerrarModalCantidadDetalle()" style="border:none; background:transparent; font-size:1.5rem; line-height:1; cursor:pointer; color:#8c7e70;">×</button>
+        </div>
+        <form id="modalCantidadDetalleForm" method="post" action="/carritos/agregar/" style="padding:1.25rem; display:grid; gap:1rem;">
+            {% csrf_token %}
+            <input type="hidden" name="producto_id" id="modalCantidadDetalleProductoId">
+            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+            <div>
+                <label for="modalCantidadDetalleInput" style="display:block; margin-bottom:.5rem; font-size:0.9rem; font-weight:600; color:#3d342a;">Cantidad</label>
+                <input id="modalCantidadDetalleInput" name="cantidad" type="number" min="1" value="1" class="form-control" style="border:1px solid #e8dfd4; border-radius:10px; padding:.8rem 1rem; font-size:1rem; width:100%;">
+                <small id="modalCantidadDetalleStock" style="display:block; margin-top:.5rem; color:#8c7e70;"></small>
+            </div>
+            <div style="display:flex; gap:.75rem; justify-content:flex-end;">
+                <button type="button" onclick="cerrarModalCantidadDetalle()" style="padding:.8rem 1.1rem; border-radius:10px; border:1px solid #e8dfd4; background:#fff; color:#3d342a; font-weight:600; cursor:pointer;">Cancelar</button>
+                <button type="submit" style="padding:.8rem 1.1rem; border-radius:10px; border:none; background:#1a1612; color:#fff; font-weight:600; cursor:pointer;">Agregar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function cambiarImagen(element, urlImagen) {
+    document.getElementById('imagenPrincipal').src = urlImagen;
+    document.querySelectorAll('.miniatura').forEach(el => el.classList.remove('activa'));
+    element.classList.add('activa');
+}
+
+function seleccionarTalle(element, varianteId) {
+    document.querySelectorAll('.talle-btn').forEach(el => el.classList.remove('seleccionado'));
+    element.classList.add('seleccionado');
+}
+
+async function abrirTablamedidas() {
+    const productoId = {{ producto.id }};
+    try {
+        const res = await fetch(`/productos/ajax/tabla-medidas/${productoId}/`);
+        const data = await res.json();
+        if (data.status === 'ok') {
+            document.getElementById('medidas-content').innerHTML = data.tabla_html;
+            document.getElementById('modalMedidas').style.display = 'flex';
+            document.getElementById('modalMedidas').style.justifyContent = 'center';
+            document.getElementById('modalMedidas').style.alignItems = 'flex-start';
+        }
+    } catch (error) {
+        console.error('Error al cargar medidas:', error);
+    }
+}
+
+function cerrarTablamedidas() {
+    document.getElementById('modalMedidas').style.display = 'none';
+}
+
+function abrirModalCantidadDetalle(productoId, productoNombre, stockDisponible) {
+    const modal = document.getElementById('modalCantidadDetalle');
+    document.getElementById('modalCantidadDetalleProductoId').value = productoId;
+    document.getElementById('modalCantidadDetalleProducto').textContent = productoNombre;
+    document.getElementById('modalCantidadDetalleInput').value = 1;
+    document.getElementById('modalCantidadDetalleInput').max = stockDisponible || 9999;
+    document.getElementById('modalCantidadDetalleStock').textContent = stockDisponible ? `Disponibles: ${stockDisponible}` : '';
+    modal.style.display = 'flex';
+}
+
+function cerrarModalCantidadDetalle() {
+    document.getElementById('modalCantidadDetalle').style.display = 'none';
+}
+
+document.getElementById('modalCantidadDetalle').addEventListener('click', function (event) {
+    if (event.target === this) cerrarModalCantidadDetalle();
+});
+
+// Cargar tabla de medidas al cargar la página
+window.addEventListener('load', async () => {
+    const productoId = {{ producto.id }};
+    try {
+        const res = await fetch(`/productos/ajax/tabla-medidas/${productoId}/`);
+        const data = await res.json();
+        if (data.status === 'ok') {
+            document.getElementById('tabla-medidas-container').innerHTML = data.tabla_html;
+        }
+    } catch (error) {
+        console.error('Error al cargar tabla de medidas:', error);
+    }
+});
+</script>
+
+{% endblock %}

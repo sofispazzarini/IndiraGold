@@ -1,0 +1,169 @@
+{% extends 'users/dashboard_admin.html' %}
+{% load static %}
+
+{% block extra_css %}
+<style>
+    .estado-badge {
+        display: inline-block;
+        padding: 0.35rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 500;
+    }
+    
+    .estado-pendiente { background-color: #fff3cd; color: #856404; }
+    .estado-aceptado { background-color: #d1ecf1; color: #0c5460; }
+    .estado-en_preparacion { background-color: #cfe2ff; color: #084298; }
+    .estado-enviado { background-color: #d1e7dd; color: #0f5132; }
+    .estado-entregado { background-color: #d1e7dd; color: #0f5132; }
+    .estado-cancelado { background-color: #f8d7da; color: #842029; }
+    .estado-vencido { background-color: #f8d7da; color: #842029; }
+    
+    .tabla-pedidos {
+        font-size: 0.9rem;
+    }
+    
+    .tabla-pedidos th {
+        background-color: #f8f9fa;
+        font-weight: 600;
+    }
+    
+    .btn-ver {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.8rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <!-- HEADER -->
+    <div class="d-flex justify-content-between align-items-center mb-4 mt-3">
+        <div>
+            <h2 class="mb-1 fw-bold">Gestión de Pedidos</h2>
+            <p class="text-muted mb-0">Visualiza y gestiona todos los pedidos realizados</p>
+        </div>
+    </div>
+
+    <!-- FILTROS -->
+    <div class="card mb-4 border-0 shadow-sm">
+        <div class="card-body">
+            <form method="get" class="d-flex gap-3 align-items-end">
+                <div class="flex-grow-1">
+                    <label for="estado" class="form-label fw-500">Filtrar por Estado:</label>
+                    <select name="estado" id="estado" class="form-select">
+                        <option value="">Todos los estados</option>
+                        {% for value, label in estados %}
+                            <option value="{{ value }}" {% if estado == value %}selected{% endif %}>
+                                {{ label }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-funnel"></i> Filtrar
+                </button>
+                {% if estado %}
+                    <a href="?estado=" class="btn btn-secondary">
+                        <i class="bi bi-x"></i> Limpiar
+                    </a>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+
+    <!-- TABLA DE PEDIDOS -->
+    {% if pedidos %}
+        <div class="card border-0 shadow-sm">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0 tabla-pedidos">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Cliente</th>
+                            <th>Total</th>
+                            <th>Tipo de Venta</th>
+                            <th>Estado</th>
+                            <th>Fecha</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for pedido in pedidos %}
+                            <tr>
+                                <td>
+                                    <strong>#{{ pedido.id }}</strong>
+                                </td>
+                                <td>
+                                    {{ pedido.cliente.nombre }}
+                                </td>
+                                <td>
+                                    <strong>${{ pedido.total }}</strong>
+                                </td>
+                                <td>
+                                    <span class="badge bg-light text-dark">
+                                        {{ pedido.get_tipo_venta_display }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="estado-badge estado-{{ pedido.estado }}">
+                                        {{ pedido.get_estado_display }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <small>{{ pedido.created_at|date:"d/m/Y H:i" }}</small>
+                                </td>
+                                <td>
+                                    <a href="#" class="btn btn-sm btn-outline-primary btn-ver" title="Ver detalles">
+                                        <i class="bi bi-eye"></i> Ver
+                                    </a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- PAGINACIÓN -->
+        {% if page_obj.has_other_pages %}
+            <nav aria-label="Page navigation" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page=1{% if estado %}&estado={{ estado }}{% endif %}">Primera</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if estado %}&estado={{ estado }}{% endif %}">Anterior</a>
+                        </li>
+                    {% endif %}
+
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ num }}{% if estado %}&estado={{ estado }}{% endif %}">{{ num }}</a>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if estado %}&estado={{ estado }}{% endif %}">Siguiente</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if estado %}&estado={{ estado }}{% endif %}">Última</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        {% endif %}
+    {% else %}
+        <div class="alert alert-info" role="alert">
+            <i class="bi bi-info-circle"></i>
+            No hay pedidos registrados{% if estado %} con el estado seleccionado{% endif %}.
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

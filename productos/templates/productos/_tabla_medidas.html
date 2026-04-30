@@ -1,0 +1,163 @@
+{% load static %}
+
+<div class="tabla-medidas-container">
+    <style>
+        .tabla-medidas-container {
+            width: 100%;
+            font-family: 'DM Sans', sans-serif;
+            color: #3d342a;
+        }
+        
+        .tabla-medidas-header {
+            background: linear-gradient(135deg, #b8922a 0%, #e8c96a 100%);
+            color: white;
+            padding: 1rem;
+            border-radius: 8px 8px 0 0;
+            margin-bottom: 0;
+        }
+        
+        .tabla-medidas-header h3 {
+            margin: 0;
+            font-size: 1.2rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+        
+        .tabla-medidas-subtitle {
+            font-size: 0.8rem;
+            opacity: 0.9;
+            margin-top: 0.25rem;
+        }
+        
+        .tabla-medidas {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border: 1px solid #e8dfd4;
+            border-radius: 0 0 8px 8px;
+            overflow: hidden;
+        }
+        
+        .tabla-medidas thead {
+            background-color: #fdf6e3;
+            border-bottom: 2px solid #e8c96a;
+        }
+        
+        .tabla-medidas th {
+            padding: 1rem 0.875rem;
+            text-align: left;
+            font-weight: 600;
+            font-size: 0.85rem;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            color: #b8922a;
+        }
+        
+        .tabla-medidas td {
+            padding: 0.875rem;
+            border-bottom: 1px solid #e8dfd4;
+            font-size: 0.9rem;
+        }
+        
+        .tabla-medidas tbody tr:hover {
+            background-color: rgba(184, 146, 42, 0.04);
+        }
+        
+        .tabla-medidas tbody tr:last-child td {
+            border-bottom: none;
+        }
+        
+        .talle-badge {
+            display: inline-block;
+            background: #fdf6e3;
+            border: 1px solid #e8c96a;
+            color: #b8922a;
+            padding: 0.35rem 0.65rem;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+        
+        .medida-valor {
+            font-weight: 500;
+            color: #1a1612;
+        }
+        
+        .sin-medidas {
+            padding: 1.5rem;
+            text-align: center;
+            background: #fdf6e3;
+            color: #8c7e70;
+            border-radius: 8px;
+            font-size: 0.9rem;
+        }
+        
+        .medidas-info {
+            font-size: 0.8rem;
+            color: #8c7e70;
+            font-style: italic;
+            padding-top: 0.75rem;
+            border-top: 1px solid #e8dfd4;
+            margin-top: 1rem;
+        }
+    </style>
+    
+    <div class="tabla-medidas-header">
+        <h3><i class="bi bi-rulers"></i> Tabla de Medidas</h3>
+        <div class="tabla-medidas-subtitle">{{ producto.nombre }}</div>
+    </div>
+    
+    {% if variantes %}
+        {% with variantes_con_medidas=variantes|dictsort:"talle.nombre" %}
+            {% if variantes_con_medidas %}
+                <table class="tabla-medidas">
+                    <thead>
+                        <tr>
+                            <th>Talle</th>
+                            <th>Largo (cm)</th>
+                            <th>Ancho (cm)</th>
+                            <th>Alto (cm)</th>
+                            <th>Tiro (cm)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for variante in variantes_con_medidas %}
+                            {% if variante.medidas.all %}
+                                {% for medida in variante.medidas.all %}
+                                    <tr>
+                                        <td>
+                                            <span class="talle-badge">{{ variante.talle.nombre|upper }}</span>
+                                        </td>
+                                        <td class="medida-valor">
+                                            {% if medida.largo %}{{ medida.largo }}{% else %}<em style="color: #bbb;">-</em>{% endif %}
+                                        </td>
+                                        <td class="medida-valor">
+                                            {% if medida.ancho %}{{ medida.ancho }}{% else %}<em style="color: #bbb;">-</em>{% endif %}
+                                        </td>
+                                        <td class="medida-valor">
+                                            {% if medida.alto %}{{ medida.alto }}{% else %}<em style="color: #bbb;">-</em>{% endif %}
+                                        </td>
+                                        <td class="medida-valor">
+                                            {% if medida.tiro %}{{ medida.tiro }}{% else %}<em style="color: #bbb;">-</em>{% endif %}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            {% endif %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+                <div class="medidas-info">
+                    <strong>💡 Nota:</strong> Las medidas están expresadas en centímetros. Si no visualizás algún valor, significa que este parámetro no aplica a este talle.
+                </div>
+            {% else %}
+                <div class="sin-medidas">
+                    <i class="bi bi-info-circle"></i> No hay medidas registradas para las variantes disponibles de este producto.
+                </div>
+            {% endif %}
+        {% endwith %}
+    {% else %}
+        <div class="sin-medidas">
+            <i class="bi bi-info-circle"></i> No hay variantes disponibles para este producto.
+        </div>
+    {% endif %}
+</div>

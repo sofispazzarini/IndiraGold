@@ -1,7 +1,7 @@
 import json
 import uuid
 from django.contrib.auth.decorators import login_required, user_passes_test
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_POST, require_http_methods
 from django.urls import reverse
 from django.shortcuts import redirect, get_object_or_404, render
 from django.contrib import messages
@@ -21,6 +21,37 @@ from .forms import (
 # --- DECORADOR AUXILIAR ---
 def admin_required(view_func):
     return login_required(user_passes_test(lambda u: u.is_superuser)(view_func))
+
+# --- VISTAS PÚBLICAS ---
+
+def detalle_producto(request, producto_id):
+    """
+    Página pública de detalle de un producto.
+    Muestra información completa, variantes, medidas y opción de compra.
+    """
+    producto = get_object_or_404(Producto, id=producto_id, activo=True)
+    variantes = producto.variantes.filter(activa=True).select_related('talle').prefetch_related('colores', 'medidas')
+    
+    # Si no hay variantes activas, mostrar que ha sido descontinuado
+    if not variantes.exists():
+        variantes = []
+    
+    # Obtener productos relacionados de la misma subcategoría
+    productos_relacionados = (
+        Producto.objects
+        .filter(subcategoria=producto.subcategoria, activo=True)
+        .exclude(id=producto.id)
+        .prefetch_related('imagenes')[:4]
+    )
+    
+    context = {
+        'producto': producto,
+        'variantes': variantes,
+        'productos_relacionados': productos_relacionados,
+        'talles_disponibles': [v.talle for v in variantes],
+    }
+    
+    return render(request, 'productos/producto_detalle.html', context)
 
 # --- GESTIÓN DE PRODUCTOS Y NAVEGACIÓN ---
 
@@ -383,6 +414,7 @@ def obtener_detalle_producto_ajax(request, producto_id):
         'activo': producto.activo, 'imagenes': imagenes, 'ficha_tecnica_html': html_ficha_tecnica,
         'url_editar': reverse('productos:editar_producto', args=[producto.id]),
         'url_eliminar': reverse('productos:eliminar_producto', args=[producto.id]),
+        'url_publico': reverse('productos:detalle_producto', args=[producto.id]),
     })
 @admin_required
 @require_POST
@@ -410,6 +442,42 @@ def actualizar_variante_ajax(request):
 from .forms import VarianteForm # Importá el formulario nuevo
 
 from .models import Color, Medida # Chequeá que estén importados arriba
+
+@require_http_methods(["GET"])
+def obtener_tabla_medidas_ajax(request, producto_id):
+    """
+    Endpoint público AJAX que devuelve la tabla de medidas de un producto.
+    Para que el visitante pueda ver las medidas correctas antes de comprar.
+    """
+    try:
+        producto = get_object_or_404(Producto, id=producto_id, activo=True)
+        variantes = producto.variantes.filter(activa=True).prefetch_related('medidas', 'talle')
+        
+        if not variantes.exists():
+            return JsonResponse({
+                'status': 'info',
+                'mensaje': 'Este producto no tiene variantes con medidas disponibles.',
+                'tabla_html': ''
+            })
+        
+        # Construir la tabla HTML
+        tabla_html = render_to_string('productos/_tabla_medidas.html', {
+            'producto': producto,
+            'variantes': variantes,
+        })
+        
+        return JsonResponse({
+            'status': 'ok',
+            'producto_nombre': producto.nombre,
+            'tabla_html': tabla_html,
+        })
+    
+    except Exception as e:
+        return JsonResponse({
+            'status': 'error',
+            'mensaje': str(e)
+        }, status=400)
+
 
 @admin_required
 def editar_variante(request, variante_id):

@@ -47,7 +47,7 @@
         {% for producto in productos_destacados %}
           <div class="featured-item">
             <div class="product-card" data-cat="{{ producto.categoria.id }}" data-name="{{ producto.nombre|lower }} {{ producto.tipo|lower }} {{ producto.tela|lower }}">
-              <a href="#" class="product-card__img-wrap">
+              <a href="{% url 'productos:detalle_producto' producto.id %}" class="product-card__img-wrap">
                 {% if producto.imagen %}
                   <img src="{{ producto.imagen.url }}" alt="{{ producto.nombre }}" class="product-card__img" />
                 {% else %}
@@ -72,17 +72,12 @@
                 <div class="product-card__footer">
                   <span class="product-card__price">${{ producto.precio }}</span>
                   {% if producto.stock > 0 %}
-                    <form method="post" action="/carritos/agregar/" class="js-cart-form" style="display:inline">
-                      {% csrf_token %}
-                      <input type="hidden" name="producto_id" value="{{ producto.pk }}" />
-                      <input type="hidden" name="next" value="{{ request.get_full_path }}" />
-                      <button type="submit" class="product-card__btn">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
-                          <path d="M8 1a2.5 2.5 0 0 1 2.5 2.5V4h-5v-.5A2.5 2.5 0 0 1 8 1zm3.5 3v-.5a3.5 3.5 0 1 0-7 0V4H1v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V4h-3.5zM2 5h12v9a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V5z"/>
-                        </svg>
-                        Agregar
-                      </button>
-                    </form>
+                    <button type="button" class="product-card__btn" onclick="abrirModalCantidad({{ producto.pk }}, '{{ producto.nombre }}', {{ producto.stock }})">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                        <path d="M8 1a2.5 2.5 0 0 1 2.5 2.5V4h-5v-.5A2.5 2.5 0 0 1 8 1zm3.5 3v-.5a3.5 3.5 0 1 0-7 0V4H1v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V4h-3.5zM2 5h12v9a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V5z"/>
+                      </svg>
+                      Agregar
+                    </button>
                   {% else %}
                     <span class="product-card__agotado">Sin stock</span>
                   {% endif %}
@@ -157,18 +152,34 @@
 
     <div class="catalog-top">
       <h2 class="catalog-title">Catálogo</h2>
-      <div class="search-wrap">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-          <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.099zm-5.242 1.656a5.5 5.5 0 1 1 0-11 5.5 5.5 0 0 1 0 11z"/>
-        </svg>
-        <input type="text" id="searchInput" placeholder="Buscar productos…" oninput="filterSearch(this.value)" />
+      <div class="catalog-actions">
+        <div class="search-wrap">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+            <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.099zm-5.242 1.656a5.5 5.5 0 1 1 0-11 5.5 5.5 0 0 1 0 11z"/>
+          </svg>
+          <input type="text" id="searchInput" placeholder="Buscar productos…" oninput="filterSearch(this.value)" />
+        </div>
+        <div class="variant-filters">
+          <select id="talleFilter" onchange="filterTalle(this.value)">
+            <option value="">Todos los talles</option>
+            {% for talle in talles %}
+              <option value="{{ talle.id }}">{{ talle.nombre }}</option>
+            {% endfor %}
+          </select>
+          <select id="colorFilter" onchange="filterColor(this.value)">
+            <option value="">Todos los colores</option>
+            {% for color in colores %}
+              <option value="{{ color.id }}">{{ color.nombre }}</option>
+            {% endfor %}
+          </select>
+        </div>
       </div>
     </div>
 
     <div class="products-grid" id="productsGrid">
       {% for producto in productos %}
-      <div class="product-card" data-cat="{{ producto.categoria.id }}" data-name="{{ producto.nombre|lower }} {{ producto.tipo|lower }} {{ producto.tela|lower }}">
-        <a href="#" class="product-card__img-wrap">
+          <div class="product-card" data-cat="{{ producto.categoria.id }}" data-name="{{ producto.nombre|lower }} {{ producto.tipo|lower }} {{ producto.tela|lower }}">
+            <a href="{% url 'productos:detalle_producto' producto.id %}" class="product-card__img-wrap">
           {% if producto.imagen %}
             <img src="{{ producto.imagen.url }}" alt="{{ producto.nombre }}" class="product-card__img" />
           {% else %}
@@ -192,17 +203,12 @@
           <div class="product-card__footer">
             <span class="product-card__price">${{ producto.precio }}</span>
             {% if producto.stock > 0 %}
-              <form method="post" action="/carritos/agregar/" class="js-cart-form" style="display:inline">
-                {% csrf_token %}
-                <input type="hidden" name="producto_id" value="{{ producto.pk }}" />
-                <input type="hidden" name="next" value="{{ request.get_full_path }}" />
-                <button type="submit" class="product-card__btn">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
-                    <path d="M8 1a2.5 2.5 0 0 1 2.5 2.5V4h-5v-.5A2.5 2.5 0 0 1 8 1zm3.5 3v-.5a3.5 3.5 0 1 0-7 0V4H1v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V4h-3.5zM2 5h12v9a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V5z"/>
-                  </svg>
-                  Agregar
-                </button>
-              </form>
+              <button type="button" class="product-card__btn" onclick="abrirModalCantidad({{ producto.pk }}, '{{ producto.nombre }}', {{ producto.stock }})">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                  <path d="M8 1a2.5 2.5 0 0 1 2.5 2.5V4h-5v-.5A2.5 2.5 0 0 1 8 1zm3.5 3v-.5a3.5 3.5 0 1 0-7 0V4H1v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V4h-3.5zM2 5h12v9a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V5z"/>
+                </svg>
+                Agregar
+              </button>
             {% else %}
               <span class="product-card__agotado">Sin stock</span>
             {% endif %}
@@ -266,6 +272,9 @@
   </div>
   <div class="cart-panel__items" id="cartItems">{% include 'carritos/_cart_fragment.html' %}</div>
   <div class="cart-panel__footer">
+    <div class="cart-expire" id="cartExpire" style="display:none">
+      Expira en <span id="cartExpireValue">--:--</span>
+    </div>
     <div class="cart-total">
       <span>Total</span>
       <span id="cartTotal">${{ cart_total|default:"0" }}</span>
@@ -274,6 +283,33 @@
   </div>
 </div>
 <div class="cart-overlay" id="cartOverlay" onclick="toggleCart()"></div>
+
+<!-- MODAL CANTIDAD -->
+<div id="modalCantidad" style="display:none; position:fixed; inset:0; z-index:1200; background:rgba(0,0,0,.55); align-items:center; justify-content:center; padding:1rem;">
+  <div style="width:min(420px, 100%); background:#fff; border-radius:16px; box-shadow:0 24px 60px rgba(0,0,0,.25); overflow:hidden;">
+    <div style="padding:1rem 1.25rem; border-bottom:1px solid #e8dfd4; display:flex; align-items:center; justify-content:space-between; gap:1rem;">
+      <div>
+        <div style="font-size:.75rem; text-transform:uppercase; letter-spacing:.14em; color:#8c7e70; font-weight:600;">Agregar al carrito</div>
+        <div id="modalCantidadProducto" style="font-family:'Cormorant Garamond', serif; font-size:1.6rem; font-weight:700; color:#1a1612;"></div>
+      </div>
+      <button type="button" onclick="cerrarModalCantidad()" style="border:none; background:transparent; font-size:1.5rem; line-height:1; cursor:pointer; color:#8c7e70;">×</button>
+    </div>
+    <form id="modalCantidadForm" method="post" action="/carritos/agregar/" style="padding:1.25rem; display:grid; gap:1rem;">
+      {% csrf_token %}
+      <input type="hidden" name="producto_id" id="modalCantidadProductoId">
+      <input type="hidden" name="next" value="{{ request.get_full_path }}">
+      <div>
+        <label for="modalCantidadInput" style="display:block; margin-bottom:.5rem; font-size:.9rem; font-weight:600; color:#3d342a;">Cantidad</label>
+        <input id="modalCantidadInput" name="cantidad" type="number" min="1" value="1" class="form-control" style="border:1px solid #e8dfd4; border-radius:10px; padding:.8rem 1rem; font-size:1rem; width:100%;">
+        <small id="modalCantidadStock" style="display:block; margin-top:.5rem; color:#8c7e70;"></small>
+      </div>
+      <div style="display:flex; gap:.75rem; justify-content:flex-end;">
+        <button type="button" onclick="cerrarModalCantidad()" style="padding:.8rem 1.1rem; border-radius:10px; border:1px solid #e8dfd4; background:#fff; color:#3d342a; font-weight:600; cursor:pointer;">Cancelar</button>
+        <button type="submit" style="padding:.8rem 1.1rem; border-radius:10px; border:none; background:#1a1612; color:#fff; font-weight:600; cursor:pointer;">Agregar</button>
+      </div>
+    </form>
+  </div>
+</div>
 
 <style>
   /* HERO */
@@ -336,9 +372,22 @@
   .container { max-width: 1200px; margin: 0 auto; padding: 0 2rem; }
   .catalog-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2.5rem; flex-wrap: wrap; gap: 1rem; }
   .catalog-title { font-family: 'Cormorant Garamond', serif; font-size: 1.75rem; font-weight: 700; color: #1a1612; }
+  .catalog-actions { display: flex; align-items: center; gap: .75rem; flex-wrap: wrap; }
   .search-wrap { display: flex; align-items: center; gap: .5rem; background: #fff; border: 1px solid #e8dfd4; border-radius: 8px; padding: .45rem .85rem; }
   .search-wrap svg { color: #8c7e70; flex-shrink: 0; }
   .search-wrap input { border: none; outline: none; font-size: .875rem; font-family: 'DM Sans', sans-serif; color: #1a1612; width: 220px; background: transparent; }
+  .variant-filters { display: flex; gap: .5rem; }
+  .variant-filters select {
+    border: 1px solid #e8dfd4;
+    background: #fff;
+    color: #1a1612;
+    border-radius: 8px;
+    padding: .45rem .65rem;
+    font-size: .82rem;
+    font-family: 'DM Sans', sans-serif;
+    outline: none;
+  }
+  .variant-filters select:focus { border-color: #b8922a; }
 
   .products-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.5rem; }
 
@@ -438,6 +487,8 @@
   .cart-item__remove { background: none; border: none; color: #8c7e70; cursor: pointer; font-size: .85rem; }
   .cart-item__remove:hover { color: #ef4444; }
   .cart-panel__footer { padding: 1.5rem; border-top: 1px solid #e8dfd4; }
+  .cart-expire { font-size: .8rem; color: #8c7e70; margin-bottom: .6rem; }
+  .cart-expire span { color: #1a1612; font-weight: 600; }
   .cart-total { display: flex; justify-content: space-between; font-size: 1rem; font-weight: 600; color: #1a1612; margin-bottom: 1rem; }
   .cart-checkout { width: 100%; background: #1a1612; color: #fff; border: none; border-radius: 7px; padding: .85rem; font-size: .9rem; font-weight: 500; font-family: 'DM Sans', sans-serif; cursor: pointer; transition: background .15s; }
   .cart-checkout:hover { background: #b8922a; }
@@ -484,30 +535,69 @@
 </style>
 
 <script>
+  const isAuthenticated = {{ request.user.is_authenticated|yesno:"true,false" }};
+  let cartExpiresIn = parseInt('{{ cart_expires_in|default:0 }}', 10) || 0;
+  let cartExpireTimer = null;
+  let expiringNow = false;
+
+  let activeCategory = '';
+  let searchTerm = '';
+  let selectedTalle = '';
+  let selectedColor = '';
+
+  function getCatalogCards() {
+    return document.querySelectorAll('#productsGrid .product-card');
+  }
+
+  function parseList(datasetValue) {
+    return (datasetValue || '')
+      .split(',')
+      .map(v => v.trim())
+      .filter(Boolean);
+  }
+
+  function applyFilters() {
+    const cards = getCatalogCards();
+    cards.forEach(card => {
+      const matchCategory = activeCategory === '' || card.dataset.cat === activeCategory;
+      const matchSearch = card.dataset.name.includes(searchTerm);
+
+      const talles = parseList(card.dataset.talles);
+      const colores = parseList(card.dataset.colores);
+      const matchTalle = selectedTalle === '' || talles.includes(selectedTalle);
+      const matchColor = selectedColor === '' || colores.includes(selectedColor);
+
+      card.style.display = (matchCategory && matchSearch && matchTalle && matchColor) ? '' : 'none';
+    });
+    checkEmpty();
+  }
+
   // Filtro por categoría
   function filterCat(btn, catId) {
     document.querySelectorAll('.cat-pill').forEach(p => p.classList.remove('cat-pill--active'));
     btn.classList.add('cat-pill--active');
-    const cards = document.querySelectorAll('.product-card');
-    cards.forEach(c => {
-      const match = catId === '' || c.dataset.cat === catId;
-      c.style.display = match ? '' : 'none';
-    });
-    checkEmpty();
+    activeCategory = catId;
+    applyFilters();
   }
 
   // Buscador
   function filterSearch(q) {
-    const cards = document.querySelectorAll('.product-card');
-    const term = q.toLowerCase().trim();
-    cards.forEach(c => {
-      c.style.display = c.dataset.name.includes(term) ? '' : 'none';
-    });
-    checkEmpty();
+    searchTerm = q.toLowerCase().trim();
+    applyFilters();
+  }
+
+  function filterTalle(talleId) {
+    selectedTalle = talleId;
+    applyFilters();
+  }
+
+  function filterColor(colorId) {
+    selectedColor = colorId;
+    applyFilters();
   }
 
   function checkEmpty() {
-    const visible = [...document.querySelectorAll('.product-card')].filter(c => c.style.display !== 'none');
+    const visible = [...getCatalogCards()].filter(c => c.style.display !== 'none');
     document.getElementById('noResults').style.display = visible.length === 0 ? 'block' : 'none';
   }
 
@@ -526,8 +616,108 @@
   function checkout() {
     const count = parseInt(document.getElementById('cartCount').textContent || '0');
     if (count <= 0) return;
-    // Acá va la lógica de checkout / POST al servidor
-    alert('Funcionalidad de checkout próximamente!');
+    window.location.href = `/users/login/?next=${encodeURIComponent(window.location.pathname + window.location.search)}`;
+  }
+
+  function formatCountdown(seconds) {
+    const safe = Math.max(0, parseInt(seconds || 0, 10));
+    const mm = String(Math.floor((safe % 3600) / 60)).padStart(2, '0');
+    const ss = String(safe % 60).padStart(2, '0');
+    return `${mm}:${ss}`;
+  }
+
+  function renderCartExpiry() {
+    const expireWrap = document.getElementById('cartExpire');
+    const expireValue = document.getElementById('cartExpireValue');
+    const cartCount = parseInt(document.getElementById('cartCount')?.textContent || '0', 10);
+    if (!expireWrap || !expireValue) return;
+
+    if (cartCount <= 0 || cartExpiresIn <= 0) {
+      expireWrap.style.display = 'none';
+      return;
+    }
+
+    expireWrap.style.display = 'block';
+    expireValue.textContent = formatCountdown(cartExpiresIn);
+  }
+
+  function startCartExpiryTicker() {
+    if (cartExpireTimer) clearInterval(cartExpireTimer);
+    cartExpireTimer = setInterval(() => {
+      const cartCount = parseInt(document.getElementById('cartCount')?.textContent || '0', 10);
+      if (cartCount <= 0) {
+        renderCartExpiry();
+        return;
+      }
+
+      if (cartExpiresIn > 0) {
+        cartExpiresIn -= 1;
+        renderCartExpiry();
+      }
+
+      if (cartExpiresIn <= 0 && !expiringNow && cartCount > 0) {
+        expiringNow = true;
+        expireCartNow();
+      }
+    }, 1000);
+  }
+
+  function getCsrfToken() {
+    const match = document.cookie.match(/(?:^|; )csrftoken=([^;]+)/);
+    return match ? decodeURIComponent(match[1]) : '';
+  }
+
+  async function expireCartNow() {
+    try {
+      const response = await fetch('/carritos/expirar/', {
+        method: 'POST',
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest',
+          'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+        },
+        body: new URLSearchParams({
+          csrfmiddlewaretoken: getCsrfToken(),
+          next: window.location.pathname + window.location.search,
+        }),
+      });
+
+      if (!response.ok) return;
+      const html = await response.text();
+      applyCartFromHtml(html);
+    } finally {
+      expiringNow = false;
+    }
+  }
+
+  function applyCartFromHtml(html) {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
+    const fragment = doc.getElementById('cartFragment');
+    if (!fragment) return false;
+
+    const cartItems = document.getElementById('cartItems');
+    const cartCount = document.getElementById('cartCount');
+    const cartTotal = document.getElementById('cartTotal');
+
+    if (cartItems) {
+      cartItems.innerHTML = fragment.innerHTML;
+    }
+    if (cartCount) {
+      cartCount.textContent = fragment.dataset.cartCount || '0';
+    }
+    if (cartTotal) {
+      cartTotal.textContent = fragment.dataset.cartTotal || '$0';
+    }
+
+    cartExpiresIn = parseInt(fragment.dataset.cartExpiresIn || '0', 10) || 0;
+    renderCartExpiry();
+
+    const flashMessages = doc.querySelectorAll('.cart-flash-message');
+    flashMessages.forEach((node) => {
+      showToast(node.textContent?.trim() || '', node.dataset.level || '');
+    });
+
+    return true;
   }
 
   async function submitCartForm(form) {
@@ -545,32 +735,10 @@
       }
 
       const html = await response.text();
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(html, 'text/html');
-      const fragment = doc.getElementById('cartFragment');
-      if (!fragment) {
+      const applied = applyCartFromHtml(html);
+      if (!applied) {
         form.submit();
-        return;
       }
-
-      const cartItems = document.getElementById('cartItems');
-      const cartCount = document.getElementById('cartCount');
-      const cartTotal = document.getElementById('cartTotal');
-
-      if (cartItems) {
-        cartItems.innerHTML = fragment.innerHTML;
-      }
-      if (cartCount) {
-        cartCount.textContent = fragment.dataset.cartCount || '0';
-      }
-      if (cartTotal) {
-        cartTotal.textContent = fragment.dataset.cartTotal || '$0';
-      }
-
-      const flashMessages = doc.querySelectorAll('.cart-flash-message');
-      flashMessages.forEach((node) => {
-        showToast(node.textContent?.trim() || '', node.dataset.level || '');
-      });
     } catch (error) {
       form.submit();
     }
@@ -600,6 +768,27 @@
     if (!form) return;
     event.preventDefault();
     submitCartForm(form);
+  });
+
+  renderCartExpiry();
+  startCartExpiryTicker();
+
+  function abrirModalCantidad(productoId, productoNombre, stock) {
+    const modal = document.getElementById('modalCantidad');
+    document.getElementById('modalCantidadProductoId').value = productoId;
+    document.getElementById('modalCantidadProducto').textContent = productoNombre;
+    document.getElementById('modalCantidadInput').value = 1;
+    document.getElementById('modalCantidadInput').max = stock;
+    document.getElementById('modalCantidadStock').textContent = `Disponibles: ${stock}`;
+    modal.style.display = 'flex';
+  }
+
+  function cerrarModalCantidad() {
+    document.getElementById('modalCantidad').style.display = 'none';
+  }
+
+  document.getElementById('modalCantidad').addEventListener('click', function (event) {
+    if (event.target === this) cerrarModalCantidad();
   });
 </script>
 
