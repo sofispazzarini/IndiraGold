@@ -31,6 +31,7 @@ class Pedido(models.Model):
         default='pendiente'
     )
     created_at = models.DateTimeField(auto_now_add=True)
+    direccion_info = models.TextField(blank=True, null=True, help_text="Información de dirección del envío")
 
     def __str__(self):
         return f"Pedido {self.id}"

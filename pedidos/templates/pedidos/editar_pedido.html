@@ -1,0 +1,159 @@
+{% extends 'users/dashboard_admin.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <div class="d-flex justify-content-between align-items-center mb-4 mt-3">
+        <div>
+            <h2 class="mb-1 fw-bold">Editar pedido #{{ pedido.id }}</h2>
+            <p class="text-muted mb-0">Cliente: <strong>{{ pedido.cliente.user.username }}</strong></p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'pedidos:detalle_pedido' pedido.id %}" class="btn btn-outline-secondary">Cancelar</a>
+        </div>
+    </div>
+
+    <div class="alert alert-warning" role="alert">
+        <i class="bi bi-exclamation-triangle"></i>
+        <strong>Estado actual:</strong> {{ pedido.get_estado_display }}
+        {% if pedido.estado in estados_no_editables %}
+            <br><span class="small text-danger">Este pedido no puede ser editado en su estado actual.</span>
+        {% endif %}
+    </div>
+
+    <form method="post" class="row g-4">
+        {% csrf_token %}
+
+        <!-- ÍTEMS DEL PEDIDO -->
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-0">
+                    <h5 class="mb-0">Ítems del pedido</h5>
+                </div>
+                <div class="table-responsive">
+                    <table class="table mb-0 align-middle">
+                        <thead>
+                            <tr>
+                                <th>Producto</th>
+                                <th>Variante</th>
+                                <th>Cantidad</th>
+                                <th>P. Unitario</th>
+                                <th>Subtotal</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in items %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ item.variante.producto.nombre }}</strong>
+                                        <div class="text-muted small">Código: {{ item.variante.producto.codigo }}</div>
+                                    </td>
+                                    <td>
+                                        Talle {{ item.variante.talle.nombre }}
+                                        {% with colores=item.variante.colores.all %}
+                                            {% if colores %}
+                                                <div class="text-muted small">
+                                                    {{ colores|join:", " }}
+                                                </div>
+                                            {% endif %}
+                                        {% endwith %}
+                                    </td>
+                                    <td>
+                                        <input type="number" name="cantidad_{{ item.id }}" value="{{ item.cantidad }}" min="1" class="form-control form-control-sm" style="width: 80px;">
+                                    </td>
+                                    <td>${{ item.precio_unitario }}</td>
+                                    <td><strong>${{ item.precio_total }}</strong></td>
+                                    <td>
+                                        <label class="form-check">
+                                            <input type="checkbox" name="eliminar_item" value="{{ item.id }}" class="form-check-input">
+                                            <span class="text-danger small fw-bold">Eliminar</span>
+                                        </label>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- AGREGAR NUEVO ITEM -->
+                <div class="card-body border-top">
+                    <h6 class="mb-3">Agregar nuevo item</h6>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label for="nueva_variante" class="form-label">Variante:</label>
+                            <select name="nueva_variante_id" id="nueva_variante" class="form-select">
+                                <option value="">-- Seleccionar --</option>
+                                {% for variante in variantes_disponibles %}
+                                    <option value="{{ variante.id }}">
+                                        {{ variante.producto.nombre }} - Talle {{ variante.talle.nombre }} - ${{ variante.precio }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="nueva_cantidad" class="form-label">Cantidad:</label>
+                            <input type="number" name="nueva_cantidad" id="nueva_cantidad" min="1" value="1" class="form-control">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- RESUMEN Y CONFIGURACIÓN -->
+        <div class="col-lg-4">
+            <!-- ESTADO -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white border-0">
+                    <h5 class="mb-0">Estado</h5>
+                </div>
+                <div class="card-body">
+                    <select name="estado" class="form-select">
+                        {% for value, label in pedido.ESTADOS %}
+                            <option value="{{ value }}" {% if pedido.estado == value %}selected{% endif %}>
+                                {{ label }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <!-- DIRECCIÓN -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white border-0">
+                    <h5 class="mb-0">Dirección de envío</h5>
+                </div>
+                <div class="card-body">
+                    <textarea name="direccion_info" class="form-control" rows="4" placeholder="Calle, número, ciudad, provincia, CP">{{ pedido.direccion_info }}</textarea>
+                </div>
+            </div>
+
+            <!-- RESUMEN TOTAL -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-0">
+                    <h5 class="mb-0">Resumen</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item d-flex justify-content-between px-0">
+                            <span>Total items</span>
+                            <strong>{{ items.count }}</strong>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between px-0">
+                            <span>Total</span>
+                            <strong style="font-size: 1.5rem; color: #6E0E2E;">${{ pedido.total }}</strong>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- BOTONES -->
+            <div class="d-grid gap-2 mt-4">
+                <button type="submit" class="btn btn-primary btn-lg">
+                    <i class="bi bi-check-circle"></i> Guardar cambios
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}

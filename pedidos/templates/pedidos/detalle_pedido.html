@@ -11,6 +11,11 @@
             </p>
         </div>
         <div class="d-flex gap-2">
+            {% if pedido.estado not in 'entregado,cancelado' %}
+                <a href="{% url 'pedidos:editar_pedido' pedido.id %}" class="btn btn-primary">
+                    <i class="bi bi-pencil"></i> Editar
+                </a>
+            {% endif %}
             <a href="{% url 'pedidos:historial_cliente' pedido.cliente.id %}" class="btn btn-outline-secondary">Volver al historial</a>
             <a href="{% url 'pedidos:gestion_pedidos' %}" class="btn btn-outline-secondary">Volver a pedidos</a>
         </div>
