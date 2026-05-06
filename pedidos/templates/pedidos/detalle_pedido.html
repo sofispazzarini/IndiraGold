@@ -1,0 +1,111 @@
+{% extends 'users/dashboard_admin.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <div class="d-flex justify-content-between align-items-center mb-4 mt-3">
+        <div>
+            <h2 class="mb-1 fw-bold">Detalle del pedido #{{ pedido.id }}</h2>
+            <p class="text-muted mb-0">
+                Cliente: <strong>{{ pedido.cliente.user.username }}</strong> — DNI: {{ pedido.cliente.dni }}
+            </p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'pedidos:historial_cliente' pedido.cliente.id %}" class="btn btn-outline-secondary">Volver al historial</a>
+            <a href="{% url 'pedidos:gestion_pedidos' %}" class="btn btn-outline-secondary">Volver a pedidos</a>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-0">
+                    <h5 class="mb-0">Ítems del pedido</h5>
+                </div>
+                <div class="table-responsive">
+                    <table class="table mb-0 align-middle">
+                        <thead>
+                            <tr>
+                                <th>Producto</th>
+                                <th>Variante</th>
+                                <th>Cantidad</th>
+                                <th>Precio unitario</th>
+                                <th>Subtotal</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in items %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ item.variante.producto.nombre }}</strong>
+                                        <div class="text-muted small">Código: {{ item.variante.producto.codigo }}</div>
+                                    </td>
+                                    <td>
+                                        Talle {{ item.variante.talle.nombre }}
+                                        {% with colores=item.variante.colores.all %}
+                                            {% if colores %}
+                                                <div class="text-muted small">
+                                                    Colores:
+                                                    {% for color in colores %}
+                                                        {{ color.nombre }}{% if not forloop.last %}, {% endif %}
+                                                    {% endfor %}
+                                                </div>
+                                            {% endif %}
+                                        {% endwith %}
+                                    </td>
+                                    <td>{{ item.cantidad }}</td>
+                                    <td>${{ item.precio_unitario }}</td>
+                                    <td><strong>${{ item.precio_total }}</strong></td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white border-0">
+                    <h5 class="mb-0">Resumen</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item d-flex justify-content-between px-0">
+                            <span>Estado</span>
+                            <strong>{{ pedido.get_estado_display }}</strong>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between px-0">
+                            <span>Tipo de venta</span>
+                            <strong>{{ pedido.get_tipo_venta_display }}</strong>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between px-0">
+                            <span>Fecha</span>
+                            <strong>{{ pedido.created_at|date:"d/m/Y H:i" }}</strong>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between px-0">
+                            <span>Total</span>
+                            <strong>${{ pedido.total }}</strong>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-0">
+                    <h5 class="mb-0">Pago</h5>
+                </div>
+                <div class="card-body">
+                    {% if pago %}
+                        <p class="mb-2"><strong>Método:</strong> {{ pago.metodo }}</p>
+                        <p class="mb-2"><strong>Monto:</strong> ${{ pago.monto }}</p>
+                        <p class="mb-0"><strong>Fecha:</strong> {{ pago.fecha_pago|date:"d/m/Y H:i" }}</p>
+                    {% else %}
+                        <div class="alert alert-warning mb-0">Este pedido aún no tiene un pago registrado.</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -114,7 +114,7 @@
                                     <small>{{ pedido.created_at|date:"d/m/Y H:i" }}</small>
                                 </td>
                                 <td>
-                                    <a href="#" class="btn btn-sm btn-outline-primary btn-ver" title="Ver detalles">
+                                    <a href="{% url 'pedidos:detalle_pedido' pedido.id %}" class="btn btn-sm btn-outline-primary btn-ver" title="Ver detalles">
                                         <i class="bi bi-eye"></i> Ver
                                     </a>
                                 </td>

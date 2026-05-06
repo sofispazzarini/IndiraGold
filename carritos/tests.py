@@ -1,8 +1,11 @@
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
+from django.contrib.auth.models import User
 
-from productos.models import Categoria, Proveedor, Producto
+from productos.models import Categoria, Proveedor, Producto, Talle, Variante
+from users.models import Cliente
+from pedidos.models import Pedido, PedidoItem
 from decimal import Decimal
 from carritos.utils import SESSION_CART_STARTED_AT_KEY
 
@@ -11,6 +14,7 @@ class AgregarProductoCarritoTests(TestCase):
 	def setUp(self):
 		self.categoria = Categoria.objects.create(nombre="Cat")
 		self.proveedor = Proveedor.objects.create(nombre="Prov", telefono="123")
+		self.talle = Talle.objects.create(nombre="M")
 		self.producto = Producto.objects.create(
 			codigo="P-001",
 			nombre="Producto 1",
@@ -23,6 +27,16 @@ class AgregarProductoCarritoTests(TestCase):
 			proveedor=self.proveedor,
 			activo=True,
 		)
+		self.variante = Variante.objects.create(
+			producto=self.producto,
+			talle=self.talle,
+			stock=1,
+			precio="10.00",
+			activa=True,
+			qr_code="QR-001",
+		)
+		self.user = User.objects.create_user(username="12345678", password="testpass123", first_name="Cliente")
+		self.cliente = Cliente.objects.create(user=self.user, dni="12345678", telefono="123456")
 
 	def test_agregar_producto_con_stock_lo_incorpora_en_sesion(self):
 		url = reverse("carritos:agregar_producto")
@@ -84,3 +98,24 @@ class AgregarProductoCarritoTests(TestCase):
 		session = self.client.session
 		self.assertEqual(session.get("carrito", {}), {})
 		self.assertNotIn(SESSION_CART_STARTED_AT_KEY, session)
+
+	def test_confirmar_compra_crea_pedido_y_detalle_para_cliente_logueado(self):
+		self.client.force_login(self.user)
+		session = self.client.session
+		session["carrito"] = {str(self.producto.id): 1}
+		session.save()
+
+		url = reverse("carritos:confirmar_compra")
+		res = self.client.post(url, {"next": "/home/"})
+		self.assertEqual(res.status_code, 302)
+		self.assertTrue(Pedido.objects.filter(cliente=self.cliente).exists())
+		pedido = Pedido.objects.get(cliente=self.cliente)
+		self.assertEqual(pedido.items.count(), 1)
+		self.assertEqual(PedidoItem.objects.get(pedido=pedido).cantidad, 1)
+		self.assertEqual(self.client.session.get("carrito", {}), {})
+
+	def test_confirmar_compra_sin_login_redirige_a_login(self):
+		url = reverse("carritos:confirmar_compra")
+		res = self.client.post(url, {"next": "/home/"})
+		self.assertEqual(res.status_code, 302)
+		self.assertIn("/users/login/", res.url)

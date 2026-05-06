@@ -6,7 +6,7 @@ from .models import Pedido, PedidoItem, Pago, Gasto
 class PedidoAdmin(admin.ModelAdmin):
     list_display = ('id', 'cliente', 'total', 'tipo_venta', 'estado', 'created_at')
     list_filter = ('estado', 'tipo_venta', 'created_at')
-    search_fields = ('cliente__nombre', 'id')
+    search_fields = ('id', 'cliente__dni', 'cliente__user__username', 'cliente__user__first_name')
     readonly_fields = ('created_at',)
     ordering = ('-created_at',)
 
