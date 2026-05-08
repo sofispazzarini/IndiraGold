@@ -1,23 +1,144 @@
 {% extends 'users/dashboard_admin.html' %}
+
+{% block extra_head %}
+<!-- Fuentes Indira Gold -->
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Montserrat:wght@500;600&display=swap" rel="stylesheet">
+
+<style>
+    /* Fondo y Centrado Total[cite: 23] */
+    .page-wrapper-ig {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 80vh;
+        width: 100%;
+        background-color: #fafafa;
+    }
+
+    /* La "Caja" del diseño (estilo modal) */
+    .clean-card-ig {
+        background: #fff;
+        border-radius: 25px;
+        padding: 50px 60px;
+        width: 100%;
+        max-width: 500px;
+        box-shadow: 0 20px 50px rgba(0,0,0,0.05);
+        text-align: center;
+    }
+
+    /* Título Serif Dorado */
+    .clean-card-ig h2 {
+        font-family: 'Cormorant Garamond', serif;
+        font-size: 2.4rem;
+        color: #b8922a;
+        margin-bottom: 2.5rem;
+    }
+
+    /* Input con línea inferior únicamente */
+    .input-clean-line {
+        width: 100%;
+        border: none;
+        border-bottom: 1.2px solid #e8dfd4;
+        padding: 12px 0;
+        margin-bottom: 3rem;
+        font-family: 'Montserrat', sans-serif;
+        font-size: 1.05rem;
+        text-align: center;
+        color: #1a1612;
+        background: transparent;
+        transition: border-color 0.3s ease;
+    }
+
+    .input-clean-line:focus {
+        outline: none;
+        border-bottom-color: #b8922a;
+    }
+
+    .input-clean-line::placeholder {
+        color: #8c7e70;
+        opacity: 0.6;
+    }
+
+    /* Botones del diseño */
+    .btn-group-ig {
+        display: flex;
+        gap: 15px;
+        justify-content: center;
+    }
+
+    .btn-cancel-ig {
+        background-color: #f8f9fa;
+        color: #333;
+        font-family: 'Montserrat', sans-serif;
+        font-weight: 600;
+        border: none;
+        border-radius: 50px;
+        padding: 12px 35px;
+        text-decoration: none;
+        transition: 0.3s;
+        font-size: 0.9rem;
+    }
+
+    .btn-save-ig {
+        background-color: #1a1612;
+        color: #fff;
+        font-family: 'Montserrat', sans-serif;
+        font-weight: 600;
+        border: none;
+        border-radius: 50px;
+        padding: 12px 45px;
+        cursor: pointer;
+        transition: 0.3s;
+        font-size: 0.9rem;
+    }
+
+    .btn-save-ig:hover {
+        background-color: #333;
+        transform: translateY(-2px);
+    }
+
+    .btn-cancel-ig:hover {
+        background-color: #eee;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="container mt-4" style="max-width: 500px;">
-    <div class="mb-3">
-        <a href="{% url 'productos:gestion_productos' %}" class="btn btn-link p-0" style="font-size: 1.5rem; text-decoration: none;">
-            &#8592;
-        </a>
-    </div>
-    <h2>Agregar categoría</h2>
-    {% if mensaje %}
-        <div class="alert {% if 'correctamente' in mensaje %}alert-success{% else %}alert-danger{% endif %} mt-3">{{ mensaje }}</div>
-    {% endif %}
-    <form method="post" class="mb-4">
-        {% csrf_token %}
-        <div class="mb-3">
-            {{ form.nombre.label_tag }}
-            {{ form.nombre }}
-        </div>
-        <button type="submit" class="btn btn-primary">Agregar categoría</button>
-    </form>
+<div class="page-wrapper-ig">
     
+    <div class="clean-card-ig">
+        <h2>Nueva categoría</h2>
+
+        {% if mensaje %}
+            <div class="alert alert-sm mb-4 {% if 'correctamente' in mensaje %}text-success{% else %}text-danger{% endif %}" style="font-size: 0.85rem; font-family: 'Montserrat', sans-serif;">
+                {{ mensaje }}
+            </div>
+        {% endif %}
+
+        <form method="post">
+            {% csrf_token %}
+            
+            <!-- Campo de nombre con el estilo de línea inferior[cite: 14] -->
+            <input type="text" 
+                   name="{{ form.nombre.name }}" 
+                   class="input-clean-line" 
+                   placeholder="Nombre (Ej: Calzado, Accesorios...)" 
+                   required 
+                   id="id_nombre">
+
+            <div class="btn-group-ig">
+                <!-- Botón Cancelar redirige a la gestión[cite: 14] -->
+                <a href="{% url 'productos:gestion_productos' %}" class="btn-cancel-ig">
+                    Cancelar
+                </a>
+                
+                <!-- Botón Guardar con estilo oscuro -->
+                <button type="submit" class="btn-save-ig">
+                    Guardar
+                </button>
+            </div>
+        </form>
+    </div>
+
 </div>
 {% endblock %}

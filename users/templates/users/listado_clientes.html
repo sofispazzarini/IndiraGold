@@ -4,31 +4,140 @@
 {% block extra_head %}
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <link rel="stylesheet" href="{% static 'css/users.css' %}">
+    <style>
+    .main-listado-wrapper {
+        min-height: calc(100vh - 60px);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-start;
+    }
+    .ig-table-card {
+        background: #fff;
+        border-radius: 18px;
+        box-shadow: 0 4px 32px rgba(184,146,42,0.10);
+        padding: 2.5rem 2rem 2rem 2rem;
+        margin-bottom: 2.5rem;
+        width: 100%;
+        max-width: 900px;
+        margin-left: 25%;
+        margin-right: auto;
+    }
+    .table thead th {
+        background: #f8f5ef;
+        color: #b8922a;
+        font-weight: 700;
+        border-top: none;
+        border-bottom: 2px solid #f3e7c6;
+        letter-spacing: 1px;
+        vertical-align: middle;
+    }
+    .table tbody tr {
+        transition: background 0.18s;
+    }
+    .table tbody tr:hover {
+        background: #fdf6e3;
+    }
+    .btn-action {
+        font-weight: 600;
+        border-radius: 8px;
+        padding: 0.35rem 1.1rem;
+        font-size: 1rem;
+        transition: background 0.18s, color 0.18s;
+        border: none;
+        display: flex;
+        align-items: center;
+        gap: 0.4em;
+    }
+    .btn-edit-ig {
+        background: #f8f5ef;
+        color: #b8922a;
+    }
+    .btn-edit-ig:hover {
+        background: #b8922a;
+        color: #fff;
+    }
+    .btn-address-ig {
+        background: #f8f5ef;
+        color: #6E0E2E;
+    }
+    .btn-address-ig:hover {
+        background: #6E0E2E;
+        color: #fff;
+    }
+    .search-container-ig .form-control {
+        border-radius: 8px 0 0 8px !important;
+        border-right: none !important;
+        background: #fdf6e3;
+        border: 1.5px solid #e8dfd4;
+    }
+    .search-container-ig .btn {
+        border-radius: 0 8px 8px 0 !important;
+        background: #b8922a;
+        color: #fff;
+        border: 1.5px solid #b8922a;
+        border-left: none;
+    }
+    .search-container-ig .btn:hover {
+        background: #6E0E2E;
+        color: #fff;
+        border-color: #6E0E2E;
+    }
+    .listado-header {
+        width: 100%;
+        max-width: 900px;
+        margin-left: auto;
+        margin-right: auto;
+        text-align: center;
+        margin-bottom: 2 rem;
+    }
+    .listado-header .d-flex {
+        justify-content: center !important;
+    }
+    .listado-header h2 {
+        text-align: center;
+    }
+    .listado-header p {
+        text-align: center;
+    }
+    .nuevo-cliente-btn {
+        float: right;
+        margin-left: 1rem;
+    }
+    @media (max-width: 900px) {
+        .ig-table-card, .listado-header {
+            padding: 1.2rem 0.5rem 1.5rem 0.5rem;
+            max-width: 98vw;
+        }
+        .table-responsive {
+            font-size: 0.97rem;
+        }
+    }
+    </style>
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid py-4" style="max-width: 1200px;">
-    
-    <div class="d-flex justify-content-between align-items-center mb-5">
-        <div>
-            <h2 class="display-6 fw-bold mb-0" style="font-family: 'Cormorant Garamond'; color: var(--dark-ig);">Gestión de Clientes</h2>
-            <p class="text-muted small text-uppercase letter-spacing-1">Base de datos de socios Indira Gold</p>
+<div class="main-listado-wrapper">
+    <div class="listado-header">
+        <div class="d-flex justify-content-between align-items-center mb-5">
+            <div style="flex:1">
+                <h2 class="display-6 fw-bold mb-0" style="font-family: 'Cormorant Garamond'; color: var(--dark-ig);">Gestión de Clientes</h2>
+                <p class="text-muted small text-uppercase letter-spacing-1">Base de datos de socios Indira Gold</p>
+            </div>
+            <a href="{% url 'users:registro_manual_cliente' %}" class="btn btn-dark rounded-pill px-4 shadow-sm border-gold nuevo-cliente-btn" style="border: 1px solid var(--gold-ig); color: var(--gold-light);">
+                <i class="bi bi-person-plus-fill me-2"></i> NUEVO CLIENTE
+            </a>
         </div>
-        <a href="{% url 'users:registro_manual_cliente' %}" class="btn btn-dark rounded-pill px-4 shadow-sm border-gold" style="border: 1px solid var(--gold-ig); color: var(--gold-light);">
-            <i class="bi bi-person-plus-fill me-2"></i> NUEVO CLIENTE
-        </a>
     </div>
-
     <div class="ig-table-card">
         <form method="get" class="search-container-ig mb-4">
-            <div class="input-group" style="max-width: 500px;">
+            <div class="input-group" style="max-width: 500px; margin-left:auto; margin-right:auto;">
                 <input type="text" name="q" class="form-control" placeholder="Buscar por DNI o correo..." value="{{ request.GET.q }}">
                 <button class="btn" type="submit">
                     <i class="bi bi-search"></i>
                 </button>
             </div>
         </form>
-
         <div class="table-responsive">
             <table class="table align-middle">
                 <thead>

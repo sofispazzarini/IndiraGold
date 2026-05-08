@@ -1,107 +1,209 @@
 {% extends 'users/dashboard_admin.html' %}
-{% load static %}
 
 {% block extra_head %}
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-    <link rel="stylesheet" href="{% static 'css/users.css' %}">
+<style>
+body {
+  background: #f6f8fa;
+  min-height: 100vh;
+  
+  justify-content: center;
+}
+.main-wrapper {
+  min-height: calc(100vh - 60px); /* ajusta si tu header es más alto */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.modern-card {
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 4px 32px rgba(60,72,100,0.10);
+  padding: 2.5rem 2rem 2rem 2rem;
+  max-width: 540px;
+  margin: 0 auto;
+  margin-left: 40%;
+}
+.modern-title {
+  font-family: 'Montserrat', Arial, sans-serif;
+  font-size: 2.1rem;
+  font-weight: 700;
+  color: #2d3848;
+  text-align: center;
+  margin-bottom: 0.2rem;
+  letter-spacing: 1px;
+}
+.modern-sub {
+  text-align: center;
+  color: #a0aec0;
+  font-size: 0.98rem;
+  margin-bottom: 2.2rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+.modern-section {
+  margin-bottom: 2.2rem;
+}
+.modern-section-title {
+  font-size: 1.08rem;
+  font-weight: 700;
+  color: #3b4252;
+  margin-bottom: 1.1rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.modern-row {
+  display: flex;
+  gap: 18px;
+  margin-bottom: 1.1rem;
+  flex-wrap: wrap;
+}
+.modern-col {
+  flex: 1 1 220px;
+  min-width: 180px;
+  display: flex;
+  flex-direction: column;
+}
+.modern-label {
+  font-size: 0.97rem;
+  color: #4a5568;
+  margin-bottom: 0.3rem;
+  font-weight: 500;
+}
+.modern-input, .modern-select {
+  border: 1.2px solid #cbd5e1;
+  border-radius: 7px;
+  padding: 0.7rem 1rem;
+  font-size: 1rem;
+  background: #f9fafb;
+  transition: border-color 0.18s, box-shadow 0.18s;
+}
+.modern-input:focus, .modern-select:focus {
+  border-color: #b8922a;
+  background: #fff;
+  box-shadow: 0 0 0 2px #e8c96a33;
+  outline: none;
+}
+.modern-actions {
+  text-align: center;
+  margin-top: 2.2rem;
+}
+.modern-btn {
+  background: linear-gradient(90deg, #fbe18b 0%, #b8922a 100%);
+  color: #6E0E2E;
+  border: none;
+  border-radius: 10px;
+  padding: 1rem 3rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  box-shadow: 0 2px 8px 0 rgba(184,146,42,0.10);
+  cursor: pointer;
+  transition: background 0.18s, box-shadow 0.18s, color 0.18s;
+  text-transform: uppercase;
+}
+.modern-btn:hover {
+  background: linear-gradient(90deg, #b8922a 0%, #fbe18b 100%);
+  color: #fff;
+  box-shadow: 0 4px 16px 0 rgba(184,146,42,0.18);
+}
+@media (max-width: 700px) {
+  .modern-card {
+    padding: 1.2rem 0.5rem 1.5rem 0.5rem;
+    max-width: 98vw;
+  }
+  .modern-row {
+    flex-direction: column;
+    gap: 0;
+  }
+  .modern-col {
+    min-width: 0;
+  }
+}
+</style>
 {% endblock %}
 
 {% block content %}
-<div class="form-container" style="max-width: 850px; margin: 2rem auto;">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <a href="{% url 'users:listado_clientes' %}" class="btn btn-outline-dark btn-sm rounded-pill px-4 fw-bold">
-            <i class="bi bi-arrow-left me-2"></i> VOLVER
-        </a>
-        <span class="badge rounded-pill px-3 py-2 border text-dark" style="background: rgba(184,146,42,0.1); letter-spacing: 1px;">SISTEMA INTERNO</span>
+<a href="{% url 'users:listado_clientes' %}" class="btn btn-light mb-4" style="font-size: 1.1rem; border: none; padding: 6px 22px 6px 14px; background: #f8f5ef; color: #b8922a; border-radius: 8px; box-shadow: 0 2px 8px #e8c96a22; font-weight: 600;">
+  <i class="bi bi-arrow-left"></i> Volver
+</a>
+<div class="modern-card">
+  <div class="modern-title">Alta de Cliente</div>
+  <div class="modern-sub">Registro manual - Sistema interno</div>
+  {% if mensaje %}
+    <div class="alert alert-success border-0 shadow-sm rounded-4 p-3 d-flex align-items-center mb-4">
+      <i class="bi bi-check-circle-fill me-3 fs-4 text-success"></i> {{ mensaje }}
     </div>
-
-    <div class="ig-card">
-        <div class="ig-card-header" style="background: var(--dark-ig); padding: 2.5rem; text-align: center; border-bottom: 5px solid var(--gold-ig);">
-            <h2 style="font-family: 'Cormorant Garamond', serif; color: var(--gold-bright); margin: 0; font-size: 2.4rem; font-weight: 700;">Alta de Cliente</h2>
-            <div class="small mt-2" style="color: rgba(255,255,255,0.5); letter-spacing: 4px; text-transform: uppercase;">Indira Gold • Exclusive</div>
+  {% endif %}
+  <form method="post" autocomplete="off">
+    {% csrf_token %}
+    <div class="modern-section">
+      <div class="modern-section-title">1. Identidad y Contacto</div>
+      <div class="modern-row">
+        <div class="modern-col">
+          <label class="modern-label">DNI (Username)</label>
+          <input type="text" name="dni" value="{{ form.dni.value|default:'' }}" class="modern-input" placeholder="DNI sin puntos">
         </div>
-
-        <div class="ig-card-body" style="padding: 3rem;">
-            {% if mensaje %}
-                <div class="alert alert-success border-0 shadow-sm rounded-4 p-3 d-flex align-items-center mb-4">
-                    <i class="bi bi-check-circle-fill me-3 fs-4 text-success"></i> {{ mensaje }}
-                </div>
-            {% endif %}
-
-            <form method="post" autocomplete="off">
-                {% csrf_token %}
-
-                <div class="form-section-header" style="border-left: 5px solid var(--bordo-ig); padding-left: 15px; margin-bottom: 2rem;">
-                    <h3 style="font-size: 1.1rem; color: var(--bordo-ig); font-weight: 800; text-transform: uppercase; margin: 0;">1. Identidad y Contacto</h3>
-                </div>
-                
-                <div class="row g-4 mb-5">
-                    <div class="col-md-6">
-                        <label class="form-label">DNI (Username)</label>
-                        <input type="text" name="dni" value="{{ form.dni.value|default:'' }}" class="form-control" placeholder="DNI sin puntos">
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">Nombre Completo</label>
-                        <input type="text" name="nombre" value="{{ form.nombre.value|default:'' }}" class="form-control" placeholder="Ej: Martina Colombo">
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">Email Personal</label>
-                        <input type="email" name="email" value="{{ form.email.value|default:'' }}" class="form-control" placeholder="correo@ejemplo.com">
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">Teléfono</label>
-                        <input type="text" name="telefono" value="{{ form.telefono.value|default:'' }}" class="form-control" placeholder="Célular / WhatsApp">
-                    </div>
-                </div>
-
-                <div class="form-section-header" style="border-left: 5px solid var(--gold-ig); padding-left: 15px; margin-bottom: 2rem;">
-                    <h3 style="font-size: 1.1rem; color: var(--gold-ig); font-weight: 800; text-transform: uppercase; margin: 0;">2. Domicilio de Entrega</h3>
-                </div>
-
-                <div class="row g-4">
-                    <div class="col-md-9">
-                        <label class="form-label">Calle / Avenida</label>
-                        <input type="text" name="calle" value="{{ form.calle.value|default:'' }}" class="form-control">
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label">Número</label>
-                        <input type="text" name="numero" value="{{ form.numero.value|default:'' }}" class="form-control">
-                    </div>
-                    <div class="col-md-5">
-                        <label class="form-label">Provincia</label>
-                        <select name="provincia" class="form-select">
-                            {% for value, label in form.provincia.field.choices %}
-                                <option value="{{ value }}" {% if form.provincia.value == value %}selected{% endif %}>{{ label }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label">Localidad</label>
-                        <input type="text" name="ciudad" value="{{ form.ciudad.value|default:'' }}" class="form-control">
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label">C.P.</label>
-                        <input type="text" name="codigo_postal" value="{{ form.codigo_postal.value|default:'' }}" class="form-control">
-                    </div>
-                </div>
-
-                {% if form.errors %}
-                <div class="alert alert-danger mt-5 border-start border-danger border-5 rounded-4 bg-white shadow-sm">
-                    <ul class="mb-0 small">
-                        {% for field, errors in form.errors.items %}
-                            {% for error in errors %}<li><strong>{{ field|capfirst }}:</strong> {{ error }}</li>{% endfor %}
-                        {% endfor %}
-                    </ul>
-                </div>
-                {% endif %}
-
-                <div class="text-center mt-5">
-                    <button type="submit" class="btn-ig-submit">
-                        <i class="bi bi-person-check-fill"></i> REGISTRAR CLIENTE
-                    </button>
-                </div>
-            </form>
+        <div class="modern-col">
+          <label class="modern-label">Nombre Completo</label>
+          <input type="text" name="nombre" value="{{ form.nombre.value|default:'' }}" class="modern-input" placeholder="Ej: Martina Colombo">
         </div>
+      </div>
+      <div class="modern-row">
+        <div class="modern-col">
+          <label class="modern-label">Email Personal</label>
+          <input type="email" name="email" value="{{ form.email.value|default:'' }}" class="modern-input" placeholder="correo@ejemplo.com">
+        </div>
+        <div class="modern-col">
+          <label class="modern-label">Teléfono</label>
+          <input type="text" name="telefono" value="{{ form.telefono.value|default:'' }}" class="modern-input" placeholder="Celular / WhatsApp">
+        </div>
+      </div>
     </div>
+    <div class="modern-section">
+      <div class="modern-section-title">2. Domicilio de Entrega</div>
+      <div class="modern-row">
+        <div class="modern-col">
+          <label class="modern-label">Calle / Avenida</label>
+          <input type="text" name="calle" value="{{ form.calle.value|default:'' }}" class="modern-input">
+        </div>
+        <div class="modern-col">
+          <label class="modern-label">Número</label>
+          <input type="text" name="numero" value="{{ form.numero.value|default:'' }}" class="modern-input">
+        </div>
+      </div>
+      <div class="modern-row">
+        <div class="modern-col">
+          <label class="modern-label">Provincia</label>
+          <select name="provincia" class="modern-select">
+            {% for value, label in form.provincia.field.choices %}
+              <option value="{{ value }}" {% if form.provincia.value == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="modern-col">
+          <label class="modern-label">Localidad</label>
+          <input type="text" name="ciudad" value="{{ form.ciudad.value|default:'' }}" class="modern-input">
+        </div>
+        <div class="modern-col">
+          <label class="modern-label">C.P.</label>
+          <input type="text" name="codigo_postal" value="{{ form.codigo_postal.value|default:'' }}" class="modern-input">
+        </div>
+      </div>
+    </div>
+    {% if form.errors %}
+      <div class="alert alert-danger mt-4 border-start border-danger border-5 rounded-4 bg-white shadow-sm">
+        <ul class="mb-0 small">
+          {% for field, errors in form.errors.items %}
+            {% for error in errors %}<li><strong>{{ field|capfirst }}:</strong> {{ error }}</li>{% endfor %}
+          {% endfor %}
+        </ul>
+      </div>
+    {% endif %}
+    <div class="modern-actions">
+      <button type="submit" class="modern-btn">
+        <i class="bi bi-person-check-fill"></i> REGISTRAR CLIENTE
+      </button>
+    </div>
+  </form>
 </div>
 {% endblock %}
