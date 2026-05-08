@@ -1,94 +1,69 @@
-# IndiraGold - Proyecto web
-
+IndiraGold - Proyecto web
 Proyecto web desarrollado con Django para la gestión de productos, ventas, clientes y consultas de Indira Gold.
 
----
+📌 Tecnologías utilizadas
+Python 3.12
 
-## 📌 Tecnologías utilizadas
+Django
 
-- Python 3.12
-- Django
-- PostgreSQL
-- pgAdmin
-- HTML / CSS (futuro)
-- GitHub
+PostgreSQL
 
----
+pgAdmin
 
-## 📁 Estructura del proyecto
+Bootstrap 5 / CSS
 
-- users → gestión de usuarios, clientes y direcciones
-- productos → productos, variantes, talles, colores, medidas
-- carritos → carrito de compras
-- pedidos → pedidos, pagos y gastos
-- consultas → consultas de usuarios y respuestas del administrador
+GitHub
 
----
+📁 Estructura del proyecto
+users → Gestión de usuarios, clientes y direcciones.
 
-## ⚙️ Requisitos previos
+productos → Productos, variantes, talles, colores, categorías y proveedores.
 
-Tener instalado:
+carritos → Sistema de carrito de compras.
 
-- Python 3.12
-- PostgreSQL
-- pgAdmin
-- Git
+pedidos → Gestión de pedidos, pagos y gastos.
 
----
+consultas → Mensajería entre usuarios y administración.
 
-## 🚀 Instalación y puesta en marcha
+⚙️ Requisitos previos
+Asegúrate de tener instalado:
 
-### 1️⃣ Clonar el repositorio
+Python 3.12
 
-```bash
+PostgreSQL & pgAdmin 4
+
+Git
+
+🚀 Instalación y puesta en marcha
+1️⃣ Clonar el repositorio
 git clone https://github.com/sofispazzarini/IndiraGold.git
 cd IndiraGold
-
-Paso 2: Craer entorno virtual
+2️⃣ Crear entorno virtual
 
 python -m venv venv
+Activarlo:
 
-Activarlo: venv\Scripts\activate
+Windows: venv\Scripts\activate
 
-Paso 3: Intslar dependencias
+Mac/Linux: source venv/bin/activate
+
+3️⃣ Instalar dependencias
+
 pip install -r requirements.txt
-si no existen, instalar manualmente:
-pip install django psycopg2-binary python-dotenv
+Si el archivo no existe, instalar manualmente:
 
-paso 4: configurar variables de entorno
-crear un archvio .env en la raiz del proyecto
+pip install django psycopg2-binary python-dotenv
+4️⃣ Configurar variables de entorno
+Crear un archivo .env en la raíz del proyecto con el siguiente contenido:
+
+Fragmento de código
 DB_NAME=indiragold_db
 DB_USER=postgres
 DB_PASSWORD=tu_password
 DB_HOST=localhost
 DB_PORT=5432
 
-paso 5:craer la base de datos
-Desde pgAdmin crear la base de datos:indiragold_db
-
-paso 6:Migraciones
-python manage.py makemigrations
-python manage.py migrate
-
-paso 7:cargar datos de prueba
-Opción recomendada (idempotente, no duplica datos):
-python manage.py seed_demo
-
-Alternativa (fixtures):
-python manage.py loaddata fixtures/datos_iniciales.json
-
-paso 8:crear superusuarios
-python manage.py createsuperuser
-
-paso 9:correr servidor
-python manage.py runserver
-
-## Configuración de variables de entorno para envío de mails
-
-Para que el envío de correos funcione correctamente, crea un archivo `.env` en la raíz del proyecto y agrega las siguientes variables (ajusta los valores según tu proveedor de correo):
-
-```
-
+# Configuración de Mail (Opcional para desarrollo)
 EMAIL_HOST=smtp.gmail.com
 EMAIL_PORT=587
 EMAIL_HOST_USER=tu_correo@gmail.com
@@ -96,7 +71,31 @@ EMAIL_HOST_PASSWORD=tu_contraseña_de_aplicacion
 EMAIL_USE_TLS=True
 DEFAULT_FROM_EMAIL=tu_correo@gmail.com
 
-```
+5️⃣ Crear la base de datos
+Desde pgAdmin, crea una nueva base de datos llamada: indiragold_db.
 
-> **Nota:** Si usas Gmail, debes generar una contraseña de aplicación desde la configuración de seguridad de tu cuenta.
-```
+6️⃣ Migraciones
+Prepara la estructura de la base de datos:
+
+python manage.py makemigrations
+python manage.py migrate
+
+7️⃣ Cargar datos de prueba (Seed)
+¡Importante! Para tener el catálogo, clientes y proveedores cargados automáticamente, ejecuta:
+
+python manage.py seed_demo
+Este comando poblará la base de datos con categorías, productos (Remeras Aura), variantes y un cliente de prueba para que puedas ver el dashboard funcionando inmediatamente.
+
+8️⃣ Crear superusuario
+Para acceder al panel de administración de Django:
+
+python manage.py createsuperuser
+9️⃣ Correr servidor
+
+python manage.py runserver
+Accede a: [http://127.0.0.1:8000/](http://127.0.0.1:8000/)
+
+📧 Notas sobre el envío de mails
+Si usas Gmail para las notificaciones, recordá generar una contraseña de aplicación desde la configuración de seguridad de tu cuenta de Google. No uses tu contraseña normal.
+
+IndiraGold © 2026
