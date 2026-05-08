@@ -31,6 +31,7 @@ class Pedido(models.Model):
         default='pendiente'
     )
     created_at = models.DateTimeField(auto_now_add=True)
+    direccion_info = models.TextField(blank=True, null=True, help_text="Información de dirección del envío")
 
     def __str__(self):
         return f"Pedido {self.id}"
@@ -43,7 +44,7 @@ class PedidoItem(models.Model):
     precio_unitario = models.DecimalField(max_digits=10, decimal_places=2)
     precio_total = models.DecimalField(max_digits=10, decimal_places=2)
     def __str__(self):
-        return f"{self.producto.nombre} x {self.cantidad}"
+        return f"{self.variante.producto.nombre} x {self.cantidad}"
 
 
 class Pago(models.Model):

@@ -1,14 +1,18 @@
 from __future__ import annotations
 
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.db import transaction
 from django.http import HttpRequest
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.urls import resolve, reverse
 from django.views.decorators.http import require_POST
 
 from productos.models import Categoria
 from productos.models import Producto
 from productos.models import Talle, Color
+from pedidos.models import Pedido, PedidoItem
+from users.models import Cliente
 from .utils import clear_cart_session, expire_cart_if_needed, get_cart_seconds_left, set_cart_started_at_if_missing
 
 
@@ -137,6 +141,78 @@ def expirar_carrito(request):
 	if _is_ajax(request):
 		return _render_cart_fragment(request)
 	return _render_next(request, next_url)
+
+
+@login_required(login_url="/users/login/")
+@require_POST
+def confirmar_compra(request):
+	next_url = request.POST.get("next") or reverse("home:home")
+	if expire_cart_if_needed(request.session):
+		messages.info(request, "Tu carrito expiró luego de 1 hora y fue reiniciado.")
+		return redirect(next_url)
+
+	cart = _get_session_cart(request.session)
+	if not cart:
+		messages.error(request, "Tu carrito está vacío.")
+		return redirect(next_url)
+
+	cliente = getattr(request.user, "cliente", None)
+	if cliente is None:
+		messages.error(request, "Tu usuario no tiene un perfil de cliente asociado.")
+		return redirect(next_url)
+
+	productos = Producto.objects.filter(id__in=cart.keys(), activo=True).prefetch_related("variantes__talle", "variantes__colores")
+	productos_by_id = {producto.id: producto for producto in productos}
+
+	items_a_crear = []
+	total = 0
+
+	for producto_id, cantidad in cart.items():
+		producto = productos_by_id.get(int(producto_id))
+		if not producto:
+			messages.error(request, "Uno de los productos del carrito ya no está disponible.")
+			return redirect(next_url)
+
+		if producto.stock < cantidad:
+			messages.error(request, f"Stock insuficiente para {producto.nombre}. Disponible: {producto.stock}.")
+			return redirect(next_url)
+
+		variante = producto.variantes.filter(activa=True).order_by("id").first()
+		if not variante:
+			messages.error(request, f"El producto {producto.nombre} no tiene variantes activas para confirmar la compra.")
+			return redirect(next_url)
+
+		precio_unitario = variante.precio or producto.precio
+		precio_total = precio_unitario * cantidad
+		items_a_crear.append((variante, cantidad, precio_unitario, precio_total, producto))
+		total += precio_total
+
+	with transaction.atomic():
+		pedido = Pedido.objects.create(
+			cliente=cliente,
+			total=total,
+			tipo_venta='online',
+			estado='pendiente',
+		)
+
+		for variante, cantidad, precio_unitario, precio_total, producto in items_a_crear:
+			PedidoItem.objects.create(
+				pedido=pedido,
+				variante=variante,
+				cantidad=cantidad,
+				precio_unitario=precio_unitario,
+				precio_total=precio_total,
+			)
+			producto.stock -= cantidad
+			producto.save(update_fields=["stock"])
+			variante.stock -= cantidad
+			variante.save(update_fields=["stock"])
+
+	clear_cart_session(request.session)
+	messages.success(request, f"Compra confirmada. Pedido #{pedido.id} registrado correctamente.")
+	if request.user.is_superuser:
+		return redirect("pedidos:detalle_pedido", pedido_id=pedido.id)
+	return redirect("users:dashboard_cliente")
 
 
 def _render_next(request, next_url: str):

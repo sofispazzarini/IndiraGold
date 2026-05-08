@@ -284,6 +284,11 @@
 </div>
 <div class="cart-overlay" id="cartOverlay" onclick="toggleCart()"></div>
 
+<form id="checkoutForm" method="post" action="/carritos/confirmar/" style="display:none;">
+  {% csrf_token %}
+  <input type="hidden" name="next" value="{{ request.get_full_path }}">
+</form>
+
 <!-- MODAL CANTIDAD -->
 <div id="modalCantidad" style="display:none; position:fixed; inset:0; z-index:1200; background:rgba(0,0,0,.55); align-items:center; justify-content:center; padding:1rem;">
   <div style="width:min(420px, 100%); background:#fff; border-radius:16px; box-shadow:0 24px 60px rgba(0,0,0,.25); overflow:hidden;">
@@ -616,7 +621,14 @@
   function checkout() {
     const count = parseInt(document.getElementById('cartCount').textContent || '0');
     if (count <= 0) return;
-    window.location.href = `/users/login/?next=${encodeURIComponent(window.location.pathname + window.location.search)}`;
+    const userIsAuthenticated = {{ user.is_authenticated|yesno:"true,false" }};
+    if (!userIsAuthenticated) {
+      window.location.href = `/users/login/?next=${encodeURIComponent(window.location.pathname + window.location.search)}`;
+      return;
+    }
+
+    const form = document.getElementById('checkoutForm');
+    if (form) form.submit();
   }
 
   function formatCountdown(seconds) {
