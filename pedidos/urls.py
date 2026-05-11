@@ -5,6 +5,8 @@ app_name = 'pedidos'
 
 urlpatterns = [
     path('gestion/', views.gestion_pedidos, name='gestion_pedidos'),
+    path('estadisticas/', views.estadisticas_ventas, name='estadisticas_ventas'),
+    path('gastos/crear/', views.crear_gasto, name='crear_gasto'),
     path('historial-cliente/<int:cliente_id>/', views.historial_cliente, name='historial_cliente'),
     path('<int:pedido_id>/', views.detalle_pedido, name='detalle_pedido'),
     path('<int:pedido_id>/editar/', views.editar_pedido, name='editar_pedido'),

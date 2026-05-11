@@ -24,4 +24,18 @@
     <a href="{% url 'pedidos:gestion_pedidos' %}" class="nav-link">
         <i class="bi bi-bag-check me-2"></i> Gestión de Pedidos
     </a>
+    <a href="{% url 'pedidos:estadisticas_ventas' %}" class="nav-link">
+        <i class="bi bi-graph-up me-2"></i> Estadísticas
+    </a>
+    <a href="{% url 'pedidos:crear_gasto' %}" class="nav-link">
+        <i class="bi bi-receipt me-2"></i> Registrar Gasto
+    </a>
+
+    <div class="nav-section">Consultas</div>
+    <a href="{% url 'consultas:gestion_temas' %}" class="nav-link">
+        <i class="bi bi-folder me-2"></i> Temas
+    </a>
+    <a href="{% url 'consultas:gestion_faqs' %}" class="nav-link">
+        <i class="bi bi-question-circle me-2"></i> Preguntas Frecuentes
+    </a>
 </nav>

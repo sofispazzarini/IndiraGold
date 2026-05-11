@@ -1,6 +1,7 @@
 from django.views.generic import TemplateView
 from productos.models import Producto, Categoria, Talle, Color
 from carritos.utils import clear_cart_session, expire_cart_if_needed, get_cart_seconds_left
+from consultas.models import TemaConsulta
 
 class HomePublicaView(TemplateView):
     template_name = 'home_publico.html'
@@ -72,4 +73,9 @@ class HomePublicaView(TemplateView):
         ctx['cart_count'] = total_qty
         ctx['cart_total'] = total_price
         ctx['cart_expires_in'] = get_cart_seconds_left(self.request.session)
+        temas_con_faqs = TemaConsulta.objects.filter(
+            activo=True,
+            consultas__activa=True
+        ).prefetch_related('consultas').distinct()
+        ctx['temas_consulta'] = temas_con_faqs
         return ctx

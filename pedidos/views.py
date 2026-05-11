@@ -3,8 +3,11 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.core.paginator import Paginator
 from django.db import transaction
 from django.contrib import messages
+from django.db.models import Sum, Count, Avg, Q, F
+from datetime import datetime, timedelta
 from decimal import Decimal
-from .models import Pedido, PedidoItem
+from .models import Pedido, PedidoItem, Gasto
+from .forms import GastoForm
 from users.models import Cliente
 from productos.models import Variante
 
@@ -68,6 +71,29 @@ def historial_cliente(request, cliente_id):
     }
 
     return render(request, 'pedidos/historial_cliente.html', context)
+
+
+@admin_required
+def crear_gasto(request):
+    """
+    Permite al administrador registrar un gasto adicional.
+    Criterio: el admin ingresa monto y descripción y se guarda el gasto.
+    """
+    if request.method == 'POST':
+        form = GastoForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Gasto registrado correctamente.')
+            return redirect('pedidos:gestion_pedidos')
+        else:
+            messages.error(request, 'Por favor corrija los errores en el formulario.')
+    else:
+        form = GastoForm(initial={'fecha': datetime.now().date()})
+
+    context = {
+        'form': form,
+    }
+    return render(request, 'pedidos/crear_gasto.html', context)
 
 
 @admin_required
@@ -188,3 +214,108 @@ def editar_pedido(request, pedido_id):
         'estados_no_editables': ['entregado', 'cancelado'],
     }
     return render(request, 'pedidos/editar_pedido.html', context)
+
+
+@admin_required
+def estadisticas_ventas(request):
+    """
+    Muestra estadísticas de ventas con filtrado por período.
+    """
+    hoy = datetime.now().date()
+    
+    # Parámetros de filtro
+    tipo_periodo = request.GET.get('tipo_periodo', '30dias')
+    fecha_inicio_str = request.GET.get('fecha_inicio', '')
+    fecha_fin_str = request.GET.get('fecha_fin', '')
+    
+    # Determinar rango de fechas según el período seleccionado
+    if tipo_periodo == 'personalizado' and fecha_inicio_str and fecha_fin_str:
+        try:
+            fecha_inicio = datetime.strptime(fecha_inicio_str, '%Y-%m-%d').date()
+            fecha_fin = datetime.strptime(fecha_fin_str, '%Y-%m-%d').date()
+        except ValueError:
+            fecha_inicio = hoy - timedelta(days=30)
+            fecha_fin = hoy
+    elif tipo_periodo == '7dias':
+        fecha_inicio = hoy - timedelta(days=7)
+        fecha_fin = hoy
+    elif tipo_periodo == '90dias':
+        fecha_inicio = hoy - timedelta(days=90)
+        fecha_fin = hoy
+    else:  # 30dias por defecto
+        fecha_inicio = hoy - timedelta(days=30)
+        fecha_fin = hoy
+    
+    # Filtrar pedidos por rango de fechas
+    pedidos = Pedido.objects.filter(
+        created_at__date__gte=fecha_inicio,
+        created_at__date__lte=fecha_fin
+    )
+    
+    # ESTADÍSTICAS GENERALES
+    total_ventas = pedidos.aggregate(Sum('total'))['total__sum'] or Decimal('0.00')
+    cantidad_pedidos = pedidos.count()
+    promedio_por_pedido = total_ventas / cantidad_pedidos if cantidad_pedidos > 0 else Decimal('0.00')
+    
+    # ESTADÍSTICAS POR ESTADO
+    pedidos_por_estado = pedidos.values('estado').annotate(
+        cantidad=Count('id'),
+        total=Sum('total')
+    ).order_by('-cantidad')
+    
+    # Mapear estados a sus labels
+    estados_dict = {valor: label for valor, label in Pedido.ESTADOS}
+    for item in pedidos_por_estado:
+        item['estado_label'] = estados_dict.get(item['estado'], item['estado'])
+    
+    # PRODUCTOS MÁS VENDIDOS
+    productos_top = (
+        PedidoItem.objects
+        .filter(pedido__in=pedidos)
+        .values('variante__producto__nombre')
+        .annotate(
+            cantidad_total=Sum('cantidad'),
+            ingresos=Sum('precio_total'),
+            precio_promedio=Avg('precio_unitario')
+        )
+        .order_by('-cantidad_total')[:6]
+    )
+    
+    # TIPOS DE VENTA
+    ventas_por_tipo = pedidos.values('tipo_venta').annotate(
+        cantidad=Count('id'),
+        total=Sum('total')
+    ).order_by('-cantidad')
+    
+    tipos_venta_dict = {valor: label for valor, label in Pedido.TIPOS_VENTA}
+    for item in ventas_por_tipo:
+        item['tipo_label'] = tipos_venta_dict.get(item['tipo_venta'], item['tipo_venta'])
+    
+    # EVOLUCIÓN DIARIA DE VENTAS (últimos 30 días)
+    evolucion_diaria = []
+    for i in range(31):
+        fecha = hoy - timedelta(days=30 - i)
+        pedidos_dia = Pedido.objects.filter(created_at__date=fecha)
+        total_dia = pedidos_dia.aggregate(Sum('total'))['total__sum'] or Decimal('0.00')
+        cantidad_dia = pedidos_dia.count()
+        evolucion_diaria.append({
+            'fecha': fecha.strftime('%d/%m/%Y'),
+            'cantidad': cantidad_dia,
+            'total': total_dia,
+        })
+    
+    context = {
+        'total_ventas': total_ventas,
+        'cantidad_pedidos': cantidad_pedidos,
+        'promedio_por_pedido': promedio_por_pedido,
+        'pedidos_por_estado': pedidos_por_estado,
+        'productos_top': productos_top,
+        'ventas_por_tipo': ventas_por_tipo,
+        'evolucion_diaria': evolucion_diaria,
+        'tipo_periodo': tipo_periodo,
+        'fecha_inicio': fecha_inicio,
+        'fecha_fin': fecha_fin,
+        'fecha_inicio_str': fecha_inicio.strftime('%Y-%m-%d'),
+        'fecha_fin_str': fecha_fin.strftime('%Y-%m-%d'),
+    }
+    return render(request, 'pedidos/estadisticas_ventas.html', context)

@@ -1,0 +1,110 @@
+{% extends 'users/dashboard_admin.html' %}
+{% load static %}
+
+{% block extra_head %}
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="{% static 'css/users.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4" style="max-width: 1200px;">
+
+    <div class="d-flex justify-content-between align-items-center mb-5">
+        <div>
+            <h2 class="display-6 fw-bold mb-0" style="font-family: 'Cormorant Garamond'; color: var(--dark-ig);">Temas de Consulta</h2>
+            <p class="text-muted small text-uppercase letter-spacing-1">Organiza las consultas de los usuarios</p>
+        </div>
+        <a href="{% url 'consultas:crear_tema' %}" class="btn btn-dark rounded-pill px-4 shadow-sm border-gold" style="border: 1px solid var(--gold-ig); color: var(--gold-light);">
+            <i class="bi bi-plus-lg me-2"></i> NUEVO TEMA
+        </a>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="ig-table-card">
+        <div class="table-responsive">
+            <table class="table align-middle">
+                <thead>
+                    <tr>
+                        <th><i class="bi bi-chat-square-text me-2"></i>Título</th>
+                        <th><i class="bi bi-card-text me-2"></i>Descripción</th>
+                        <th><i class="bi bi-toggle-on me-2"></i>Estado</th>
+                        <th class="text-end">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for tema in temas %}
+                    <tr>
+                        <td class="fw-bold">{{ tema.nombre }}</td>
+                        <td class="text-muted">{{ tema.descripcion|truncatewords:15 }}</td>
+                        <td>
+                            <form method="post" action="{% url 'consultas:toggle_estado_tema' tema.id %}" class="d-inline">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm {% if tema.activo %}btn-success{% else %}btn-secondary{% endif %} rounded-pill px-3">
+                                    {% if tema.activo %}
+                                        <i class="bi bi-check-circle me-1"></i> Activo
+                                    {% else %}
+                                        <i class="bi bi-x-circle me-1"></i> Inactivo
+                                    {% endif %}
+                                </button>
+                            </form>
+                        </td>
+                        <td>
+                            <div class="d-flex gap-2 justify-content-end">
+                                <a href="{% url 'consultas:editar_tema' tema.id %}" class="btn-action btn-edit-ig text-decoration-none">
+                                    <i class="bi bi-pencil-square"></i> Editar
+                                </a>
+                                <button type="button" class="btn-action btn-delete-ig text-decoration-none"
+                                        data-bs-toggle="modal" data-bs-target="#deleteModal{{ tema.id }}">
+                                    <i class="bi bi-trash"></i> Eliminar
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+
+                    <!-- Modal de confirmación -->
+                    <div class="modal fade" id="deleteModal{{ tema.id }}" tabindex="-1">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Confirmar eliminación</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <p>¿Estás seguro de eliminar el tema <strong>"{{ tema.nombre }}"</strong>?</p>
+                                    <p class="text-danger small">Esta acción eliminará también todas las consultas asociadas.</p>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                    <form method="post" action="{% url 'consultas:eliminar_tema' tema.id %}" class="d-inline">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-danger">Eliminar</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="text-center py-5">
+                            <i class="bi bi-chat-square-text text-muted display-1 opacity-25"></i>
+                            <p class="mt-3 text-muted">No hay temas de consulta registrados.</p>
+                            <a href="{% url 'consultas:crear_tema' %}" class="btn btn-outline-dark mt-2">
+                                <i class="bi bi-plus-lg me-1"></i> Crear primer tema
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

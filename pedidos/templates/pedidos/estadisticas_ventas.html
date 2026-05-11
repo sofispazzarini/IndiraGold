@@ -1,0 +1,269 @@
+{% extends 'users/dashboard_admin.html' %}
+{% load static %}
+
+{% block extra_css %}
+<style>
+    .stat-card {
+        background: #fff;
+        border-radius: 20px;
+        border: 1px solid rgba(184, 146, 42, 0.12);
+        padding: 2rem;
+        text-align: center;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.04);
+    }
+    .stat-card__label {
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        color: #8c7e70;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+    .stat-card__value {
+        font-family: 'Cormorant Garamond', serif;
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: #1a1612;
+    }
+    .stat-card__currency {
+        font-size: 1.5rem;
+        margin-right: 0.25rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <!-- HEADER -->
+    <div class="d-flex justify-content-between align-items-center mb-4 mt-3">
+        <div>
+            <h2 class="mb-1 fw-bold">Estadísticas de Ventas</h2>
+            <p class="text-muted mb-0">Analiza el desempeño de tu negocio</p>
+        </div>
+    </div>
+
+    <!-- FILTROS DE PERÍODO -->
+    <div class="card mb-4 border-0 shadow-sm">
+        <div class="card-body">
+            <form method="get" class="row g-3 align-items-end">
+                <div class="col-md-4">
+                    <label for="tipo_periodo" class="form-label fw-500">Período:</label>
+                    <select name="tipo_periodo" id="tipo_periodo" class="form-select" onchange="this.form.submit()">
+                        <option value="7dias" {% if tipo_periodo == '7dias' %}selected{% endif %}>Últimos 7 días</option>
+                        <option value="30dias" {% if tipo_periodo == '30dias' %}selected{% endif %}>Últimos 30 días</option>
+                        <option value="90dias" {% if tipo_periodo == '90dias' %}selected{% endif %}>Últimos 90 días</option>
+                        <option value="personalizado" {% if tipo_periodo == 'personalizado' %}selected{% endif %}>Personalizado</option>
+                    </select>
+                </div>
+
+                {% if tipo_periodo == 'personalizado' %}
+                    <div class="col-md-3">
+                        <label for="fecha_inicio" class="form-label fw-500">Desde:</label>
+                        <input type="date" name="fecha_inicio" id="fecha_inicio" class="form-control" value="{{ fecha_inicio_str }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="fecha_fin" class="form-label fw-500">Hasta:</label>
+                        <input type="date" name="fecha_fin" id="fecha_fin" class="form-control" value="{{ fecha_fin_str }}">
+                    </div>
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-primary w-100">Filtrar</button>
+                    </div>
+                {% endif %}
+            </form>
+            <small class="text-muted">Período: <strong>{{ fecha_inicio|date:"d/m/Y" }} — {{ fecha_fin|date:"d/m/Y" }}</strong></small>
+        </div>
+    </div>
+
+    <!-- KPIs PRINCIPALES -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-card__label">Total de ventas</div>
+                <div class="stat-card__value">
+                    <span class="stat-card__currency">$</span>{{ total_ventas|floatformat:2 }}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-card__label">Cantidad de pedidos</div>
+                <div class="stat-card__value">{{ cantidad_pedidos }}</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-card__label">Promedio por pedido</div>
+                <div class="stat-card__value">
+                    <span class="stat-card__currency">$</span>{{ promedio_por_pedido|floatformat:2 }}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-card__label">Período</div>
+                <div class="stat-card__value" style="font-size: 1.3rem;">{{ cantidad_pedidos|add:"0" }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ESTADÍSTICAS POR ESTADO -->
+    <div class="row g-4 mb-4">
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-0">
+                    <h5 class="mb-0">Pedidos por Estado</h5>
+                </div>
+                <div class="table-responsive">
+                    <table class="table mb-0 align-middle">
+                        <thead>
+                            <tr>
+                                <th>Estado</th>
+                                <th class="text-end">Cantidad</th>
+                                <th class="text-end">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in pedidos_por_estado %}
+                                <tr>
+                                    <td><strong>{{ item.estado_label }}</strong></td>
+                                    <td class="text-end">{{ item.cantidad }}</td>
+                                    <td class="text-end">${{ item.total|floatformat:2 }}</td>
+                                </tr>
+                            {% empty %}
+                                <tr>
+                                    <td colspan="3" class="text-center text-muted py-4">Sin datos</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ESTADÍSTICAS POR TIPO DE VENTA -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-0">
+                    <h5 class="mb-0">Ventas por Tipo</h5>
+                </div>
+                <div class="table-responsive">
+                    <table class="table mb-0 align-middle">
+                        <thead>
+                            <tr>
+                                <th>Tipo de Venta</th>
+                                <th class="text-end">Cantidad</th>
+                                <th class="text-end">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in ventas_por_tipo %}
+                                <tr>
+                                    <td><strong>{{ item.tipo_label }}</strong></td>
+                                    <td class="text-end">{{ item.cantidad }}</td>
+                                    <td class="text-end">${{ item.total|floatformat:2 }}</td>
+                                </tr>
+                            {% empty %}
+                                <tr>
+                                    <td colspan="3" class="text-center text-muted py-4">Sin datos</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PRODUCTOS MÁS VENDIDOS -->
+    <div class="row g-4 mb-4">
+        <div class="col-lg-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-0">
+                    <h5 class="mb-0">Productos Más Vendidos</h5>
+                </div>
+                <div class="card-body">
+                    <div style="height: 300px;">
+                        <canvas id="productosChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- EVOLUCIÓN DIARIA -->
+    <div class="row g-4">
+        <div class="col-lg-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-0">
+                    <h5 class="mb-0">Evolución de Ventas (Últimos 30 días)</h5>
+                </div>
+                <div class="table-responsive">
+                    <table class="table mb-0 align-middle table-sm">
+                        <thead>
+                            <tr>
+                                <th>Fecha</th>
+                                <th class="text-end">Pedidos</th>
+                                <th class="text-end">Total del Día</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for dia in evolucion_diaria %}
+                                <tr>
+                                    <td>{{ dia.fecha }}</td>
+                                    <td class="text-end">{{ dia.cantidad }}</td>
+                                    <td class="text-end">
+                                        {% if dia.total > 0 %}
+                                            <strong>${{ dia.total|floatformat:2 }}</strong>
+                                        {% else %}
+                                            <span class="text-muted">—</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const ctx = document.getElementById('productosChart');
+    if (ctx) {
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: [{% for item in productos_top %}'{{ item.variante__producto__nombre|truncatechars:20 }}'{% if not forloop.last %}, {% endif %}{% endfor %}],
+                datasets: [{
+                    label: 'Unidades Vendidas',
+                    data: [{% for item in productos_top %}{{ item.cantidad_total }}{% if not forloop.last %}, {% endif %}{% endfor %}],
+                    backgroundColor: 'rgba(184, 146, 42, 0.8)',
+                    borderColor: 'rgba(184, 146, 42, 1)',
+                    borderWidth: 1,
+                    borderRadius: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: 'rgba(0,0,0,0.05)' }
+                    },
+                    x: {
+                        grid: { display: false }
+                    }
+                }
+            }
+        });
+    }
+});
+</script>
+{% endblock %}
