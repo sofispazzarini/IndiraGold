@@ -98,9 +98,80 @@
     background: #fff;
     max-width: 500px;
     width: 100%;
-    border-radius: 16px;
-    box-shadow: 0 4px 24px rgba(180,140,80,0.10);
-    padding: 32px 28px 24px 28px;
+    border-radius: 18px;
+    box-shadow: 0 4px 32px rgba(184,146,42,0.10);
+    padding: 2.5rem 2rem 2rem 2rem;
+    margin: 2.5rem auto;
+}
+.agregar-direccion-card h2 {
+    font-family: 'Montserrat', Arial, sans-serif;
+    font-size: 2.1rem;
+    font-weight: 700;
+    color: #2d3848;
+    text-align: left;
+    margin-bottom: 1.5rem;
+    letter-spacing: 1px;
+}
+.agregar-direccion-card label {
+    font-weight: 600;
+    color: #3b4252;
+    margin-bottom: 0.3rem;
+}
+.agregar-direccion-card .form-control[disabled] {
+    background: #f8f5ef;
+    color: #8c7e70;
+    border: 1.5px solid #e8dfd4;
+}
+.agregar-direccion-card .btn-primary {
+    background: linear-gradient(90deg, #fbe18b 0%, #b8922a 100%);
+    color: #6E0E2E;
+    border: none;
+    border-radius: 10px;
+    padding: 0.85rem 2.5rem;
+    font-size: 1.08rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    box-shadow: 0 2px 8px 0 rgba(184,146,42,0.10);
+    cursor: pointer;
+    transition: background 0.18s, box-shadow 0.18s, color 0.18s;
+    text-transform: uppercase;
+    margin-top: 1.5rem;
+}
+.agregar-direccion-card .btn-primary:hover {
+    background: linear-gradient(90deg, #b8922a 0%, #fbe18b 100%);
+    color: #fff;
+    box-shadow: 0 4px 16px 0 rgba(184,146,42,0.18);
+}
+.agregar-direccion-card .btn-outline-info {
+    border-radius: 8px;
+    border: 1.5px solid #b8922a;
+    color: #b8922a;
+    font-weight: 600;
+    background: #fffbe6;
+    transition: background 0.18s, color 0.18s;
+}
+.agregar-direccion-card .btn-outline-info:hover {
+    background: #b8922a;
+    color: #fff;
+}
+.agregar-direccion-card .btn-light {
+    background: #f8f5ef;
+    color: #b8922a;
+    border-radius: 8px;
+    border: none;
+    font-size: 1.5rem;
+    padding: 4px 16px 4px 10px;
+    margin-bottom: 1.2rem;
+}
+.agregar-direccion-card .btn-light:hover {
+    background: #b8922a;
+    color: #fff;
+}
+@media (max-width: 900px) {
+    .agregar-direccion-card {
+        padding: 1.2rem 0.5rem 1.5rem 0.5rem;
+        max-width: 98vw;
+    }
 }
 </style>
 {% endblock %}
