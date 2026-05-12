@@ -7,57 +7,496 @@
 {% endblock %}
 
 {% block extra_head %}
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,600&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+
 <style>
-    .admin-home-wrapper {
-        min-height: calc(100vh - 60px);
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: flex-start;
-        padding-top: 2rem;
+  :root {
+    --gold: #b8922a;
+    --gold-soft: #c9a84c;
+    --gold-pale: #f7f0e0;
+    --gold-faint: #faf7f0;
+    --burgundy: #6E0E2E;
+    --dark: #1a1612;
+    --dark-mid: #2e2720;
+    --text: #3d342a;
+    --muted: #9c8c7c;
+    --border: #e8dfd4;
+    --border-faint: rgba(184,146,42,0.12);
+  }
+
+  /* ── MAIN CONTAINER ── */
+  .dashboard-main {
+    min-height: calc(100vh - 60px);
+    display: flex;
+    flex-direction: column;
+    padding: 3rem 3.5rem 5rem;
+    width: 100%;
+    max-width: 1000px;
+    margin-left: 20%;
+    margin-right: auto;
+  }
+
+  /* ── HERO SECTION ── */
+  .hero-section {
+    position: relative;
+    margin-bottom: 3.5rem;
+    padding-bottom: 3rem;
+    border-bottom: 1px solid var(--border-faint);
+    overflow: hidden;
+  }
+
+  .hero-section::after {
+    content: '';
+    position: absolute;
+    bottom: -1px; left: 0;
+    width: 48px; height: 2px;
+    background: var(--gold);
+  }
+
+  .hero-bg-word {
+    position: absolute;
+    right: -1rem;
+    top: 50%;
+    transform: translateY(-55%);
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(7rem, 14vw, 11rem);
+    font-weight: 700;
+    font-style: italic;
+    color: rgba(184, 146, 42, 0.055);
+    line-height: 1;
+    pointer-events: none;
+    user-select: none;
+    white-space: nowrap;
+    letter-spacing: -0.02em;
+  }
+
+  .hero-eyebrow {
+    font-size: 0.6rem; font-weight: 600;
+    letter-spacing: 0.22em; text-transform: uppercase;
+    color: var(--gold); margin-bottom: 0.75rem;
+    display: flex; align-items: center; gap: 0.6rem;
+  }
+
+  .hero-eyebrow::before {
+    content: '';
+    display: inline-block;
+    width: 20px; height: 1.5px;
+    background: var(--gold);
+  }
+
+  .hero-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(2.6rem, 4.5vw, 4rem);
+    font-weight: 600;
+    color: var(--dark);
+    letter-spacing: -0.015em;
+    line-height: 1.05;
+    margin-bottom: 0.9rem;
+  }
+
+  .hero-subtitle {
+    font-size: 0.85rem;
+    color: var(--muted);
+    max-width: 420px;
+    line-height: 1.65;
+    font-weight: 400;
+  }
+
+  .hero-subtitle strong {
+    color: var(--gold);
+    font-weight: 500;
+  }
+
+  .hero-date {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 1.5rem;
+    font-size: 0.68rem;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    border-radius: 50px;
+    padding: 0.35rem 0.9rem;
+    background: #fff;
+  }
+
+  .hero-date i { font-size: 0.75rem; color: var(--gold); }
+
+  /* ── MÉTRICAS ── */
+  .metrics-label {
+    font-size: 0.6rem; font-weight: 600;
+    letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--muted); margin-bottom: 1rem;
+  }
+
+  .metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    margin-bottom: 3rem;
+    background: #fff;
+  }
+
+  @media (max-width: 768px) {
+    .metrics-grid {
+      grid-template-columns: repeat(2, 1fr);
     }
-    .admin-panel-header {
-        background: linear-gradient(90deg, #fdf6e3 0%, #e8c96a 60%, #b8922a 100%);
-        border-radius: 28px;
-        box-shadow: 0 8px 32px 0 rgba(184,146,42,0.13);
-        padding: 54px 56px;
-        color: #1a1612;
-        margin-bottom: 38px;
-        border: 2.5px solid #e8c96a;
-        width: 100%;
-        max-width: 900px;
-        margin-left: 25%;
-        margin-right: auto;
+    .metric-card:nth-child(2) { border-right: none; }
+    .metric-card:nth-child(1),
+    .metric-card:nth-child(2) { border-bottom: 1px solid var(--border); }
+  }
+
+  .metric-card {
+    padding: 1.75rem 1.5rem;
+    border-right: 1px solid var(--border);
+    position: relative;
+    transition: background 0.22s ease;
+    cursor: default;
+  }
+
+  .metric-card:last-child { border-right: none; }
+
+  .metric-card::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 3px;
+    background: var(--gold);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.28s ease;
+  }
+
+  .metric-card:hover { background: var(--gold-faint); }
+  .metric-card:hover::after { transform: scaleX(1); }
+
+  .metric-icon {
+    font-size: 0.95rem;
+    color: var(--gold);
+    opacity: 0.7;
+    margin-bottom: 1rem;
+  }
+
+  .metric-value {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 2.8rem;
+    font-weight: 600;
+    color: var(--dark);
+    line-height: 1;
+    margin-bottom: 0.35rem;
+    letter-spacing: -0.02em;
+  }
+
+  .metric-name {
+    font-size: 0.68rem;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  /* ── SECCIÓN INFERIOR: 2 columnas ── */
+  .bottom-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+
+  @media (max-width: 768px) {
+    .bottom-grid {
+      grid-template-columns: 1fr;
     }
-    @media (max-width: 900px) {
-        .admin-panel-header {
-            margin-left: auto;
-            max-width: 98vw;
-            padding: 2rem 1.5rem;
-            border-radius: 18px;
-        }
-    }
+  }
+
+  .section-label {
+    font-size: 0.6rem; font-weight: 600;
+    letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--muted); margin-bottom: 1rem;
+  }
+
+  /* ── PENDIENTES ── */
+  .pending-card {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+  }
+
+  .pending-card-head {
+    padding: 1.25rem 1.5rem 0.85rem;
+    border-bottom: 1px solid rgba(232,223,212,0.6);
+    display: flex; align-items: center; gap: 0.6rem;
+  }
+
+  .pending-card-head span {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.25rem; font-weight: 600;
+    color: var(--dark);
+  }
+
+  .pending-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.95rem 1.5rem;
+    border-bottom: 1px solid rgba(232,223,212,0.5);
+    text-decoration: none;
+    transition: background 0.18s;
+    gap: 1rem;
+  }
+
+  .pending-item:last-child { border-bottom: none; }
+  .pending-item:hover { background: var(--gold-faint); }
+  .pending-item:hover .pi-label { color: var(--gold); }
+
+  .pi-left { display: flex; align-items: center; gap: 0.75rem; min-width: 0; }
+
+  .pi-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .pi-dot.urgent  { background: var(--burgundy); }
+  .pi-dot.warning { background: var(--gold); }
+  .pi-dot.ok      { background: #7cad6a; }
+
+  .pi-label {
+    font-size: 0.82rem; font-weight: 500;
+    color: var(--text);
+    transition: color 0.18s;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+
+  .pi-badge {
+    font-size: 0.68rem; font-weight: 600;
+    padding: 0.22rem 0.65rem;
+    border-radius: 50px;
+    flex-shrink: 0;
+  }
+  .pi-badge.urgent  { background: rgba(110,14,46,0.08); color: var(--burgundy); }
+  .pi-badge.warning { background: rgba(184,146,42,0.1); color: #7a5f15; }
+  .pi-badge.ok      { background: rgba(124,173,106,0.12); color: #3d6e2a; }
+
+  /* ── ACTIVIDAD RECIENTE ── */
+  .activity-card {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+  }
+
+  .activity-card-head {
+    padding: 1.25rem 1.5rem 0.85rem;
+    border-bottom: 1px solid rgba(232,223,212,0.6);
+    display: flex; align-items: center; gap: 0.6rem;
+  }
+
+  .activity-card-head span {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.25rem; font-weight: 600;
+    color: var(--dark);
+  }
+
+  .activity-feed { padding: 0.25rem 0; }
+
+  .activity-row {
+    display: grid;
+    grid-template-columns: 28px 1fr auto;
+    align-items: start;
+    gap: 0.75rem;
+    padding: 0.85rem 1.5rem;
+    border-bottom: 1px solid rgba(232,223,212,0.4);
+    transition: background 0.18s;
+  }
+
+  .activity-row:last-child { border-bottom: none; }
+  .activity-row:hover { background: var(--gold-faint); }
+
+  .act-icon-wrap {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.72rem;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  .act-icon-wrap.new-client   { background: rgba(124,173,106,0.15); color: #3d6e2a; }
+  .act-icon-wrap.new-order    { background: rgba(184,146,42,0.12); color: #7a5f15; }
+  .act-icon-wrap.cancelled    { background: rgba(110,14,46,0.08); color: var(--burgundy); }
+  .act-icon-wrap.new-query    { background: rgba(91,121,184,0.1); color: #2a4a8a; }
+  .act-icon-wrap.new-product  { background: rgba(184,146,42,0.12); color: #7a5f15; }
+
+  .act-text {
+    font-size: 0.8rem; font-weight: 400;
+    color: var(--text); line-height: 1.4;
+  }
+
+  .act-text strong {
+    font-weight: 600; color: var(--dark);
+  }
+
+  .act-time {
+    font-size: 0.68rem; color: var(--muted);
+    font-weight: 400; white-space: nowrap;
+    margin-top: 2px;
+  }
+
+  /* Animación de entrada */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .hero-section  { animation: fadeUp 0.45s ease both; }
+  .metrics-label { animation: fadeUp 0.45s 0.1s ease both; }
+  .metrics-grid  { animation: fadeUp 0.45s 0.16s ease both; }
+  .bottom-label  { animation: fadeUp 0.45s 0.22s ease both; }
+  .bottom-grid   { animation: fadeUp 0.45s 0.28s ease both; }
 </style>
 {% endblock %}
 
 {% block content %}
-<link rel="stylesheet" href="{% static 'static/css/users.css' %}">
+<div class="dashboard-main">
 
-<div class="admin-home-wrapper">
-    <div class="admin-panel-header">
-        <div class="d-flex align-items-center" style="gap: 2.8rem;">
-            <div class="me-4" style="background: #fff; border: 3px solid #e8c96a; border-radius: 50%; width: 92px; height: 92px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 12px 0 #e8c96a33;">
-                <svg width="54" height="54" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <polygon points="12,3 2,9 12,21 22,9" stroke="#b8922a" stroke-width="2.2" fill="#fffbe6"/>
-                    <polyline points="2,9 12,9 22,9" stroke="#b8922a" stroke-width="2.2" fill="none"/>
-                    <polyline points="7,9 12,21 17,9" stroke="#b8922a" stroke-width="2.2" fill="none"/>
-                </svg>
-            </div>
-            <div>
-                <h1 class="mb-2" style="font-family: 'Cormorant Garamond', serif; font-size: 2.8rem; font-weight: 700; letter-spacing: 1.5px; color: #1a1612; text-shadow:0 2px 8px #e8c96a33;">Panel de Administración</h1>
-                <div style="color: #7c6a4a; font-size: 1.18rem; font-weight: 500; letter-spacing: 0.5px; text-shadow:0 1px 4px #fffbe6;">Bienvenido/a, gestioná <span style="color: #b8922a; font-weight: 700;">Indira Gold</span> de forma centralizada.</div>
-            </div>
-        </div>
+  <!-- Hero Section -->
+  <section class="hero-section">
+    <div class="hero-bg-word">Administración</div>
+
+    <p class="hero-eyebrow">Panel principal</p>
+    <h1 class="hero-title">Bienvenido/a de vuelta.</h1>
+    <p class="hero-subtitle">
+      Gestioná <strong>Indira Gold</strong> de forma centralizada desde acá.
+      Todos los módulos están disponibles en el menú lateral.
+    </p>
+
+    <div class="hero-date">
+      <i class="bi bi-calendar3"></i>
+      <span id="currentDate"></span>
     </div>
+  </section>
+
+  <!-- Métricas rápidas -->
+  <p class="metrics-label">Resumen</p>
+  <div class="metrics-grid">
+    <div class="metric-card">
+      <div class="metric-icon"><i class="bi bi-people"></i></div>
+      <div class="metric-value">{{ total_clientes|default:"0" }}</div>
+      <div class="metric-name">Clientes</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-icon"><i class="bi bi-box-seam"></i></div>
+      <div class="metric-value">{{ total_categorias|default:"0" }}</div>
+      <div class="metric-name">Categorías</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-icon"><i class="bi bi-bag-check"></i></div>
+      <div class="metric-value">{{ pedidos_activos|default:"0" }}</div>
+      <div class="metric-name">Pedidos activos</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-icon"><i class="bi bi-tag"></i></div>
+      <div class="metric-value">{{ total_productos|default:"0" }}</div>
+      <div class="metric-name">Productos</div>
+    </div>
+  </div>
+
+  <!-- Sección inferior -->
+  <p class="section-label bottom-label">Estado actual</p>
+  <div class="bottom-grid">
+
+    <!-- Pendientes -->
+    <div class="pending-card">
+      <div class="pending-card-head">
+        <i class="bi bi-bag-check" style="color:var(--gold);font-size:0.95rem;"></i>
+        <span>Estado de pedidos</span>
+      </div>
+
+      <a href="{% url 'pedidos:gestion_pedidos' %}" class="pending-item">
+        <div class="pi-left">
+          <div class="pi-dot {% if pedidos_pendientes > 0 %}urgent{% else %}ok{% endif %}"></div>
+          <span class="pi-label">Pendientes</span>
+        </div>
+        <span class="pi-badge {% if pedidos_pendientes > 0 %}urgent{% else %}ok{% endif %}">
+          {{ pedidos_pendientes }}
+        </span>
+      </a>
+
+      <a href="{% url 'pedidos:gestion_pedidos' %}" class="pending-item">
+        <div class="pi-left">
+          <div class="pi-dot {% if pedidos_aceptados > 0 %}warning{% else %}ok{% endif %}"></div>
+          <span class="pi-label">Aceptados</span>
+        </div>
+        <span class="pi-badge {% if pedidos_aceptados > 0 %}warning{% else %}ok{% endif %}">
+          {{ pedidos_aceptados }}
+        </span>
+      </a>
+
+      <a href="{% url 'pedidos:gestion_pedidos' %}" class="pending-item">
+        <div class="pi-left">
+          <div class="pi-dot {% if pedidos_en_preparacion > 0 %}warning{% else %}ok{% endif %}"></div>
+          <span class="pi-label">En preparación</span>
+        </div>
+        <span class="pi-badge {% if pedidos_en_preparacion > 0 %}warning{% else %}ok{% endif %}">
+          {{ pedidos_en_preparacion }}
+        </span>
+      </a>
+
+      <a href="{% url 'pedidos:gestion_pedidos' %}" class="pending-item">
+        <div class="pi-left">
+          <div class="pi-dot {% if pedidos_enviados > 0 %}ok{% else %}ok{% endif %}"></div>
+          <span class="pi-label">Enviados</span>
+        </div>
+        <span class="pi-badge ok">
+          {{ pedidos_enviados }}
+        </span>
+      </a>
+    </div>
+
+    <!-- Actividad reciente -->
+    <div class="activity-card">
+      <div class="activity-card-head">
+        <i class="bi bi-clock-history" style="color:var(--gold);font-size:0.95rem;"></i>
+        <span>Actividad reciente</span>
+      </div>
+
+      <div class="activity-feed">
+        {% for actividad in actividades_recientes %}
+        <div class="activity-row">
+          <div class="act-icon-wrap {{ actividad.tipo }}"><i class="bi bi-{{ actividad.icono }}"></i></div>
+          <div class="act-body">
+            <div class="act-text">{{ actividad.texto|safe }}</div>
+            <div class="act-time">{{ actividad.tiempo }}</div>
+          </div>
+        </div>
+        {% empty %}
+        <div class="activity-row">
+          <div class="act-icon-wrap new-product"><i class="bi bi-info-circle"></i></div>
+          <div class="act-body">
+            <div class="act-text">No hay actividad reciente</div>
+            <div class="act-time">—</div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+  </div>
+
 </div>
+
+<script>
+  const d = new Date();
+  const days = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+  const months = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+  document.getElementById('currentDate').textContent =
+    `${days[d.getDay()]}, ${d.getDate()} de ${months[d.getMonth()]} de ${d.getFullYear()}`;
+</script>
 {% endblock %}

@@ -1,275 +1,580 @@
 {% extends 'users/dashboard_admin.html' %}
-{% load categoria_extras %}
 
 {% block extra_head %}
-<!-- Fuentes unificadas -->
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Montserrat:wght@500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,600&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
 
 <style>
-    /* Estructura de Centrado */
-    .main-management-wrapper {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: flex-start;
-        width: 100%;
-        padding: 4rem 1rem;
-        min-height: 100vh;
-        margin-left: 20%;
-    }
+  /* ── VARIABLES LOCALES ── */
+  :root {
+    --gold: #b8922a;
+    --gold-soft: #c9a84c;
+    --gold-pale: #f7f0e0;
+    --gold-faint: #faf7f0;
+    --burgundy: #6E0E2E;
+    --dark: #1a1612;
+    --dark-mid: #2e2720;
+    --text: #3d342a;
+    --muted: #9c8c7c;
+    --border: #e8dfd4;
+    --border-faint: rgba(184,146,42,0.12);
+  }
 
-    /* Cabecera */
-    .management-header {
-        display: flex;
-        align-items: center;
-        gap: 20px;
-        margin-bottom: 2.5rem;
-        width: 100%;
-        max-width: 850px;
-        position: relative;
-    }
+  /* ── MAIN CONTAINER ── */
+  .gestion-main {
+    min-height: calc(100vh - 60px);
+    display: flex;
+    flex-direction: column;
+    padding: 3.5rem 4rem 5rem;
+    width: 100%;
+    max-width: 900px;
+    margin-left: 20%;
+    margin-right: auto;
+  }
 
-    .btn-back-ig {
-        color: #b8922a;
-        font-size: 1.8rem;
-        text-decoration: none;
-        transition: 0.3s;
-    }
+  /* ── BACK LINK ── */
+  .back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    text-decoration: none;
+    margin-bottom: 1.5rem;
+    transition: all 0.2s ease;
+  }
 
-    .btn-back-ig:hover { transform: translateX(-5px); color: #6E0E2E; }
+  .back-link:hover {
+    color: var(--gold);
+    transform: translateX(-4px);
+  }
 
-    .management-header h2 {
-        font-family: 'Cormorant Garamond', serif;
-        font-size: 2.8rem;
-        font-weight: 600;
-        color: #b8922a;
-        margin: 0;
-    }
+  .back-link i {
+    font-size: 0.9rem;
+    transition: transform 0.2s ease;
+  }
 
-    /* Caja Premium */
-    .premium-management-card {
-        background: #fff;
-        border: 1px solid #b8922a;
-        border-radius: 30px;
-        width: 100%;
-        max-width: 850px;
-        overflow: hidden;
-        box-shadow: 0 20px 60px rgba(0,0,0,0.04);
-    }
+  .back-link:hover i {
+    transform: translateX(-3px);
+  }
 
-    .card-body-grid { padding: 60px; }
+  /* ── PAGE HEADER ── */
+  .page-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    margin-bottom: 3.5rem;
+    padding-bottom: 1.75rem;
+    border-bottom: 1px solid var(--border-faint);
+    position: relative;
+  }
 
-    .categories-grid {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 25px;
-    }
+  .page-header::after {
+    content: '';
+    position: absolute;
+    bottom: -1px; left: 0;
+    width: 64px; height: 2px;
+    background: var(--gold);
+  }
 
-    /* Botones de Subcategoría[cite: 23] */
-    .subcat-btn-luxury {
-        height: 90px;
-        border-radius: 15px;
-        background: linear-gradient(135deg, #6E0E2E 0%, #b8922a 100%);
-        color: #fff;
-        padding: 15px 50px 15px 20px; /* Espacio para la X */
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        position: relative;
-        text-decoration: none;
-        font-family: 'Montserrat', sans-serif;
-        font-weight: 600;
-        font-size: 0.9rem;
-        transition: 0.3s ease;
-        line-height: 1.2;
-    }
+  .header-eyebrow {
+    font-size: 0.62rem;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 0.5rem;
+  }
 
-    .subcat-btn-luxury:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 10px 20px rgba(110, 14, 46, 0.2);
-        color: #fff;
-    }
+  .page-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(2.4rem, 4vw, 3.6rem);
+    font-weight: 600;
+    color: var(--dark);
+    letter-spacing: -0.01em;
+    line-height: 1;
+  }
 
-    /* X de eliminación[cite: 23] */
-    .delete-btn-overlay {
-        position: absolute;
-        top: 50%;
-        right: 15px;
-        transform: translateY(-50%);
-        background: #fff;
-        width: 26px;
-        height: 26px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border: none;
-        color: #6E0E2E;
-        font-size: 0.75rem;
-        cursor: pointer;
-        z-index: 10;
-        transition: 0.2s;
-    }
+  .header-right {
+    text-align: right;
+    flex-shrink: 0;
+  }
 
-    /* Sección Inferior Crema[cite: 23] */
-    .footer-action-area {
-        background: #fdfaf0;
-        border-top: 1px solid rgba(184, 146, 42, 0.15);
-        padding: 35px;
-        display: flex;
-        justify-content: center;
-    }
+  .item-count {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 3.2rem;
+    font-weight: 300;
+    color: var(--gold);
+    line-height: 1;
+  }
 
-    .btn-add-gold {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        background: #fff;
-        color: #b8922a;
-        font-family: 'Cormorant Garamond', serif;
-        font-size: 1.5rem;
-        font-weight: 600;
-        border: 1px solid #b8922a;
-        border-radius: 12px;
-        padding: 12px 40px;
-        transition: 0.3s;
-        cursor: pointer;
-    }
+  .item-count-label {
+    font-size: 0.6rem;
+    font-weight: 500;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
 
-    .btn-add-gold:hover { background: #b8922a; color: #fff; }
+  /* ── SUBCATEGORY LIST ── */
+  .category-list {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 2rem;
+  }
 
-    /* Modales Estilizados[cite: 23] */
-    .custom-modal-overlay {
-        position: fixed;
-        inset: 0;
-        background: rgba(26, 22, 18, 0.85);
-        display: none;
-        align-items: center;
-        justify-content: center;
-        z-index: 3000;
-        backdrop-filter: blur(5px);
-    }
+  .category-item {
+    display: grid;
+    grid-template-columns: 2.8rem 1fr auto;
+    align-items: center;
+    gap: 1.25rem;
+    padding: 1.1rem 0;
+    border-bottom: 1px solid rgba(232, 223, 212, 0.6);
+    position: relative;
+    transition: border-color 0.2s ease;
+  }
 
-    .modal-ig {
-        background: #fff;
-        border: 1px solid #b8922a;
-        border-radius: 30px;
-        padding: 50px;
-        max-width: 450px;
-        width: 90%;
-        text-align: center;
-    }
+  .category-item::before {
+    content: '';
+    position: absolute;
+    left: -1.2rem;
+    top: 50%; transform: translateY(-50%);
+    width: 3px; height: 0;
+    background: var(--gold);
+    border-radius: 2px;
+    transition: height 0.22s ease;
+  }
 
-    .modal-ig input {
-        width: 100%;
-        border: none;
-        border-bottom: 1.5px solid #e8dfd4;
-        padding: 10px 0;
-        margin-bottom: 30px;
-        font-family: 'Montserrat', sans-serif;
-        text-align: center;
-        font-size: 1.1rem;
-    }
+  .category-item:hover { border-bottom-color: rgba(184,146,42,0.3); }
+  .category-item:hover::before { height: 60%; }
 
-    .modal-ig input:focus { outline: none; border-bottom-color: #b8922a; }
+  .cat-index {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 0.8rem;
+    font-weight: 400;
+    color: var(--gold);
+    letter-spacing: 0.06em;
+    opacity: 0.75;
+    user-select: none;
+    transition: opacity 0.2s;
+  }
+
+  .category-item:hover .cat-index { opacity: 1; }
+
+  .cat-name-link {
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    min-width: 0;
+  }
+
+  .cat-name {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(1.7rem, 3vw, 2.4rem);
+    font-weight: 500;
+    color: var(--dark);
+    line-height: 1;
+    letter-spacing: -0.005em;
+    transition: color 0.2s ease, transform 0.22s ease;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .category-item:hover .cat-name {
+    color: var(--gold);
+    transform: translateX(6px);
+  }
+
+  .cat-arrow {
+    font-size: 0.85rem;
+    color: var(--muted);
+    opacity: 0;
+    transform: translateX(-6px);
+    transition: all 0.22s ease;
+    flex-shrink: 0;
+  }
+
+  .category-item:hover .cat-arrow {
+    opacity: 1;
+    transform: translateX(0);
+  }
+
+  .cat-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    opacity: 0;
+    transform: translateX(8px);
+    transition: all 0.22s ease;
+  }
+
+  .category-item:hover .cat-actions {
+    opacity: 1;
+    transform: translateX(0);
+  }
+
+  .btn-delete {
+    width: 34px; height: 34px;
+    border-radius: 50%;
+    border: 1px solid rgba(110, 14, 46, 0.25);
+    background: transparent;
+    color: var(--burgundy);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.18s ease;
+    flex-shrink: 0;
+  }
+
+  .btn-delete:hover {
+    background: var(--burgundy);
+    color: #fff;
+    border-color: var(--burgundy);
+  }
+
+  /* ── EMPTY STATE ── */
+  .empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--muted);
+  }
+
+  .empty-state i {
+    font-size: 2.5rem;
+    color: var(--border);
+    margin-bottom: 1rem;
+  }
+
+  .empty-state p {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.9rem;
+  }
+
+  /* ── ADD ROW ── */
+  .add-category-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 0;
+    cursor: pointer;
+    width: fit-content;
+    background: none;
+    border: none;
+    transition: all 0.2s;
+  }
+
+  .add-category-row:hover .add-icon-ring { background: var(--gold); border-color: var(--gold); }
+  .add-category-row:hover .add-icon-ring i { color: #fff; }
+  .add-category-row:hover .add-label { color: var(--gold); }
+
+  .add-icon-ring {
+    width: 40px; height: 40px;
+    border: 1.5px solid rgba(184,146,42,0.5);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s;
+    flex-shrink: 0;
+  }
+
+  .add-icon-ring i {
+    font-size: 1rem;
+    color: var(--gold);
+    transition: color 0.2s;
+  }
+
+  .add-label {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.4rem;
+    font-weight: 500;
+    color: var(--muted);
+    letter-spacing: 0.01em;
+    transition: color 0.2s;
+  }
+
+  /* ── MODALS ── */
+  .modal-backdrop-custom {
+    position: fixed; inset: 0;
+    background: rgba(26, 22, 18, 0.7);
+    backdrop-filter: blur(6px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 3000;
+  }
+
+  .modal-backdrop-custom.open { display: flex; }
+
+  .modal-box {
+    background: #fff;
+    border-radius: 20px;
+    padding: 3rem 3.5rem;
+    max-width: 440px;
+    width: 92%;
+    text-align: center;
+    animation: modalIn 0.28s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  }
+
+  @keyframes modalIn {
+    from { opacity: 0; transform: scale(0.92) translateY(16px); }
+    to   { opacity: 1; transform: scale(1) translateY(0); }
+  }
+
+  .modal-eyebrow {
+    font-size: 0.6rem;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 0.6rem;
+  }
+
+  .modal-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 2.2rem;
+    font-weight: 600;
+    color: var(--dark);
+    margin-bottom: 0.4rem;
+    line-height: 1.1;
+  }
+
+  .modal-title.danger { color: var(--burgundy); }
+
+  .modal-subtitle {
+    font-size: 0.82rem;
+    color: var(--muted);
+    margin-bottom: 2rem;
+    line-height: 1.5;
+  }
+
+  .modal-input {
+    width: 100%;
+    border: none;
+    border-bottom: 1.5px solid var(--border);
+    padding: 0.85rem 0;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 1rem;
+    text-align: center;
+    background: transparent;
+    color: var(--dark);
+    margin-bottom: 2.2rem;
+    transition: border-color 0.2s;
+  }
+
+  .modal-input:focus { outline: none; border-bottom-color: var(--gold); }
+  .modal-input::placeholder { color: var(--muted); }
+
+  .modal-actions {
+    display: flex; gap: 10px; justify-content: center;
+  }
+
+  .btn-cancel {
+    padding: 0.7rem 1.8rem;
+    border-radius: 50px;
+    border: 1.5px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.18s;
+  }
+
+  .btn-cancel:hover { border-color: var(--text); color: var(--text); }
+
+  .btn-confirm {
+    padding: 0.7rem 2.2rem;
+    border-radius: 50px;
+    border: none;
+    background: var(--dark);
+    color: #fff;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    letter-spacing: 0.04em;
+    transition: all 0.18s;
+  }
+
+  .btn-confirm:hover { background: var(--gold); }
+  .btn-confirm.danger { background: var(--burgundy); }
+  .btn-confirm.danger:hover { background: #8a1239; }
+
+  .modal-divider {
+    height: 1px;
+    background: var(--border);
+    margin: 1.5rem 0;
+  }
+
+  .delete-cat-name {
+    display: inline;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--dark);
+  }
+
+  /* ── ALERT ── */
+  .alert-minimal {
+    padding: 0.85rem 1.25rem;
+    border-radius: 10px;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.82rem;
+    margin-bottom: 2rem;
+    border: 1px solid;
+  }
+
+  .alert-minimal.success {
+    background: #f0fdf4;
+    color: #166534;
+    border-color: #bbf7d0;
+  }
+
+  .alert-minimal.error {
+    background: #fef2f2;
+    color: #991b1b;
+    border-color: #fecaca;
+  }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="main-management-wrapper">
-    
-    <div class="management-header">
-        <a href="{% url 'productos:gestion_productos' %}" class="btn-back-ig"><i class="bi bi-arrow-left"></i></a>
-        <h2>Subcategorías de {{ categoria.nombre }}</h2>
+<div class="gestion-main">
+
+  <!-- Back link -->
+  <a href="{% url 'productos:gestion_productos' %}" class="back-link">
+    <i class="bi bi-arrow-left"></i>
+    Volver a categorías
+  </a>
+
+  <!-- Header de página -->
+  <div class="page-header">
+    <div class="header-left">
+      <p class="header-eyebrow">{{ categoria.nombre }}</p>
+      <h1 class="page-title">Subcategorías</h1>
     </div>
-
-    <div class="premium-management-card">
-        
-        <div class="card-body-grid">
-            {% if mensaje %}
-                <div class="alert {% if 'correctamente' in mensaje %}alert-success{% else %}alert-danger{% endif %} border-0 rounded-pill px-4 mb-4" style="font-family: 'Montserrat', sans-serif; font-size: 0.9rem;">
-                    {{ mensaje }}
-                </div>
-            {% endif %}
-
-            <div class="categories-grid">
-                {% for sub in subcategorias %}
-                    <div class="position-relative">
-                        <a href="{% url 'productos:productos_por_subcategoria' sub.id %}" class="subcat-btn-luxury">
-                            <i class="bi bi-tag"></i>
-                            <span>{{ sub.nombre }}</span>
-                        </a>
-                        <form method="post" action="{% url 'productos:eliminar_subcategoria' sub.id %}">
-                            {% csrf_token %}
-                            <button type="button" class="delete-btn-overlay js-delete-trigger" data-nombre="{{ sub.nombre }}">
-                                <i class="bi bi-x-lg"></i>
-                            </button>
-                        </form>
-                    </div>
-                {% empty %}
-                    <div class="col-12 text-center text-muted py-4">No hay subcategorías cargadas.</div>
-                {% endfor %}
-            </div>
-        </div>
-
-        <div class="footer-action-area">
-            <button type="button" class="btn-add-gold" onclick="openAddModal()">
-                <i class="bi bi-plus-lg"></i> Agregar subcategoría
-            </button>
-        </div>
+    <div class="header-right">
+      <div class="item-count">{{ subcategorias|length|stringformat:"02d" }}</div>
+      <div class="item-count-label">subcategorías</div>
     </div>
+  </div>
+
+  <!-- Alert -->
+  {% if mensaje %}
+  <div class="alert-minimal {% if 'correctamente' in mensaje %}success{% else %}error{% endif %}">
+    {{ mensaje }}
+  </div>
+  {% endif %}
+
+  <!-- Lista de subcategorías -->
+  <ul class="category-list">
+    {% for sub in subcategorias %}
+    <li class="category-item" data-id="{{ sub.id }}" data-nombre="{{ sub.nombre }}">
+      <span class="cat-index">{{ forloop.counter|stringformat:"02d" }}</span>
+      <a href="{% url 'productos:productos_por_subcategoria' sub.id %}" class="cat-name-link">
+        <span class="cat-name">{{ sub.nombre }}</span>
+        <i class="bi bi-arrow-right cat-arrow"></i>
+      </a>
+      <div class="cat-actions">
+        <button class="btn-delete js-delete-trigger"
+                data-id="{{ sub.id }}"
+                data-nombre="{{ sub.nombre }}"
+                title="Eliminar subcategoría">
+          <i class="bi bi-x"></i>
+        </button>
+      </div>
+    </li>
+    {% empty %}
+    <li>
+      <div class="empty-state">
+        <i class="bi bi-folder2-open"></i>
+        <p>No hay subcategorías en esta categoría</p>
+      </div>
+    </li>
+    {% endfor %}
+  </ul>
+
+  <!-- Agregar subcategoría -->
+  <button class="add-category-row" onclick="openAddModal()">
+    <div class="add-icon-ring"><i class="bi bi-plus-lg"></i></div>
+    <span class="add-label">Agregar subcategoría</span>
+  </button>
+
 </div>
 
-<!-- Modal Agregar -->
-<div id="modalAgregar" class="custom-modal-overlay">
-    <div class="modal-ig">
-        <h3 class="mb-4" style="font-family: 'Cormorant Garamond', serif; font-size: 2.2rem; color: #b8922a;">Nueva subcategoría</h3>
-        <form method="post">
-            {% csrf_token %}
-            <input type="text" name="nombre" placeholder="Nombre (Ej: Zapatillas, Remeras...)" required id="focusInput">
-            <div class="d-flex gap-3">
-                <button type="button" class="btn btn-light w-100 rounded-pill" onclick="closeModals()">Cancelar</button>
-                <button type="submit" class="btn btn-dark w-100 rounded-pill" style="background: #1a1612;">Guardar</button>
-            </div>
-        </form>
-    </div>
+<!-- Modal: Nueva subcategoría -->
+<div class="modal-backdrop-custom" id="modalAdd">
+  <div class="modal-box">
+    <p class="modal-eyebrow">{{ categoria.nombre }}</p>
+    <h2 class="modal-title">Nueva subcategoría</h2>
+    <p class="modal-subtitle">Agregá un nombre para la nueva subcategoría.</p>
+    <form method="post">
+      {% csrf_token %}
+      <input type="text" name="nombre" id="newSubInput" class="modal-input" placeholder="Nombre de la subcategoría" required>
+      <div class="modal-actions">
+        <button type="button" class="btn-cancel" onclick="closeModals()">Cancelar</button>
+        <button type="submit" class="btn-confirm">Guardar</button>
+      </div>
+    </form>
+  </div>
 </div>
 
-<!-- Modal Eliminar -->
-<div id="modalEliminar" class="custom-modal-overlay">
-    <div class="modal-ig">
-        <h3 class="mb-3" style="font-family: 'Cormorant Garamond', serif; font-size: 2.2rem; color: #6E0E2E;">¿Eliminar subcategoría?</h3>
-        <p class="text-muted mb-4">Vas a borrar <strong id="delName"></strong> de forma permanente.</p>
-        <div class="d-flex gap-3">
-            <button type="button" class="btn btn-light w-100 rounded-pill" onclick="closeModals()">Cancelar</button>
-            <button type="button" class="btn btn-danger w-100 rounded-pill" id="confirmDel">Eliminar</button>
-        </div>
-    </div>
+<!-- Modal: Confirmar eliminación -->
+<div class="modal-backdrop-custom" id="modalDelete">
+  <div class="modal-box">
+    <p class="modal-eyebrow">Acción irreversible</p>
+    <h2 class="modal-title danger">¿Eliminar subcategoría?</h2>
+    <div class="modal-divider"></div>
+    <p class="modal-subtitle">
+      Estás por eliminar <span class="delete-cat-name" id="deleteName"></span>.<br>
+      Todos los productos de esta subcategoría se perderán.
+    </p>
+    <form id="deleteForm" method="post" action="">
+      {% csrf_token %}
+      <div class="modal-actions">
+        <button type="button" class="btn-cancel" onclick="closeModals()">Cancelar</button>
+        <button type="submit" class="btn-confirm danger">Sí, eliminar</button>
+      </div>
+    </form>
+  </div>
 </div>
 
 <script>
-    let formToSubmit = null;
+  function openAddModal() {
+    document.getElementById('modalAdd').classList.add('open');
+    setTimeout(() => document.getElementById('newSubInput').focus(), 100);
+  }
 
-    function openAddModal() {
-        document.getElementById('modalAgregar').style.display = 'flex';
-        document.getElementById('focusInput').focus();
-    }
+  function closeModals() {
+    document.querySelectorAll('.modal-backdrop-custom').forEach(m => m.classList.remove('open'));
+  }
 
-    function closeModals() {
-        document.querySelectorAll('.custom-modal-overlay').forEach(m => m.style.display = 'none');
-    }
-
-    document.querySelectorAll('.js-delete-trigger').forEach(btn => {
-        btn.onclick = function() {
-            formToSubmit = this.closest('form');
-            document.getElementById('delName').textContent = this.dataset.nombre;
-            document.getElementById('modalEliminar').style.display = 'flex';
-        };
+  document.querySelectorAll('.js-delete-trigger').forEach(btn => {
+    btn.addEventListener('click', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      const id = this.dataset.id;
+      const name = this.dataset.nombre;
+      document.getElementById('deleteName').textContent = name;
+      document.getElementById('deleteForm').action = `{% url 'productos:eliminar_subcategoria' 0 %}`.replace('/0/', `/${id}/`);
+      document.getElementById('modalDelete').classList.add('open');
     });
+  });
 
-    document.getElementById('confirmDel').onclick = function() { if(formToSubmit) formToSubmit.submit(); };
+  document.querySelectorAll('.modal-backdrop-custom').forEach(backdrop => {
+    backdrop.addEventListener('click', function(e) {
+      if (e.target === this) closeModals();
+    });
+  });
 
-    window.onclick = function(e) { if(e.target.classList.contains('custom-modal-overlay')) closeModals(); };
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeModals();
+  });
 </script>
 {% endblock %}
