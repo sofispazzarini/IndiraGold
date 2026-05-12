@@ -1,7 +1,12 @@
 from django.views.generic import TemplateView
+from django.contrib import messages
+from django.contrib.admin.views.decorators import staff_member_required
+from django.shortcuts import redirect, render, get_object_or_404
 from productos.models import Producto, Categoria, Talle, Color
 from carritos.utils import clear_cart_session, expire_cart_if_needed, get_cart_seconds_left
 from consultas.models import TemaConsulta
+from .models import SlideCarrousel
+from .forms import SlideCarrouselForm
 
 class HomePublicaView(TemplateView):
     template_name = 'home_publico.html'
@@ -78,4 +83,62 @@ class HomePublicaView(TemplateView):
             consultas__activa=True
         ).prefetch_related('consultas').distinct()
         ctx['temas_consulta'] = temas_con_faqs
+
+        ctx['slides_carrousel'] = SlideCarrousel.objects.filter(activo=True)
         return ctx
+
+
+# === GESTIÓN CARROUSEL ===
+
+@staff_member_required
+def gestion_carrousel(request):
+    slides = SlideCarrousel.objects.all()
+    return render(request, 'home/gestion_carrousel.html', {'slides': slides})
+
+
+@staff_member_required
+def crear_slide(request):
+    if request.method == 'POST':
+        form = SlideCarrouselForm(request.POST, request.FILES)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Slide creado exitosamente.')
+            return redirect('home:gestion_carrousel')
+    else:
+        form = SlideCarrouselForm()
+    return render(request, 'home/crear_slide.html', {'form': form})
+
+
+@staff_member_required
+def editar_slide(request, slide_id):
+    slide = get_object_or_404(SlideCarrousel, id=slide_id)
+    if request.method == 'POST':
+        form = SlideCarrouselForm(request.POST, request.FILES, instance=slide)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Slide actualizado exitosamente.')
+            return redirect('home:gestion_carrousel')
+    else:
+        form = SlideCarrouselForm(instance=slide)
+    return render(request, 'home/crear_slide.html', {'form': form, 'slide': slide})
+
+
+@staff_member_required
+def eliminar_slide(request, slide_id):
+    slide = get_object_or_404(SlideCarrousel, id=slide_id)
+    if request.method == 'POST':
+        slide.imagen.delete(save=False)
+        slide.delete()
+        messages.success(request, 'Slide eliminado.')
+    return redirect('home:gestion_carrousel')
+
+
+@staff_member_required
+def toggle_slide(request, slide_id):
+    slide = get_object_or_404(SlideCarrousel, id=slide_id)
+    if request.method == 'POST':
+        slide.activo = not slide.activo
+        slide.save()
+        estado = 'activado' if slide.activo else 'desactivado'
+        messages.success(request, f'Slide {estado}.')
+    return redirect('home:gestion_carrousel')

@@ -1,0 +1,134 @@
+{% extends 'users/dashboard_admin.html' %}
+{% load static %}
+
+{% block extra_head %}
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="{% static 'css/users.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4" style="max-width: 1200px;">
+
+    <div class="d-flex justify-content-between align-items-center mb-5">
+        <div>
+            <h2 class="display-6 fw-bold mb-0" style="font-family: 'Cormorant Garamond'; color: var(--dark-ig);">Carrousel del Home</h2>
+            <p class="text-muted small text-uppercase letter-spacing-1">Gestiona las imágenes del carrousel principal</p>
+        </div>
+        <a href="{% url 'home:crear_slide' %}" class="btn btn-dark rounded-pill px-4 shadow-sm border-gold" style="border: 1px solid var(--gold-ig); color: var(--gold-light);">
+            <i class="bi bi-plus-lg me-2"></i> NUEVO SLIDE
+        </a>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="ig-table-card">
+        <div class="table-responsive">
+            <table class="table align-middle">
+                <thead>
+                    <tr>
+                        <th style="width: 100px;"><i class="bi bi-image me-2"></i>Imagen</th>
+                        <th><i class="bi bi-card-text me-2"></i>Título</th>
+                        <th><i class="bi bi-sort-numeric-down me-2"></i>Orden</th>
+                        <th><i class="bi bi-toggle-on me-2"></i>Estado</th>
+                        <th class="text-end">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for slide in slides %}
+                    <tr>
+                        <td>
+                            {% if slide.imagen %}
+                            <img src="{{ slide.imagen.url }}" alt="{{ slide.titulo }}" style="height: 60px; width: auto; border-radius: 8px; object-fit: cover;">
+                            {% else %}
+                            <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="fw-bold">{{ slide.titulo|default:"Sin título" }}</div>
+                            {% if slide.subtitulo %}
+                            <small class="text-muted">{{ slide.subtitulo|truncatewords:10 }}</small>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge bg-secondary">{{ slide.orden }}</span>
+                        </td>
+                        <td>
+                            <form method="post" action="{% url 'home:toggle_slide' slide.id %}" class="d-inline">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm {% if slide.activo %}btn-success{% else %}btn-secondary{% endif %} rounded-pill px-3">
+                                    {% if slide.activo %}
+                                        <i class="bi bi-check-circle me-1"></i> Activo
+                                    {% else %}
+                                        <i class="bi bi-x-circle me-1"></i> Inactivo
+                                    {% endif %}
+                                </button>
+                            </form>
+                        </td>
+                        <td>
+                            <div class="d-flex gap-2 justify-content-end">
+                                <a href="{% url 'home:editar_slide' slide.id %}" class="btn-action btn-edit-ig text-decoration-none">
+                                    <i class="bi bi-pencil-square"></i> Editar
+                                </a>
+                                <button type="button" class="btn-action btn-delete-ig text-decoration-none"
+                                        data-bs-toggle="modal" data-bs-target="#deleteModal{{ slide.id }}">
+                                    <i class="bi bi-trash"></i> Eliminar
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+
+                    <!-- Modal de confirmación -->
+                    <div class="modal fade" id="deleteModal{{ slide.id }}" tabindex="-1">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Confirmar eliminación</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <p>¿Estás seguro de eliminar este slide?</p>
+                                    {% if slide.imagen %}
+                                    <img src="{{ slide.imagen.url }}" alt="" style="max-width: 200px; border-radius: 8px;">
+                                    {% endif %}
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                    <form method="post" action="{% url 'home:eliminar_slide' slide.id %}" class="d-inline">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-danger">Eliminar</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center py-5">
+                            <i class="bi bi-images text-muted display-1 opacity-25"></i>
+                            <p class="mt-3 text-muted">No hay slides en el carrousel.</p>
+                            <a href="{% url 'home:crear_slide' %}" class="btn btn-outline-dark mt-2">
+                                <i class="bi bi-plus-lg me-1"></i> Crear primer slide
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="mt-4 p-3 bg-light rounded">
+        <small class="text-muted">
+            <i class="bi bi-info-circle me-1"></i>
+            <strong>Tip:</strong> Los slides se muestran en el orden indicado. Usa números bajos (0, 1, 2...) para controlar el orden de aparición.
+        </small>
+    </div>
+</div>
+{% endblock %}

@@ -38,4 +38,9 @@
     <a href="{% url 'consultas:gestion_faqs' %}" class="nav-link">
         <i class="bi bi-question-circle me-2"></i> Preguntas Frecuentes
     </a>
+
+    <div class="nav-section">Sitio</div>
+    <a href="{% url 'home:gestion_carrousel' %}" class="nav-link{% if request.resolver_match.url_name == 'gestion_carrousel' or request.resolver_match.url_name == 'crear_slide' or request.resolver_match.url_name == 'editar_slide' %} active{% endif %}">
+        <i class="bi bi-images me-2"></i> Carrousel Home
+    </a>
 </nav>

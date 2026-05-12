@@ -31,6 +31,52 @@
   </div>
 </section>
 
+<!-- CARROUSEL PRINCIPAL -->
+{% if slides_carrousel %}
+<section class="main-carousel" aria-label="Carrousel principal">
+  <div class="carousel-container">
+    <div class="carousel-track" id="carouselTrack">
+      {% for slide in slides_carrousel %}
+      <div class="carousel-slide {% if forloop.first %}active{% endif %}">
+        {% if slide.link %}
+        <a href="{{ slide.link }}" class="carousel-link">
+        {% endif %}
+          <img src="{{ slide.imagen.url }}" alt="{{ slide.titulo }}" class="carousel-img" />
+          {% if slide.titulo or slide.subtitulo %}
+          <div class="carousel-caption">
+            {% if slide.titulo %}<h2 class="carousel-title">{{ slide.titulo }}</h2>{% endif %}
+            {% if slide.subtitulo %}<p class="carousel-subtitle">{{ slide.subtitulo }}</p>{% endif %}
+          </div>
+          {% endif %}
+        {% if slide.link %}
+        </a>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+
+    {% if slides_carrousel.count > 1 %}
+    <button type="button" class="carousel-btn carousel-btn--prev" onclick="carouselPrev()" aria-label="Anterior">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16">
+        <path fill-rule="evenodd" d="M11.354 1.646a.5.5 0 0 1 0 .708L5.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0z"/>
+      </svg>
+    </button>
+    <button type="button" class="carousel-btn carousel-btn--next" onclick="carouselNext()" aria-label="Siguiente">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16">
+        <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"/>
+      </svg>
+    </button>
+
+    <div class="carousel-dots" id="carouselDots">
+      {% for slide in slides_carrousel %}
+      <button type="button" class="carousel-dot {% if forloop.first %}active{% endif %}" onclick="carouselGoTo({{ forloop.counter0 }})" aria-label="Ir a slide {{ forloop.counter }}"></button>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+</section>
+{% endif %}
+
 <!-- CARRUSEL DESTACADOS -->
 <section class="featured-section" aria-label="Productos destacados">
   <div class="container">
@@ -358,6 +404,115 @@
 </div>
 
 <style>
+  /* CARROUSEL PRINCIPAL */
+  .main-carousel {
+    position: relative;
+    width: 100%;
+    overflow: hidden;
+    background: #1a1612;
+  }
+  .carousel-container {
+    position: relative;
+    width: 100%;
+    max-width: 100%;
+  }
+  .carousel-track {
+    display: flex;
+    transition: transform 0.5s ease-in-out;
+  }
+  .carousel-slide {
+    min-width: 100%;
+    position: relative;
+  }
+  .carousel-link {
+    display: block;
+    text-decoration: none;
+  }
+  .carousel-img {
+    width: 100%;
+    height: 70vh;
+    object-fit: cover;
+    display: block;
+  }
+  .carousel-caption {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 3rem 6vw;
+    background: linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 100%);
+    color: #fff;
+  }
+  .carousel-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(2rem, 4vw, 3.5rem);
+    font-weight: 700;
+    margin: 0 0 0.5rem;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  }
+  .carousel-subtitle {
+    font-size: 1rem;
+    margin: 0;
+    opacity: 0.9;
+  }
+  .carousel-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(255,255,255,0.9);
+    color: #1a1612;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    z-index: 10;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  }
+  .carousel-btn:hover {
+    background: #b8922a;
+    color: #fff;
+    transform: translateY(-50%) scale(1.05);
+  }
+  .carousel-btn--prev { left: 1.5rem; }
+  .carousel-btn--next { right: 1.5rem; }
+  .carousel-dots {
+    position: absolute;
+    bottom: 1.5rem;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 0.5rem;
+    z-index: 10;
+  }
+  .carousel-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 2px solid #fff;
+    background: transparent;
+    cursor: pointer;
+    transition: all 0.2s;
+    padding: 0;
+  }
+  .carousel-dot:hover,
+  .carousel-dot.active {
+    background: #b8922a;
+    border-color: #b8922a;
+  }
+
+  @media (max-width: 768px) {
+    .carousel-img { height: 50vh; }
+    .carousel-btn { width: 40px; height: 40px; }
+    .carousel-btn--prev { left: 0.75rem; }
+    .carousel-btn--next { right: 0.75rem; }
+    .carousel-caption { padding: 2rem 1.5rem; }
+  }
+
   /* HERO */
   .hero {
     min-height: 92vh;
@@ -897,6 +1052,62 @@
 
     // Toggle actual
     if (!wasOpen) item.classList.add('open');
+  }
+
+  // CARROUSEL AUTO-PLAY
+  let carouselIndex = 0;
+  let carouselInterval = null;
+  const carouselTrack = document.getElementById('carouselTrack');
+  const carouselDots = document.querySelectorAll('.carousel-dot');
+  const carouselSlides = document.querySelectorAll('.carousel-slide');
+  const carouselTotal = carouselSlides.length;
+
+  function carouselUpdatePosition() {
+    if (!carouselTrack || carouselTotal === 0) return;
+    carouselTrack.style.transform = `translateX(-${carouselIndex * 100}%)`;
+    carouselDots.forEach((dot, i) => {
+      dot.classList.toggle('active', i === carouselIndex);
+    });
+  }
+
+  function carouselNext() {
+    carouselIndex = (carouselIndex + 1) % carouselTotal;
+    carouselUpdatePosition();
+    carouselResetInterval();
+  }
+
+  function carouselPrev() {
+    carouselIndex = (carouselIndex - 1 + carouselTotal) % carouselTotal;
+    carouselUpdatePosition();
+    carouselResetInterval();
+  }
+
+  function carouselGoTo(index) {
+    carouselIndex = index;
+    carouselUpdatePosition();
+    carouselResetInterval();
+  }
+
+  function carouselStartAutoPlay() {
+    if (carouselTotal <= 1) return;
+    carouselInterval = setInterval(carouselNext, 5000);
+  }
+
+  function carouselResetInterval() {
+    if (carouselInterval) clearInterval(carouselInterval);
+    carouselStartAutoPlay();
+  }
+
+  if (carouselTotal > 1) {
+    carouselStartAutoPlay();
+
+    const carouselContainer = document.querySelector('.carousel-container');
+    if (carouselContainer) {
+      carouselContainer.addEventListener('mouseenter', () => {
+        if (carouselInterval) clearInterval(carouselInterval);
+      });
+      carouselContainer.addEventListener('mouseleave', carouselStartAutoPlay);
+    }
   }
 </script>
 
