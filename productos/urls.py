@@ -41,4 +41,8 @@ urlpatterns = [
     path('producto/foto/eliminar/<int:foto_id>/', views.eliminar_foto_galeria, name='eliminar_foto'),
     path('variante/editar/<int:variante_id>/', views.editar_variante, name='editar_variante'),
     path('producto/eliminar-esquema/<int:prod_id>/', views.eliminar_esquema_tecnico, name='eliminar_esquema'),
+
+    # --- QR CODES ---
+    path('variante-color/<int:vc_id>/qr/', views.variante_color_qr, name='variante_color_qr'),
+    path('producto/<int:producto_id>/qrs/', views.producto_qrs_impresion, name='producto_qrs_impresion'),
 ]
