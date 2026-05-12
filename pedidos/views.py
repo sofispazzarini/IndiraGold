@@ -74,6 +74,29 @@ def historial_cliente(request, cliente_id):
 
 
 @admin_required
+def listado_gastos(request):
+    """
+    Listado de gastos adicionales del negocio.
+    """
+    gastos = Gasto.objects.all().order_by('-fecha', '-created_at')
+
+    # Paginación
+    paginator = Paginator(gastos, 15)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    # Total de gastos
+    total_gastos = Gasto.objects.aggregate(total=Sum('monto'))['total'] or 0
+
+    context = {
+        'page_obj': page_obj,
+        'gastos': page_obj.object_list,
+        'total_gastos': total_gastos,
+    }
+    return render(request, 'pedidos/listado_gastos.html', context)
+
+
+@admin_required
 def crear_gasto(request):
     """
     Permite al administrador registrar un gasto adicional.
@@ -84,7 +107,7 @@ def crear_gasto(request):
         if form.is_valid():
             form.save()
             messages.success(request, 'Gasto registrado correctamente.')
-            return redirect('pedidos:gestion_pedidos')
+            return redirect('pedidos:listado_gastos')
         else:
             messages.error(request, 'Por favor corrija los errores en el formulario.')
     else:
@@ -94,6 +117,19 @@ def crear_gasto(request):
         'form': form,
     }
     return render(request, 'pedidos/crear_gasto.html', context)
+
+
+@admin_required
+def eliminar_gasto(request, gasto_id):
+    """
+    Elimina un gasto registrado.
+    """
+    gasto = get_object_or_404(Gasto, id=gasto_id)
+    if request.method == 'POST':
+        descripcion = gasto.descripcion
+        gasto.delete()
+        messages.success(request, f'Gasto "{descripcion}" eliminado correctamente.')
+    return redirect('pedidos:listado_gastos')
 
 
 @admin_required

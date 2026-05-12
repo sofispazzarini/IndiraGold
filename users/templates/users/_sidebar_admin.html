@@ -27,8 +27,8 @@
     <a href="{% url 'pedidos:estadisticas_ventas' %}" class="nav-link">
         <i class="bi bi-graph-up me-2"></i> Estadísticas
     </a>
-    <a href="{% url 'pedidos:crear_gasto' %}" class="nav-link">
-        <i class="bi bi-receipt me-2"></i> Registrar Gasto
+    <a href="{% url 'pedidos:listado_gastos' %}" class="nav-link{% if request.resolver_match.url_name == 'listado_gastos' or request.resolver_match.url_name == 'crear_gasto' %} active{% endif %}">
+        <i class="bi bi-receipt me-2"></i> Gastos
     </a>
 
     <div class="nav-section">Consultas</div>

@@ -6,21 +6,57 @@
     {% include 'users/_sidebar_admin.html' %}
 {% endblock %}
 
+{% block extra_head %}
+<style>
+    .admin-home-wrapper {
+        min-height: calc(100vh - 60px);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-start;
+        padding-top: 2rem;
+    }
+    .admin-panel-header {
+        background: linear-gradient(90deg, #fdf6e3 0%, #e8c96a 60%, #b8922a 100%);
+        border-radius: 28px;
+        box-shadow: 0 8px 32px 0 rgba(184,146,42,0.13);
+        padding: 54px 56px;
+        color: #1a1612;
+        margin-bottom: 38px;
+        border: 2.5px solid #e8c96a;
+        width: 100%;
+        max-width: 900px;
+        margin-left: 25%;
+        margin-right: auto;
+    }
+    @media (max-width: 900px) {
+        .admin-panel-header {
+            margin-left: auto;
+            max-width: 98vw;
+            padding: 2rem 1.5rem;
+            border-radius: 18px;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <link rel="stylesheet" href="{% static 'static/css/users.css' %}">
 
-<div class="admin-panel-header" style="background: linear-gradient(90deg, #fdf6e3 0%, #e8c96a 60%, #b8922a 100%); border-radius: 28px; box-shadow: 0 8px 32px 0 rgba(184,146,42,0.13); padding: 54px 56px 54px 56px; color: #1a1612; margin-top: 32px; margin-bottom: 38px; border: 2.5px solid #e8c96a;">
-    <div class="d-flex align-items-center" style="gap: 2.8rem;">
-        <div class="me-4" style="background: #fff; border: 3px solid #e8c96a; border-radius: 50%; width: 92px; height: 92px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 12px 0 #e8c96a33;">
-            <svg width="54" height="54" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <polygon points="12,3 2,9 12,21 22,9" stroke="#b8922a" stroke-width="2.2" fill="#fffbe6"/>
-                <polyline points="2,9 12,9 22,9" stroke="#b8922a" stroke-width="2.2" fill="none"/>
-                <polyline points="7,9 12,21 17,9" stroke="#b8922a" stroke-width="2.2" fill="none"/>
-            </svg>
-        </div>
-        <div>
-            <h1 class="mb-2" style="font-family: 'Cormorant Garamond', serif; font-size: 2.8rem; font-weight: 700; letter-spacing: 1.5px; color: #1a1612; text-shadow:0 2px 8px #e8c96a33;">Panel de Administración</h1>
-            <div style="color: #7c6a4a; font-size: 1.18rem; font-weight: 500; letter-spacing: 0.5px; text-shadow:0 1px 4px #fffbe6;">Bienvenido/a, gestioná <span style="color: #b8922a; font-weight: 700;">Indira Gold</span> de forma centralizada.</div>
+<div class="admin-home-wrapper">
+    <div class="admin-panel-header">
+        <div class="d-flex align-items-center" style="gap: 2.8rem;">
+            <div class="me-4" style="background: #fff; border: 3px solid #e8c96a; border-radius: 50%; width: 92px; height: 92px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 12px 0 #e8c96a33;">
+                <svg width="54" height="54" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <polygon points="12,3 2,9 12,21 22,9" stroke="#b8922a" stroke-width="2.2" fill="#fffbe6"/>
+                    <polyline points="2,9 12,9 22,9" stroke="#b8922a" stroke-width="2.2" fill="none"/>
+                    <polyline points="7,9 12,21 17,9" stroke="#b8922a" stroke-width="2.2" fill="none"/>
+                </svg>
+            </div>
+            <div>
+                <h1 class="mb-2" style="font-family: 'Cormorant Garamond', serif; font-size: 2.8rem; font-weight: 700; letter-spacing: 1.5px; color: #1a1612; text-shadow:0 2px 8px #e8c96a33;">Panel de Administración</h1>
+                <div style="color: #7c6a4a; font-size: 1.18rem; font-weight: 500; letter-spacing: 0.5px; text-shadow:0 1px 4px #fffbe6;">Bienvenido/a, gestioná <span style="color: #b8922a; font-weight: 700;">Indira Gold</span> de forma centralizada.</div>
+            </div>
         </div>
     </div>
 </div>
