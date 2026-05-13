@@ -1,0 +1,638 @@
+```html
+{% extends 'users/dashboard_cliente.html' %}
+
+{% block content %}
+
+<style>
+
+.checkout-container{
+    margin-left: 12%;
+    max-width: 1300px;
+}
+
+.text-luxury{
+    color:#1f1f1f;
+}
+
+.text-gold{
+    color:#d4af37;
+}
+
+.text-gold-dark{
+    color:#b9922f;
+}
+
+.bg-white-glass{
+    background:rgba(255,255,255,.92);
+    backdrop-filter:blur(12px);
+}
+
+.card{
+    border:none;
+    box-shadow:0 8px 30px rgba(0,0,0,.05);
+}
+
+.alert{
+    border:none;
+    border-radius:18px;
+    padding:18px;
+}
+
+.form-control-luxury{
+    border:1px solid #e5e5e5;
+    border-radius:14px;
+    padding:12px 15px;
+    width:100%;
+    transition:.2s;
+}
+
+.form-control-luxury:focus{
+    outline:none;
+    border-color:#d4af37;
+    box-shadow:0 0 0 4px rgba(212,175,55,.12);
+}
+
+.btn-outline-gold{
+    border:1px solid #d4af37;
+    color:#b9922f;
+    transition:.2s;
+    background:white;
+}
+
+.btn-outline-gold:hover{
+    background:#fff8e7;
+    color:#b9922f;
+    border-color:#d4af37;
+}
+.cantidad-btn{
+    width:32px;
+    height:32px;
+    border-radius:50%;
+    border:none;
+    background:#f3f3f3;
+    font-weight:bold;
+    transition:.2s;
+}
+
+.cantidad-btn:hover{
+    background:#d4af37;
+    color:white;
+}
+.btn-check:checked + .btn-outline-gold{
+    background:#fff8e7;
+    border:2px solid #d4af37;
+    color:#b9922f;
+}
+
+.btn-gold-capsule{
+    background:linear-gradient(135deg,#d4af37,#b9922f);
+    border:none;
+    color:white;
+    border-radius:50px;
+    transition:.25s;
+    box-shadow:0 10px 30px rgba(212,175,55,.25);
+}
+
+.btn-gold-capsule:hover{
+    transform:translateY(-2px);
+    box-shadow:0 14px 35px rgba(212,175,55,.35);
+    color:white;
+}
+
+.resumen-pago{
+    background:#fffdf9;
+    border:1px solid rgba(212,175,55,.18);
+    box-shadow:0 10px 35px rgba(0,0,0,.06);
+    top:20px;
+}
+
+.total-precio{
+    font-size:38px;
+    font-weight:700;
+    color:#d4af37;
+}
+
+.direccion-card{
+    display:block;
+    border:1px solid #e8e8e8;
+    border-radius:18px;
+    padding:18px;
+    cursor:pointer;
+    transition:.2s;
+    background:white;
+}
+
+.direccion-card:hover{
+    border-color:#c9a14a;
+    transform:translateY(-1px);
+}
+
+.direccion-content{
+    transition:.2s;
+}
+
+.direccion-card input:checked + .direccion-content{
+    color:#c9a14a;
+}
+
+.product-item{
+    border-bottom:1px solid #f0f0f0;
+    padding-bottom:18px;
+    margin-bottom:18px;
+}
+
+.product-item:last-child{
+    border-bottom:none;
+    margin-bottom:0;
+    padding-bottom:0;
+}
+
+</style>
+
+<div class="container py-5 checkout-container">
+
+    <div class="row justify-content-center">
+
+        <div class="col-lg-10">
+
+            <h2
+                class="text-luxury fw-bold mb-5 text-center"
+                style="
+                    font-family:'Cormorant Garamond';
+                    letter-spacing:4px;
+                    font-size:52px;
+                "
+            >
+                FINALIZAR COMPRA
+            </h2>
+
+            
+
+            <form
+                action="{% url 'pedidos:crear_pago' %}"
+                method="POST"
+            >
+
+                {% csrf_token %}
+
+                <div class="row g-4">
+
+                    <!-- IZQUIERDA -->
+                    <div class="col-lg-7">
+
+                        <!-- PRODUCTOS -->
+                        <div class="card rounded-5 p-4 mb-4 bg-white-glass">
+
+                            <h5 class="fw-bold mb-4 border-bottom pb-3 text-gold-dark">
+                                1. RESUMEN DE PRODUCTOS
+                            </h5>
+
+                            {% if items %}
+
+                                {% for item in items %}
+
+                                    <div class="d-flex align-items-center product-item">
+
+                                        <div class="me-3">
+
+                                            {% with img=item.variante.producto.imagenes.first %}
+
+                                                <img
+                                                    src="{{ img.imagen.url }}"
+                                                    style="
+                                                        width:70px;
+                                                        height:90px;
+                                                        object-fit:cover;
+                                                        border-radius:10px;
+                                                    "
+                                                >
+
+                                            {% endwith %}
+
+                                        </div>
+
+                                        <div class="flex-grow-1">
+
+                                            <h6 class="mb-1 fw-bold">
+                                                {{ item.variante.producto.nombre|upper }}
+                                            </h6>
+
+                                            <small class="text-muted">
+                                                Talle:
+                                                {{ item.variante.talle.nombre }}
+                                            </small>
+
+                                            <br>
+
+                                            <div class="d-flex align-items-center mt-2">
+
+                                                <!-- RESTAR -->
+                                                <form
+                                                    action="{% url 'pedidos:disminuir_cantidad' item.variante.id %}"
+                                                    method="POST"
+                                                    class="me-2"
+                                                >
+
+                                                    {% csrf_token %}
+
+                                                    <button
+                                                        type="submit"
+                                                        class="cantidad-btn"
+                                                    >
+                                                        -
+                                                    </button>
+
+                                                </form>
+
+                                                <!-- CANTIDAD -->
+                                                <span class="fw-bold px-2">
+                                                    {{ item.cantidad }}
+                                                </span>
+
+                                                <!-- SUMAR -->
+                                                <form
+                                                    action="{% url 'pedidos:aumentar_cantidad' item.variante.id %}"
+                                                    method="POST"
+                                                    class="ms-2"
+                                                >
+
+                                                    {% csrf_token %}
+
+                                                    <button
+                                                        type="submit"
+                                                        class="cantidad-btn"
+                                                    >
+                                                        +
+                                                    </button>
+
+                                                </form>
+
+                                            </div>
+
+                                            <br>
+
+                                            <small class="text-muted">
+                                                Precio unitario:
+                                                ${{ item.precio_unitario }}
+                                            </small>
+
+                                        </div>
+
+                                        <div class="text-end">
+
+                                            <div class="fw-bold fs-5 mb-2">
+                                                ${{ item.subtotal }}
+                                            </div>
+
+                                            <form
+                                                action="{% url 'pedidos:eliminar_item_carrito' item.variante.id %}"
+                                                method="POST"
+                                            >
+
+                                                {% csrf_token %}
+
+                                                <button
+                                                    type="submit"
+                                                    class="btn btn-link text-danger p-0"
+                                                >
+                                                    <i class="bi bi-x-circle"></i>
+                                                    Quitar
+                                                </button>
+
+                                            </form>
+
+                                        </div>
+
+                                    </div>
+
+                                {% endfor %}
+
+                            {% else %}
+
+                                <div class="alert alert-info mb-0">
+                                    No hay productos en tu carrito.
+                                </div>
+
+                            {% endif %}
+
+                            <div class="mt-4">
+
+                                <a
+                                    href="{% url 'home:home' %}"
+                                    class="btn btn-outline-gold rounded-pill px-4"
+                                >
+                                    <i class="bi bi-plus-circle me-1"></i>
+                                    Agregar más productos
+                                </a>
+
+                            </div>
+
+                        </div>
+
+                        <!-- ENTREGA -->
+                        <div class="card rounded-5 p-4 bg-white-glass">
+
+                            <h5 class="fw-bold mb-4 border-bottom pb-3 text-gold-dark">
+                                2. MÉTODO DE ENTREGA
+                            </h5>
+
+                            <div class="row g-3">
+
+                                <!-- RETIRO -->
+                                <div class="col-6">
+
+                                    <input
+                                        type="radio"
+                                        class="btn-check"
+                                        name="metodo_entrega"
+                                        id="local"
+                                        value="local"
+                                        checked
+                                    >
+
+                                    <label
+                                        class="btn btn-outline-gold w-100 p-4 rounded-4"
+                                        for="local"
+                                    >
+
+                                        <i class="bi bi-shop d-block fs-2 mb-3"></i>
+
+                                        <div class="fw-bold">
+                                            Retiro en Local
+                                        </div>
+
+                                        <small>
+                                            Gratis
+                                        </small>
+
+                                    </label>
+
+                                </div>
+
+                                <!-- ENVIO -->
+                                <div class="col-6">
+
+                                    <input
+                                        type="radio"
+                                        class="btn-check"
+                                        name="metodo_entrega"
+                                        id="domicilio"
+                                        value="domicilio"
+                                    >
+
+                                    <label
+                                        class="btn btn-outline-gold w-100 p-4 rounded-4"
+                                        for="domicilio"
+                                    >
+
+                                        <i class="bi bi-truck d-block fs-2 mb-3"></i>
+
+                                        <div class="fw-bold">
+                                            Envío a domicilio
+                                        </div>
+
+                                        <small>
+                                            Correo Argentino
+                                        </small>
+
+                                    </label>
+
+                                </div>
+
+                            </div>
+
+                            <!-- DIRECCIONES -->
+                            <div
+                                id="campos-direccion"
+                                class="mt-4 d-none"
+                            >
+
+                                <div class="d-flex align-items-center mb-3">
+
+                                    <i class="bi bi-box-seam fs-3 text-gold-dark me-3"></i>
+
+                                    <div>
+
+                                        <h6 class="fw-bold mb-1">
+                                            Envío por Correo Argentino
+                                        </h6>
+
+                                        <small class="text-muted">
+                                            Entrega estimada:
+                                            3 a 5 días hábiles
+                                        </small>
+
+                                    </div>
+
+                                </div>
+
+                                <p class="small text-muted mb-4">
+
+                                    Seleccioná la dirección donde querés
+                                    recibir tu pedido.
+
+                                </p>
+
+                                {% for direccion in direcciones %}
+
+                                    <label class="direccion-card mb-3 w-100">
+
+                                        <input
+                                            type="radio"
+                                            name="direccion_id"
+                                            value="{{ direccion.id }}"
+                                            class="d-none"
+                                        >
+
+                                        <div class="direccion-content">
+
+                                            <div class="d-flex justify-content-between">
+
+                                                <div>
+
+                                                    <div class="fw-bold mb-1">
+                                                        {{ direccion.alias }}
+                                                    </div>
+
+                                                    <small class="text-muted">
+
+                                                        {{ direccion.calle_numero }}
+
+                                                        <br>
+
+                                                        {{ direccion.localidad }}
+
+                                                        ({{ direccion.codigo_postal }})
+
+                                                    </small>
+
+                                                </div>
+
+                                                <i class="bi bi-geo-alt fs-3 text-muted"></i>
+
+                                            </div>
+
+                                        </div>
+
+                                    </label>
+
+                                {% empty %}
+
+                                    <div class="alert alert-warning rounded-4">
+
+                                        No tenés direcciones registradas.
+
+                                    </div>
+
+                                {% endfor %}
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                    <!-- DERECHA -->
+                    <div class="col-lg-5">
+
+                        <div
+                            class="card resumen-pago rounded-5 p-4 sticky-top"
+                        >
+
+                            <h5 class="fw-bold mb-4 text-gold">
+                                RESUMEN DE PAGO
+                            </h5>
+
+                            <div class="d-flex justify-content-between mb-3">
+
+                                <span class="opacity-75">
+                                    Subtotal
+                                </span>
+
+                                <span class="fw-bold">
+                                    ${{ subtotal }}
+                                </span>
+
+                            </div>
+
+                            <div class="d-flex justify-content-between mb-4">
+
+                                <span class="opacity-75">
+                                    Envío
+                                </span>
+
+                                <span
+                                    id="envio-label"
+                                    class="text-success fw-bold"
+                                >
+                                    Gratis
+                                </span>
+
+                            </div>
+
+                            <hr class="opacity-25">
+
+                            <div class="d-flex justify-content-between align-items-end mb-4">
+
+                                <span class="h5 mb-0">
+                                    TOTAL
+                                </span>
+
+                                <span
+                                    class="total-precio"
+                                    id="total-final-display"
+                                >
+                                    ${{ total }}
+                                </span>
+
+                            </div>
+
+                            <button
+                                type="submit"
+                                class="btn btn-gold-capsule w-100 py-3 fw-bold"
+                            >
+
+                                PAGAR AHORA
+
+                                <i class="bi bi-credit-card-fill ms-2"></i>
+
+                            </button>
+
+                            <p class="text-center mt-4 mb-0 small opacity-50">
+
+                                <i class="bi bi-lock-fill me-1"></i>
+
+                                Pago procesado de forma segura
+
+                            </p>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+
+const subtotalBase = parseFloat("{{ subtotal }}");
+const costoEnvio = 5000;
+
+document
+.querySelectorAll('input[name="metodo_entrega"]')
+.forEach((input) => {
+
+    input.addEventListener('change', (e) => {
+
+        const campos = document.getElementById(
+            'campos-direccion'
+        );
+
+        const envioTexto = document.getElementById(
+            'envio-label'
+        );
+
+        const totalDisplay = document.getElementById(
+            'total-final-display'
+        );
+
+        if (e.target.value === 'domicilio') {
+
+            campos.classList.remove('d-none');
+
+            envioTexto.innerText = '$5.000';
+
+            totalDisplay.innerText =
+                '$' +
+                (subtotalBase + costoEnvio)
+                .toLocaleString();
+
+        }
+
+        else {
+
+            campos.classList.add('d-none');
+
+            envioTexto.innerText = 'Gratis';
+
+            totalDisplay.innerText =
+                '$' +
+                subtotalBase.toLocaleString();
+
+        }
+
+    });
+
+});
+
+</script>
+
+{% endblock %}
+

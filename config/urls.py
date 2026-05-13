@@ -20,6 +20,8 @@ from django.shortcuts import redirect
 from django.conf import settings
 from django.conf.urls.static import static
 
+from django.shortcuts import render
+
 urlpatterns = [
     path('', include('home.urls')),
     path('admin/', admin.site.urls),

@@ -4,14 +4,26 @@
 {% block sidebar_menu %}
 <div class="nav-section">Mi Cuenta</div>
 <nav class="sidebar__nav">
-    <a href="{% url 'users:dashboard_cliente' %}" class="nav-link active">
-      <i class="bi bi-grid-1x2-fill me-2"></i> Inicio
+    <a href="{% url 'users:dashboard_cliente' %}" 
+       class="nav-link {% if request.resolver_match.view_name == 'users:dashboard_cliente' %}active{% endif %}">
+        <i class="bi bi-grid-1x2-fill me-2"></i> Inicio
     </a>
-    <a href="{% url 'users:password_change' %}" class="nav-link">
-      <i class="bi bi-shield-lock-fill me-2"></i> Seguridad
-    </a>
-    <hr class="mx-3 opacity-10">
 
+    <a href="{% url 'users:password_change' %}" 
+       class="nav-link {% if request.resolver_match.view_name == 'users:password_change' %}active{% endif %}">
+        <i class="bi bi-shield-lock-fill me-2"></i> Seguridad
+    </a>
+
+    <a href="{% url 'pedidos:checkout' %}" 
+       class="nav-link {% if request.resolver_match.view_name == 'pedidos:checkout' %}active{% endif %}">
+        <i class="bi bi-cart-check me-2"></i> Ver carrito
+    </a>
+    <a href="{% url 'pedidos:mis_pedidos' %}" 
+       class="nav-link {% if request.resolver_match.view_name == 'pedidos:mis_pedidos' %}active{% endif %}">
+        <i class="bi bi-cart-check me-2"></i> Mis pedidos
+    </a>
+    
+    <hr class="mx-3 opacity-10">
 </nav>
 {% endblock %}
 

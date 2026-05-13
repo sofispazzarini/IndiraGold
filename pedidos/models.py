@@ -6,19 +6,66 @@ from productos.models import Variante
 
 class Pedido(models.Model):
     ESTADOS = (
-        ('pendiente', 'Pendiente'),
-        ('aceptado', 'Aceptado'),
+        ('pendiente', 'Pendiente de confirmación'),
+        ('aceptado', 'Pago aceptado'),
+
         ('en_preparacion', 'En preparación'),
-        ('enviado', 'Enviado'),
+
+        # retiro local
+        ('listo_retirar', 'Listo para retirar'),
+
+        # envío
+        ('preparando_envio', 'Preparando envío'),
+        ('enviado', 'Paquete enviado'),
+
         ('entregado', 'Entregado'),
+
+        ('rechazado', 'Pago rechazado'),
         ('cancelado', 'Cancelado'),
         ('vencido', 'Vencido'),
     )
+    TRANSICIONES = {
+
+        'pendiente': [
+            'aceptado',
+            'rechazado'
+        ],
+
+        'aceptado': [
+            'en_preparacion'
+        ],
+
+        'en_preparacion': [
+            'listo_retirar',
+            'preparando_envio'
+        ],
+
+        'preparando_envio': [
+            'enviado'
+        ],
+
+        'enviado': [
+            'entregado'
+        ],
+
+        'listo_retirar': [
+            'entregado'
+        ],
+    }
     TIPOS_VENTA = (
         ('online', 'Online'),
         ('presencial', 'Presencial'),
         ('encargo', 'Encargo'),
     )
+    METODOS_ENTREGA = (
+        ('local', 'Retiro en Local (Gratis)'),
+        ('domicilio', 'Envío a Domicilio'),
+    )
+    metodo_entrega = models.CharField(max_length=20, choices=METODOS_ENTREGA, default='local')
+    costo_envio = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    codigo_postal = models.CharField(max_length=10, blank=True, null=True)
+    localidad = models.CharField(max_length=100, blank=True, null=True)
+    calle_numero = models.CharField(max_length=255, blank=True, null=True)
     cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE)
     total = models.DecimalField(max_digits=10, decimal_places=2)
     tipo_venta = models.CharField(

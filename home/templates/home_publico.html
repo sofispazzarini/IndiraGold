@@ -117,8 +117,8 @@
                 <p class="product-card__meta">{{ producto.tipo }} · {{ producto.tela }}</p>
                 <div class="product-card__footer">
                   <span class="product-card__price">${{ producto.precio }}</span>
-                  {% if producto.stock > 0 %}
-                    <button type="button" class="product-card__btn" onclick="abrirModalCantidad({{ producto.pk }}, '{{ producto.nombre }}', {{ producto.stock }})">
+                  {% if producto.variantes.first and producto.variantes.first.stock > 0 %}
+                    <button type="button" class="product-card__btn" onclick="abrirModalCantidad({{ producto.variantes.first.id }}, '{{ producto.nombre }}', {{ producto.variantes.first.stock }})">
                       <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
                         <path d="M8 1a2.5 2.5 0 0 1 2.5 2.5V4h-5v-.5A2.5 2.5 0 0 1 8 1zm3.5 3v-.5a3.5 3.5 0 1 0-7 0V4H1v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V4h-3.5zM2 5h12v9a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V5z"/>
                       </svg>
@@ -326,16 +326,16 @@ function scrollCatOrden{{ cat_orden.id }}(dir) {
           <p class="product-card__meta">{{ producto.tipo }} · {{ producto.tela }}</p>
           <div class="product-card__footer">
             <span class="product-card__price">${{ producto.precio }}</span>
-            {% if producto.stock > 0 %}
-              <button type="button" class="product-card__btn" onclick="abrirModalCantidad({{ producto.pk }}, '{{ producto.nombre }}', {{ producto.stock }})">
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
-                  <path d="M8 1a2.5 2.5 0 0 1 2.5 2.5V4h-5v-.5A2.5 2.5 0 0 1 8 1zm3.5 3v-.5a3.5 3.5 0 1 0-7 0V4H1v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V4h-3.5zM2 5h12v9a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V5z"/>
-                </svg>
-                Agregar
-              </button>
-            {% else %}
-              <span class="product-card__agotado">Sin stock</span>
-            {% endif %}
+                  {% if producto.variantes.first and producto.stock > 0 %}
+                    <button type="button" class="product-card__btn" onclick="abrirModalCantidad({{ producto.variantes.first.id }}, '{{ producto.nombre }}', {{ producto.stock }})">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                        <path d="M8 1a2.5 2.5 0 0 1 2.5 2.5V4h-5v-.5A2.5 2.5 0 0 1 8 1zm3.5 3v-.5a3.5 3.5 0 1 0-7 0V4H1v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V4h-3.5zM2 5h12v9a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V5z"/>
+                      </svg>
+                      Agregar
+                    </button>
+                  {% else %}
+                    <span class="product-card__agotado">Sin stock</span>
+                  {% endif %}
           </div>
         </div>
       </div>
@@ -464,9 +464,9 @@ function scrollCatOrden{{ cat_orden.id }}(dir) {
       </div>
       <button type="button" onclick="cerrarModalCantidad()" style="border:none; background:transparent; font-size:1.5rem; line-height:1; cursor:pointer; color:#8c7e70;">×</button>
     </div>
-    <form id="modalCantidadForm" method="post" action="/carritos/agregar/" style="padding:1.25rem; display:grid; gap:1rem;">
+    <form id="modalCantidadForm" class="js-cart-form" method="post" action="/carritos/agregar/" style="padding:1.25rem; display:grid; gap:1rem;">
       {% csrf_token %}
-      <input type="hidden" name="producto_id" id="modalCantidadProductoId">
+      <input type="hidden" name="variante_id" id="modalCantidadProductoId">
       <input type="hidden" name="next" value="{{ request.get_full_path }}">
       <div>
         <label for="modalCantidadInput" style="display:block; margin-bottom:.5rem; font-size:.9rem; font-weight:600; color:#3d342a;">Cantidad</label>
@@ -1064,7 +1064,10 @@ function scrollCatOrden{{ cat_orden.id }}(dir) {
 
       const html = await response.text();
       const applied = applyCartFromHtml(html);
-      if (!applied) {
+
+      if (applied) {
+        cerrarModalCantidad(); // 👈 ESTO ES LO QUE FALTA
+      } else {
         form.submit();
       }
     } catch (error) {

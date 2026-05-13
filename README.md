@@ -97,5 +97,83 @@ Accede a: [http://127.0.0.1:8000/](http://127.0.0.1:8000/)
 
 📧 Notas sobre el envío de mails
 Si usas Gmail para las notificaciones, recordá generar una contraseña de aplicación desde la configuración de seguridad de tu cuenta de Google. No uses tu contraseña normal.
+````md
+## 💳 Integración con Mercado Pago
 
+El proyecto utiliza integración con Mercado Pago Checkout Pro para procesar pagos online.
+
+### 1️⃣ Crear cuenta de desarrollador
+
+Ingresar a:
+
+https://www.mercadopago.com.ar/developers/panel
+
+Crear una aplicación nueva:
+
+- Tipo: Ventas online
+- Plataforma: Sitio web propio / Django
+
+---
+
+### 2️⃣ Obtener credenciales TEST
+
+Mercado Pago proporcionará:
+
+- Public Key
+- Access Token
+
+⚠️ Para desarrollo utilizar únicamente las credenciales TEST.
+
+---
+
+### 3️⃣ Configurar variables de entorno
+
+Agregar al archivo `.env`:
+
+```env
+MERCADO_PAGO_ACCESS_TOKEN=TEST-xxxxxxxx
+````
+
+⚠️ El archivo `.env` no debe subirse a GitHub.
+
+---
+
+### 4️⃣ Instalar dependencias
+
+```bash
+pip install mercadopago
+pip install python-decouple
+```
+
+Si se agregan nuevas dependencias:
+
+```bash
+pip freeze > requirements.txt
+```
+
+---
+
+### 5️⃣ Configurar `settings.py`
+
+```python
+from decouple import config
+
+MERCADO_PAGO_ACCESS_TOKEN = config('MERCADO_PAGO_ACCESS_TOKEN')
+```
+
+---
+
+### 6️⃣ Funcionamiento
+
+Cuando el usuario presiona el botón "PAGAR AHORA":
+
+1. Django crea una preferencia de pago.
+2. Mercado Pago genera el checkout seguro.
+3. El usuario es redirigido a Mercado Pago.
+4. Luego de finalizar el pago, Mercado Pago redirecciona nuevamente al sitio.
+
+---
+
+```
+```
 IndiraGold © 2026

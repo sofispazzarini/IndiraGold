@@ -7,6 +7,8 @@ from django.http import HttpRequest
 from django.shortcuts import render, redirect
 from django.urls import resolve, reverse
 from django.views.decorators.http import require_POST
+from django.contrib.auth.decorators import login_required
+from carritos.utils import vincular_carrito_con_usuario, get_or_create_cart
 
 from productos.models import Categoria
 from productos.models import Producto
@@ -41,90 +43,199 @@ def _render_cart_fragment(request: HttpRequest):
 
 @require_POST
 def agregar_producto(request):
-	producto_id = request.POST.get("producto_id") or request.POST.get("id")
+	variante_id = request.POST.get("variante_id") or request.POST.get("id")
 	cantidad = request.POST.get("cantidad", "1")
 	next_url = request.POST.get("next") or request.GET.get("next")
+
 	if not next_url:
 		next_url = reverse("home:home")
 
 	if expire_cart_if_needed(request.session):
 		messages.info(request, "Tu carrito expiró luego de 1 hora y fue reiniciado.")
 
+	# Validaciones básicas
 	try:
-		producto_id_int = int(producto_id)
+		variante_id_int = int(variante_id)
 		cantidad_int = int(cantidad)
+
 		if cantidad_int < 1:
 			raise ValueError("La cantidad debe ser mayor a 0")
+
 	except (TypeError, ValueError):
 		messages.error(request, "Cantidad inválida.")
+
 		if _is_ajax(request):
 			return _render_cart_fragment(request)
+
 		return _render_next(request, next_url)
 
+	# Buscar variante
 	try:
-		producto = Producto.objects.get(pk=producto_id_int, activo=True)
-	except Producto.DoesNotExist:
+		from productos.models import Variante
+
+		variante = Variante.objects.select_related("producto").get(
+			pk=variante_id_int,
+			activa=True
+		)
+
+		producto = variante.producto
+
+	except Variante.DoesNotExist:
 		messages.error(request, "Producto no encontrado.")
+
 		if _is_ajax(request):
 			return _render_cart_fragment(request)
+
 		return _render_next(request, next_url)
 
-	if producto.stock <= 0:
+	# Validar stock de variante
+	if variante.stock <= 0:
 		messages.error(request, "Este producto no tiene stock.")
+
 		if _is_ajax(request):
 			return _render_cart_fragment(request)
+
 		return _render_next(request, next_url)
 
+	# Carrito actual
 	cart = _get_session_cart(request.session)
-	key = str(producto.id)
+
+	# IMPORTANTE: ahora usamos variante.id
+	key = str(variante.id)
+
 	current_qty = int(cart.get(key, 0))
 	new_qty = current_qty + cantidad_int
 
-	if new_qty > producto.stock:
-		messages.error(request, f"Stock insuficiente. Disponibles: {producto.stock}, intentas: {new_qty}")
+	# Validar stock suficiente
+	if new_qty > variante.stock:
+		messages.error(
+			request,
+			f"Stock insuficiente. Disponibles: {variante.stock}, intentas: {new_qty}"
+		)
+
 		if _is_ajax(request):
 			return _render_cart_fragment(request)
+
 		return _render_next(request, next_url)
 
-	cart[key] = new_qty
-	set_cart_started_at_if_missing(request.session)
-	request.session["carrito"] = cart
-	request.session.modified = True
+	# =========================
+	# USUARIO AUTENTICADO
+	# =========================
+	if request.user.is_authenticated:
 
-	messages.success(request, f"{producto.nombre} x{cantidad_int} agregado al carrito.")
+		try:
+			carrito = get_or_create_cart(request)
+
+			from .models import CarritoItem
+
+			item, created = CarritoItem.objects.get_or_create(
+				carrito=carrito,
+				variante=variante,
+				defaults={
+					'cantidad': 0,
+					'precio_unitario': variante.precio or producto.precio,
+					'precio_total': 0
+				}
+			)
+
+			item.cantidad = new_qty
+			item.precio_unitario = variante.precio or producto.precio
+			item.precio_total = item.cantidad * item.precio_unitario
+			item.save()
+
+			# Sincronizar sesión con BD
+			carrito_final = {}
+
+			for item_db in carrito.items.all():
+				carrito_final[str(item_db.variante.id)] = item_db.cantidad
+
+			request.session['carrito'] = carrito_final
+			request.session.modified = True
+
+		except Exception as e:
+			messages.error(request, f"Error al agregar al carrito: {str(e)}")
+
+			if _is_ajax(request):
+				return _render_cart_fragment(request)
+
+			return _render_next(request, next_url)
+
+	# =========================
+	# USUARIO INVITADO
+	# =========================
+	else:
+		cart[key] = new_qty
+
+		set_cart_started_at_if_missing(request.session)
+
+		request.session["carrito"] = cart
+		request.session.modified = True
+
+	messages.success(
+		request,
+		f"{producto.nombre} x{cantidad_int} agregado al carrito."
+	)
+
 	if _is_ajax(request):
 		return _render_cart_fragment(request)
-	return _render_next(request, next_url)
 
+	return _render_next(request, next_url)
 
 @require_POST
 def eliminar_producto(request):
-	producto_id = request.POST.get("producto_id") or request.POST.get("id")
+	variante_id = request.POST.get("variante_id") or request.POST.get("id")
 	next_url = request.POST.get("next") or request.GET.get("next")
 	if not next_url:
 		next_url = reverse("home:home")
 
 	try:
-		producto_id_int = int(producto_id)
+		variante_id_int = int(variante_id)
 	except (TypeError, ValueError):
 		messages.error(request, "Producto inválido.")
 		if _is_ajax(request):
 			return _render_cart_fragment(request)
 		return _render_next(request, next_url)
 
-	cart = _get_session_cart(request.session)
-	key = str(producto_id_int)
-
-	if key in cart:
-		del cart[key]
-		if cart:
-			request.session["carrito"] = cart
-			request.session.modified = True
-		else:
-			clear_cart_session(request.session)
-		messages.success(request, "Producto eliminado del carrito.")
+	# Si el usuario está autenticado, eliminar de BD
+	if request.user.is_authenticated:
+		try:
+			from .models import CarritoItem
+			carrito = get_or_create_cart(request)
+			
+			# Buscar items de este producto en el carrito
+			items_a_eliminar = carrito.items.filter(
+				variante__id=variante_id_int
+			)
+			
+			if items_a_eliminar.exists():
+				items_a_eliminar.delete()
+				# Actualizar sesión: sumar cantidades por producto_id
+				carrito_final = {}
+				for item_db in carrito.items.all():
+					pid = str(item_db.variante.producto.id)
+					carrito_final[pid] = carrito_final.get(pid, 0) + item_db.cantidad
+				request.session['carrito'] = carrito_final
+				request.session.modified = True
+				messages.success(request, "Producto eliminado del carrito.")
+			else:
+				messages.info(request, "Ese producto no está en tu carrito.")
+		except Exception as e:
+			messages.error(request, f"Error al eliminar: {str(e)}")
 	else:
-		messages.info(request, "Ese producto no está en tu carrito.")
+		# Usuario invitado: eliminar de sesión
+		cart = _get_session_cart(request.session)
+		key = str(variante_id_int)
+
+		if key in cart:
+			del cart[key]
+			if cart:
+				request.session["carrito"] = cart
+				request.session.modified = True
+			else:
+				clear_cart_session(request.session)
+			messages.success(request, "Producto eliminado del carrito.")
+		else:
+			messages.info(request, "Ese producto no está en tu carrito.")
 
 	if _is_ajax(request):
 		return _render_cart_fragment(request)
@@ -180,6 +291,11 @@ def confirmar_compra(request):
 		variante = producto.variantes.filter(activa=True).order_by("id").first()
 		if not variante:
 			messages.error(request, f"El producto {producto.nombre} no tiene variantes activas para confirmar la compra.")
+			return redirect(next_url)
+
+		# Validar stock de la variante
+		if variante.stock < cantidad:
+			messages.error(request, f"Stock insuficiente para la variante de {producto.nombre}. Disponible: {variante.stock}.")
 			return redirect(next_url)
 
 		precio_unitario = variante.precio or producto.precio
@@ -306,44 +422,85 @@ def _build_home_context(request):
 		.order_by("nombre")
 	)
 
-	cart = request.session.get("carrito")
-	if not isinstance(cart, dict):
-		cart = {}
-
-	quantities: dict[int, int] = {}
-	for key, value in cart.items():
-		try:
-			pid = int(key)
-			qty = int(value)
-		except (TypeError, ValueError):
-			continue
-		if qty > 0:
-			quantities[pid] = qty
-
-	productos_by_id = {
-		p.id: p for p in Producto.objects.filter(id__in=quantities.keys(), activo=True)
-	}
-
 	items = []
 	total_qty = 0
 	total_price = 0
-	for pid, qty in quantities.items():
-		p = productos_by_id.get(pid)
-		if not p:
-			continue
-		subtotal = p.precio * qty
-		items.append(
-			{
-				"id": p.id,
-				"nombre": p.nombre,
-				"precio": p.precio,
+
+	# Si el usuario está autenticado, SIEMPRE obtener desde BD
+	if request.user.is_authenticated:
+		try:
+			carrito = get_or_create_cart(request)
+			for item_db in carrito.items.all().select_related('variante__producto'):
+				items.append({
+					"id": item_db.variante.producto.id,  # Usar ID del producto para eliminar
+					"variante_id": item_db.variante.id,
+					"nombre": item_db.variante.producto.nombre,
+					"precio": item_db.precio_unitario,
+					"cantidad": item_db.cantidad,
+					"subtotal": item_db.precio_total,
+				})
+				total_qty += item_db.cantidad
+				total_price += item_db.precio_total
+			
+			# Sincronizar sesión con BD para consistencia
+			carrito_sincronizado = {}
+			for item_db in carrito.items.all():
+				carrito_sincronizado[str(item_db.variante.id)] = item_db.cantidad
+			request.session['carrito'] = carrito_sincronizado
+			request.session.modified = True
+		except Exception as e:
+			# Si hay error, continuar sin items
+			pass
+	else:
+		# Usuario invitado: obtener desde sesión
+		from productos.models import Variante
+
+		cart = request.session.get("carrito")
+		if not isinstance(cart, dict):
+			cart = {}
+
+		quantities: dict[int, int] = {}
+
+		for key, value in cart.items():
+			try:
+				variante_id = int(key)
+				qty = int(value)
+			except (TypeError, ValueError):
+				continue
+
+			if qty > 0:
+				quantities[variante_id] = qty
+
+		variantes = Variante.objects.select_related("producto").filter(
+			id__in=quantities.keys(),
+			activa=True,
+			producto__activo=True
+		)
+
+		variantes_by_id = {
+			v.id: v for v in variantes
+		}
+
+		for variante_id, qty in quantities.items():
+			variante = variantes_by_id.get(variante_id)
+
+			if not variante:
+				continue
+
+			precio = variante.precio or variante.producto.precio
+			subtotal = precio * qty
+
+			items.append({
+				"id": variante.producto.id,
+				"variante_id": variante.id,
+				"nombre": variante.producto.nombre,
+				"precio": precio,
 				"cantidad": qty,
 				"subtotal": subtotal,
-			}
-		)
-		total_qty += qty
-		total_price += subtotal
+			})
 
+			total_qty += qty
+			total_price += subtotal
 	return {
 		"productos": productos,
 		"productos_destacados": productos_destacados,
@@ -355,3 +512,41 @@ def _build_home_context(request):
 		"cart_total": total_price,
 		"cart_expires_in": get_cart_seconds_left(request.session),
 	}
+from django.views.decorators.http import require_POST
+from django.shortcuts import redirect
+
+@require_POST
+def sumar_producto(request):
+    variante_id = request.POST.get("variante_id")
+    next_url = request.POST.get("next") or request.GET.get("next")
+
+    try:
+        variante_id_int = int(variante_id)
+    except (TypeError, ValueError):
+        messages.error(request, "Producto inválido.")
+        return redirect(next_url)
+
+    if request.user.is_authenticated:
+        carrito = get_or_create_cart(request)
+
+        item = carrito.items.filter(variante_id=variante_id_int).first()
+
+        if item:
+            item.cantidad += 1
+            item.save()
+        else:
+            carrito.items.create(variante_id=variante_id_int, cantidad=1)
+
+        messages.success(request, "Cantidad actualizada.")
+    else:
+        cart = _get_session_cart(request.session)
+        key = str(variante_id_int)
+
+        cart[key] = cart.get(key, 0) + 1
+        request.session["carrito"] = cart
+        request.session.modified = True
+
+    if _is_ajax(request):
+        return _render_cart_fragment(request)
+
+    return redirect(next_url)

@@ -1,8 +1,9 @@
+# home/views.py
 from django.views.generic import TemplateView
 from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
 from django.shortcuts import redirect, render, get_object_or_404
-from productos.models import Producto, Categoria, Talle, Color, CategoriaOrden
+from productos.models import Producto, Categoria, Talle, Color, CategoriaOrden, Variante
 from carritos.utils import clear_cart_session, expire_cart_if_needed, get_cart_seconds_left
 from consultas.models import TemaConsulta
 from .models import SlideCarrousel
