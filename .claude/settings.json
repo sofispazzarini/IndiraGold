@@ -1,0 +1,47 @@
+{
+  "model": "claude-opus-4-5-20251101",
+  "env": {
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "claude-haiku-4-5-20251001",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL": "claude-sonnet-4-6",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL": "claude-opus-4-5-20251101"
+  },
+  "permissionMode": "default",
+  "enableAllProjectMcpServers": true,
+  "enableAllProjectHooks": true,
+  "PostToolUse": [
+    {
+      "matcher": "Write|Edit",
+      "hooks": [
+        {
+          "type": "prompt",
+          "prompt": "File write detected. Reminder: If this is an implementation task, delegate it to a worker subagent instead. You are the planner - do not implement directly.",
+          "timeout": 30
+        }
+      ]
+    }
+  ],
+  "Stop": [
+    {
+      "matcher": "*",
+      "hooks": [
+        {
+          "type": "prompt",
+          "prompt": "Before ending: (1) Did you delegate review to @reviewer? (2) Did you save any new decisions to Engram memory? (3) Is there a clear summary for the next session?",
+          "timeout": 30
+        }
+      ]
+    }
+  ],
+  "SessionStart": [
+    {
+      "matcher": "*",
+      "hooks": [
+        {
+          "type": "prompt",
+          "prompt": "TOKEN BUDGET: GREEN. You are the Opus 4.5 Planner. Review the Slim Orchestration Protocol in CLAUDE.md. Remember: PLAN then DELEGATE then VERIFY. Check Engram memory for prior session context.",
+          "timeout": 30
+        }
+      ]
+    }
+  ]
+}

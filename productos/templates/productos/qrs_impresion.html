@@ -1,0 +1,104 @@
+{% extends 'basico.html' %}
+{% load static %}
+
+{% block title %}QRs - {{ producto.nombre }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    @media print {
+        .no-print { display: none !important; }
+        .qr-grid { break-inside: avoid; }
+    }
+
+    .qr-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 20px;
+        padding: 20px;
+    }
+
+    .qr-card {
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 15px;
+        text-align: center;
+        background: white;
+    }
+
+    .qr-card img {
+        width: 150px;
+        height: 150px;
+    }
+
+    .qr-info {
+        margin-top: 10px;
+        font-size: 12px;
+        color: #333;
+    }
+
+    .qr-info strong {
+        display: block;
+        font-size: 14px;
+        margin-bottom: 5px;
+    }
+
+    .btn-print {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 10px 20px;
+        background: #4CAF50;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 16px;
+    }
+
+    .btn-print:hover {
+        background: #45a049;
+    }
+
+    .header-info {
+        padding: 20px;
+        background: #f5f5f5;
+        margin-bottom: 20px;
+    }
+
+    .empty-message {
+        text-align: center;
+        padding: 40px;
+        color: #666;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<button class="btn-print no-print" onclick="window.print()">Imprimir QRs</button>
+
+<div class="header-info">
+    <h1>{{ producto.nombre }}</h1>
+    <p>Codigo: {{ producto.codigo }} | Total QRs: {{ variantes_color|length }}</p>
+</div>
+
+{% if variantes_color %}
+<div class="qr-grid">
+    {% for vc in variantes_color %}
+    <div class="qr-card">
+        <img src="{% url 'productos:variante_color_qr' vc.id %}" alt="QR {{ vc }}">
+        <div class="qr-info">
+            <strong>{{ producto.codigo }}</strong>
+            Talle: {{ vc.variante.talle.nombre }}<br>
+            Color: {{ vc.color.nombre }}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-message">
+    <h2>No hay variantes de color registradas</h2>
+    <p class="no-print">Ejecuta el comando de generacion para crear los registros VarianteColor:</p>
+    <code class="no-print">python manage.py generar_variantes_color</code>
+</div>
+{% endif %}
+{% endblock %}

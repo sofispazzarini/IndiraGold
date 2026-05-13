@@ -1,298 +1,461 @@
 {% extends 'users/dashboard_admin.html' %}
 
 {% block extra_head %}
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Montserrat:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,600&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+
 <style>
-    /* Variables y Estilos Base */
-    :root {
-        --ig-gold: #b8922a;
-        --ig-bordeaux: #6E0E2E;
-        --ig-dark: #1a1612;
-        --ig-light-gold: #fdfaf0;
-    }
+  /* ── VARIABLES ── */
+  :root {
+    --gold: #b8922a;
+    --gold-soft: #c9a84c;
+    --gold-pale: #f7f0e0;
+    --gold-faint: #faf7f0;
+    --burgundy: #6E0E2E;
+    --dark: #1a1612;
+    --dark-mid: #2e2720;
+    --text: #3d342a;
+    --muted: #9c8c7c;
+    --border: #e8dfd4;
+    --border-faint: rgba(184,146,42,0.12);
+  }
 
-    .page-title {
-        font-family: 'Cormorant Garamond', serif;
-        font-size: 2.5rem;
-        color: var(--ig-dark);
-    }
+  /* ── MAIN CONTAINER ── */
+  .gestion-main {
+    min-height: calc(100vh - 60px);
+    display: flex;
+    flex-direction: column;
+    padding: 3.5rem 4rem 5rem;
+    width: 100%;
+    max-width: 1100px;
+    margin-left: 20%;
+    margin-right: auto;
+  }
 
-    /* Botón Volver Estilizado */
-    .btn-back-circle {
-        width: 40px;
-        height: 40px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 50%;
-        background: #fff;
-        border: 1px solid #eee;
-        color: var(--ig-dark);
-        transition: all 0.3s ease;
-        text-decoration: none;
-    }
+  /* ── BACK LINK ── */
+  .back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    text-decoration: none;
+    margin-bottom: 1.5rem;
+    transition: all 0.2s ease;
+  }
 
-    .btn-back-circle:hover {
-        border-color: var(--ig-gold);
-        color: var(--ig-gold);
-        transform: translateX(-3px);
-    }
+  .back-link:hover {
+    color: var(--gold);
+    transform: translateX(-4px);
+  }
 
-    /* Botón Agregar Nuevo */
-    .btn-ig-gold {
-        background: linear-gradient(135deg, var(--ig-dark) 0%, #333 100%);
-        color: #fff;
-        font-family: 'Montserrat', sans-serif;
-        font-weight: 600;
-        font-size: 0.9rem;
-        border-radius: 50px;
-        padding: 12px 28px;
-        border: none;
-        transition: all 0.3s ease;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-    }
+  .back-link i {
+    font-size: 0.9rem;
+    transition: transform 0.2s ease;
+  }
 
-    .btn-ig-gold:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(0,0,0,0.15);
-        color: var(--ig-gold);
-    }
+  .back-link:hover i {
+    transform: translateX(-3px);
+  }
 
-    /* Tarjetas de Producto Boutique */
-    .product-card-luxury {
-        background: #fff;
-        border: 1px solid #f0f0f0;
-        border-radius: 20px;
-        transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
-        overflow: hidden;
-        height: 100%;
-        display: flex;
-        flex-direction: column;
-    }
+  /* ── PAGE HEADER ── */
+  .page-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    margin-bottom: 3rem;
+    padding-bottom: 1.75rem;
+    border-bottom: 1px solid var(--border-faint);
+    position: relative;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+  }
 
-    .product-card-luxury:hover {
-        transform: translateY(-10px);
-        box-shadow: 0 20px 40px rgba(184, 146, 42, 0.1) !important;
-        border-color: var(--ig-gold);
-    }
+  .page-header::after {
+    content: '';
+    position: absolute;
+    bottom: -1px; left: 0;
+    width: 64px; height: 2px;
+    background: var(--gold);
+  }
 
-    .image-container-ig {
-        height: 300px;
-        background: #fafafa;
-        position: relative;
-        padding: 20px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
+  .header-eyebrow {
+    font-size: 0.62rem;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 0.5rem;
+  }
 
-    .image-container-ig img {
-        max-width: 100%;
-        max-height: 100%;
-        object-fit: contain;
-        transition: transform 0.5s ease;
-    }
+  .page-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(2rem, 4vw, 3rem);
+    font-weight: 600;
+    color: var(--dark);
+    letter-spacing: -0.01em;
+    line-height: 1;
+  }
 
-    .product-card-luxury:hover .image-container-ig img {
-        transform: scale(1.05);
-    }
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+    flex-shrink: 0;
+  }
 
-    /* Badges de Estado Premium */
-    .status-badge-ig {
-        position: absolute;
-        top: 15px;
-        right: 15px;
-        padding: 6px 14px;
-        border-radius: 50px;
-        font-size: 0.7rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        z-index: 5;
-    }
+  .item-count-box {
+    text-align: right;
+  }
 
-    .badge-active { background: rgba(25, 135, 84, 0.1); color: #198754; border: 1px solid #198754; }
-    .badge-inactive { background: rgba(220, 53, 69, 0.1); color: #dc3545; border: 1px solid #dc3545; }
+  .item-count {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 3.2rem;
+    font-weight: 300;
+    color: var(--gold);
+    line-height: 1;
+  }
 
-    /* Cuerpo de la Tarjeta */
-    .card-content-ig {
-        padding: 20px;
-        flex-grow: 1;
-        display: flex;
-        flex-direction: column;
-        font-family: 'Montserrat', sans-serif;
-       
-    }
+  .item-count-label {
+    font-size: 0.6rem;
+    font-weight: 500;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
 
-    .product-sku {
-        font-size: 0.75rem;
-        color: #8c7e70;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        margin-bottom: 5px;
-    }
+  /* ── ADD BUTTON ── */
+  .btn-add-product {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.85rem 1.8rem;
+    background: var(--dark);
+    color: #fff;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    border: none;
+    border-radius: 50px;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
 
-    .product-name-ig {
-        font-family: 'Cormorant Garamond', serif;
-        font-size: 1.4rem;
-        font-weight: 700;
-        color: var(--ig-dark);
-        margin-bottom: 15px;
-        line-height: 1.2;
-    }
+  .btn-add-product:hover {
+    background: var(--gold);
+    color: #fff;
+    transform: translateY(-2px);
+  }
 
-    .price-tag-ig {
-        font-size: 1.3rem;
-        font-weight: 700;
-        color: var(--ig-bordeaux);
-    }
+  .btn-add-product i {
+    font-size: 1rem;
+  }
 
-    .view-detail-link {
-        font-size: 0.85rem;
-        color: var(--ig-gold);
-        font-weight: 600;
-        text-decoration: none;
-        border-bottom: 1px solid transparent;
-        transition: 0.3s;
-    }
+  /* ── PRODUCT GRID ── */
+  .products-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.5rem;
+  }
 
-    .view-detail-link:hover {
-        border-bottom-color: var(--ig-gold);
-    }
+  /* ── PRODUCT CARD ── */
+  .product-card {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
+  }
+
+  .product-card:hover {
+    transform: translateY(-6px);
+    border-color: var(--gold);
+    box-shadow: 0 16px 40px rgba(184, 146, 42, 0.12);
+  }
+
+  .product-image {
+    height: 240px;
+    background: var(--gold-faint);
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  .product-image img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    transition: transform 0.4s ease;
+  }
+
+  .product-card:hover .product-image img {
+    transform: scale(1.05);
+  }
+
+  .product-image-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--border);
+  }
+
+  .product-image-placeholder i {
+    font-size: 2.5rem;
+  }
+
+  .product-image-placeholder span {
+    font-size: 0.75rem;
+    color: var(--muted);
+  }
+
+  /* ── STATUS BADGE ── */
+  .status-badge {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    padding: 0.35rem 0.85rem;
+    border-radius: 50px;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.65rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .status-badge.active {
+    background: rgba(25, 135, 84, 0.1);
+    color: #198754;
+    border: 1px solid rgba(25, 135, 84, 0.3);
+  }
+
+  .status-badge.inactive {
+    background: rgba(220, 53, 69, 0.1);
+    color: #dc3545;
+    border: 1px solid rgba(220, 53, 69, 0.3);
+  }
+
+  /* ── PRODUCT INFO ── */
+  .product-info {
+    padding: 1.25rem;
+  }
+
+  .product-sku {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.68rem;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 0.35rem;
+  }
+
+  .product-name {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.35rem;
+    font-weight: 600;
+    color: var(--dark);
+    line-height: 1.2;
+    margin-bottom: 1rem;
+  }
+
+  .product-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-faint);
+  }
+
+  .product-price {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--burgundy);
+  }
+
+  .product-link {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--gold);
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    transition: gap 0.2s ease;
+  }
+
+  .product-card:hover .product-link {
+    gap: 0.5rem;
+  }
+
+  /* ── EMPTY STATE ── */
+  .empty-state {
+    text-align: center;
+    padding: 5rem 2rem;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+  }
+
+  .empty-state i {
+    font-size: 4rem;
+    color: var(--border);
+    margin-bottom: 1.5rem;
+  }
+
+  .empty-state h3 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 2rem;
+    font-weight: 600;
+    color: var(--dark);
+    margin-bottom: 0.75rem;
+  }
+
+  .empty-state p {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.9rem;
+    color: var(--muted);
+    max-width: 400px;
+    margin: 0 auto 2rem;
+    line-height: 1.6;
+  }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid py-5 px-lg-5">
-    
-    <!-- Encabezado con Jerarquía -->
-    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-5 gap-3">
-        <div class="d-flex align-items-center">
-            <a href="{% url 'productos:gestion_subcategorias' subcategoria.categoria.id %}" class="btn-back-circle me-3">
-                <i class="bi bi-arrow-left fs-5"></i>
-            </a>
-            <div>
-                <span class="text-muted small text-uppercase fw-bold letter-spacing-1">Catálogo Indira Gold</span>
-                <h1 class="page-title mb-0">Productos de <span style="color: var(--ig-gold);">{{ subcategoria.nombre }}</span></h1>
-            </div>
-        </div>
+<div class="gestion-main">
 
-        <a href="{% url 'productos:agregar_producto' subcategoria.id %}" class="btn btn-ig-gold d-inline-flex align-items-center">
-            <i class="bi bi-plus-lg me-2"></i>
-            Agregar Nuevo Producto
-        </a>
+  <!-- Back link -->
+  <a href="{% url 'productos:gestion_subcategorias' subcategoria.categoria.id %}" class="back-link">
+    <i class="bi bi-arrow-left"></i>
+    Volver a subcategorías
+  </a>
+
+  <!-- Header -->
+  <div class="page-header">
+    <div class="header-left">
+      <p class="header-eyebrow">{{ subcategoria.categoria.nombre }} / {{ subcategoria.nombre }}</p>
+      <h1 class="page-title">Productos</h1>
     </div>
+    <div class="header-right">
+      <div class="item-count-box">
+        <div class="item-count">{{ productos|length|stringformat:"02d" }}</div>
+        <div class="item-count-label">productos</div>
+      </div>
+      <a href="{% url 'productos:agregar_producto' subcategoria.id %}" class="btn-add-product">
+        <i class="bi bi-plus-lg"></i>
+        Agregar producto
+      </a>
+    </div>
+  </div>
 
-    <!-- Grilla de Productos -->
-    {% if productos %}
-        <div class="row g-4">
-            {% for producto in productos %}
-                <div class="col-12 col-md-6 col-xl-4">
-                    <div class="product-card-luxury shadow-sm" onclick="abrirPreviewAdmin('{{ producto.id }}')">
-                        
-                        <!-- Contenedor de Imagen y Badge -->
-                        <div class="image-container-ig">
-                            <div class="status-badge-ig {% if producto.activo %}badge-active{% else %}badge-inactive{% endif %}">
-                                {% if producto.activo %}Activo{% else %}Inactivo{% endif %}
-                            </div>
-                            
-                            {% if producto.imagenes.all %}
-                                <img src="{{ producto.imagenes.all.0.imagen.url }}" alt="{{ producto.nombre }}">
-                            {% else %}
-                                <div class="text-muted d-flex flex-column align-items-center">
-                                    <i class="bi bi-image fs-1 opacity-25"></i>
-                                    <span class="small">Sin imagen</span>
-                                </div>
-                            {% endif %}
-                        </div>
-
-                        <!-- Información del Producto -->
-                        <div class="card-content-ig">
-                            <span class="product-sku">{{ producto.codigo }}</span>
-                            <h3 class="product-name-ig">{{ producto.nombre }}</h3>
-                            
-                            <div class="mt-auto pt-3 border-top d-flex justify-content-between align-items-center">
-                                <span class="price-tag-ig">$ {{ producto.precio }}</span>
-                                <span class="view-detail-link">Ver detalle <i class="bi bi-chevron-right ms-1"></i></span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            {% endfor %}
+  <!-- Products Grid -->
+  {% if productos %}
+  <div class="products-grid">
+    {% for producto in productos %}
+    <div class="product-card" onclick="abrirPreviewAdmin('{{ producto.id }}')">
+      <div class="product-image">
+        <span class="status-badge {% if producto.activo %}active{% else %}inactive{% endif %}">
+          {% if producto.activo %}Activo{% else %}Inactivo{% endif %}
+        </span>
+        {% if producto.imagenes.all %}
+          <img src="{{ producto.imagenes.all.0.imagen.url }}" alt="{{ producto.nombre }}">
+        {% else %}
+          <div class="product-image-placeholder">
+            <i class="bi bi-image"></i>
+            <span>Sin imagen</span>
+          </div>
+        {% endif %}
+      </div>
+      <div class="product-info">
+        <span class="product-sku">{{ producto.codigo }}</span>
+        <h3 class="product-name">{{ producto.nombre }}</h3>
+        <div class="product-footer">
+          <span class="product-price">$ {{ producto.precio }}</span>
+          <span class="product-link">Ver detalle <i class="bi bi-chevron-right"></i></span>
         </div>
-    {% else %}
-        <!-- Estado Vacío Refinado -->
-        <div class="text-center py-5 bg-white rounded-4 border mt-5 shadow-sm">
-            <div class="mb-4">
-                <i class="bi bi-archive text-light-gold" style="font-size: 5rem; color: #f0e6cc;"></i>
-            </div>
-            <h4 class="text-dark fw-bold mb-2" style="font-family: 'Cormorant Garamond'; font-size: 2rem;">No hay productos cargados</h4>
-            <p class="text-muted mx-auto" style="max-width: 400px;">Aún no se han creado fichas técnicas en la categoría {{ subcategoria.nombre }}. Comience agregando su primer diseño.</p>
-            <a href="{% url 'productos:agregar_producto' subcategoria.id %}" class="btn btn-ig-gold mt-3">
-                Crear Primera Ficha
-            </a>
-        </div>
-    {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <i class="bi bi-archive"></i>
+    <h3>No hay productos cargados</h3>
+    <p>Aún no se han creado fichas técnicas en {{ subcategoria.nombre }}. Comenzá agregando tu primer diseño.</p>
+    <a href="{% url 'productos:agregar_producto' subcategoria.id %}" class="btn-add-product">
+      <i class="bi bi-plus-lg"></i>
+      Crear primer producto
+    </a>
+  </div>
+  {% endif %}
 
 </div>
 
 {% include 'productos/_modal_preview_admin.html' %}
 
-<!-- Scripts de Funcionalidad[cite: 8] -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    async function abrirPreviewAdmin(productoId) {
-        try {
-            const modalElement = document.getElementById('modalPreviewAdmin');
-            if (!modalElement) return;
-            const myModal = new bootstrap.Modal(modalElement);
-            
-            const response = await fetch(`/productos/ajax/detalle-producto/${productoId}/`);
-            if (!response.ok) throw new Error(`Error: ${response.status}`);
-            
-            const data = await response.json();
+  async function abrirPreviewAdmin(productoId) {
+    try {
+      const modalElement = document.getElementById('modalPreviewAdmin');
+      if (!modalElement) return;
+      const myModal = new bootstrap.Modal(modalElement);
 
-            // Carga de datos básica
-            document.getElementById('previewNombre').textContent = data.nombre;
-            document.getElementById('previewCodigo').textContent = data.codigo;
-            document.getElementById('previewPrecio').textContent = data.precio;
-            document.getElementById('previewTipo').textContent = data.tipo;
-            document.getElementById('previewStock').textContent = data.stock;
-            
-            const statusDiv = document.getElementById('previewStatus');
-            statusDiv.innerHTML = data.activo 
-                ? '<span class="badge bg-success-subtle text-success border border-success px-3 py-2" style="border-radius: 50px;">Activo (Visible)</span>'
-                : '<span class="badge bg-danger-subtle text-danger border border-danger px-3 py-2" style="border-radius: 50px;">Inactivo (Oculto)</span>';
+      const response = await fetch(`/productos/ajax/detalle-producto/${productoId}/`);
+      if (!response.ok) throw new Error(`Error: ${response.status}`);
 
-            // Galería
-            const imgPrincipal = document.getElementById('imgPrincipalPreview');
-            const thumbContainer = document.getElementById('containerThumbsPreview');
-            thumbContainer.innerHTML = ''; 
+      const data = await response.json();
 
-            if (data.imagenes && data.imagenes.length > 0) {
-                imgPrincipal.src = data.imagenes[0].url;
-                data.imagenes.forEach((img, index) => {
-                    const thumb = document.createElement('img');
-                    thumb.src = img.url;
-                    thumb.className = `thumb-preview ${index === 0 ? 'active' : ''}`;
-                    thumb.onclick = () => {
-                        imgPrincipal.src = img.url;
-                        document.querySelectorAll('.thumb-preview').forEach(t => t.classList.remove('active'));
-                        thumb.classList.add('active');
-                    };
-                    thumbContainer.appendChild(thumb);
-                });
-            }
+      document.getElementById('previewNombre').textContent = data.nombre;
+      document.getElementById('previewCodigo').textContent = data.codigo;
+      document.getElementById('previewPrecio').textContent = data.precio;
+      document.getElementById('previewTipo').textContent = data.tipo;
+      document.getElementById('previewStock').textContent = data.stock;
 
-            document.getElementById('containerFichaTecnicaInject').innerHTML = data.ficha_tecnica_html;
-            document.getElementById('btnVerPublico').href = data.url_publico;
-            document.getElementById('btnEditarAdmin').href = data.url_editar;
-            document.getElementById('formEliminarAdmin').action = data.url_eliminar;
+      const statusDiv = document.getElementById('previewStatus');
+      statusDiv.innerHTML = data.activo
+        ? '<span class="badge bg-success-subtle text-success border border-success px-3 py-2" style="border-radius: 50px;">Activo</span>'
+        : '<span class="badge bg-danger-subtle text-danger border border-danger px-3 py-2" style="border-radius: 50px;">Inactivo</span>';
 
-            myModal.show();
-        } catch (error) {
-            console.error(error);
-        }
+      const imgPrincipal = document.getElementById('imgPrincipalPreview');
+      const thumbContainer = document.getElementById('containerThumbsPreview');
+      thumbContainer.innerHTML = '';
+
+      if (data.imagenes && data.imagenes.length > 0) {
+        imgPrincipal.src = data.imagenes[0].url;
+        data.imagenes.forEach((img, index) => {
+          const thumb = document.createElement('img');
+          thumb.src = img.url;
+          thumb.className = `thumb-preview ${index === 0 ? 'active' : ''}`;
+          thumb.onclick = () => {
+            imgPrincipal.src = img.url;
+            document.querySelectorAll('.thumb-preview').forEach(t => t.classList.remove('active'));
+            thumb.classList.add('active');
+          };
+          thumbContainer.appendChild(thumb);
+        });
+      }
+
+      document.getElementById('containerFichaTecnicaInject').innerHTML = data.ficha_tecnica_html;
+      document.getElementById('btnVerPublico').href = data.url_publico;
+      document.getElementById('btnEditarAdmin').href = data.url_editar;
+      document.getElementById('formEliminarAdmin').action = data.url_eliminar;
+
+      myModal.show();
+    } catch (error) {
+      console.error(error);
     }
+  }
 </script>
 {% endblock %}

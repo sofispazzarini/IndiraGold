@@ -42,7 +42,31 @@ def dashboard_cliente(request):
 @login_required
 @user_passes_test(lambda u: u.is_superuser)
 def dashboard_admin(request):
-    return render(request, 'users/dashboard_admin.html')
+    from productos.models import Categoria, Producto
+    from pedidos.models import Pedido
+
+    total_clientes = Cliente.objects.count()
+    total_categorias = Categoria.objects.count()
+    total_productos = Producto.objects.count()
+    pedidos_activos = Pedido.objects.exclude(estado__in=['entregado', 'cancelado', 'vencido']).count()
+
+    # Pedidos por estado
+    pedidos_pendientes = Pedido.objects.filter(estado='pendiente').count()
+    pedidos_aceptados = Pedido.objects.filter(estado='aceptado').count()
+    pedidos_en_preparacion = Pedido.objects.filter(estado='en_preparacion').count()
+    pedidos_enviados = Pedido.objects.filter(estado='enviado').count()
+
+    context = {
+        'total_clientes': total_clientes,
+        'total_categorias': total_categorias,
+        'total_productos': total_productos,
+        'pedidos_activos': pedidos_activos,
+        'pedidos_pendientes': pedidos_pendientes,
+        'pedidos_aceptados': pedidos_aceptados,
+        'pedidos_en_preparacion': pedidos_en_preparacion,
+        'pedidos_enviados': pedidos_enviados,
+    }
+    return render(request, 'users/dashboard_admin.html', context)
 # Vista para listado y búsqueda de clientes (solo admin)
 @login_required
 @user_passes_test(lambda u: u.is_superuser)

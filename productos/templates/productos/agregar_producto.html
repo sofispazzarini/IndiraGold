@@ -220,15 +220,30 @@
         // Guardar Variante Completa
         document.getElementById('formVarianteInternal').onsubmit = (e) => {
             e.preventDefault();
-            let talle = document.getElementById('inputTalleLibre').value;
-            if(talle) {
-                variantes.push({ talle, colores: [...tempColores], medidas: [...tempMedidas], stock: 0, precio: 0 });
-                actualizarUI();
-                bootstrap.Modal.getInstance(document.getElementById('modalVariante')).hide();
-                // Reset
-                tempColores = []; tempMedidas = [];
-                e.target.reset();
-                renderTempColores(); renderTempMedidas();
+            console.log('Guardando variante...');
+            try {
+                let talle = document.getElementById('inputTalleLibre').value;
+                if(talle) {
+                    variantes.push({ talle, colores: [...tempColores], medidas: [...tempMedidas], stock: 0, precio: 0 });
+                    console.log('Variante agregada:', variantes);
+                    actualizarUI();
+                    console.log('UI actualizada');
+                    let modalEl = document.getElementById('modalVariante');
+                    let modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+                    modal.hide();
+                    // Forzar cierre del backdrop
+                    document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+                    document.body.classList.remove('modal-open');
+                    document.body.style.overflow = '';
+                    console.log('Modal cerrado');
+                    // Reset
+                    tempColores = []; tempMedidas = [];
+                    e.target.reset();
+                    renderTempColores(); renderTempMedidas();
+                }
+            } catch(err) {
+                console.error('Error al guardar variante:', err);
+                alert('Error: ' + err.message);
             }
         };
     });

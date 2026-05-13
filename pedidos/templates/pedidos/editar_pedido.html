@@ -1,159 +1,334 @@
 {% extends 'users/dashboard_admin.html' %}
 {% load static %}
 
+{% block extra_head %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+<link rel="stylesheet" href="{% static 'css/users.css' %}">
+<style>
+    .edit-wrapper {
+        min-height: calc(100vh - 60px);
+        padding: 2rem;
+    }
+    .edit-header {
+        max-width: 1100px;
+        margin: 0 auto 2rem auto;
+        margin-left: 15%;
+    }
+    .edit-content {
+        max-width: 1100px;
+        margin: 0 auto;
+        margin-left: 15%;
+    }
+    .ig-card {
+        background: #fff;
+        border-radius: 18px;
+        box-shadow: 0 4px 32px rgba(184,146,42,0.10);
+        overflow: hidden;
+    }
+    .ig-card-header {
+        background: #f8f5ef;
+        padding: 1.2rem 1.5rem;
+        border-bottom: 2px solid #f3e7c6;
+    }
+    .ig-card-header h5 {
+        color: #b8922a;
+        font-weight: 700;
+        margin: 0;
+        font-size: 1.1rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+    .ig-card-body {
+        padding: 1.5rem;
+    }
+    .table thead th {
+        background: #f8f5ef;
+        color: #b8922a;
+        font-weight: 700;
+        border-top: none;
+        border-bottom: 2px solid #f3e7c6;
+        letter-spacing: 1px;
+        vertical-align: middle;
+        font-size: 0.9rem;
+    }
+    .table tbody tr {
+        transition: background 0.18s;
+    }
+    .table tbody tr:hover {
+        background: #fdf6e3;
+    }
+    .back-btn {
+        font-size: 1.1rem;
+        border: none;
+        padding: 6px 22px 6px 14px;
+        background: #f8f5ef;
+        color: #b8922a;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px #e8c96a22;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: background 0.18s, color 0.18s;
+    }
+    .back-btn:hover {
+        background: #b8922a;
+        color: #fff;
+    }
+    .badge-id {
+        background: linear-gradient(90deg, #fbe18b 0%, #b8922a 100%);
+        color: #6E0E2E;
+        font-weight: 700;
+        padding: 0.5rem 1rem;
+        border-radius: 10px;
+        font-size: 1.1rem;
+    }
+    .modern-input, .modern-select {
+        border: 1.2px solid #cbd5e1;
+        border-radius: 7px;
+        padding: 0.5rem 0.8rem;
+        font-size: 0.95rem;
+        background: #f9fafb;
+        transition: border-color 0.18s, box-shadow 0.18s;
+    }
+    .modern-input:focus, .modern-select:focus {
+        border-color: #b8922a;
+        background: #fff;
+        box-shadow: 0 0 0 2px #e8c96a33;
+        outline: none;
+    }
+    .modern-textarea {
+        border: 1.2px solid #cbd5e1;
+        border-radius: 7px;
+        padding: 0.7rem 1rem;
+        font-size: 1rem;
+        background: #f9fafb;
+        transition: border-color 0.18s, box-shadow 0.18s;
+        width: 100%;
+    }
+    .modern-textarea:focus {
+        border-color: #b8922a;
+        background: #fff;
+        box-shadow: 0 0 0 2px #e8c96a33;
+        outline: none;
+    }
+    .summary-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.8rem 0;
+        border-bottom: 1px solid #f3e7c6;
+    }
+    .summary-item:last-child {
+        border-bottom: none;
+    }
+    .summary-label {
+        color: #6c757d;
+    }
+    .summary-value {
+        font-weight: 700;
+        color: #2d3848;
+    }
+    .summary-total {
+        font-size: 1.5rem;
+        color: #6E0E2E;
+    }
+    .modern-btn {
+        background: linear-gradient(90deg, #fbe18b 0%, #b8922a 100%);
+        color: #6E0E2E;
+        border: none;
+        border-radius: 10px;
+        padding: 1rem 2rem;
+        font-size: 1.1rem;
+        font-weight: 700;
+        letter-spacing: 1px;
+        box-shadow: 0 2px 8px 0 rgba(184,146,42,0.10);
+        cursor: pointer;
+        transition: background 0.18s, box-shadow 0.18s, color 0.18s;
+        width: 100%;
+    }
+    .modern-btn:hover {
+        background: linear-gradient(90deg, #b8922a 0%, #fbe18b 100%);
+        color: #fff;
+        box-shadow: 0 4px 16px 0 rgba(184,146,42,0.18);
+    }
+    .delete-check {
+        accent-color: #6E0E2E;
+    }
+    .add-item-section {
+        background: #fdf6e3;
+        border-top: 2px solid #f3e7c6;
+        padding: 1.5rem;
+    }
+    .add-item-section h6 {
+        color: #b8922a;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 1rem;
+    }
+    @media (max-width: 900px) {
+        .edit-header, .edit-content {
+            margin-left: auto;
+            margin-right: auto;
+            padding: 0 1rem;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="container-fluid px-4">
-    <div class="d-flex justify-content-between align-items-center mb-4 mt-3">
-        <div>
-            <h2 class="mb-1 fw-bold">Editar pedido #{{ pedido.id }}</h2>
-            <p class="text-muted mb-0">Cliente: <strong>{{ pedido.cliente.user.username }}</strong></p>
-        </div>
-        <div class="d-flex gap-2">
-            <a href="{% url 'pedidos:detalle_pedido' pedido.id %}" class="btn btn-outline-secondary">Cancelar</a>
+<div class="edit-wrapper">
+    <div class="edit-header">
+        <a href="{% url 'pedidos:detalle_pedido' pedido.id %}" class="back-btn mb-4">
+            <i class="bi bi-arrow-left"></i> Cancelar
+        </a>
+        <div class="d-flex justify-content-between align-items-center mt-3">
+            <div>
+                <h2 class="display-6 fw-bold mb-1" style="font-family: 'Cormorant Garamond'; color: var(--dark-ig);">
+                    Editar Pedido <span class="badge-id">#{{ pedido.id }}</span>
+                </h2>
+                <p class="text-muted mb-0">
+                    <i class="bi bi-person me-1"></i> Cliente: <strong>{{ pedido.cliente.user.username }}</strong>
+                </p>
+            </div>
         </div>
     </div>
 
-    <div class="alert alert-warning" role="alert">
-        <i class="bi bi-exclamation-triangle"></i>
-        <strong>Estado actual:</strong> {{ pedido.get_estado_display }}
-        {% if pedido.estado in estados_no_editables %}
-            <br><span class="small text-danger">Este pedido no puede ser editado en su estado actual.</span>
-        {% endif %}
-    </div>
+    <div class="edit-content">
+        <div class="alert rounded-3 mb-4" style="background: #fff3cd; border: none; border-left: 4px solid #b8922a;">
+            <i class="bi bi-exclamation-triangle me-2" style="color: #b8922a;"></i>
+            <strong>Estado actual:</strong> {{ pedido.get_estado_display }}
+            {% if pedido.estado in estados_no_editables %}
+                <br><span class="small text-danger"><i class="bi bi-x-circle me-1"></i>Este pedido no puede ser editado en su estado actual.</span>
+            {% endif %}
+        </div>
 
-    <form method="post" class="row g-4">
-        {% csrf_token %}
+        <form method="post" class="row g-4">
+            {% csrf_token %}
 
-        <!-- ÍTEMS DEL PEDIDO -->
-        <div class="col-lg-8">
-            <div class="card border-0 shadow-sm">
-                <div class="card-header bg-white border-0">
-                    <h5 class="mb-0">Ítems del pedido</h5>
-                </div>
-                <div class="table-responsive">
-                    <table class="table mb-0 align-middle">
-                        <thead>
-                            <tr>
-                                <th>Producto</th>
-                                <th>Variante</th>
-                                <th>Cantidad</th>
-                                <th>P. Unitario</th>
-                                <th>Subtotal</th>
-                                <th>Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for item in items %}
+            <div class="col-lg-8">
+                <div class="ig-card">
+                    <div class="ig-card-header">
+                        <h5><i class="bi bi-box-seam me-2"></i>Ítems del pedido</h5>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table mb-0 align-middle">
+                            <thead>
                                 <tr>
-                                    <td>
-                                        <strong>{{ item.variante.producto.nombre }}</strong>
-                                        <div class="text-muted small">Código: {{ item.variante.producto.codigo }}</div>
-                                    </td>
-                                    <td>
-                                        Talle {{ item.variante.talle.nombre }}
-                                        {% with colores=item.variante.colores.all %}
-                                            {% if colores %}
-                                                <div class="text-muted small">
-                                                    {{ colores|join:", " }}
-                                                </div>
-                                            {% endif %}
-                                        {% endwith %}
-                                    </td>
-                                    <td>
-                                        <input type="number" name="cantidad_{{ item.id }}" value="{{ item.cantidad }}" min="1" class="form-control form-control-sm" style="width: 80px;">
-                                    </td>
-                                    <td>${{ item.precio_unitario }}</td>
-                                    <td><strong>${{ item.precio_total }}</strong></td>
-                                    <td>
-                                        <label class="form-check">
-                                            <input type="checkbox" name="eliminar_item" value="{{ item.id }}" class="form-check-input">
-                                            <span class="text-danger small fw-bold">Eliminar</span>
-                                        </label>
-                                    </td>
+                                    <th>Producto</th>
+                                    <th>Variante</th>
+                                    <th>Cantidad</th>
+                                    <th>P. Unitario</th>
+                                    <th>Subtotal</th>
+                                    <th>Eliminar</th>
                                 </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-
-                <!-- AGREGAR NUEVO ITEM -->
-                <div class="card-body border-top">
-                    <h6 class="mb-3">Agregar nuevo item</h6>
-                    <div class="row">
-                        <div class="col-md-6">
-                            <label for="nueva_variante" class="form-label">Variante:</label>
-                            <select name="nueva_variante_id" id="nueva_variante" class="form-select">
-                                <option value="">-- Seleccionar --</option>
-                                {% for variante in variantes_disponibles %}
-                                    <option value="{{ variante.id }}">
-                                        {{ variante.producto.nombre }} - Talle {{ variante.talle.nombre }} - ${{ variante.precio }}
-                                    </option>
+                            </thead>
+                            <tbody>
+                                {% for item in items %}
+                                    <tr>
+                                        <td>
+                                            <strong style="color: #2d3848;">{{ item.variante.producto.nombre }}</strong>
+                                            <div class="text-muted small">Código: {{ item.variante.producto.codigo }}</div>
+                                        </td>
+                                        <td>
+                                            <span class="badge" style="background: #f8f5ef; color: #b8922a;">Talle {{ item.variante.talle.nombre }}</span>
+                                            {% with colores=item.variante.colores.all %}
+                                                {% if colores %}
+                                                    <div class="text-muted small mt-1">
+                                                        {{ colores|join:", " }}
+                                                    </div>
+                                                {% endif %}
+                                            {% endwith %}
+                                        </td>
+                                        <td>
+                                            <input type="number" name="cantidad_{{ item.id }}" value="{{ item.cantidad }}" min="1" class="modern-input" style="width: 80px;">
+                                        </td>
+                                        <td>${{ item.precio_unitario }}</td>
+                                        <td><strong style="color: #6E0E2E;">${{ item.precio_total }}</strong></td>
+                                        <td class="text-center">
+                                            <label class="d-flex align-items-center gap-2" style="cursor: pointer;">
+                                                <input type="checkbox" name="eliminar_item" value="{{ item.id }}" class="delete-check" style="width: 18px; height: 18px;">
+                                                <span class="text-danger small fw-bold"><i class="bi bi-trash"></i></span>
+                                            </label>
+                                        </td>
+                                    </tr>
                                 {% endfor %}
-                            </select>
-                        </div>
-                        <div class="col-md-6">
-                            <label for="nueva_cantidad" class="form-label">Cantidad:</label>
-                            <input type="number" name="nueva_cantidad" id="nueva_cantidad" min="1" value="1" class="form-control">
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="add-item-section">
+                        <h6><i class="bi bi-plus-circle me-2"></i>Agregar nuevo ítem</h6>
+                        <div class="row g-3">
+                            <div class="col-md-7">
+                                <label for="nueva_variante" class="form-label small fw-bold" style="color: #4a5568;">Variante:</label>
+                                <select name="nueva_variante_id" id="nueva_variante" class="modern-select w-100">
+                                    <option value="">-- Seleccionar producto --</option>
+                                    {% for variante in variantes_disponibles %}
+                                        <option value="{{ variante.id }}">
+                                            {{ variante.producto.nombre }} - Talle {{ variante.talle.nombre }} - ${{ variante.precio }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-5">
+                                <label for="nueva_cantidad" class="form-label small fw-bold" style="color: #4a5568;">Cantidad:</label>
+                                <input type="number" name="nueva_cantidad" id="nueva_cantidad" min="1" value="1" class="modern-input w-100">
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <!-- RESUMEN Y CONFIGURACIÓN -->
-        <div class="col-lg-4">
-            <!-- ESTADO -->
-            <div class="card border-0 shadow-sm mb-4">
-                <div class="card-header bg-white border-0">
-                    <h5 class="mb-0">Estado</h5>
+            <div class="col-lg-4">
+                <div class="ig-card mb-4">
+                    <div class="ig-card-header">
+                        <h5><i class="bi bi-clock-history me-2"></i>Estado</h5>
+                    </div>
+                    <div class="ig-card-body">
+                        <select name="estado" class="modern-select w-100">
+                            {% for value, label in pedido.ESTADOS %}
+                                <option value="{{ value }}" {% if pedido.estado == value %}selected{% endif %}>
+                                    {{ label }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
                 </div>
-                <div class="card-body">
-                    <select name="estado" class="form-select">
-                        {% for value, label in pedido.ESTADOS %}
-                            <option value="{{ value }}" {% if pedido.estado == value %}selected{% endif %}>
-                                {{ label }}
-                            </option>
-                        {% endfor %}
-                    </select>
+
+                <div class="ig-card mb-4">
+                    <div class="ig-card-header">
+                        <h5><i class="bi bi-geo-alt me-2"></i>Dirección de envío</h5>
+                    </div>
+                    <div class="ig-card-body">
+                        <textarea name="direccion_info" class="modern-textarea" rows="4" placeholder="Calle, número, ciudad, provincia, CP">{{ pedido.direccion_info }}</textarea>
+                    </div>
+                </div>
+
+                <div class="ig-card">
+                    <div class="ig-card-header">
+                        <h5><i class="bi bi-receipt me-2"></i>Resumen</h5>
+                    </div>
+                    <div class="ig-card-body">
+                        <div class="summary-item">
+                            <span class="summary-label">Total ítems</span>
+                            <span class="summary-value">{{ items.count }}</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="summary-label">Total</span>
+                            <span class="summary-value summary-total">${{ pedido.total }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-4">
+                    <button type="submit" class="modern-btn">
+                        <i class="bi bi-check-circle me-2"></i> GUARDAR CAMBIOS
+                    </button>
                 </div>
             </div>
-
-            <!-- DIRECCIÓN -->
-            <div class="card border-0 shadow-sm mb-4">
-                <div class="card-header bg-white border-0">
-                    <h5 class="mb-0">Dirección de envío</h5>
-                </div>
-                <div class="card-body">
-                    <textarea name="direccion_info" class="form-control" rows="4" placeholder="Calle, número, ciudad, provincia, CP">{{ pedido.direccion_info }}</textarea>
-                </div>
-            </div>
-
-            <!-- RESUMEN TOTAL -->
-            <div class="card border-0 shadow-sm">
-                <div class="card-header bg-white border-0">
-                    <h5 class="mb-0">Resumen</h5>
-                </div>
-                <div class="card-body">
-                    <ul class="list-group list-group-flush">
-                        <li class="list-group-item d-flex justify-content-between px-0">
-                            <span>Total items</span>
-                            <strong>{{ items.count }}</strong>
-                        </li>
-                        <li class="list-group-item d-flex justify-content-between px-0">
-                            <span>Total</span>
-                            <strong style="font-size: 1.5rem; color: #6E0E2E;">${{ pedido.total }}</strong>
-                        </li>
-                    </ul>
-                </div>
-            </div>
-
-            <!-- BOTONES -->
-            <div class="d-grid gap-2 mt-4">
-                <button type="submit" class="btn btn-primary btn-lg">
-                    <i class="bi bi-check-circle"></i> Guardar cambios
-                </button>
-            </div>
-        </div>
-    </form>
+        </form>
+    </div>
 </div>
 {% endblock %}

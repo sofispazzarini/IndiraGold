@@ -31,6 +31,52 @@
   </div>
 </section>
 
+<!-- CARROUSEL PRINCIPAL -->
+{% if slides_carrousel %}
+<section class="main-carousel" aria-label="Carrousel principal">
+  <div class="carousel-container">
+    <div class="carousel-track" id="carouselTrack">
+      {% for slide in slides_carrousel %}
+      <div class="carousel-slide {% if forloop.first %}active{% endif %}">
+        {% if slide.link %}
+        <a href="{{ slide.link }}" class="carousel-link">
+        {% endif %}
+          <img src="{{ slide.imagen.url }}" alt="{{ slide.titulo }}" class="carousel-img" />
+          {% if slide.titulo or slide.subtitulo %}
+          <div class="carousel-caption">
+            {% if slide.titulo %}<h2 class="carousel-title">{{ slide.titulo }}</h2>{% endif %}
+            {% if slide.subtitulo %}<p class="carousel-subtitle">{{ slide.subtitulo }}</p>{% endif %}
+          </div>
+          {% endif %}
+        {% if slide.link %}
+        </a>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+
+    {% if slides_carrousel.count > 1 %}
+    <button type="button" class="carousel-btn carousel-btn--prev" onclick="carouselPrev()" aria-label="Anterior">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16">
+        <path fill-rule="evenodd" d="M11.354 1.646a.5.5 0 0 1 0 .708L5.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0z"/>
+      </svg>
+    </button>
+    <button type="button" class="carousel-btn carousel-btn--next" onclick="carouselNext()" aria-label="Siguiente">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16">
+        <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"/>
+      </svg>
+    </button>
+
+    <div class="carousel-dots" id="carouselDots">
+      {% for slide in slides_carrousel %}
+      <button type="button" class="carousel-dot {% if forloop.first %}active{% endif %}" onclick="carouselGoTo({{ forloop.counter0 }})" aria-label="Ir a slide {{ forloop.counter }}"></button>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+</section>
+{% endif %}
+
 <!-- CARRUSEL DESTACADOS -->
 <section class="featured-section" aria-label="Productos destacados">
   <div class="container">
@@ -229,30 +275,71 @@
   </div>
 </section>
 
+<!-- PREGUNTAS FRECUENTES -->
+<section class="faq-section" id="faq">
+  <div class="container">
+    <div class="faq-header">
+      <span class="faq-eyebrow">Preguntas frecuentes</span>
+      <h2 class="faq-title">Resolvé tus <em>dudas</em></h2>
+      <p class="faq-sub">Encontrá respuestas a las preguntas más comunes.</p>
+    </div>
+
+    {% if temas_consulta %}
+    <div class="faq-content">
+      {% for tema in temas_consulta %}
+      <div class="faq-tema">
+        <h3 class="faq-tema__title">{{ tema.nombre }}</h3>
+        {% if tema.descripcion %}
+        <p class="faq-tema__desc">{{ tema.descripcion }}</p>
+        {% endif %}
+        <div class="faq-accordion">
+          {% for consulta in tema.consultas.all %}
+          {% if consulta.activa %}
+          <div class="faq-item">
+            <button class="faq-question" onclick="toggleFaq(this)">
+              <span>{{ consulta.pregunta }}</span>
+              <svg class="faq-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+                <path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"/>
+              </svg>
+            </button>
+            <div class="faq-answer">
+              <p>{{ consulta.respuesta }}</p>
+            </div>
+          </div>
+          {% endif %}
+          {% endfor %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="faq-empty">No hay preguntas frecuentes disponibles por el momento.</p>
+    {% endif %}
+  </div>
+</section>
+
 <!-- CONTACTO -->
 <section class="contact-section" id="contacto">
   <div class="container contact-grid">
     <div class="contact-info">
       <span class="contact-eyebrow">Contacto</span>
-      <h2 class="contact-title">¿Tenés alguna<br><em>consulta?</em></h2>
-      <p class="contact-sub">Escribinos y te respondemos a la brevedad.</p>
+      <h2 class="contact-title">¿Querés<br><em>escribirnos?</em></h2>
+      <p class="contact-sub">Contactanos por WhatsApp o email.</p>
     </div>
-    <form class="contact-form" method="post" action="{% url 'consultas:nueva' %}">
-      {% csrf_token %}
-      <div class="cf-field">
-        <label>Nombre</label>
-        <input type="text" name="nombre" placeholder="Tu nombre" required />
-      </div>
-      <div class="cf-field">
-        <label>Email</label>
-        <input type="email" name="email" placeholder="tu@email.com" required />
-      </div>
-      <div class="cf-field">
-        <label>Mensaje</label>
-        <textarea name="mensaje" placeholder="Contanos tu consulta…" rows="4" required></textarea>
-      </div>
-      <button type="submit" class="cf-btn">Enviar consulta</button>
-    </form>
+    <div class="contact-links">
+      <a href="https://wa.me/5491100000000" target="_blank" class="contact-link contact-link--whatsapp">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16">
+          <path d="M13.601 2.326A7.854 7.854 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.933 7.933 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.898 7.898 0 0 0 13.6 2.326zM7.994 14.521a6.573 6.573 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.66 1.931 6.557 6.557 0 0 1 1.928 4.66c-.004 3.639-2.961 6.592-6.592 6.592zm3.615-4.934c-.197-.099-1.17-.578-1.353-.646-.182-.065-.315-.099-.445.099-.133.197-.513.646-.627.775-.114.133-.232.148-.43.05-.197-.1-.836-.308-1.592-.985-.59-.525-.985-1.175-1.103-1.372-.114-.198-.011-.304.088-.403.087-.088.197-.232.296-.346.1-.114.133-.198.198-.33.065-.134.034-.248-.015-.347-.05-.099-.445-1.076-.612-1.47-.16-.389-.323-.335-.445-.34-.114-.007-.247-.007-.38-.007a.729.729 0 0 0-.529.247c-.182.198-.691.677-.691 1.654 0 .977.71 1.916.81 2.049.098.133 1.394 2.132 3.383 2.992.47.205.84.326 1.129.418.475.152.904.129 1.246.08.38-.058 1.171-.48 1.338-.943.164-.464.164-.86.114-.943-.049-.084-.182-.133-.38-.232z"/>
+        </svg>
+        <span>Escribinos por WhatsApp</span>
+      </a>
+      <a href="mailto:contacto@indiragold.com" class="contact-link contact-link--email">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16">
+          <path d="M0 4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V4Zm2-1a1 1 0 0 0-1 1v.217l7 4.2 7-4.2V4a1 1 0 0 0-1-1H2Zm13 2.383-4.708 2.825L15 11.105V5.383Zm-.034 6.876-5.64-3.471L8 9.583l-1.326-.795-5.64 3.47A1 1 0 0 0 2 13h12a1 1 0 0 0 .966-.741ZM1 11.105l4.708-2.897L1 5.383v5.722Z"/>
+        </svg>
+        <span>contacto@indiragold.com</span>
+      </a>
+    </div>
   </div>
 </section>
 
@@ -317,6 +404,115 @@
 </div>
 
 <style>
+  /* CARROUSEL PRINCIPAL */
+  .main-carousel {
+    position: relative;
+    width: 100%;
+    overflow: hidden;
+    background: #1a1612;
+  }
+  .carousel-container {
+    position: relative;
+    width: 100%;
+    max-width: 100%;
+  }
+  .carousel-track {
+    display: flex;
+    transition: transform 0.5s ease-in-out;
+  }
+  .carousel-slide {
+    min-width: 100%;
+    position: relative;
+  }
+  .carousel-link {
+    display: block;
+    text-decoration: none;
+  }
+  .carousel-img {
+    width: 100%;
+    height: 70vh;
+    object-fit: cover;
+    display: block;
+  }
+  .carousel-caption {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 3rem 6vw;
+    background: linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 100%);
+    color: #fff;
+  }
+  .carousel-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(2rem, 4vw, 3.5rem);
+    font-weight: 700;
+    margin: 0 0 0.5rem;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  }
+  .carousel-subtitle {
+    font-size: 1rem;
+    margin: 0;
+    opacity: 0.9;
+  }
+  .carousel-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(255,255,255,0.9);
+    color: #1a1612;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    z-index: 10;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  }
+  .carousel-btn:hover {
+    background: #b8922a;
+    color: #fff;
+    transform: translateY(-50%) scale(1.05);
+  }
+  .carousel-btn--prev { left: 1.5rem; }
+  .carousel-btn--next { right: 1.5rem; }
+  .carousel-dots {
+    position: absolute;
+    bottom: 1.5rem;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 0.5rem;
+    z-index: 10;
+  }
+  .carousel-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 2px solid #fff;
+    background: transparent;
+    cursor: pointer;
+    transition: all 0.2s;
+    padding: 0;
+  }
+  .carousel-dot:hover,
+  .carousel-dot.active {
+    background: #b8922a;
+    border-color: #b8922a;
+  }
+
+  @media (max-width: 768px) {
+    .carousel-img { height: 50vh; }
+    .carousel-btn { width: 40px; height: 40px; }
+    .carousel-btn--prev { left: 0.75rem; }
+    .carousel-btn--next { right: 0.75rem; }
+    .carousel-caption { padding: 2rem 1.5rem; }
+  }
+
   /* HERO */
   .hero {
     min-height: 92vh;
@@ -424,6 +620,36 @@
 
   .empty-catalog, .no-results { grid-column: 1/-1; text-align: center; padding: 4rem 1rem; color: #8c7e70; font-size: .95rem; }
 
+  /* FAQ */
+  .faq-section { padding: 5rem 0; background: #fff; border-top: 1px solid #e8dfd4; }
+  .faq-header { text-align: center; margin-bottom: 3rem; }
+  .faq-eyebrow { font-size: .72rem; font-weight: 600; letter-spacing: .18em; text-transform: uppercase; color: #b8922a; display: block; margin-bottom: .6rem; }
+  .faq-title { font-family: 'Cormorant Garamond', serif; font-size: 2.5rem; font-weight: 700; color: #1a1612; line-height: 1.1; margin-bottom: .75rem; }
+  .faq-title em { font-style: italic; color: #b8922a; }
+  .faq-sub { font-size: .9rem; color: #8c7e70; }
+  .faq-empty { text-align: center; color: #8c7e70; font-size: .9rem; }
+
+  .faq-content { max-width: 800px; margin: 0 auto; }
+  .faq-tema { margin-bottom: 2.5rem; }
+  .faq-tema__title { font-family: 'Cormorant Garamond', serif; font-size: 1.5rem; font-weight: 700; color: #1a1612; margin-bottom: .5rem; padding-bottom: .5rem; border-bottom: 2px solid #b8922a; }
+  .faq-tema__desc { font-size: .9rem; color: #8c7e70; margin-bottom: 1rem; }
+
+  .faq-accordion { display: flex; flex-direction: column; gap: .5rem; }
+  .faq-item { border: 1px solid #e8dfd4; border-radius: 10px; overflow: hidden; background: #faf7f4; }
+  .faq-question {
+    width: 100%; padding: 1rem 1.25rem; background: none; border: none;
+    display: flex; justify-content: space-between; align-items: center; gap: 1rem;
+    font-size: .95rem; font-weight: 500; color: #1a1612; text-align: left;
+    cursor: pointer; transition: background .15s;
+  }
+  .faq-question:hover { background: #fff; }
+  .faq-question span { flex: 1; }
+  .faq-icon { flex-shrink: 0; color: #b8922a; transition: transform .2s; }
+  .faq-item.open .faq-icon { transform: rotate(180deg); }
+  .faq-answer { max-height: 0; overflow: hidden; transition: max-height .25s ease, padding .25s ease; }
+  .faq-item.open .faq-answer { max-height: 500px; }
+  .faq-answer p { padding: 0 1.25rem 1rem; margin: 0; font-size: .9rem; color: #5a5149; line-height: 1.65; }
+
   /* CONTACTO */
   .contact-section { padding: 5rem 0; background: #fff; border-top: 1px solid #e8dfd4; }
   .contact-grid { display: grid; grid-template-columns: 1fr 1.4fr; gap: 5rem; align-items: center; }
@@ -446,6 +672,18 @@
     font-family: 'DM Sans', sans-serif; cursor: pointer; transition: background .15s; align-self: flex-start;
   }
   .cf-btn:hover { background: #b8922a; }
+
+  .contact-links { display: flex; flex-direction: column; gap: 1rem; }
+  .contact-link {
+    display: flex; align-items: center; gap: 1rem;
+    padding: 1.25rem 1.5rem; border-radius: 12px;
+    text-decoration: none; font-size: 1rem; font-weight: 500;
+    transition: all .2s;
+  }
+  .contact-link--whatsapp { background: #25D366; color: #fff; }
+  .contact-link--whatsapp:hover { background: #1da851; transform: translateY(-2px); box-shadow: 0 8px 20px rgba(37,211,102,.3); }
+  .contact-link--email { background: #1a1612; color: #fff; border: 1px solid #b8922a; }
+  .contact-link--email:hover { background: #b8922a; transform: translateY(-2px); box-shadow: 0 8px 20px rgba(184,146,42,.3); }
 
   /* CARRITO FAB */
   .cart-fab {
@@ -805,6 +1043,75 @@
   document.getElementById('modalCantidad').addEventListener('click', function (event) {
     if (event.target === this) cerrarModalCantidad();
   });
+
+  // FAQ Accordion
+  function toggleFaq(btn) {
+    const item = btn.closest('.faq-item');
+    const wasOpen = item.classList.contains('open');
+
+    // Cerrar otros del mismo tema
+    const tema = item.closest('.faq-tema');
+    tema.querySelectorAll('.faq-item.open').forEach(el => el.classList.remove('open'));
+
+    // Toggle actual
+    if (!wasOpen) item.classList.add('open');
+  }
+
+  // CARROUSEL AUTO-PLAY
+  let carouselIndex = 0;
+  let carouselInterval = null;
+  const carouselTrack = document.getElementById('carouselTrack');
+  const carouselDots = document.querySelectorAll('.carousel-dot');
+  const carouselSlides = document.querySelectorAll('.carousel-slide');
+  const carouselTotal = carouselSlides.length;
+
+  function carouselUpdatePosition() {
+    if (!carouselTrack || carouselTotal === 0) return;
+    carouselTrack.style.transform = `translateX(-${carouselIndex * 100}%)`;
+    carouselDots.forEach((dot, i) => {
+      dot.classList.toggle('active', i === carouselIndex);
+    });
+  }
+
+  function carouselNext() {
+    carouselIndex = (carouselIndex + 1) % carouselTotal;
+    carouselUpdatePosition();
+    carouselResetInterval();
+  }
+
+  function carouselPrev() {
+    carouselIndex = (carouselIndex - 1 + carouselTotal) % carouselTotal;
+    carouselUpdatePosition();
+    carouselResetInterval();
+  }
+
+  function carouselGoTo(index) {
+    carouselIndex = index;
+    carouselUpdatePosition();
+    carouselResetInterval();
+  }
+
+  function carouselStartAutoPlay() {
+    if (carouselTotal <= 1) return;
+    carouselInterval = setInterval(carouselNext, 5000);
+  }
+
+  function carouselResetInterval() {
+    if (carouselInterval) clearInterval(carouselInterval);
+    carouselStartAutoPlay();
+  }
+
+  if (carouselTotal > 1) {
+    carouselStartAutoPlay();
+
+    const carouselContainer = document.querySelector('.carousel-container');
+    if (carouselContainer) {
+      carouselContainer.addEventListener('mouseenter', () => {
+        if (carouselInterval) clearInterval(carouselInterval);
+      });
+      carouselContainer.addEventListener('mouseleave', carouselStartAutoPlay);
+    }
+  }
 </script>
 
 {% endblock %}

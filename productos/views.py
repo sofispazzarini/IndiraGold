@@ -5,13 +5,14 @@ from django.views.decorators.http import require_POST, require_http_methods
 from django.urls import reverse
 from django.shortcuts import redirect, get_object_or_404, render
 from django.contrib import messages
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.template.loader import render_to_string
 from django.core.paginator import Paginator
 
 from .models import (
-    Subcategoria, Producto, Talle, Color, Medida, 
-    Variante, Proveedor, ImagenProducto, Categoria, TipoMedida
+    Subcategoria, Producto, Talle, Color, Medida,
+    Variante, Proveedor, ImagenProducto, Categoria, TipoMedida,
+    VarianteColor
 )
 from .forms import (
     ProductoForm, SubcategoriaForm, CategoriaForm, 
@@ -489,33 +490,27 @@ def editar_variante(request, variante_id):
         if form.is_valid():
             var_editada = form.save()
 
-            # 1. CAPTURAR Y GUARDAR TODOS LOS COLORES
-            colores_nombres = request.POST.getlist('colores[]')
-            colores_objs = []
-            for nombre in colores_nombres:
-                nombre = nombre.strip()
-                if nombre:
-                    color_obj, _ = Color.objects.get_or_create(nombre=nombre)
-                    colores_objs.append(color_obj)
-            var_editada.colores.set(colores_objs)
+            # 1. CAPTURAR Y GUARDAR COLOR
+            color_nombre = request.POST.get('color_nombre', '').strip()
+            if color_nombre:
+                color_obj, _ = Color.objects.get_or_create(nombre=color_nombre)
+                var_editada.colores.set([color_obj])
+            else:
+                var_editada.colores.clear()
 
-            # 2. CAPTURAR Y GUARDAR TODAS LAS MEDIDAS
-            altos = request.POST.getlist('alto[]')
-            anchos = request.POST.getlist('ancho[]')
-            largos = request.POST.getlist('largo[]')
-            tiros = request.POST.getlist('tiro[]')
-            medidas_objs = []
-            for i in range(len(altos)):
-                # Si al menos un campo está completo
-                if altos[i] or anchos[i] or largos[i] or tiros[i]:
-                    medida = Medida()
-                    medida.alto = altos[i] if altos[i] else 0
-                    medida.ancho = anchos[i] if anchos[i] else 0
-                    medida.largo = largos[i] if largos[i] else 0
-                    medida.tiro = tiros[i] if tiros[i] else 0
-                    medida.save()
-                    medidas_objs.append(medida)
-            var_editada.medidas.set(medidas_objs)
+            # 2. CAPTURAR Y GUARDAR MEDIDA
+            alto = request.POST.get('alto', '')
+            ancho = request.POST.get('ancho', '')
+            largo = request.POST.get('largo', '')
+            tiro = request.POST.get('tiro', '')
+            if alto or ancho or largo or tiro:
+                medida = Medida()
+                medida.alto = alto if alto else 0
+                medida.ancho = ancho if ancho else 0
+                medida.largo = largo if largo else 0
+                medida.tiro = tiro if tiro else 0
+                medida.save()
+                var_editada.medidas.set([medida])
 
             messages.success(request, f"Talle {variante.talle.nombre} actualizado correctamente.")
             return redirect('productos:editar_producto', prod_id=producto.id)
@@ -529,4 +524,28 @@ def editar_variante(request, variante_id):
         'producto': producto,
         'color_actual': variante.colores.first(),
         'medida_actual': variante.medidas.first()
+    })
+
+
+# --- VISTAS QR ---
+
+def variante_color_qr(request, vc_id):
+    """Devuelve la imagen QR de una VarianteColor específica."""
+    variante_color = get_object_or_404(VarianteColor, id=vc_id)
+    buffer = variante_color.generar_qr_image()
+    return HttpResponse(buffer.getvalue(), content_type='image/png')
+
+
+@admin_required
+def producto_qrs_impresion(request, producto_id):
+    """Vista de impresión masiva de todos los QRs de un producto."""
+    producto = get_object_or_404(Producto, id=producto_id)
+    variantes_color = VarianteColor.objects.filter(
+        variante__producto=producto,
+        activo=True
+    ).select_related('variante__talle', 'color')
+
+    return render(request, 'productos/qrs_impresion.html', {
+        'producto': producto,
+        'variantes_color': variantes_color
     })

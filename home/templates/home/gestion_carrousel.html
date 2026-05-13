@@ -1,0 +1,250 @@
+{% extends 'users/dashboard_admin.html' %}
+{% load static %}
+
+{% block extra_head %}
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="{% static 'css/users.css' %}">
+    <style>
+    .main-listado-wrapper {
+        min-height: calc(100vh - 60px);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-start;
+    }
+    .ig-table-card {
+        background: #fff;
+        border-radius: 18px;
+        box-shadow: 0 4px 32px rgba(184,146,42,0.10);
+        padding: 2.5rem 2rem 2rem 2rem;
+        margin-bottom: 2.5rem;
+        width: 100%;
+        max-width: 1000px;
+        margin-left: 25%;
+        margin-right: auto;
+    }
+    .table thead th {
+        background: #f8f5ef;
+        color: #b8922a;
+        font-weight: 700;
+        border-top: none;
+        border-bottom: 2px solid #f3e7c6;
+        letter-spacing: 1px;
+        vertical-align: middle;
+        font-size: 0.9rem;
+    }
+    .table tbody tr {
+        transition: background 0.18s;
+    }
+    .table tbody tr:hover {
+        background: #fdf6e3;
+    }
+    .btn-action {
+        font-weight: 600;
+        border-radius: 8px;
+        padding: 0.35rem 1.1rem;
+        font-size: 0.95rem;
+        transition: background 0.18s, color 0.18s;
+        border: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4em;
+        text-decoration: none;
+    }
+    .btn-edit-ig {
+        background: #f8f5ef;
+        color: #b8922a;
+    }
+    .btn-edit-ig:hover {
+        background: #b8922a;
+        color: #fff;
+    }
+    .btn-delete-ig {
+        background: #f8f5ef;
+        color: #6E0E2E;
+    }
+    .btn-delete-ig:hover {
+        background: #6E0E2E;
+        color: #fff;
+    }
+    .listado-header {
+        width: 100%;
+        max-width: 1000px;
+        margin-left: 25%;
+        margin-right: auto;
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+    .listado-header .d-flex {
+        justify-content: center !important;
+    }
+    .nuevo-btn {
+        float: right;
+        margin-left: 1rem;
+    }
+    .badge-orden {
+        background: #f8f5ef;
+        color: #b8922a;
+        font-weight: 700;
+        padding: 0.4rem 0.8rem;
+        border-radius: 8px;
+        border: 1.5px solid #f3e7c6;
+    }
+    .img-preview {
+        height: 60px;
+        width: 100px;
+        border-radius: 10px;
+        object-fit: cover;
+        border: 2px solid #f3e7c6;
+        box-shadow: 0 2px 8px rgba(184,146,42,0.15);
+    }
+    .tip-card {
+        background: #fdf6e3;
+        border: 1px solid #f3e7c6;
+        border-radius: 12px;
+        padding: 1rem 1.5rem;
+        max-width: 1000px;
+        margin-left: 25%;
+        margin-right: auto;
+    }
+    @media (max-width: 900px) {
+        .ig-table-card, .listado-header, .tip-card {
+            padding: 1.2rem 0.5rem 1.5rem 0.5rem;
+            max-width: 98vw;
+            margin-left: auto;
+        }
+        .table-responsive {
+            font-size: 0.9rem;
+        }
+    }
+    </style>
+{% endblock %}
+
+{% block content %}
+<div class="main-listado-wrapper">
+    <div class="listado-header">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div style="flex:1">
+                <h2 class="display-6 fw-bold mb-0" style="font-family: 'Cormorant Garamond'; color: var(--dark-ig);">Carrousel del Home</h2>
+                <p class="text-muted small text-uppercase letter-spacing-1">Gestiona las imágenes del carrousel principal</p>
+            </div>
+            <a href="{% url 'home:crear_slide' %}" class="btn btn-dark rounded-pill px-4 shadow-sm border-gold nuevo-btn" style="border: 1px solid var(--gold-ig); color: var(--gold-light);">
+                <i class="bi bi-plus-lg me-2"></i> NUEVO SLIDE
+            </a>
+        </div>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert" style="max-width: 1000px; margin-left: 25%;">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="ig-table-card">
+        <div class="table-responsive">
+            <table class="table align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th style="width: 120px;"><i class="bi bi-image me-1"></i>Imagen</th>
+                        <th><i class="bi bi-card-text me-1"></i>Título</th>
+                        <th><i class="bi bi-sort-numeric-down me-1"></i>Orden</th>
+                        <th><i class="bi bi-toggle-on me-1"></i>Estado</th>
+                        <th class="text-end">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for slide in slides %}
+                    <tr>
+                        <td>
+                            {% if slide.imagen %}
+                            <img src="{{ slide.imagen.url }}" alt="{{ slide.titulo }}" class="img-preview">
+                            {% else %}
+                            <div class="text-muted text-center" style="width: 100px;"><i class="bi bi-image opacity-25" style="font-size: 1.5rem;"></i></div>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="fw-bold" style="color: #2d3848;">{{ slide.titulo|default:"Sin título" }}</div>
+                            {% if slide.subtitulo %}
+                            <small class="text-muted">{{ slide.subtitulo|truncatewords:10 }}</small>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge-orden">{{ slide.orden }}</span>
+                        </td>
+                        <td>
+                            <form method="post" action="{% url 'home:toggle_slide' slide.id %}" class="d-inline">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm {% if slide.activo %}btn-success{% else %}btn-secondary{% endif %} rounded-pill px-3">
+                                    {% if slide.activo %}
+                                        <i class="bi bi-check-circle me-1"></i> Activo
+                                    {% else %}
+                                        <i class="bi bi-x-circle me-1"></i> Inactivo
+                                    {% endif %}
+                                </button>
+                            </form>
+                        </td>
+                        <td>
+                            <div class="d-flex gap-2 justify-content-end">
+                                <a href="{% url 'home:editar_slide' slide.id %}" class="btn-action btn-edit-ig text-decoration-none">
+                                    <i class="bi bi-pencil-square"></i> Editar
+                                </a>
+                                <button type="button" class="btn-action btn-delete-ig text-decoration-none"
+                                        data-bs-toggle="modal" data-bs-target="#deleteModal{{ slide.id }}">
+                                    <i class="bi bi-trash"></i> Eliminar
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center py-5">
+                            <i class="bi bi-images text-muted display-1 opacity-25"></i>
+                            <p class="mt-3 text-muted">No hay slides en el carrousel.</p>
+                            <a href="{% url 'home:crear_slide' %}" class="btn btn-outline-dark mt-2">
+                                <i class="bi bi-plus-lg me-1"></i> Crear primer slide
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    {% for slide in slides %}
+    <div class="modal fade" id="deleteModal{{ slide.id }}" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="border-radius: 14px;">
+                <div class="modal-header" style="background: #f8f5ef; border-bottom: 2px solid #f3e7c6;">
+                    <h5 class="modal-title" style="color: #b8922a;"><i class="bi bi-exclamation-triangle me-2"></i>Confirmar eliminación</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <p>¿Estás seguro de eliminar este slide?</p>
+                    {% if slide.imagen %}
+                    <img src="{{ slide.imagen.url }}" alt="" style="max-width: 250px; border-radius: 10px; border: 2px solid #f3e7c6;">
+                    {% endif %}
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <form method="post" action="{% url 'home:eliminar_slide' slide.id %}" class="d-inline">
+                        {% csrf_token %}
+                        <button type="submit" class="btn" style="background: #6E0E2E; color: #fff;">Eliminar</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+
+    <div class="tip-card">
+        <small style="color: #6E0E2E;">
+            <i class="bi bi-lightbulb me-2" style="color: #b8922a;"></i>
+            <strong>Tip:</strong> Los slides se muestran en el orden indicado. Usá números bajos (0, 1, 2...) para controlar el orden de aparición.
+        </small>
+    </div>
+</div>
+{% endblock %}

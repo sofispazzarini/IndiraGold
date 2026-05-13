@@ -24,6 +24,9 @@
                     <h2 class="fw-bold text-dark" style="font-family: 'Cormorant Garamond';">Editar: <span style="color: #b8922a;">{{ producto.nombre }}</span></h2>
                 </div>
                 <div class="d-flex gap-2">
+                    <a href="{% url 'productos:producto_qrs_impresion' producto.id %}" class="btn btn-outline-secondary px-4 rounded-pill" target="_blank">
+                        <i class="bi bi-qr-code me-1"></i> Ver QRs
+                    </a>
                     <button type="button" class="btn btn-outline-danger px-4 rounded-pill" data-bs-toggle="modal" data-bs-target="#modalConfirmarEliminar">Eliminar Producto</button>
                     <button type="submit" class="btn btn-dark px-5 rounded-pill shadow-sm" style="background: #1a1612; border: none;">
                         Guardar Cambios

@@ -1,3 +1,5 @@
+import uuid
+import io
 from django.db import models
 # Tipos de medida globales (ej: Largo, Ancho, Circunferencia)
 class TipoMedida(models.Model):
@@ -131,3 +133,42 @@ class CategoriaOrdenProducto(models.Model):
 
     def __str__(self):
         return f"{self.categoria_orden} - {self.producto}"
+
+
+class VarianteColor(models.Model):
+    """Combinación única de Variante (producto+talle) + Color, con código QR para identificación física."""
+    variante = models.ForeignKey(Variante, on_delete=models.CASCADE, related_name='variante_colores')
+    color = models.ForeignKey(Color, on_delete=models.CASCADE)
+    qr_code = models.CharField(max_length=100, unique=True, blank=True)
+    activo = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('variante', 'color')
+        verbose_name = 'Variante Color'
+        verbose_name_plural = 'Variantes Color'
+
+    def save(self, *args, **kwargs):
+        if not self.qr_code:
+            self.qr_code = str(uuid.uuid4())
+        super().save(*args, **kwargs)
+
+    def generar_qr_image(self):
+        """Genera imagen QR con información del producto."""
+        import qrcode
+
+        data = f"IG-{self.variante.producto.codigo}-{self.variante.talle.nombre}-{self.color.nombre}-{self.qr_code[:8]}"
+
+        qr = qrcode.QRCode(version=1, box_size=10, border=4)
+        qr.add_data(data)
+        qr.make(fit=True)
+
+        img = qr.make_image(fill_color="black", back_color="white")
+
+        buffer = io.BytesIO()
+        img.save(buffer, format='PNG')
+        buffer.seek(0)
+        return buffer
+
+    def __str__(self):
+        return f"{self.variante.producto.nombre} - {self.variante.talle} - {self.color.nombre}"
