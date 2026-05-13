@@ -1,0 +1,1542 @@
+{% extends 'users/dashboard_admin.html' %}
+{% load static %}
+
+{% block extra_head %}
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+
+<style>
+
+    .ventas-wrapper{
+        min-height:100vh;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 40px 20px;
+        margin-left: 20%;
+    }
+
+    .ventas-card{
+        background:white;
+        border-radius:20px;
+        padding:30px;
+        box-shadow:0 4px 30px rgba(0,0,0,.06);
+    }
+
+    .table thead th{
+        background:#f8f5ef;
+        color:#b8922a;
+        border:none;
+    }
+
+    .badge-total{
+        background:linear-gradient(90deg,#fbe18b 0%,#b8922a 100%);
+        color:#6E0E2E;
+        padding:8px 14px;
+        border-radius:20px;
+        font-weight:700;
+    }
+
+    .btn-gold{
+        background:linear-gradient(90deg,#fbe18b 0%,#b8922a 100%);
+        color:#6E0E2E;
+        border:none;
+        border-radius:30px;
+        font-weight:700;
+    }
+
+</style>
+
+{% endblock %}
+
+{% block content %}
+
+<div class="ventas-wrapper">
+
+    <div class="text-center mb-5">
+
+        <div>
+
+            <h1
+                style="
+                    font-family: 'Playfair Display', serif;
+                    color:#1d1d1d;
+                    font-size:3rem;
+                    font-weight:700;
+                "
+            >
+
+                Ventas Local
+
+            </h1>
+
+            <p
+                class="text-muted text-uppercase"
+                style="
+                    letter-spacing:1px;
+                    font-size:.9rem;
+                "
+            >
+
+                Visualizá todas las ventas realizadas
+                en el local
+
+            </p>
+
+        </div>
+       
+        
+
+    </div>
+    <div class="d-flex justify-content-end mb-4">
+
+        <button
+            type="button"
+            class="btn btn-gold px-4 py-2"
+            data-bs-toggle="modal"
+            data-bs-target="#nuevaVentaModal"
+        >
+
+            <i class="bi bi-plus-circle me-2"></i>
+
+            Nueva venta
+
+        </button>
+
+    </div>
+
+    
+    <div class="ventas-card mb-4">
+
+        <form
+            method="GET"
+            class="row g-3 align-items-end"
+        >
+
+            <div class="col-md-4">
+
+                <label class="form-label fw-bold">
+
+                    Cliente
+
+                </label>
+
+                <input
+                    type="text"
+                    name="q"
+                    class="form-control"
+                    placeholder="Nombre o email"
+                    value="{{ q }}"
+                >
+
+            </div>
+
+            <div class="col-md-2">
+
+                <label class="form-label fw-bold">
+
+                    Día
+
+                </label>
+
+                <input
+                    type="number"
+                    name="dia"
+                    class="form-control"
+                    value="{{ dia }}"
+                >
+
+            </div>
+
+            <div class="col-md-2">
+
+                <label class="form-label fw-bold">
+
+                    Mes
+
+                </label>
+
+                <input
+                    type="number"
+                    name="mes"
+                    class="form-control"
+                    value="{{ mes }}"
+                >
+
+            </div>
+
+            <div class="col-md-2">
+
+                <label class="form-label fw-bold">
+
+                    Año
+
+                </label>
+
+                <input
+                    type="number"
+                    name="anio"
+                    class="form-control"
+                    value="{{ anio }}"
+                >
+
+            </div>
+
+            <div class="col-md-3">
+
+                <div class="d-flex gap-2">
+
+                    <button
+                        type="submit"
+                        class="btn btn-gold w-100 py-2"
+                    >
+
+                        Filtrar
+
+                    </button>
+
+                    <a
+                        href="{% url 'pedidos:ventas_presenciales' %}"
+                        class="btn btn-outline-secondary w-100 py-2 rounded-pill"
+                    >
+
+                        Limpiar
+
+                    </a>
+
+                </div>
+
+            </div>
+
+        </form>
+       
+    </div>
+
+    <!-- TABLA -->
+
+    <div class="ventas-card">
+
+        <div class="table-responsive">
+
+            <table class="table align-middle">
+
+                <thead>
+
+                    <tr>
+
+                        <th>#</th>
+
+                        <th>Cliente</th>
+
+                        <th>Fecha</th>
+
+                        <th>Hora</th>
+
+                        <th>Productos</th>
+
+                        <th>Total</th>
+
+                        <th></th>
+
+                    </tr>
+
+                </thead>
+
+                <tbody>
+
+                    {% for venta in ventas %}
+
+                        <tr>
+
+                            <td>
+
+                                #{{ venta.id }}
+
+                            </td>
+
+                            <td>
+
+                                <div class="fw-bold">
+
+                                    {{ venta.cliente.user.first_name }}
+                                    {{ venta.cliente.user.last_name }}
+
+                                </div>
+
+                                <small class="text-muted">
+
+                                    {{ venta.cliente.user.email }}
+
+                                </small>
+
+                            </td>
+
+                            <td>
+
+                                {{ venta.created_at|date:"d/m/Y" }}
+
+                            </td>
+
+                            <td>
+
+                                {{ venta.created_at|time:"H:i" }}
+
+                            </td>
+
+                            <td>
+
+                                {{ venta.items.count }} productos
+
+                            </td>
+
+                            <td>
+
+                                <span class="badge-total">
+
+                                    ${{ venta.total }}
+
+                                </span>
+
+                            </td>
+
+                            <td>
+
+                                <button
+                                    class="btn btn-sm btn-outline-dark rounded-pill btn-detalle-venta"
+                                     data-id="{{ venta.id }}"
+                                >
+
+                                    Ver detalle
+
+                                </button>
+
+                            </td>
+
+                        </tr>
+
+                    {% empty %}
+
+                        <tr>
+
+                            <td
+                                colspan="7"
+                                class="text-center py-5 text-muted"
+                            >
+
+                                No hay ventas registradas.
+
+                            </td>
+
+                        </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+</div>
+<div
+    class="modal fade"
+    id="nuevaVentaModal"
+    tabindex="-1"
+    aria-hidden="true"
+>
+
+    <div
+        class="modal-dialog modal-xl modal-dialog-centered"
+    >
+
+        <div
+            class="modal-content border-0 rounded-5"
+        >
+
+            <!-- HEADER -->
+
+            <div
+                class="modal-header border-0 px-4 pt-4"
+            >
+
+                <div>
+
+                    <h3
+                        class="fw-bold mb-1"
+                        style="color:#6E0E2E;"
+                    >
+
+                        Registrar venta presencial
+
+                    </h3>
+
+                    <p class="text-muted mb-0">
+
+                        Registrá una compra realizada
+                        en el local.
+
+                    </p>
+
+                </div>
+
+                <button
+                    type="button"
+                    class="btn-close"
+                    data-bs-dismiss="modal"
+                ></button>
+
+            </div>
+
+            <!-- BODY -->
+
+            <div class="modal-body px-4 pb-4">
+
+                <div class="row g-4">
+
+                    <!-- IZQUIERDA -->
+
+                    <div class="col-lg-7">
+
+                        <!-- CLIENTE -->
+
+                        <div
+                            class="card border-0 shadow-sm rounded-5 p-4 mb-4"
+                        >
+
+                            <h5
+                                class="fw-bold mb-3"
+                                style="color:#b8922a;"
+                            >
+
+                                Cliente
+
+                            </h5>
+
+                            <input
+                                type="text"
+                                id="buscar-cliente"
+                                class="form-control rounded-4"
+                                placeholder="Buscar cliente por nombre o email"
+                            >
+
+        
+                            <!-- RESULTADOS CLIENTES -->
+
+                            <div
+                                id="resultados-clientes"
+                                class="border rounded-4 mt-3 bg-white"
+                                style="
+                                    max-height:200px;
+                                    overflow-y:auto;
+                                    display:none;
+                                "
+                            >
+
+                                <!-- JS agrega resultados acá -->
+
+                            </div>
+
+                        </div>
+
+                        <!-- PRODUCTO -->
+
+<div
+    class="card border-0 shadow-sm rounded-5 p-4 mb-4"
+>
+
+    <h5
+        class="fw-bold mb-3"
+        style="color:#b8922a;"
+    >
+
+        Agregar producto
+
+    </h5>
+
+    <!-- BUSCADOR PRODUCTO -->
+
+    <div class="mb-3">
+
+        <input
+            type="text"
+            id="buscar-producto"
+            class="form-control rounded-4"
+            placeholder="Buscar por código o nombre"
+        >
+
+    </div>
+
+    <!-- RESULTADOS PRODUCTOS -->
+
+    <div
+        id="resultados-productos"
+        class="border rounded-4 bg-white mb-4"
+        style="
+            max-height:200px;
+            overflow-y:auto;
+            display:none;
+        "
+    >
+
+        <!-- JS agrega resultados acá -->
+
+    </div>
+
+    <!-- VARIANTES -->
+
+    <div
+        id="configuracion-variante"
+        class="border rounded-4 p-4"
+        style="display:none;"
+    >
+
+        <div class="row g-3">
+
+            <!-- TALLE -->
+
+            <div class="col-md-4">
+
+                <label class="form-label fw-bold">
+
+                    Talle
+
+                </label>
+
+                <select
+                    id="talle-select"
+                    class="form-select rounded-4"
+                >
+
+                    <option value="">
+
+                        Seleccionar talle
+
+                    </option>
+
+                </select>
+
+            </div>
+            <!-- COLOR -->
+
+            <div class="col-md-4">
+
+                <label class="form-label fw-bold">
+
+                    Color
+
+                </label>
+
+                <select
+                    id="color-select"
+                    class="form-select rounded-4"
+                    
+                >
+
+                    <option value="">
+
+                        Seleccionar color
+
+                    </option>
+
+                </select>
+
+            </div>
+
+            
+
+            
+
+            <!-- STOCK -->
+
+            <div class="col-md-6">
+
+                <label class="form-label fw-bold">
+
+                    Stock disponible
+
+                </label>
+
+                <input
+                    type="text"
+                    id="stock-variante"
+                    class="form-control rounded-4"
+                    value="-"
+                    disabled
+                >
+
+            </div>
+
+            <!-- CANTIDAD -->
+
+            <div class="col-md-6">
+
+                <label class="form-label fw-bold">
+
+                    Cantidad
+
+                </label>
+
+                <input
+                    type="number"
+                    id="cantidad-producto"
+                    class="form-control rounded-4"
+                    min="1"
+                    value="1"
+                >
+
+            </div>
+
+        </div>
+
+        <!-- BOTÓN -->
+
+        <div class="mt-4">
+
+            <button
+                type="button"
+                id="btn-agregar-producto"
+                class="btn btn-gold rounded-pill px-4"
+            >
+
+                Agregar producto
+
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+                        <!-- PRODUCTOS AGREGADOS -->
+
+                        <div
+                            class="card border-0 shadow-sm rounded-5 p-4"
+                        >
+
+                            <div
+                                class="d-flex justify-content-between align-items-center mb-3"
+                            >
+
+                                <h5
+                                    class="fw-bold mb-0"
+                                    style="color:#b8922a;"
+                                >
+
+                                    Productos agregados
+
+                                </h5>
+
+                                <span id="cantidad-productos">
+
+                                    0
+
+                                </span>
+
+                                productos
+
+                            </div>
+
+                            <!-- LISTA -->
+
+                            <div id="lista-productos" style="max-height: 420px;overflow-y: auto;padding-right: 6px;scrollbar-width: thin;">
+
+                                <div
+                                    class="text-center text-muted py-5"
+                                >
+
+                                    Todavía no agregaste productos.
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                    <!-- DERECHA -->
+
+                    <div class="col-lg-5">
+
+                        <div
+                            class="card border-0 shadow-sm rounded-5 p-4 sticky-top"
+                        >
+
+                            <h5
+                                class="fw-bold mb-4"
+                                style="color:#b8922a;"
+                            >
+
+                                Resumen
+
+                            </h5>
+
+                            
+
+                            <div
+                                class="d-flex justify-content-between mb-4"
+                            >
+
+                                <span class="text-muted">
+
+                                    Método
+
+                                </span>
+
+                                <span class="fw-bold">
+
+                                    Venta local
+
+                                </span>
+
+                            </div>
+
+                            <hr>
+
+                            <div
+                                class="d-flex justify-content-between align-items-end mb-4"
+                            >
+
+                                <span class="h5 mb-0">
+
+                                    TOTAL
+
+                                </span>
+
+                                <span
+                                    style="
+                                        color:#b8922a;
+                                        font-size:2rem;
+                                        font-weight:700;
+                                    "
+                                    id="total-venta"
+                                >
+
+                                    $0
+
+                                </span>
+
+                            </div>
+
+                            <button
+                                class="btn btn-gold rounded-pill py-3 fw-bold" id="btn-registrar-venta"
+                            >
+
+                                Registrar venta
+
+                            </button>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+<div
+    class="modal fade"
+    id="modalDetalleVenta"
+    tabindex="-1"
+>
+
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+
+        <div class="modal-content rounded-5 border-0">
+
+            <div class="modal-header border-0">
+
+                <h4 class="fw-bold">
+
+                    Detalle de venta
+
+                </h4>
+
+                <button
+                    type="button"
+                    class="btn-close"
+                    data-bs-dismiss="modal"
+                ></button>
+
+            </div>
+
+            <div class="modal-body">
+
+                <div id="contenido-detalle-venta">
+
+                    Cargando...
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+<script>
+
+const inputCliente = document.getElementById(
+    'buscar-cliente'
+)
+
+const resultadosClientes = document.getElementById(
+    'resultados-clientes'
+)
+
+inputCliente.addEventListener(
+    'keyup',
+    async function() {
+
+        const q = this.value.trim()
+
+        if(q.length < 2){
+
+            resultadosClientes.style.display = 'none'
+
+            resultadosClientes.innerHTML = ''
+
+            return
+        }
+
+        const response = await fetch(
+            `/users/buscar-clientes/?q=${q}`
+        )
+
+        const clientes = await response.json()
+
+        resultadosClientes.innerHTML = ''
+
+        if(clientes.length === 0){
+
+            resultadosClientes.innerHTML = `
+
+                <div class="p-3 text-muted">
+
+                    No se encontraron clientes
+
+                </div>
+
+            `
+        }
+
+        clientes.forEach(cliente => {
+
+            resultadosClientes.innerHTML += `
+
+                <div
+                    class="p-3 border-bottom resultado-cliente"
+                    style="cursor:pointer;"
+                    data-id="${cliente.id}"
+                    data-nombre="${cliente.nombre}"
+                >
+
+                    <div class="fw-bold">
+
+                        ${cliente.nombre}
+
+                    </div>
+
+                    <small class="text-muted">
+
+                        ${cliente.email}
+
+                    </small>
+
+                </div>
+
+            `
+        })
+
+        resultadosClientes.style.display = 'block'
+
+    }
+)
+
+document.addEventListener(
+    'click',
+    function(e){
+
+        if(
+            e.target.closest('.resultado-cliente')
+        ){
+
+            const item = e.target.closest(
+                '.resultado-cliente'
+            )
+
+            inputCliente.value = item.dataset.nombre
+            window.clienteSeleccionado = item.dataset.id
+            resultadosClientes.style.display = 'none'
+        }
+    }
+)
+document.getElementById(
+    'btn-registrar-venta'
+).addEventListener(
+    'click',
+    async function(){
+
+        if(!window.clienteSeleccionado){
+
+            mostrarMensaje(
+                'Seleccioná un cliente'
+            )
+
+            return
+        }
+
+        if(productosVenta.length === 0){
+
+            mostrarMensaje(
+                'Agregá al menos un producto'
+            )
+
+            return
+        }
+
+        const response = await fetch(
+
+            '/pedidos/registrar-venta-local/',
+
+            {
+
+                method: 'POST',
+
+                headers: {
+
+                    'Content-Type': 'application/json',
+
+                    'X-CSRFToken': getCookie('csrftoken')
+
+                },
+
+                body: JSON.stringify({
+
+                    cliente_id:
+                        window.clienteSeleccionado,
+
+                    productos:
+                        productosVenta
+
+                })
+
+            }
+
+        )
+
+        const data = await response.json()
+
+        if(data.success){
+
+            location.reload()
+
+        }else{
+
+            mostrarMensaje(
+                'Error al registrar venta'
+            )
+        }
+
+    }
+)
+
+function getCookie(name){
+
+    let cookieValue = null
+
+    if(document.cookie && document.cookie !== ''){
+
+        const cookies = document.cookie.split(';')
+
+        for(let i = 0; i < cookies.length; i++){
+
+            const cookie = cookies[i].trim()
+
+            if(
+                cookie.substring(0, name.length + 1)
+                === (name + '=')
+            ){
+
+                cookieValue = decodeURIComponent(
+                    cookie.substring(name.length + 1)
+                )
+
+                break
+            }
+        }
+    }
+
+    return cookieValue
+}
+</script>
+<script>
+    
+let productosVenta = []
+const inputProducto = document.getElementById(
+    'buscar-producto'
+)
+
+const resultadosProductos = document.getElementById(
+    'resultados-productos'
+)
+
+inputProducto.addEventListener(
+    'keyup',
+    async function(){
+
+        const q = this.value.trim()
+
+        if(q.length < 2){
+
+            resultadosProductos.style.display = 'none'
+
+            resultadosProductos.innerHTML = ''
+
+            return
+        }
+
+        const response = await fetch(
+            `/productos/buscar-productos/?q=${q}`
+        )
+
+        const productos = await response.json()
+
+        resultadosProductos.innerHTML = ''
+
+        if(productos.length === 0){
+
+            resultadosProductos.innerHTML = `
+
+                <div class="p-3 text-muted">
+
+                    No se encontraron productos
+
+                </div>
+
+            `
+        }
+
+        productos.forEach(producto => {
+
+            resultadosProductos.innerHTML += `
+
+                <div
+                    class="p-3 border-bottom resultado-producto"
+                    style="cursor:pointer;"
+                    data-id="${producto.id}"
+                    data-nombre="${producto.nombre}"
+                >
+
+                    <div class="fw-bold">
+
+                        ${producto.nombre}
+
+                    </div>
+
+                    <small class="text-muted">
+
+                        Código: ${producto.codigo}
+
+                    </small>
+
+                </div>
+
+            `
+        })
+
+        resultadosProductos.style.display = 'block'
+
+    }
+)
+
+document.addEventListener(
+    'click',
+    async function(e){
+
+        if(
+            e.target.closest('.resultado-producto')
+        ){
+
+            const item = e.target.closest(
+                '.resultado-producto'
+            )
+
+            inputProducto.value = item.dataset.nombre
+
+            const productoId = item.dataset.id
+
+            resultadosProductos.style.display = 'none'
+
+            // MOSTRAR CONFIGURACIÓN
+
+            document.getElementById(
+                'configuracion-variante'
+            ).style.display = 'block'
+
+            // TRAER VARIANTES
+
+            const responseVariantes = await fetch(
+                `/productos/variantes/${productoId}/`
+            )
+
+            const variantes = await responseVariantes.json()
+
+            // SELECTS
+
+            const talleSelect = document.getElementById(
+                'talle-select'
+            )
+
+            const colorSelect = document.getElementById(
+                'color-select'
+            )
+
+            // LIMPIAR
+
+            talleSelect.innerHTML =
+                '<option value="">Seleccionar talle</option>'
+
+            colorSelect.innerHTML =
+                '<option value="">Seleccionar color</option>'
+
+            // CARGAR TALLES
+
+            variantes.forEach(variante => {
+
+                talleSelect.innerHTML += `
+
+                    <option value="${variante.id}">
+
+                        ${variante.talle}
+
+                    </option>
+
+                `
+            })
+
+            // GUARDAR VARIANTES
+
+            window.variantesProducto = variantes
+
+        }
+
+    }
+)
+
+// CAMBIO TALLE
+
+document.getElementById(
+    'talle-select'
+).addEventListener(
+    'change',
+    function(){
+
+        const varianteId = this.value
+
+        const variante = window.variantesProducto.find(
+            v => v.id == varianteId
+        )
+
+        const colorSelect = document.getElementById(
+            'color-select'
+        )
+
+        colorSelect.innerHTML =
+            '<option value="">Seleccionar color</option>'
+
+        variante.colores.forEach(color => {
+
+            colorSelect.innerHTML += `
+
+                <option value="${color}">
+
+                    ${color}
+
+                </option>
+
+            `
+        })
+
+        // STOCK
+
+        document.getElementById(
+            'stock-variante'
+        ).value = variante.stock
+
+        // PRECIO
+
+        window.precioActual = variante.precio
+
+    }
+)
+document.getElementById(
+    'btn-agregar-producto'
+).addEventListener(
+    'click',
+    function(){
+
+        const varianteId = document.getElementById(
+            'talle-select'
+        ).value
+
+        const color = document.getElementById(
+            'color-select'
+        ).value
+
+        const cantidad = parseInt(
+            document.getElementById(
+                'cantidad-producto'
+            ).value
+        )
+
+        const variante = window.variantesProducto.find(
+            v => v.id == varianteId
+        )
+
+        if(!variante){
+
+           mostrarMensaje(
+                'Seleccioná un talle'
+            )
+            return
+        }
+
+        if(!color){
+
+            mostrarMensaje(
+                'Seleccioná un color'
+            )
+
+            return
+        }
+
+        const subtotal =
+            variante.precio * cantidad
+
+        productosVenta.push({
+
+            producto: inputProducto.value,
+
+            talle: variante.talle,
+
+            color: color,
+
+            cantidad: cantidad,
+
+            precio: variante.precio,
+
+            subtotal: subtotal,
+
+            variante_id: variante.id
+
+        })
+        console.log(productosVenta)
+        renderProductosVenta()
+
+    }
+)
+
+function renderProductosVenta(){
+
+    const container = document.getElementById(
+        'lista-productos'
+    )
+
+    container.innerHTML = ''
+
+    let total = 0
+
+    productosVenta.forEach(producto => {
+
+        total += producto.subtotal
+
+        container.innerHTML += `
+
+            <div
+                class="border rounded-4 p-3 mb-3"
+            >
+
+                <div
+                    class="d-flex justify-content-between"
+                >
+
+                    <div>
+
+                        <div class="fw-bold">
+
+                            ${producto.producto}
+
+                        </div>
+
+                        <small class="text-muted">
+
+                            ${producto.talle}
+                            ·
+                            ${producto.color}
+
+                        </small>
+
+                    </div>
+
+                    <div class="text-end">
+
+                        <div class="fw-bold">
+
+                            x${producto.cantidad}
+
+                        </div>
+
+                        <small>
+
+                            $${producto.subtotal}
+
+                        </small>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        `
+    })
+
+    document.getElementById(
+        'total-venta'
+    ).innerText = `$${total}`
+
+    const totalProductos =
+        productosVenta.reduce(
+
+            (acc, p) => acc + p.cantidad,
+
+            0
+        )
+    console.log(
+        document.getElementById(
+            'cantidad-productos'
+        )
+    )
+    document.getElementById(
+        'cantidad-productos'
+    ).innerText = totalProductos
+}
+function mostrarMensaje(texto){
+
+    const existente = document.getElementById(
+        'mensaje-error'
+    )
+
+    if(existente){
+
+        existente.remove()
+    }
+
+    const div = document.createElement('div')
+
+    div.id = 'mensaje-error'
+
+    div.innerHTML = `
+
+        <div
+            class="alert alert-danger rounded-4 shadow-sm mt-3"
+        >
+
+            <i class="bi bi-exclamation-circle me-2"></i>
+
+            ${texto}
+
+        </div>
+
+    `
+
+    document.getElementById(
+        'configuracion-variante'
+    ).prepend(div)
+
+    setTimeout(() => {
+
+        div.remove()
+
+    }, 3000)
+}
+</script>
+<script>
+
+document.querySelectorAll(
+    '.btn-detalle-venta'
+).forEach(btn => {
+
+    btn.addEventListener(
+        'click',
+        async function(){
+
+            const ventaId =
+                this.dataset.id
+
+            const response = await fetch(
+                `/pedidos/detalle-venta/${ventaId}/`
+            )
+
+            const data = await response.json()
+
+            let html = `
+
+                <div class="mb-4">
+
+                    <div class="fw-bold">
+
+                        Cliente
+
+                    </div>
+
+                    <div>
+
+                        ${data.cliente}
+
+                    </div>
+
+                </div>
+
+                <div class="mb-4 max-height:320px;
+                    overflow-y:auto;
+                    padding-right:6px;
+                    scrollbar-width:thin;">
+
+                    <div class="fw-bold">
+
+                        Fecha
+
+                    </div>
+
+                    <div>
+
+                        ${data.fecha}
+
+                    </div>
+
+                </div>
+
+            `
+
+            html += `
+
+                <div
+                    style="
+                        max-height:320px;
+                        overflow-y:auto;
+                        padding-right:6px;
+                        scrollbar-width:thin;
+                    "
+                >
+            `
+
+            data.productos.forEach(p => {
+
+                html += `
+
+                    <div
+                        class="border-0
+                        rounded-4
+                        p-3
+                        mb-3
+                        shadow-sm
+                    "
+                    style="
+                        background:#faf7f2;
+                    "
+                    >
+
+                        <div
+                            class="d-flex justify-content-between"
+                        >
+
+                            <div>
+
+                                <div class="fw-bold">
+
+                                    ${p.producto}
+
+                                </div>
+
+                                <small class="text-muted">
+
+                                    ${p.talle}
+                                    ·
+                                    ${p.color}
+
+                                </small>
+
+                            </div>
+
+                            <div class="text-end">
+
+                                <div class="fw-bold">
+
+                                    x${p.cantidad}
+
+                                </div>
+
+                                <small>
+
+                                    $${p.subtotal}
+
+                                </small>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                `
+            })
+
+            html += `</div>`
+
+            html += `
+
+                <div
+                    class="text-end mt-4"
+                >
+
+                    <h4 class="fw-bold">
+
+                        Total:
+                        $${data.total}
+
+                    </h4>
+
+                </div>
+
+            `
+
+            document.getElementById(
+                'contenido-detalle-venta'
+            ).innerHTML = html
+
+            const modal = new bootstrap.Modal(
+
+                document.getElementById(
+                    'modalDetalleVenta'
+                )
+
+            )
+
+            modal.show()
+
+        }
+    )
+})
+
+</script>
+{% endblock %}

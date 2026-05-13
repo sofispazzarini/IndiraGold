@@ -18,7 +18,8 @@ from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse
 from django.contrib.auth.decorators import user_passes_test
 from carritos.utils import vincular_carrito_con_usuario
-
+from django.http import JsonResponse
+from django.contrib.auth.models import User
 # --- LOGOUT VIEW ---
 def logout_view(request):
     logout(request)
@@ -291,3 +292,27 @@ def registro_manual_cliente(request):
     else:
         form = RegistroManualClienteForm()
     return render(request, 'users/registro_manual_cliente.html', {'form': form, 'mensaje': mensaje})
+def buscar_clientes(request):
+
+    q = request.GET.get('q', '')
+
+    clientes = User.objects.filter(
+        is_staff=False,
+        first_name__icontains=q
+    )[:5]
+
+    data = []
+
+    for cliente in clientes:
+
+        data.append({
+
+            'id': cliente.id,
+
+            'nombre': f'{cliente.first_name} {cliente.last_name}',
+
+            'email': cliente.email
+
+        })
+
+    return JsonResponse(data, safe=False)

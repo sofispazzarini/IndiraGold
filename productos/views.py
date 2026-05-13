@@ -8,7 +8,8 @@ from django.contrib import messages
 from django.http import JsonResponse, HttpResponse
 from django.template.loader import render_to_string
 from django.core.paginator import Paginator
-
+from django.http import JsonResponse
+from .models import Producto
 from .models import (
     Subcategoria, Producto, Talle, Color, Medida,
     Variante, Proveedor, ImagenProducto, Categoria, TipoMedida,
@@ -18,6 +19,7 @@ from .forms import (
     ProductoForm, SubcategoriaForm, CategoriaForm, 
     TipoMedidaForm, ProveedorForm, SubcategoriaSoloNombreForm
 )
+from django.db.models import Q
 
 # --- DECORADOR AUXILIAR ---
 def admin_required(view_func):
@@ -549,3 +551,64 @@ def producto_qrs_impresion(request, producto_id):
         'producto': producto,
         'variantes_color': variantes_color
     })
+def buscar_productos(request):
+
+    q = request.GET.get('q', '')
+
+    productos = Producto.objects.filter(
+        Q(nombre__icontains=q)
+        |
+        Q(codigo__icontains=q)
+    )[:5]
+
+    data = []
+
+    for producto in productos:
+
+        data.append({
+
+            'id': producto.id,
+
+            'nombre': producto.nombre,
+
+            'codigo': producto.codigo
+
+        })
+
+    return JsonResponse(data, safe=False)
+def obtener_variantes_producto(request, producto_id):
+
+    producto = get_object_or_404(
+        Producto,
+        id=producto_id
+    )
+
+    variantes = producto.variantes.prefetch_related(
+        'colores'
+    )
+
+    data = []
+
+    for variante in variantes:
+
+        colores = []
+
+        for color in variante.colores.all():
+
+            colores.append(color.nombre)
+
+        data.append({
+
+            'id': variante.id,
+
+            'talle': variante.talle.nombre,
+
+            'colores': colores,
+
+            'stock': variante.stock,
+
+            'precio': float(variante.precio)
+
+        })
+
+    return JsonResponse(data, safe=False)

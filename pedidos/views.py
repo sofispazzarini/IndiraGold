@@ -6,17 +6,25 @@ from django.contrib import messages
 from django.db.models import Sum, Count, Avg, Q, F
 from datetime import datetime, timedelta
 from decimal import Decimal
-from .models import Pedido, PedidoItem
+from .models import Pedido, PedidoItem, VentaLocal
 from carritos.models import Carrito, CarritoItem
 from carritos.utils import get_or_create_cart, vincular_carrito_con_usuario
-from .models import Pedido, PedidoItem, Gasto
+from .models import Pedido, PedidoItem, Gasto, VentaLocal, VentaLocalItem
 from .forms import GastoForm
 from users.models import Cliente
 from productos.models import Variante
 import mercadopago
 from django.conf import settings
 from django.views.decorators.http import require_POST
+from django.core.mail import send_mail
+from django.conf import settings
+from django.db.models import Q
+from django.core.paginator import Paginator
+import json
 
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
+from django.db import transaction
 print("===== PEDIDOS VIEWS CARGADO =====")
 print("TOKEN MP:", settings.MERCADO_PAGO_ACCESS_TOKEN)
 # Decorador para verificar que es administrador
@@ -35,7 +43,23 @@ def gestion_pedidos(request):
     estado = request.GET.get('estado', '')
     if estado:
         pedidos = pedidos.filter(estado=estado)
-    
+    q = request.GET.get('q', '')
+
+    if q:
+
+        pedidos = pedidos.filter(
+
+            Q(cliente__user__first_name__icontains=q)
+
+            |
+
+            Q(cliente__user__last_name__icontains=q)
+
+            |
+
+            Q(cliente__user__email__icontains=q)
+
+        )
     # Paginación
     paginator = Paginator(pedidos, 10)
     page_number = request.GET.get('page')
@@ -796,3 +820,257 @@ def estadisticas_ventas(request):
         'fecha_fin_str': fecha_fin.strftime('%Y-%m-%d'),
     }
     return render(request, 'pedidos/estadisticas_ventas.html', context)
+
+@admin_required
+@require_POST
+def actualizar_estado_pedido(request, pedido_id):
+
+    pedido = get_object_or_404(
+        Pedido,
+        id=pedido_id
+    )
+
+    nuevo_estado = request.POST.get('estado')
+
+    estados_validos = [
+        estado[0]
+        for estado in Pedido.ESTADOS
+    ]
+
+    if nuevo_estado in estados_validos:
+
+        pedido.estado = nuevo_estado
+        pedido.save()
+
+        # MAIL
+
+        send_mail(
+            subject=f'Actualización de tu pedido #{pedido.id}',
+
+            message=(
+                f'Hola {pedido.cliente.user.first_name},\n\n'
+                f'El estado de tu pedido ahora es:\n'
+                f'{pedido.get_estado_display()}.\n\n'
+                f'IndiraGold'
+            ),
+
+            from_email=settings.DEFAULT_FROM_EMAIL,
+
+            recipient_list=[
+                pedido.cliente.user.email
+            ],
+
+            fail_silently=True
+        )
+
+        messages.success(
+            request,
+            f'Estado del pedido #{pedido.id} actualizado.'
+        )
+
+    return redirect('pedidos:gestion_pedidos')
+@admin_required
+def ventas_presenciales(request):
+
+    ventas = VentaLocal.objects.select_related(
+        'cliente',
+        'cliente__user'
+    ).prefetch_related('items').order_by('-created_at')
+
+    # FILTROS
+
+    q = request.GET.get('q', '')
+    dia = request.GET.get('dia', '')
+    mes = request.GET.get('mes', '')
+    anio = request.GET.get('anio', '')
+
+    if q:
+
+        ventas = ventas.filter(
+
+            Q(cliente__user__first_name__icontains=q)
+
+            |
+
+            Q(cliente__user__last_name__icontains=q)
+
+            |
+
+            Q(cliente__user__email__icontains=q)
+
+        )
+
+    if dia:
+
+        ventas = ventas.filter(
+            created_at__day=dia
+        )
+
+    if mes:
+
+        ventas = ventas.filter(
+            created_at__month=mes
+        )
+
+    if anio:
+
+        ventas = ventas.filter(
+            created_at__year=anio
+        )
+
+    # PAGINACIÓN
+
+    paginator = Paginator(
+        ventas,
+        10
+    )
+
+    page_number = request.GET.get('page')
+
+    page_obj = paginator.get_page(
+        page_number
+    )
+
+    return render(
+        request,
+        'pedidos/ventas_presenciales.html',
+        {
+            'ventas': page_obj.object_list,
+            'page_obj': page_obj,
+            'q': q,
+            'dia': dia,
+            'mes': mes,
+            'anio': anio,
+        }
+    )
+@require_POST
+@admin_required
+@transaction.atomic
+def registrar_venta_local(request):
+
+    data = json.loads(request.body)
+
+    cliente_id = data.get('cliente_id')
+
+    productos = data.get('productos')
+
+    if not cliente_id or not productos:
+
+        return JsonResponse({
+
+            'success': False
+
+        })
+
+    cliente = Cliente.objects.get(
+        user_id=cliente_id
+    )
+
+    total = 0
+
+    venta = VentaLocal.objects.create(
+
+        cliente=cliente,
+
+        total=0
+
+    )
+
+    for item in productos:
+
+        variante = Variante.objects.get(
+            id=item['variante_id']
+        )
+
+        cantidad = int(item['cantidad'])
+
+        subtotal = (
+            variante.precio * cantidad
+        )
+
+        VentaLocalItem.objects.create(
+
+            venta=venta,
+
+            producto=variante.producto,
+
+            variante=variante,
+
+            color=item['color'],
+
+            cantidad=cantidad,
+
+            precio_unitario=variante.precio,
+
+            subtotal=subtotal
+
+        )
+
+        # DESCONTAR STOCK VARIANTE
+
+        variante.stock -= cantidad
+
+        variante.save()
+
+        # DESCONTAR STOCK PRODUCTO
+
+        producto = variante.producto
+
+        producto.stock -= cantidad
+
+        producto.save()
+
+        total += subtotal
+
+    venta.total = total
+
+    venta.save()
+
+    return JsonResponse({
+
+        'success': True
+
+    })
+def detalle_venta_local(request, venta_id):
+
+    venta = get_object_or_404(
+        VentaLocal,
+        id=venta_id
+    )
+
+    items = venta.items.all()
+
+    data = {
+
+        'cliente': (
+            f'{venta.cliente.user.first_name} '
+            f'{venta.cliente.user.last_name}'
+        ),
+
+        'fecha': venta.created_at.strftime(
+            '%d/%m/%Y %H:%M'
+        ),
+
+        'total': float(venta.total),
+
+        'productos': []
+
+    }
+
+    for item in items:
+
+        data['productos'].append({
+
+            'producto': item.producto.nombre,
+
+            'talle': item.variante.talle.nombre,
+
+            'color': item.color,
+
+            'cantidad': item.cantidad,
+
+            'subtotal': float(item.subtotal)
+
+        })
+
+    return JsonResponse(data)

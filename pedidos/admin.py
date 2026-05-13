@@ -1,6 +1,9 @@
 from django.contrib import admin
 from .models import Pedido, PedidoItem, Pago, Gasto
+from .models import VentaLocal, VentaLocalItem
 
+admin.site.register(VentaLocal)
+admin.site.register(VentaLocalItem)
 
 @admin.register(Pedido)
 class PedidoAdmin(admin.ModelAdmin):

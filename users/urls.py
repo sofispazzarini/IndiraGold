@@ -18,5 +18,5 @@ urlpatterns = [
     path('admin/clientes/<int:cliente_id>/editar/', views.editar_cliente, name='editar_cliente'),
     path('admin/clientes/<int:cliente_id>/agregar-direccion/', views.agregar_direccion, name='agregar_direccion'),
     path('logout/', logout_view, name='logout'),
-    
+    path('buscar-clientes/',views.buscar_clientes,name='buscar_clientes'),
 ]

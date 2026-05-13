@@ -112,3 +112,62 @@ class Gasto(models.Model):
 
     def __str__(self):
         return f"{self.descripcion} - ${self.monto}"
+class VentaLocal(models.Model):
+
+    cliente = models.ForeignKey(
+        Cliente,
+        on_delete=models.CASCADE,
+        related_name='ventas_local'
+    )
+
+    total = models.DecimalField(
+        max_digits=10,
+        decimal_places=2
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True
+    )
+
+    def __str__(self):
+
+        return f"Venta #{self.id}"
+
+
+class VentaLocalItem(models.Model):
+
+    venta = models.ForeignKey(
+        VentaLocal,
+        on_delete=models.CASCADE,
+        related_name='items'
+    )
+
+    producto = models.ForeignKey(
+        Producto,
+        on_delete=models.CASCADE
+    )
+
+    variante = models.ForeignKey(
+        Variante,
+        on_delete=models.CASCADE
+    )
+
+    color = models.CharField(
+        max_length=100
+    )
+
+    cantidad = models.PositiveIntegerField()
+
+    precio_unitario = models.DecimalField(
+        max_digits=10,
+        decimal_places=2
+    )
+
+    subtotal = models.DecimalField(
+        max_digits=10,
+        decimal_places=2
+    )
+
+    def __str__(self):
+
+        return f"{self.producto.nombre} x{self.cantidad}"

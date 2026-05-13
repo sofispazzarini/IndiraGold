@@ -24,6 +24,11 @@
     <a href="{% url 'pedidos:gestion_pedidos' %}" class="nav-link{% if request.resolver_match.url_name == 'gestion_pedidos' %} active{% endif %}">
         <i class="bi bi-bag-check me-2"></i> Gestión de Pedidos
     </a>
+     <a href="{% url 'pedidos:ventas_presenciales' %}" class="nav-link {% if request.resolver_match.url_name == 'ventas_presenciales' %}active{% endif %}">
+        <i class="bi bi-shop me-2"></i>
+        Ventas local
+    </a>
+
     <a href="{% url 'pedidos:estadisticas_ventas' %}" class="nav-link">
         <i class="bi bi-graph-up me-2"></i> Estadísticas
     </a>
@@ -43,4 +48,5 @@
     <a href="{% url 'home:gestion_carrousel' %}" class="nav-link{% if request.resolver_match.url_name == 'gestion_carrousel' or request.resolver_match.url_name == 'crear_slide' or request.resolver_match.url_name == 'editar_slide' %} active{% endif %}">
         <i class="bi bi-images me-2"></i> Carrousel Home
     </a>
+    
 </nav>

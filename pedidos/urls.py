@@ -20,6 +20,9 @@ urlpatterns = [
     path('estado/<int:pedido_id>/',views.estado_pedido, name='estado_pedido'),
     path('mis-pedidos/',views.mis_pedidos,name='mis_pedidos'),
     path('aumentar-cantidad/<int:variante_id>/',views.aumentar_cantidad, name='aumentar_cantidad'),
-
     path('disminuir-cantidad/<int:variante_id>/',views.disminuir_cantidad,name='disminuir_cantidad'),
+    path('actualizar-estado/<int:pedido_id>/',views.actualizar_estado_pedido,name='actualizar_estado_pedido'),
+    path('ventas-presenciales/',views.ventas_presenciales,name='ventas_presenciales'),
+    path('registrar-venta-local/',views.registrar_venta_local,name='registrar_venta_local'),
+    path('detalle-venta/<int:venta_id>/',views.detalle_venta_local,name='detalle_venta_local'),
 ]

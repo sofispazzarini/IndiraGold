@@ -147,9 +147,13 @@
         background: linear-gradient(90deg, #fbe18b 0%, #b8922a 100%);
         color: #6E0E2E;
         font-weight: 600;
-        padding: 0.4rem 1rem;
+        padding: 8px 16px;
         border-radius: 20px;
         font-size: 0.85rem;
+        white-space: nowrap;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
     }
     .pagination .page-link {
         color: #b8922a;
@@ -201,10 +205,43 @@
                     {% endfor %}
                 </select>
             </div>
+            
+            <div style="min-width: 280px;">
+
+                <label
+                    for="q"
+                    class="form-label fw-bold"
+                    style="color: #b8922a;"
+                >
+
+                    <i class="bi bi-search me-1"></i>
+
+                    Buscar cliente
+
+                </label>
+
+                <input
+                    type="text"
+                    name="q"
+                    id="q"
+                    class="form-control filter-select"
+                    placeholder="Nombre, apellido o email"
+                    value="{{ request.GET.q }}"
+                >
+
+            </div>
+
+            <!-- BOTÓN -->
+
             <button type="submit" class="filter-btn">
-                <i class="bi bi-search me-1"></i> Filtrar
+
+                <i class="bi bi-search me-1"></i>
+
+                Filtrar
+
             </button>
-            {% if estado %}
+
+            {% if estado or request.GET.q %}
                 <a href="?estado=" class="filter-btn-clear">
                     <i class="bi bi-x-lg me-1"></i> Limpiar
                 </a>
@@ -221,6 +258,7 @@
                             <th><i class="bi bi-hash me-1"></i>ID</th>
                             <th><i class="bi bi-person me-1"></i>Cliente</th>
                             <th><i class="bi bi-currency-dollar me-1"></i>Total</th>
+                            <th><i class="bi bi-truck me-1"></i>Entrega</th>
                             <th><i class="bi bi-tag me-1"></i>Tipo</th>
                             <th><i class="bi bi-clock-history me-1"></i>Estado</th>
                             <th><i class="bi bi-calendar me-1"></i>Fecha</th>
@@ -231,8 +269,40 @@
                         {% for pedido in pedidos %}
                             <tr>
                                 <td><span class="badge-id">#{{ pedido.id }}</span></td>
-                                <td class="fw-bold" style="color: #2d3848;">{{ pedido.cliente.nombre }}</td>
+                                <td>
+
+                                    <div class="fw-bold" style="color: #2d3848;">
+
+                                        {{ pedido.cliente.user.first_name }}
+                                        {{ pedido.cliente.user.last_name }}
+
+                                    </div>
+
+                                    <small class="text-muted">
+
+                                        {{ pedido.cliente.user.email }}
+
+                                    </small>
+
+                                </td>
                                 <td><strong style="color: #6E0E2E; font-size: 1.05rem;">${{ pedido.total }}</strong></td>
+                                <td>
+
+                                    {% if pedido.metodo_entrega == 'local' %}
+
+                                        <span class="badge-tipo">
+                                            Retiro local
+                                        </span>
+
+                                    {% else %}
+
+                                        <span class="badge-tipo">
+                                            Envío Correo
+                                        </span>
+
+                                    {% endif %}
+
+                                </td>
                                 <td><span class="badge-tipo">{{ pedido.get_tipo_venta_display }}</span></td>
                                 <td>
                                     <span class="estado-badge estado-{{ pedido.estado }}">
@@ -240,12 +310,181 @@
                                     </span>
                                 </td>
                                 <td><span class="text-muted">{{ pedido.created_at|date:"d/m/Y H:i" }}</span></td>
-                                <td class="text-end">
-                                    <a href="{% url 'pedidos:detalle_pedido' pedido.id %}" class="btn-action btn-ver-ig" title="Ver detalles">
-                                        <i class="bi bi-eye"></i> Ver
-                                    </a>
+                               <td class="text-end">
+
+                                    <div
+                                        class="d-flex justify-content-end align-items-center gap-2 flex-wrap"
+                                    >
+                                        <a href="{% url 'pedidos:detalle_pedido' pedido.id %}" class="btn-action btn-ver-ig" title="Ver detalles">
+                                            <i class="bi bi-eye"></i> Ver
+                                        </a>
+                                    <!-- CAMBIAR ESTADO -->
+                                        <button
+                                            type="button"
+                                            class="btn-action btn-ver-ig"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#estadoModal{{ pedido.id }}"
+                                        >
+
+                                            <i class="bi bi-arrow-repeat"></i>
+
+                                            Estado
+
+                                        </button>
+                                        
                                 </td>
                             </tr>
+                            <div
+                                class="modal fade"
+                                id="estadoModal{{ pedido.id }}"
+                                tabindex="-1"
+                                aria-hidden="true"
+                            >
+
+                                <div class="modal-dialog modal-dialog-centered">
+
+                                    <div class="modal-content border-0 rounded-4">
+
+                                        <div
+                                            class="modal-header border-0"
+                                            style="background:#f8f5ef;"
+                                        >
+
+                                            <h5
+                                                class="modal-title fw-bold"
+                                                style="color:#6E0E2E;"
+                                            >
+
+                                                Estado del pedido #{{ pedido.id }}
+
+                                            </h5>
+
+                                            <button
+                                                type="button"
+                                                class="btn-close"
+                                                data-bs-dismiss="modal"
+                                            ></button>
+
+                                        </div>
+
+                                        <div class="modal-body p-4">
+
+                                            <div class="mb-3">
+
+                                                <small class="text-muted">
+
+                                                    Cliente
+
+                                                </small>
+
+                                                <div class="fw-bold">
+
+                                                    {{ pedido.cliente.user.first_name }}
+                                                    {{ pedido.cliente.user.last_name }}
+
+                                                </div>
+
+                                            </div>
+
+                                            <div class="mb-4">
+
+                                                <small class="text-muted">
+
+                                                    Estado actual
+
+                                                </small>
+
+                                                <div>
+
+                                                    <span
+                                                        class="estado-badge estado-{{ pedido.estado }}"
+                                                    >
+
+                                                        {{ pedido.get_estado_display }}
+
+                                                    </span>
+
+                                                </div>
+
+                                            </div>
+
+                                            {% if pedido.estado == 'rechazado' or pedido.estado == 'entregado' %}
+
+                                                <div
+                                                    class="alert alert-warning rounded-4 mb-0"
+                                                >
+
+                                                    Este pedido ya fue finalizado y
+                                                    no puede modificarse.
+
+                                                </div>
+
+                                            {% else %}
+
+                                                <form
+                                                    method="POST"
+                                                    action="{% url 'pedidos:actualizar_estado_pedido' pedido.id %}"
+                                                >
+
+                                                    {% csrf_token %}
+
+                                                    <label
+                                                        class="form-label fw-bold"
+                                                    >
+
+                                                        Nuevo estado
+
+                                                    </label>
+
+                                                    <select
+                                                        name="estado"
+                                                        class="form-select rounded-4 mb-4"
+                                                    >
+
+                                                        {% for value, label in pedido.ESTADOS %}
+
+                                                            <option
+                                                                value="{{ value }}"
+                                                                {% if pedido.estado == value %}selected{% endif %}
+                                                            >
+
+                                                                {{ label }}
+
+                                                            </option>
+
+                                                        {% endfor %}
+
+                                                    </select>
+
+                                                    <button
+                                                        type="submit"
+                                                        class="btn w-100 rounded-pill fw-bold"
+                                                        style="
+                                                            background:linear-gradient(
+                                                                90deg,
+                                                                #fbe18b 0%,
+                                                                #b8922a 100%
+                                                            );
+                                                            color:#6E0E2E;
+                                                            padding:12px;
+                                                        "
+                                                    >
+
+                                                        Guardar cambios
+
+                                                    </button>
+
+                                                </form>
+
+                                            {% endif %}
+
+                                        </div>
+
+                                    </div>
+
+                                </div>
+
+                            </div>
                         {% endfor %}
                     </tbody>
                 </table>
