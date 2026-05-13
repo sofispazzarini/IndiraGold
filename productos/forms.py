@@ -143,3 +143,15 @@ class VarianteForm(forms.ModelForm):
         widgets = {
             'talle': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: S, M, XL, 42, Único...'}),
         }
+
+from .models import CategoriaOrden
+
+class CategoriaOrdenForm(forms.ModelForm):
+    class Meta:
+        model = CategoriaOrden
+        fields = ['nombre', 'descripcion', 'activo']
+        widgets = {
+            'nombre': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nombre de la categoría'}),
+            'descripcion': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Descripción opcional'}),
+            'activo': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }

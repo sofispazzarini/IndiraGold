@@ -14,8 +14,20 @@ admin.site.register(Talle)
 admin.site.register(Color)
 admin.site.register(Medida)
 admin.site.register(Variante)
-admin.site.register(CategoriaOrden)
-admin.site.register(CategoriaOrdenProducto)
+@admin.register(CategoriaOrden)
+class CategoriaOrdenAdmin(admin.ModelAdmin):
+    list_display = ('nombre', 'activo', 'created_at')
+    list_filter = ('activo',)
+    search_fields = ('nombre', 'descripcion')
+    list_editable = ('activo',)
+
+
+@admin.register(CategoriaOrdenProducto)
+class CategoriaOrdenProductoAdmin(admin.ModelAdmin):
+    list_display = ('categoria_orden', 'producto', 'created_at')
+    list_filter = ('categoria_orden',)
+    search_fields = ('producto__nombre', 'categoria_orden__nombre')
+    raw_id_fields = ('producto',)
 
 
 @admin.register(VarianteColor)

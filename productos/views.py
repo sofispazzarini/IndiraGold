@@ -12,11 +12,12 @@ from django.core.paginator import Paginator
 from .models import (
     Subcategoria, Producto, Talle, Color, Medida,
     Variante, Proveedor, ImagenProducto, Categoria, TipoMedida,
-    VarianteColor
+    VarianteColor, CategoriaOrden, CategoriaOrdenProducto
 )
 from .forms import (
-    ProductoForm, SubcategoriaForm, CategoriaForm, 
-    TipoMedidaForm, ProveedorForm, SubcategoriaSoloNombreForm
+    ProductoForm, SubcategoriaForm, CategoriaForm,
+    TipoMedidaForm, ProveedorForm, SubcategoriaSoloNombreForm,
+    CategoriaOrdenForm
 )
 
 # --- DECORADOR AUXILIAR ---
@@ -548,4 +549,96 @@ def producto_qrs_impresion(request, producto_id):
     return render(request, 'productos/qrs_impresion.html', {
         'producto': producto,
         'variantes_color': variantes_color
+    })
+
+
+# --- CATEGORÍAS DE ORDEN ---
+
+@admin_required
+def gestion_categorias_orden(request):
+    categorias = CategoriaOrden.objects.all().order_by('-created_at')
+    return render(request, 'productos/gestion_categorias_orden.html', {'categorias': categorias})
+
+
+@admin_required
+def crear_categoria_orden(request):
+    if request.method == 'POST':
+        form = CategoriaOrdenForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Categoría de orden creada correctamente.')
+            return redirect('productos:gestion_categorias_orden')
+    else:
+        form = CategoriaOrdenForm()
+    return render(request, 'productos/crear_categoria_orden.html', {'form': form})
+
+
+@admin_required
+def editar_categoria_orden(request, cat_id):
+    categoria = get_object_or_404(CategoriaOrden, id=cat_id)
+    if request.method == 'POST':
+        form = CategoriaOrdenForm(request.POST, instance=categoria)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Categoría de orden actualizada.')
+            return redirect('productos:gestion_categorias_orden')
+    else:
+        form = CategoriaOrdenForm(instance=categoria)
+    return render(request, 'productos/crear_categoria_orden.html', {'form': form, 'categoria': categoria})
+
+
+@admin_required
+@require_POST
+def eliminar_categoria_orden(request, cat_id):
+    categoria = get_object_or_404(CategoriaOrden, id=cat_id)
+    categoria.delete()
+    messages.success(request, 'Categoría de orden eliminada.')
+    return redirect('productos:gestion_categorias_orden')
+
+
+@admin_required
+@require_POST
+def toggle_categoria_orden(request, cat_id):
+    categoria = get_object_or_404(CategoriaOrden, id=cat_id)
+    categoria.activo = not categoria.activo
+    categoria.save()
+    estado = 'activada' if categoria.activo else 'desactivada'
+    messages.success(request, f'Categoría "{categoria.nombre}" {estado}.')
+    return redirect('productos:gestion_categorias_orden')
+
+
+@admin_required
+def gestionar_productos_categoria_orden(request, cat_id):
+    categoria = get_object_or_404(CategoriaOrden, id=cat_id)
+    productos_en_categoria = CategoriaOrdenProducto.objects.filter(
+        categoria_orden=categoria
+    ).select_related('producto')
+    productos_ids = productos_en_categoria.values_list('producto_id', flat=True)
+    productos_disponibles = Producto.objects.filter(activo=True).exclude(id__in=productos_ids).order_by('nombre')
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        producto_id = request.POST.get('producto_id')
+
+        if action == 'agregar' and producto_id:
+            producto = get_object_or_404(Producto, id=producto_id)
+            CategoriaOrdenProducto.objects.get_or_create(
+                categoria_orden=categoria,
+                producto=producto
+            )
+            messages.success(request, f'Producto "{producto.nombre}" agregado.')
+
+        elif action == 'quitar' and producto_id:
+            CategoriaOrdenProducto.objects.filter(
+                categoria_orden=categoria,
+                producto_id=producto_id
+            ).delete()
+            messages.success(request, 'Producto quitado de la categoría.')
+
+        return redirect('productos:gestionar_productos_categoria_orden', cat_id=cat_id)
+
+    return render(request, 'productos/gestionar_productos_categoria_orden.html', {
+        'categoria': categoria,
+        'productos_en_categoria': productos_en_categoria,
+        'productos_disponibles': productos_disponibles,
     })

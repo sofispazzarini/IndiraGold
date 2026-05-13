@@ -2,7 +2,7 @@ from django.views.generic import TemplateView
 from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
 from django.shortcuts import redirect, render, get_object_or_404
-from productos.models import Producto, Categoria, Talle, Color
+from productos.models import Producto, Categoria, Talle, Color, CategoriaOrden
 from carritos.utils import clear_cart_session, expire_cart_if_needed, get_cart_seconds_left
 from consultas.models import TemaConsulta
 from .models import SlideCarrousel
@@ -85,6 +85,11 @@ class HomePublicaView(TemplateView):
         ctx['temas_consulta'] = temas_con_faqs
 
         ctx['slides_carrousel'] = SlideCarrousel.objects.filter(activo=True)
+
+        categorias_orden = CategoriaOrden.objects.filter(activo=True).prefetch_related(
+            'categoriaordenproducto_set__producto__imagenes'
+        )
+        ctx['categorias_orden'] = categorias_orden
         return ctx
 
 
