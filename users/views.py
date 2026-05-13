@@ -17,6 +17,7 @@ from .forms_manual import RegistroManualClienteForm, EditarClienteForm, NuevaDir
 from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse
 from django.contrib.auth.decorators import user_passes_test
+from carritos.utils import vincular_carrito_con_usuario
 
 # --- LOGOUT VIEW ---
 def logout_view(request):
@@ -185,25 +186,45 @@ def confirmar_direccion(request):
 def home(request):
     return redirect('home:home')
 
+# users/views.py
+
 def login_view(request):
     error = None
     if request.method == 'POST':
         dni = request.POST.get('username')
         password = request.POST.get('password')
-        if not dni.isdigit() or len(dni) not in [7,8]:
-            error = 'El DNI debe contener solo números (7 u 8 dígitos).'
+        
+        user = authenticate(request, username=dni, password=password)
+        if user is not None:
+            carrito_temporal = request.session.get('carrito', {})
+            old_session_key = request.session.session_key
+            
+            auth_login(request, user) # Django limpia la sesión acá
+            # 4. REDIRECCIÓN INTELIGENTE
+            if user.is_superuser:
+                return redirect('users:dashboard_admin')
+
+            # 2. Los pasamos a la base de datos
+            from carritos.utils import vincular_carrito_con_usuario, get_or_create_cart
+            vincular_carrito_con_usuario(request, session_id_previo=old_session_key, carrito_sesion=carrito_temporal)
+
+            # Redirigir SIEMPRE a checkout si el usuario tenía productos en el carrito de la sesión antes de loguear
+            if carrito_temporal and any(int(q) > 0 for q in carrito_temporal.values()):
+                return redirect('pedidos:checkout')
+            # Si no, verificar si el carrito en BD tiene productos
+            try:
+                carrito = get_or_create_cart(request)
+                if carrito.items.exists():
+                    return redirect('pedidos:checkout')
+            except Exception:
+                pass
+            return redirect('users:dashboard_cliente')
+
+            
         else:
-            user = authenticate(request, username=dni, password=password)
-            if user is not None:
-                auth_login(request, user)
-                if user.is_superuser:
-                    return redirect('users:dashboard_admin')
-                return redirect('users:dashboard_cliente')
-            else:
-                error = 'DNI o contraseña incorrectos.'
+            error = 'DNI o contraseña incorrectos.'
+            
     return render(request, 'users/login.html', {'error': error})
-
-
 # Vista para registro manual de cliente (solo admin)
 @user_passes_test(lambda u: u.is_superuser)
 def registro_manual_cliente(request):

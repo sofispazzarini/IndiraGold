@@ -1,5 +1,6 @@
+# home/views.py
 from django.views.generic import TemplateView
-from productos.models import Producto, Categoria, Talle, Color
+from productos.models import Producto, Categoria, Talle, Color, Variante # 1. Agregamos Variante al import
 from carritos.utils import clear_cart_session, expire_cart_if_needed, get_cart_seconds_left
 
 class HomePublicaView(TemplateView):
