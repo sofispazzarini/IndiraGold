@@ -6,7 +6,7 @@ from django.contrib import messages
 from django.db.models import Sum, Count, Avg, Q, F
 from datetime import datetime, timedelta
 from decimal import Decimal
-from .models import Pedido, PedidoItem, VentaLocal
+from .models import Pedido, PedidoItem, VentaLocal, PagoVentaLocal
 from carritos.models import Carrito, CarritoItem
 from carritos.utils import get_or_create_cart, vincular_carrito_con_usuario
 from .models import Pedido, PedidoItem, Gasto, VentaLocal, VentaLocalItem
@@ -968,12 +968,21 @@ def registrar_venta_local(request):
 
     total = 0
 
+    monto_pagado = Decimal(
+        str(data.get('monto_pagado', 0))
+    )
+
     venta = VentaLocal.objects.create(
 
         cliente=cliente,
 
-        total=0
+        total=0,
 
+        monto_pagado=0,
+
+        saldo_pendiente=0,
+
+        estado_pago='PAGADO'
     )
 
     for item in productos:
@@ -1023,8 +1032,27 @@ def registrar_venta_local(request):
         total += subtotal
 
     venta.total = total
+    saldo_pendiente = total - monto_pagado
+
+    if saldo_pendiente > 0:
+        estado_pago = 'PARCIAL'
+    else:
+        estado_pago = 'PAGADO'
+
+    venta.total = total
+    venta.monto_pagado = monto_pagado
+    venta.saldo_pendiente = saldo_pendiente
+    venta.estado_pago = estado_pago
 
     venta.save()
+    if monto_pagado > 0:
+
+        PagoVentaLocal.objects.create(
+
+            venta=venta,
+
+            monto=monto_pagado
+        )
 
     return JsonResponse({
 
@@ -1052,7 +1080,11 @@ def detalle_venta_local(request, venta_id):
         ),
 
         'total': float(venta.total),
+        'pagado': float(venta.monto_pagado),
 
+        'pendiente': float(venta.saldo_pendiente),
+
+        'estado': venta.estado_pago,
         'productos': []
 
     }
@@ -1074,3 +1106,83 @@ def detalle_venta_local(request, venta_id):
         })
 
     return JsonResponse(data)
+@require_POST
+@admin_required
+def registrar_pago_venta(request, venta_id):
+
+    venta = get_object_or_404(
+        VentaLocal,
+        id=venta_id
+    )
+
+    data = json.loads(request.body)
+
+    monto = Decimal(
+        str(data.get('monto', 0))
+    )
+
+    venta.monto_pagado += monto
+
+    venta.saldo_pendiente = (
+        venta.total - venta.monto_pagado
+    )
+
+    if venta.saldo_pendiente <= 0:
+
+        venta.saldo_pendiente = 0
+
+        venta.estado_pago = 'PAGADO'
+
+    venta.save()
+
+    PagoVentaLocal.objects.create(
+
+        venta=venta,
+
+        monto=monto
+    )
+
+    items = venta.items.all()
+
+    html = f"""
+    <div class="mb-3">
+
+        <div class="d-flex justify-content-between">
+
+            <span>Total</span>
+
+            <span class="fw-bold">
+                ${venta.total}
+            </span>
+
+        </div>
+
+        <div class="d-flex justify-content-between">
+
+            <span>Pagado</span>
+
+            <span class="fw-bold text-success">
+                ${venta.monto_pagado}
+            </span>
+
+        </div>
+
+        <div class="d-flex justify-content-between">
+
+            <span>Pendiente</span>
+
+            <span class="fw-bold text-danger">
+                ${venta.saldo_pendiente}
+            </span>
+
+        </div>
+
+    </div>
+    """
+
+    return JsonResponse({
+
+        'success': True,
+
+        'html': html
+    })

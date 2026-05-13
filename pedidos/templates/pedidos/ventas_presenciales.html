@@ -235,7 +235,11 @@
 
                         <th>Total</th>
 
-                        <th></th>
+                        <th>Pagado</th>
+
+                        <th>Pendiente</th>
+
+                        <th>Estado</th>
 
                     </tr>
 
@@ -295,6 +299,40 @@
                                     ${{ venta.total }}
 
                                 </span>
+
+                            </td>
+
+                            <td>
+
+                                ${{ venta.monto_pagado }}
+
+                            </td>
+
+                            <td>
+
+                                ${{ venta.saldo_pendiente }}
+
+                            </td>
+
+                            <td>
+
+                                {% if venta.estado_pago == 'PAGADO' %}
+
+                                    <span class="badge bg-success">
+
+                                        Pagado
+
+                                    </span>
+
+                                {% else %}
+
+                                    <span class="badge bg-warning text-dark">
+
+                                        Parcial
+
+                                    </span>
+
+                                {% endif %}
 
                             </td>
 
@@ -719,7 +757,49 @@
                                 </span>
 
                             </div>
+                            <div class="mb-4">
 
+                                <label class="form-label fw-bold">
+
+                                    Monto pagado
+
+                                </label>
+
+                                <input
+                                    type="number"
+                                    id="monto-pagado"
+                                    class="form-control rounded-4"
+                                    min="0"
+                                    step="0.01"
+                                    value="0"
+                                >
+
+                                <div class="mt-3">
+
+                                    <div
+                                        class="d-flex justify-content-between"
+                                    >
+
+                                        <span class="text-muted">
+
+                                            Pendiente de pago
+
+                                        </span>
+
+                                        <span
+                                            id="saldo-pendiente"
+                                            class="fw-bold text-danger"
+                                        >
+
+                                            $0
+
+                                        </span>
+
+                                    </div>
+
+                                </div>
+
+                            </div>
                             <button
                                 class="btn btn-gold rounded-pill py-3 fw-bold" id="btn-registrar-venta"
                             >
@@ -925,7 +1005,12 @@ document.getElementById(
                         window.clienteSeleccionado,
 
                     productos:
-                        productosVenta
+                        productosVenta,
+
+                    monto_pagado:
+                        document.getElementById(
+                            'monto-pagado'
+                        ).value
 
                 })
 
@@ -937,7 +1022,13 @@ document.getElementById(
 
         if(data.success){
 
-            location.reload()
+            document.getElementById(
+                'nuevo-pago'
+            ).value = ''
+
+            document.getElementById(
+                'contenido-detalle-venta'
+            ).innerHTML = data.html
 
         }else{
 
@@ -1313,6 +1404,19 @@ function renderProductosVenta(){
     document.getElementById(
         'total-venta'
     ).innerText = `$${total}`
+    const montoPagado = parseFloat(
+
+        document.getElementById(
+            'monto-pagado'
+        ).value
+
+    ) || 0
+
+    const saldoPendiente = total - montoPagado
+
+    document.getElementById(
+        'saldo-pendiente'
+    ).innerText = `$${saldoPendiente}`
 
     const totalProductos =
         productosVenta.reduce(
@@ -1505,21 +1609,85 @@ document.querySelectorAll(
 
             html += `
 
-                <div
-                    class="text-end mt-4"
-                >
+                <div class="mb-3">
 
-                    <h4 class="fw-bold">
+                    <div class="d-flex justify-content-between">
 
-                        Total:
-                        $${data.total}
+                        <span>Total</span>
 
-                    </h4>
+                        <span class="fw-bold">
+
+                            $${data.total}
+
+                        </span>
+
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+
+                        <span>Pagado</span>
+
+                        <span class="fw-bold text-success">
+
+                            $${data.pagado}
+
+                        </span>
+
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+
+                        <span>Pendiente</span>
+
+                        <span class="fw-bold text-danger">
+
+                            $${data.pendiente}
+
+                        </span>
+
+                    </div>
 
                 </div>
 
             `
 
+            if(data.estado === 'PARCIAL'){
+
+                html += `
+
+                    <div class="mt-4">
+
+                        <label class="form-label fw-bold">
+
+                            Registrar pago
+
+                        </label>
+
+                        <div class="d-flex gap-2">
+
+                            <input
+                                type="number"
+                                id="nuevo-pago"
+                                class="form-control rounded-pill"
+                                min="0"
+                                step="0.01"
+                            >
+
+                            <button
+                                class="btn btn-gold rounded-pill"
+                                onclick="registrarPago(${ventaId})"
+                            >
+
+                                Guardar
+
+                            </button>
+
+                        </div>
+
+                    </div>
+
+                `
+            }
             document.getElementById(
                 'contenido-detalle-venta'
             ).innerHTML = html
@@ -1537,6 +1705,54 @@ document.querySelectorAll(
         }
     )
 })
+document.getElementById(
+    'monto-pagado'
+).addEventListener(
+    'input',
+    renderProductosVenta
+)
+async function registrarPago(ventaId){
 
+    const monto = document.getElementById(
+        'nuevo-pago'
+    ).value
+
+    const response = await fetch(
+
+        `/pedidos/registrar-pago/${ventaId}/`,
+
+        {
+
+            method: 'POST',
+
+            headers: {
+
+                'Content-Type': 'application/json',
+
+                'X-CSRFToken': getCookie('csrftoken')
+
+            },
+
+            body: JSON.stringify({
+
+                monto: monto
+
+            })
+
+        }
+
+    )
+
+    const data = await response.json()
+
+    if(data.success){
+
+        location.reload()
+
+    }else{
+
+        alert('Error al registrar pago')
+    }
+}
 </script>
 {% endblock %}

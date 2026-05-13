@@ -112,6 +112,10 @@ class Gasto(models.Model):
 
     def __str__(self):
         return f"{self.descripcion} - ${self.monto}"
+ESTADOS_PAGO = [
+    ("PAGADO", "Pagado"),
+    ("PARCIAL", "Parcial"),
+]
 class VentaLocal(models.Model):
 
     cliente = models.ForeignKey(
@@ -128,7 +132,25 @@ class VentaLocal(models.Model):
     created_at = models.DateTimeField(
         auto_now_add=True
     )
+    total = models.DecimalField(max_digits=10, decimal_places=2)
 
+    monto_pagado = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=0
+    )
+
+    saldo_pendiente = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=0
+    )
+
+    estado_pago = models.CharField(
+        max_length=20,
+        choices=ESTADOS_PAGO,
+        default="PAGADO"
+    )
     def __str__(self):
 
         return f"Venta #{self.id}"
@@ -171,3 +193,14 @@ class VentaLocalItem(models.Model):
     def __str__(self):
 
         return f"{self.producto.nombre} x{self.cantidad}"
+class PagoVentaLocal(models.Model):
+
+    venta = models.ForeignKey(
+        VentaLocal,
+        on_delete=models.CASCADE,
+        related_name="pagos"
+    )
+
+    monto = models.DecimalField(max_digits=10, decimal_places=2)
+
+    fecha = models.DateTimeField(auto_now_add=True)
