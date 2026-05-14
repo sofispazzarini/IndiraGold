@@ -1,162 +1,205 @@
 {% extends 'basico.html' %}
 
 {% block content %}
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,600&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
+
 <style>
+  :root {
+    --gold: #b8922a;
+    --gold-faint: #faf7f0;
+    --burgundy: #6E0E2E;
+    --dark: #1a1612;
+    --text: #3d342a;
+    --muted: #9c8c7c;
+    --border: #e8dfd4;
+  }
 
-.login-wrapper{
-    width:100%;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    min-height:70vh;
-}
+  .login-wrapper {
+    width: 100%;
+    min-height: 80vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+  }
 
-.login-card{
-    width:420px;
-    background:white;
-    border-radius:18px;
-    padding:45px 40px;
-    border:1px solid #e8dfd4;
-    box-shadow:0 20px 50px rgba(0,0,0,0.08);
-}
+  .login-card {
+    width: 100%;
+    max-width: 420px;
+    background: #fff;
+    border-radius: 20px;
+    padding: 3.5rem 3rem;
+    border: 1px solid var(--border);
+    box-shadow: 0 20px 50px rgba(0,0,0,0.06);
+    position: relative;
+  }
 
-.login-title{
-    font-family:'Cormorant Garamond',serif;
-    font-size:2.4rem;
-    text-align:center;
-    margin-bottom:30px;
-    color:#1a1612;
-}
+  .login-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60px;
+    height: 3px;
+    background: var(--burgundy);
+    border-radius: 0 0 3px 3px;
+  }
 
-.form-group{
-    margin-bottom:20px;
-}
+  .brand {
+    text-align: center;
+    margin-bottom: 0.5rem;
+  }
 
-.form-label{
-    font-size:.85rem;
-    font-weight:500;
-    color:#8c7e70;
-    margin-bottom:6px;
-    display:block;
-}
+  .brand-name {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--burgundy);
+    letter-spacing: 0.05em;
+  }
 
-.form-control{
-    width:100%;
-    padding:12px 14px;
-    border:1px solid #e8dfd4;
-    border-radius:10px;
-    font-size:.95rem;
-    background:#faf7f4;
-    box-sizing:border-box;
-}
+  .login-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 2.4rem;
+    font-weight: 600;
+    text-align: center;
+    color: var(--dark);
+    margin-bottom: 2.5rem;
+  }
 
-.form-control:focus{
-    outline:none;
-    border-color:#b8922a;
-    background:white;
-    box-shadow:0 0 0 2px rgba(184,146,42,.15);
-}
+  .form-group {
+    margin-bottom: 1.5rem;
+  }
 
-.btn-login{
-    width:100%;
-    padding:12px 14px;
-    margin-top:10px;
-    border:none;
-    border-radius:10px;
-    font-weight:600;
-    cursor:pointer;
+  .form-label {
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 0.5rem;
+  }
 
-    background:linear-gradient(135deg,#7c2a3a,#b8922a);
-    color:white;
+  .form-input {
+    width: 100%;
+    padding: 0.9rem 0;
+    border: none;
+    border-bottom: 1.5px solid var(--border);
+    font-family: 'Montserrat', sans-serif;
+    font-size: 1rem;
+    color: var(--dark);
+    background: transparent;
+    transition: border-color 0.2s;
+    box-sizing: border-box;
+  }
 
-    box-sizing:border-box;
-}
+  .form-input:focus {
+    outline: none;
+    border-bottom-color: var(--burgundy);
+  }
 
-.btn-login:hover{
-    transform:translateY(-1px);
-    box-shadow:0 10px 20px rgba(0,0,0,.12);
-}
+  .form-input::placeholder {
+    color: #ccc;
+  }
 
-.register-link{
-    text-align:center;
-    margin-top:25px;
-    font-size:.9rem;
-    color:#8c7e70;
-}
+  .alert-error {
+    background: rgba(110, 14, 46, 0.06);
+    border: 1px solid rgba(110, 14, 46, 0.15);
+    color: var(--burgundy);
+    padding: 0.9rem 1.2rem;
+    border-radius: 10px;
+    margin-bottom: 1.5rem;
+    text-align: center;
+    font-size: 0.85rem;
+  }
 
-.register-link a{
-    color:#b8922a;
-    text-decoration:none;
-    font-weight:600;
-}
+  .btn-login {
+    width: 100%;
+    padding: 1rem;
+    margin-top: 1rem;
+    border: none;
+    border-radius: 50px;
+    background: var(--dark);
+    color: #fff;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.2s;
+  }
 
-.register-link a:hover{
-    color:#7c2a3a;
-}
+  .btn-login:hover {
+    background: var(--burgundy);
+    transform: translateY(-2px);
+  }
 
-.alert{
-    background:#fff3f3;
-    border:1px solid #f1caca;
-    color:#7c2a3a;
-    padding:10px;
-    border-radius:8px;
-    margin-bottom:15px;
-    text-align:center;
-    font-size:.85rem;
-}
+  .register-link {
+    text-align: center;
+    margin-top: 2rem;
+    font-size: 0.88rem;
+    color: var(--muted);
+  }
 
+  .register-link a {
+    color: var(--burgundy);
+    text-decoration: none;
+    font-weight: 600;
+    transition: color 0.2s;
+  }
+
+  .register-link a:hover {
+    color: var(--dark);
+  }
 </style>
 
 <div class="login-wrapper">
+  <div class="login-card">
 
-<div class="login-card">
-<div style="text-align:center;margin-bottom:10px;
-font-family:'Cormorant Garamond';font-size:1.4rem;color:#b8922a;font-weight:700;">
-IndiraGold
+    <div class="brand">
+      <span class="brand-name">Indira Gold</span>
+    </div>
+
+    <h1 class="login-title">Iniciar sesión</h1>
+
+    {% if error %}
+    <div class="alert-error">{{ error }}</div>
+    {% endif %}
+
+    <form method="post">
+      {% csrf_token %}
+
+      <div class="form-group">
+        <label class="form-label">DNI (Usuario)</label>
+        <input type="text"
+               class="form-input"
+               name="username"
+               placeholder="Ingresá tu DNI"
+               required
+               pattern="\d{7,8}"
+               maxlength="8">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Contraseña</label>
+        <input type="password"
+               class="form-input"
+               name="password"
+               placeholder="Tu contraseña"
+               required>
+      </div>
+
+      <button type="submit" class="btn-login">
+        INGRESAR
+      </button>
+    </form>
+
+    <p class="register-link">
+      ¿No tenés cuenta? <a href="{% url 'users:registro' %}">Registrate</a>
+    </p>
+
+  </div>
 </div>
-<div class="login-title">
-Iniciar sesión
-</div>
-
-<form method="post">
-{% csrf_token %}
-
-{% if error %}
-<div class="alert">{{ error }}</div>
-{% endif %}
-
-<div class="form-group">
-<label class="form-label">Nombre de usuario</label>
-<input type="text"
-class="form-control"
-name="username"
-required
-pattern="\d{7,8}"
-maxlength="8">
-</div>
-
-<div class="form-group">
-<label class="form-label">Contraseña</label>
-<input type="password"
-class="form-control"
-name="password"
-required>
-</div>
-
-<button type="submit" class="btn-login">
-Iniciar sesión
-</button>
-
-</form>
-
-<div class="register-link">
-¿No tienes cuenta?
-<a href="{% url 'users:registro' %}">
-Regístrate
-</a>
-</div>
-
-</div>
-</div>
-
 {% endblock %}

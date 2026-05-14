@@ -22,6 +22,11 @@ class Cliente(models.Model):
         decimal_places=2,
         default=0
     )
+    foto_perfil = models.ImageField(
+        upload_to='perfiles/',
+        null=True,
+        blank=True
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     def __str__(self):
         return self.user.username

@@ -2,294 +2,447 @@
 {% load static %}
 
 {% block extra_head %}
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,600&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-<link rel="stylesheet" href="{% static 'css/users.css' %}">
+
 <style>
-    .main-listado-wrapper {
-        min-height: calc(100vh - 60px);
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: flex-start;
+  :root {
+    --gold: #b8922a;
+    --gold-soft: #c9a84c;
+    --gold-pale: #f7f0e0;
+    --gold-faint: #faf7f0;
+    --burgundy: #6E0E2E;
+    --dark: #1a1612;
+    --dark-mid: #2e2720;
+    --text: #3d342a;
+    --muted: #9c8c7c;
+    --border: #e8dfd4;
+    --border-faint: rgba(184,146,42,0.12);
+  }
+
+  .gestion-main {
+    min-height: calc(100vh - 60px);
+    display: flex;
+    flex-direction: column;
+    padding: 3.5rem 4rem 5rem;
+    width: 100%;
+    max-width: 1100px;
+    margin-left: 18%;
+    margin-right: auto;
+  }
+
+  .page-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    margin-bottom: 2.5rem;
+    padding-bottom: 1.75rem;
+    border-bottom: 1px solid var(--border-faint);
+    position: relative;
+  }
+
+  .page-header::after {
+    content: '';
+    position: absolute;
+    bottom: -1px; left: 0;
+    width: 64px; height: 2px;
+    background: var(--burgundy);
+  }
+
+  .header-eyebrow {
+    font-size: 0.62rem;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--burgundy);
+    margin-bottom: 0.5rem;
+  }
+
+  .page-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(2.4rem, 4vw, 3.6rem);
+    font-weight: 600;
+    color: var(--dark);
+    letter-spacing: -0.01em;
+    line-height: 1;
+  }
+
+  .header-right {
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  .item-count {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 3.2rem;
+    font-weight: 300;
+    color: var(--burgundy);
+    line-height: 1;
+  }
+
+  .item-count-label {
+    font-size: 0.6rem;
+    font-weight: 500;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  /* Filter Bar */
+  .filter-bar {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+  }
+
+  .filter-select {
+    border: none;
+    border-bottom: 1.5px solid var(--border);
+    padding: 0.6rem 2rem 0.6rem 0;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.85rem;
+    background: transparent;
+    color: var(--dark);
+    cursor: pointer;
+    transition: border-color 0.2s;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%239c8c7c' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0 center;
+    min-width: 180px;
+  }
+
+  .filter-select:focus {
+    outline: none;
+    border-bottom-color: var(--burgundy);
+  }
+
+  .filter-btn {
+    background: var(--dark);
+    color: #fff;
+    border: none;
+    border-radius: 50px;
+    padding: 0.55rem 1.5rem;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.18s;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .filter-btn:hover {
+    background: var(--burgundy);
+  }
+
+  .filter-clear {
+    background: transparent;
+    color: var(--burgundy);
+    border: 1px solid var(--burgundy);
+    border-radius: 50px;
+    padding: 0.5rem 1.2rem;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.18s;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+  }
+
+  .filter-clear:hover {
+    background: var(--burgundy);
+    color: #fff;
+  }
+
+  /* Table */
+  .pedidos-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .pedidos-table thead th {
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    text-align: left;
+    padding: 0 1rem 1rem 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .pedidos-table thead th:last-child {
+    text-align: right;
+    padding-right: 0;
+  }
+
+  .pedidos-table tbody tr {
+    border-bottom: 1px solid rgba(232, 223, 212, 0.5);
+    transition: background 0.15s;
+  }
+
+  .pedidos-table tbody tr:hover {
+    background: var(--gold-faint);
+  }
+
+  .pedidos-table tbody td {
+    padding: 1rem 1rem 1rem 0;
+    vertical-align: middle;
+  }
+
+  .pedidos-table tbody td:last-child {
+    text-align: right;
+    padding-right: 0;
+  }
+
+  .pedido-id {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--burgundy);
+  }
+
+  .pedido-cliente {
+    font-weight: 500;
+    color: var(--dark);
+  }
+
+  .pedido-total {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--burgundy);
+  }
+
+  .pedido-tipo {
+    background: rgba(184, 146, 42, 0.1);
+    color: #7a5f15;
+    padding: 0.3rem 0.8rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    border: 1px solid rgba(184, 146, 42, 0.2);
+  }
+
+  .estado-badge {
+    display: inline-block;
+    padding: 0.35rem 0.9rem;
+    border-radius: 50px;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+
+  .estado-pendiente { background: rgba(110, 14, 46, 0.08); color: #6E0E2E; border: 1px solid rgba(110, 14, 46, 0.2); }
+  .estado-aceptado { background: rgba(184, 146, 42, 0.1); color: #7a5f15; border: 1px solid rgba(184, 146, 42, 0.25); }
+  .estado-en_preparacion { background: rgba(91, 121, 184, 0.1); color: #2a4a8a; border: 1px solid rgba(91, 121, 184, 0.25); }
+  .estado-enviado { background: rgba(124, 173, 106, 0.12); color: #3d6e2a; border: 1px solid rgba(124, 173, 106, 0.3); }
+  .estado-entregado { background: rgba(124, 173, 106, 0.12); color: #3d6e2a; border: 1px solid rgba(124, 173, 106, 0.3); }
+  .estado-cancelado { background: rgba(110, 14, 46, 0.08); color: #6E0E2E; border: 1px solid rgba(110, 14, 46, 0.2); }
+  .estado-vencido { background: rgba(156, 140, 124, 0.15); color: #5c5248; border: 1px solid rgba(156, 140, 124, 0.3); }
+
+  .pedido-fecha {
+    font-size: 0.8rem;
+    color: var(--muted);
+  }
+
+  .btn-ver {
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    border-radius: 50px;
+    padding: 0.4rem 1rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.18s;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+  }
+
+  .btn-ver:hover {
+    background: var(--burgundy);
+    color: #fff;
+    border-color: var(--burgundy);
+  }
+
+  /* Pagination */
+  .pagination-wrap {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 2.5rem;
+  }
+
+  .page-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.18s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+  }
+
+  .page-btn:hover {
+    border-color: var(--burgundy);
+    color: var(--burgundy);
+  }
+
+  .page-btn.active {
+    background: var(--dark);
+    border-color: var(--dark);
+    color: #fff;
+  }
+
+  .page-btn.arrow {
+    font-size: 0.7rem;
+  }
+
+  /* Empty State */
+  .empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: var(--muted);
+  }
+
+  .empty-state i {
+    font-size: 4rem;
+    opacity: 0.2;
+    margin-bottom: 1rem;
+  }
+
+  @media (max-width: 900px) {
+    .gestion-main {
+      padding: 2rem 1.5rem;
+      margin-left: 0;
     }
-    .ig-table-card {
-        background: #fff;
-        border-radius: 18px;
-        box-shadow: 0 4px 32px rgba(184,146,42,0.10);
-        padding: 2.5rem 2rem 2rem 2rem;
-        margin-bottom: 2.5rem;
-        width: 100%;
-        max-width: 1100px;
-        margin-left: 25%;
-        margin-right: auto;
+    .pedidos-table {
+      font-size: 0.85rem;
     }
-    .table thead th {
-        background: #f8f5ef;
-        color: #b8922a;
-        font-weight: 700;
-        border-top: none;
-        border-bottom: 2px solid #f3e7c6;
-        letter-spacing: 1px;
-        vertical-align: middle;
-        font-size: 0.9rem;
+    .pedidos-table thead th,
+    .pedidos-table tbody td {
+      padding: 0.75rem 0.5rem;
     }
-    .table tbody tr {
-        transition: background 0.18s;
-    }
-    .table tbody tr:hover {
-        background: #fdf6e3;
-    }
-    .listado-header {
-        width: 100%;
-        max-width: 1100px;
-        margin-left: 25%;
-        margin-right: auto;
-        text-align: center;
-        margin-bottom: 2rem;
-    }
-    .listado-header .d-flex {
-        justify-content: center !important;
-    }
-    .estado-badge {
-        display: inline-block;
-        padding: 0.4rem 1rem;
-        border-radius: 20px;
-        font-size: 0.85rem;
-        font-weight: 600;
-    }
-    .estado-pendiente { background: linear-gradient(90deg, #fff3cd 0%, #ffe69c 100%); color: #856404; }
-    .estado-aceptado { background: linear-gradient(90deg, #d1ecf1 0%, #9eeaf9 100%); color: #0c5460; }
-    .estado-en_preparacion { background: linear-gradient(90deg, #cfe2ff 0%, #9ec5fe 100%); color: #084298; }
-    .estado-enviado { background: linear-gradient(90deg, #d1e7dd 0%, #a3cfbb 100%); color: #0f5132; }
-    .estado-entregado { background: linear-gradient(90deg, #d1e7dd 0%, #a3cfbb 100%); color: #0f5132; }
-    .estado-cancelado { background: linear-gradient(90deg, #f8d7da 0%, #f1aeb5 100%); color: #842029; }
-    .estado-vencido { background: linear-gradient(90deg, #f8d7da 0%, #f1aeb5 100%); color: #842029; }
-    .btn-action {
-        font-weight: 600;
-        border-radius: 8px;
-        padding: 0.35rem 1.1rem;
-        font-size: 0.95rem;
-        transition: background 0.18s, color 0.18s;
-        border: none;
-        display: inline-flex;
-        align-items: center;
-        gap: 0.4em;
-        text-decoration: none;
-    }
-    .btn-ver-ig {
-        background: #f8f5ef;
-        color: #b8922a;
-    }
-    .btn-ver-ig:hover {
-        background: #b8922a;
-        color: #fff;
-    }
-    .filter-card {
-        background: #fff;
-        border-radius: 14px;
-        box-shadow: 0 2px 16px rgba(184,146,42,0.08);
-        padding: 1.5rem 2rem;
-        margin-bottom: 1.5rem;
-        width: 100%;
-        max-width: 1100px;
-        margin-left: 25%;
-        margin-right: auto;
-    }
-    .filter-select {
-        border: 1.5px solid #e8dfd4;
-        border-radius: 8px;
-        padding: 0.6rem 1rem;
-        background: #fdf6e3;
-        color: #2d3848;
-        font-weight: 500;
-    }
-    .filter-select:focus {
-        border-color: #b8922a;
-        box-shadow: 0 0 0 2px #e8c96a33;
-        outline: none;
-    }
-    .filter-btn {
-        background: linear-gradient(90deg, #fbe18b 0%, #b8922a 100%);
-        color: #6E0E2E;
-        border: none;
-        border-radius: 8px;
-        padding: 0.6rem 1.5rem;
-        font-weight: 700;
-        transition: background 0.18s, color 0.18s;
-    }
-    .filter-btn:hover {
-        background: linear-gradient(90deg, #b8922a 0%, #fbe18b 100%);
-        color: #fff;
-    }
-    .filter-btn-clear {
-        background: #f8f5ef;
-        color: #6E0E2E;
-        border: 1.5px solid #e8dfd4;
-        border-radius: 8px;
-        padding: 0.6rem 1.5rem;
-        font-weight: 600;
-        transition: background 0.18s, color 0.18s;
-    }
-    .filter-btn-clear:hover {
-        background: #6E0E2E;
-        color: #fff;
-        border-color: #6E0E2E;
-    }
-    .badge-id {
-        background: #f8f5ef;
-        color: #b8922a;
-        font-weight: 700;
-        padding: 0.4rem 0.8rem;
-        border-radius: 8px;
-        border: 1.5px solid #f3e7c6;
-    }
-    .badge-tipo {
-        background: linear-gradient(90deg, #fbe18b 0%, #b8922a 100%);
-        color: #6E0E2E;
-        font-weight: 600;
-        padding: 0.4rem 1rem;
-        border-radius: 20px;
-        font-size: 0.85rem;
-    }
-    .pagination .page-link {
-        color: #b8922a;
-        border-color: #f3e7c6;
-    }
-    .pagination .page-item.active .page-link {
-        background: linear-gradient(90deg, #fbe18b 0%, #b8922a 100%);
-        border-color: #b8922a;
-        color: #6E0E2E;
-    }
-    .pagination .page-link:hover {
-        background: #fdf6e3;
-        color: #6E0E2E;
-    }
-    @media (max-width: 900px) {
-        .ig-table-card, .filter-card, .listado-header {
-            padding: 1.2rem 0.5rem 1.5rem 0.5rem;
-            max-width: 98vw;
-            margin-left: auto;
-        }
-        .table-responsive {
-            font-size: 0.9rem;
-        }
-    }
+  }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="main-listado-wrapper">
-    <div class="listado-header">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <div style="flex:1">
-                <h2 class="display-6 fw-bold mb-0" style="font-family: 'Cormorant Garamond'; color: var(--dark-ig);">Gestión de Pedidos</h2>
-                <p class="text-muted small text-uppercase letter-spacing-1">Visualiza y gestiona todos los pedidos</p>
-            </div>
-        </div>
+<div class="gestion-main">
+
+  <div class="page-header">
+    <div class="header-left">
+      <p class="header-eyebrow">Pedidos</p>
+      <h1 class="page-title">Gestión de pedidos</h1>
     </div>
-
-    <div class="filter-card">
-        <form method="get" class="d-flex gap-3 align-items-end flex-wrap justify-content-center">
-            <div style="min-width: 220px;">
-                <label for="estado" class="form-label fw-bold" style="color: #b8922a;"><i class="bi bi-funnel me-1"></i> Filtrar por Estado</label>
-                <select name="estado" id="estado" class="form-select filter-select">
-                    <option value="">Todos los estados</option>
-                    {% for value, label in estados %}
-                        <option value="{{ value }}" {% if estado == value %}selected{% endif %}>
-                            {{ label }}
-                        </option>
-                    {% endfor %}
-                </select>
-            </div>
-            <button type="submit" class="filter-btn">
-                <i class="bi bi-search me-1"></i> Filtrar
-            </button>
-            {% if estado %}
-                <a href="?estado=" class="filter-btn-clear">
-                    <i class="bi bi-x-lg me-1"></i> Limpiar
-                </a>
-            {% endif %}
-        </form>
+    <div class="header-right">
+      <div class="item-count">{{ pedidos|length|stringformat:"02d" }}</div>
+      <div class="item-count-label">pedidos</div>
     </div>
+  </div>
 
-    {% if pedidos %}
-        <div class="ig-table-card">
-            <div class="table-responsive">
-                <table class="table align-middle mb-0">
-                    <thead>
-                        <tr>
-                            <th><i class="bi bi-hash me-1"></i>ID</th>
-                            <th><i class="bi bi-person me-1"></i>Cliente</th>
-                            <th><i class="bi bi-currency-dollar me-1"></i>Total</th>
-                            <th><i class="bi bi-tag me-1"></i>Tipo</th>
-                            <th><i class="bi bi-clock-history me-1"></i>Estado</th>
-                            <th><i class="bi bi-calendar me-1"></i>Fecha</th>
-                            <th class="text-end">Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for pedido in pedidos %}
-                            <tr>
-                                <td><span class="badge-id">#{{ pedido.id }}</span></td>
-                                <td class="fw-bold" style="color: #2d3848;">{{ pedido.cliente.nombre }}</td>
-                                <td><strong style="color: #6E0E2E; font-size: 1.05rem;">${{ pedido.total }}</strong></td>
-                                <td><span class="badge-tipo">{{ pedido.get_tipo_venta_display }}</span></td>
-                                <td>
-                                    <span class="estado-badge estado-{{ pedido.estado }}">
-                                        {{ pedido.get_estado_display }}
-                                    </span>
-                                </td>
-                                <td><span class="text-muted">{{ pedido.created_at|date:"d/m/Y H:i" }}</span></td>
-                                <td class="text-end">
-                                    <a href="{% url 'pedidos:detalle_pedido' pedido.id %}" class="btn-action btn-ver-ig" title="Ver detalles">
-                                        <i class="bi bi-eye"></i> Ver
-                                    </a>
-                                </td>
-                            </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        {% if page_obj.has_other_pages %}
-            <nav aria-label="Paginación" class="mt-4" style="max-width: 1100px; margin-left: 25%;">
-                <ul class="pagination justify-content-center">
-                    {% if page_obj.has_previous %}
-                        <li class="page-item">
-                            <a class="page-link" href="?page=1{% if estado %}&estado={{ estado }}{% endif %}"><i class="bi bi-chevron-double-left"></i></a>
-                        </li>
-                        <li class="page-item">
-                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if estado %}&estado={{ estado }}{% endif %}"><i class="bi bi-chevron-left"></i> Anterior</a>
-                        </li>
-                    {% endif %}
-
-                    {% for num in page_obj.paginator.page_range %}
-                        {% if page_obj.number == num %}
-                            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
-                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
-                            <li class="page-item">
-                                <a class="page-link" href="?page={{ num }}{% if estado %}&estado={{ estado }}{% endif %}">{{ num }}</a>
-                            </li>
-                        {% endif %}
-                    {% endfor %}
-
-                    {% if page_obj.has_next %}
-                        <li class="page-item">
-                            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if estado %}&estado={{ estado }}{% endif %}">Siguiente <i class="bi bi-chevron-right"></i></a>
-                        </li>
-                        <li class="page-item">
-                            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if estado %}&estado={{ estado }}{% endif %}"><i class="bi bi-chevron-double-right"></i></a>
-                        </li>
-                    {% endif %}
-                </ul>
-            </nav>
-        {% endif %}
-    {% else %}
-        <div class="ig-table-card text-center py-5">
-            <i class="bi bi-box-seam text-muted display-1 opacity-25"></i>
-            <p class="mt-3 text-muted">No hay pedidos registrados{% if estado %} con el estado seleccionado{% endif %}.</p>
-        </div>
+  <form method="get" class="filter-bar">
+    <select name="estado" class="filter-select">
+      <option value="">Todos los estados</option>
+      {% for value, label in estados %}
+        <option value="{{ value }}" {% if estado == value %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit" class="filter-btn">
+      <i class="bi bi-funnel"></i> Filtrar
+    </button>
+    {% if estado %}
+      <a href="?estado=" class="filter-clear">
+        <i class="bi bi-x"></i> Limpiar
+      </a>
     {% endif %}
+  </form>
+
+  {% if pedidos %}
+  <table class="pedidos-table">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Cliente</th>
+        <th>Total</th>
+        <th>Tipo</th>
+        <th>Estado</th>
+        <th>Fecha</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for pedido in pedidos %}
+      <tr>
+        <td><span class="pedido-id">#{{ pedido.id }}</span></td>
+        <td><span class="pedido-cliente">{{ pedido.cliente.nombre }}</span></td>
+        <td><span class="pedido-total">${{ pedido.total }}</span></td>
+        <td><span class="pedido-tipo">{{ pedido.get_tipo_venta_display }}</span></td>
+        <td><span class="estado-badge estado-{{ pedido.estado }}">{{ pedido.get_estado_display }}</span></td>
+        <td><span class="pedido-fecha">{{ pedido.created_at|date:"d/m/Y H:i" }}</span></td>
+        <td>
+          <a href="{% url 'pedidos:detalle_pedido' pedido.id %}" class="btn-ver">
+            <i class="bi bi-eye"></i> Ver
+          </a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  {% if page_obj.has_other_pages %}
+  <nav class="pagination-wrap">
+    {% if page_obj.has_previous %}
+      <a href="?page=1{% if estado %}&estado={{ estado }}{% endif %}" class="page-btn arrow">
+        <i class="bi bi-chevron-double-left"></i>
+      </a>
+      <a href="?page={{ page_obj.previous_page_number }}{% if estado %}&estado={{ estado }}{% endif %}" class="page-btn arrow">
+        <i class="bi bi-chevron-left"></i>
+      </a>
+    {% endif %}
+
+    {% for num in page_obj.paginator.page_range %}
+      {% if page_obj.number == num %}
+        <span class="page-btn active">{{ num }}</span>
+      {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+        <a href="?page={{ num }}{% if estado %}&estado={{ estado }}{% endif %}" class="page-btn">{{ num }}</a>
+      {% endif %}
+    {% endfor %}
+
+    {% if page_obj.has_next %}
+      <a href="?page={{ page_obj.next_page_number }}{% if estado %}&estado={{ estado }}{% endif %}" class="page-btn arrow">
+        <i class="bi bi-chevron-right"></i>
+      </a>
+      <a href="?page={{ page_obj.paginator.num_pages }}{% if estado %}&estado={{ estado }}{% endif %}" class="page-btn arrow">
+        <i class="bi bi-chevron-double-right"></i>
+      </a>
+    {% endif %}
+  </nav>
+  {% endif %}
+
+  {% else %}
+  <div class="empty-state">
+    <i class="bi bi-box-seam"></i>
+    <p>No hay pedidos registrados{% if estado %} con el estado seleccionado{% endif %}.</p>
+  </div>
+  {% endif %}
+
 </div>
 {% endblock %}

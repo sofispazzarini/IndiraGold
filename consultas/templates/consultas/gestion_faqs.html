@@ -2,244 +2,583 @@
 {% load static %}
 
 {% block extra_head %}
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-    <link rel="stylesheet" href="{% static 'css/users.css' %}">
-    <style>
-    .main-listado-wrapper {
-        min-height: calc(100vh - 60px);
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: flex-start;
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,600&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+
+<style>
+  :root {
+    --gold: #b8922a;
+    --gold-soft: #c9a84c;
+    --gold-pale: #f7f0e0;
+    --gold-faint: #faf7f0;
+    --burgundy: #6E0E2E;
+    --dark: #1a1612;
+    --dark-mid: #2e2720;
+    --text: #3d342a;
+    --muted: #9c8c7c;
+    --border: #e8dfd4;
+    --border-faint: rgba(184,146,42,0.12);
+  }
+
+  .gestion-main {
+    min-height: calc(100vh - 60px);
+    display: flex;
+    flex-direction: column;
+    padding: 3.5rem 4rem 5rem;
+    width: 100%;
+    max-width: 900px;
+    margin-left: 20%;
+    margin-right: auto;
+  }
+
+  .page-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    margin-bottom: 2.5rem;
+    padding-bottom: 1.75rem;
+    border-bottom: 1px solid var(--border-faint);
+    position: relative;
+  }
+
+  .page-header::after {
+    content: '';
+    position: absolute;
+    bottom: -1px; left: 0;
+    width: 64px; height: 2px;
+    background: var(--burgundy);
+  }
+
+  .header-eyebrow {
+    font-size: 0.62rem;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--burgundy);
+    margin-bottom: 0.5rem;
+  }
+
+  .page-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(2.4rem, 4vw, 3.6rem);
+    font-weight: 600;
+    color: var(--dark);
+    letter-spacing: -0.01em;
+    line-height: 1;
+  }
+
+  .header-right {
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  .item-count {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 3.2rem;
+    font-weight: 300;
+    color: var(--burgundy);
+    line-height: 1;
+  }
+
+  .item-count-label {
+    font-size: 0.6rem;
+    font-weight: 500;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  /* Search */
+  .search-bar {
+    margin-bottom: 2rem;
+  }
+
+  .search-input-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    max-width: 400px;
+  }
+
+  .search-input {
+    flex: 1;
+    border: none;
+    border-bottom: 1.5px solid var(--border);
+    padding: 0.75rem 0;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.9rem;
+    background: transparent;
+    color: var(--dark);
+    transition: border-color 0.2s;
+  }
+
+  .search-input:focus {
+    outline: none;
+    border-bottom-color: var(--burgundy);
+  }
+
+  .search-input::placeholder {
+    color: var(--muted);
+  }
+
+  .search-btn {
+    background: none;
+    border: none;
+    padding: 0.75rem;
+    color: var(--muted);
+    cursor: pointer;
+    transition: color 0.2s;
+  }
+
+  .search-btn:hover {
+    color: var(--burgundy);
+  }
+
+  /* Alerts */
+  .alert-custom {
+    background: var(--gold-faint);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1rem 1.5rem;
+    margin-bottom: 2rem;
+    font-size: 0.85rem;
+    color: var(--text);
+  }
+
+  /* FAQ List */
+  .faq-list {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 2rem;
+  }
+
+  .faq-item {
+    display: grid;
+    grid-template-columns: 2.2rem 1fr auto;
+    align-items: center;
+    gap: 1.25rem;
+    padding: 1.1rem 0;
+    border-bottom: 1px solid rgba(232, 223, 212, 0.6);
+    position: relative;
+    transition: border-color 0.2s ease;
+  }
+
+  .faq-item::before {
+    content: '';
+    position: absolute;
+    left: -1.2rem;
+    top: 50%; transform: translateY(-50%);
+    width: 3px; height: 0;
+    background: var(--burgundy);
+    border-radius: 2px;
+    transition: height 0.22s ease;
+  }
+
+  .faq-item:hover { border-bottom-color: rgba(110, 14, 46, 0.3); }
+  .faq-item:hover::before { height: 60%; }
+
+  .faq-index {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 0.8rem;
+    font-weight: 400;
+    color: var(--burgundy);
+    letter-spacing: 0.06em;
+    opacity: 0.75;
+    user-select: none;
+    transition: opacity 0.2s;
+  }
+
+  .faq-item:hover .faq-index { opacity: 1; }
+
+  .faq-info {
+    min-width: 0;
+  }
+
+  .faq-question {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(1.3rem, 2.2vw, 1.6rem);
+    font-weight: 500;
+    color: var(--dark);
+    line-height: 1.2;
+    letter-spacing: -0.005em;
+    transition: color 0.2s ease;
+    margin-bottom: 0.2rem;
+  }
+
+  .faq-item:hover .faq-question {
+    color: var(--burgundy);
+  }
+
+  .faq-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    font-size: 0.75rem;
+    color: var(--muted);
+  }
+
+  .faq-tema {
+    background: rgba(184, 146, 42, 0.1);
+    color: #7a5f15;
+    padding: 0.2rem 0.6rem;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: 500;
+    border: 1px solid rgba(184, 146, 42, 0.2);
+  }
+
+  .faq-answer {
+    color: var(--muted);
+    font-size: 0.78rem;
+    margin-top: 0.3rem;
+    line-height: 1.4;
+  }
+
+  .faq-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    opacity: 0;
+    transform: translateX(8px);
+    transition: all 0.22s ease;
+  }
+
+  .faq-item:hover .faq-actions {
+    opacity: 1;
+    transform: translateX(0);
+  }
+
+  .btn-action {
+    width: 34px; height: 34px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.18s ease;
+    text-decoration: none;
+  }
+
+  .btn-action:hover {
+    background: var(--burgundy);
+    color: #fff;
+    border-color: var(--burgundy);
+  }
+
+  .btn-action.edit:hover {
+    background: var(--gold);
+    border-color: var(--gold);
+  }
+
+  .btn-toggle {
+    padding: 0.35rem 0.8rem;
+    border-radius: 50px;
+    border: 1px solid var(--border);
+    background: transparent;
+    font-size: 0.7rem;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    transition: all 0.18s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+  }
+
+  .btn-toggle.active {
+    background: rgba(124, 173, 106, 0.12);
+    border-color: rgba(124, 173, 106, 0.3);
+    color: #3d6e2a;
+  }
+
+  .btn-toggle.inactive {
+    background: rgba(156, 140, 124, 0.1);
+    border-color: rgba(156, 140, 124, 0.25);
+    color: #5c5248;
+  }
+
+  /* Add Row */
+  .add-faq-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 0;
+    cursor: pointer;
+    width: fit-content;
+    background: none;
+    border: none;
+    text-decoration: none;
+    transition: all 0.2s;
+  }
+
+  .add-faq-row:hover .add-icon-ring { background: var(--burgundy); border-color: var(--burgundy); }
+  .add-faq-row:hover .add-icon-ring i { color: #fff; }
+  .add-faq-row:hover .add-label { color: var(--burgundy); }
+
+  .add-icon-ring {
+    width: 40px; height: 40px;
+    border: 1.5px solid rgba(110, 14, 46, 0.4);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s;
+    flex-shrink: 0;
+  }
+
+  .add-icon-ring i {
+    font-size: 1rem;
+    color: var(--burgundy);
+    transition: color 0.2s;
+  }
+
+  .add-label {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.4rem;
+    font-weight: 500;
+    color: var(--muted);
+    letter-spacing: 0.01em;
+    transition: color 0.2s;
+  }
+
+  /* Empty State */
+  .empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: var(--muted);
+  }
+
+  .empty-state i {
+    font-size: 4rem;
+    opacity: 0.2;
+    margin-bottom: 1rem;
+  }
+
+  /* Modal */
+  .modal-backdrop-custom {
+    position: fixed; inset: 0;
+    background: rgba(26, 22, 18, 0.7);
+    backdrop-filter: blur(6px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 3000;
+  }
+
+  .modal-backdrop-custom.open { display: flex; }
+
+  .modal-box {
+    background: #fff;
+    border-radius: 20px;
+    padding: 3rem 3.5rem;
+    max-width: 440px;
+    width: 92%;
+    text-align: center;
+    animation: modalIn 0.28s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  }
+
+  @keyframes modalIn {
+    from { opacity: 0; transform: scale(0.92) translateY(16px); }
+    to   { opacity: 1; transform: scale(1) translateY(0); }
+  }
+
+  .modal-eyebrow {
+    font-size: 0.6rem;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--burgundy);
+    margin-bottom: 0.6rem;
+  }
+
+  .modal-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 2.2rem;
+    font-weight: 600;
+    color: var(--burgundy);
+    margin-bottom: 0.4rem;
+    line-height: 1.1;
+  }
+
+  .modal-subtitle {
+    font-size: 0.82rem;
+    color: var(--muted);
+    margin-bottom: 2rem;
+    line-height: 1.5;
+  }
+
+  .modal-actions {
+    display: flex; gap: 10px; justify-content: center;
+  }
+
+  .btn-cancel {
+    padding: 0.7rem 1.8rem;
+    border-radius: 50px;
+    border: 1.5px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.18s;
+  }
+
+  .btn-cancel:hover { border-color: var(--text); color: var(--text); }
+
+  .btn-confirm {
+    padding: 0.7rem 2.2rem;
+    border-radius: 50px;
+    border: none;
+    background: var(--burgundy);
+    color: #fff;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    letter-spacing: 0.04em;
+    transition: all 0.18s;
+  }
+
+  .btn-confirm:hover { background: #8a1239; }
+
+  @media (max-width: 768px) {
+    .gestion-main {
+      padding: 2rem 1.5rem;
+      margin-left: 0;
     }
-    .ig-table-card {
-        background: #fff;
-        border-radius: 18px;
-        box-shadow: 0 4px 32px rgba(184,146,42,0.10);
-        padding: 2.5rem 2rem 2rem 2rem;
-        margin-bottom: 2.5rem;
-        width: 100%;
-        max-width: 950px;
-        margin-left: 25%;
-        margin-right: auto;
+    .faq-item {
+      grid-template-columns: 1fr;
+      gap: 0.5rem;
     }
-    .table thead th {
-        background: #f8f5ef;
-        color: #b8922a;
-        font-weight: 700;
-        border-top: none;
-        border-bottom: 2px solid #f3e7c6;
-        letter-spacing: 1px;
-        vertical-align: middle;
+    .faq-index {
+      display: none;
     }
-    .table tbody tr {
-        transition: background 0.18s;
+    .faq-actions {
+      opacity: 1;
+      transform: none;
+      justify-content: flex-start;
+      margin-top: 0.5rem;
     }
-    .table tbody tr:hover {
-        background: #fdf6e3;
-    }
-    .btn-action {
-        font-weight: 600;
-        border-radius: 8px;
-        padding: 0.35rem 1.1rem;
-        font-size: 1rem;
-        transition: background 0.18s, color 0.18s;
-        border: none;
-        display: flex;
-        align-items: center;
-        gap: 0.4em;
-    }
-    .btn-edit-ig {
-        background: #f8f5ef;
-        color: #b8922a;
-    }
-    .btn-edit-ig:hover {
-        background: #b8922a;
-        color: #fff;
-    }
-    .btn-delete-ig {
-        background: #f8f5ef;
-        color: #6E0E2E;
-    }
-    .btn-delete-ig:hover {
-        background: #6E0E2E;
-        color: #fff;
-    }
-    .search-container-ig .form-control {
-        border-radius: 8px 0 0 8px !important;
-        border-right: none !important;
-        background: #fdf6e3;
-        border: 1.5px solid #e8dfd4;
-    }
-    .search-container-ig .btn {
-        border-radius: 0 8px 8px 0 !important;
-        background: #b8922a;
-        color: #fff;
-        border: 1.5px solid #b8922a;
-        border-left: none;
-    }
-    .search-container-ig .btn:hover {
-        background: #6E0E2E;
-        color: #fff;
-        border-color: #6E0E2E;
-    }
-    .listado-header {
-        width: 100%;
-        max-width: 950px;
-        margin-left: 25%;
-        margin-right: auto;
-        text-align: center;
-        margin-bottom: 2rem;
-    }
-    .listado-header .d-flex {
-        justify-content: center !important;
-    }
-    .badge-tema {
-        background: linear-gradient(90deg, #fbe18b 0%, #b8922a 100%);
-        color: #6E0E2E;
-        font-weight: 600;
-        padding: 0.4rem 1rem;
-        border-radius: 20px;
-        font-size: 0.85rem;
-    }
-    .badge-orden {
-        background: #f8f5ef;
-        color: #b8922a;
-        font-weight: 700;
-        padding: 0.4rem 0.8rem;
-        border-radius: 8px;
-        border: 1.5px solid #f3e7c6;
-    }
-    .nuevo-btn {
-        float: right;
-        margin-left: 1rem;
-    }
-    @media (max-width: 900px) {
-        .ig-table-card, .listado-header {
-            padding: 1.2rem 0.5rem 1.5rem 0.5rem;
-            max-width: 98vw;
-            margin-left: auto;
-        }
-        .table-responsive {
-            font-size: 0.97rem;
-        }
-    }
-    </style>
+  }
+</style>
 {% endblock %}
 
 {% block content %}
-<div class="main-listado-wrapper">
-    <div class="listado-header">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <div style="flex:1">
-                <h2 class="display-6 fw-bold mb-0" style="font-family: 'Cormorant Garamond'; color: var(--dark-ig);">Preguntas Frecuentes</h2>
-                <p class="text-muted small text-uppercase letter-spacing-1">Gestiona las FAQs que verán los usuarios</p>
-            </div>
-            <a href="{% url 'consultas:crear_faq' %}" class="btn btn-dark rounded-pill px-4 shadow-sm border-gold nuevo-btn" style="border: 1px solid var(--gold-ig); color: var(--gold-light);">
-                <i class="bi bi-plus-lg me-2"></i> NUEVA PREGUNTA
-            </a>
-        </div>
+<div class="gestion-main">
+
+  <div class="page-header">
+    <div class="header-left">
+      <p class="header-eyebrow">Consultas</p>
+      <h1 class="page-title">Preguntas frecuentes</h1>
     </div>
-
-    {% if messages %}
-        {% for message in messages %}
-        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert" style="max-width: 950px; margin-left: 25%;">
-            {{ message }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-        {% endfor %}
-    {% endif %}
-
-    <div class="ig-table-card">
-        <form method="get" class="search-container-ig mb-4">
-            <div class="input-group" style="max-width: 500px; margin-left:auto; margin-right:auto;">
-                <input type="text" name="q" class="form-control" placeholder="Buscar por pregunta o tema..." value="{{ request.GET.q }}">
-                <button class="btn" type="submit">
-                    <i class="bi bi-search"></i>
-                </button>
-            </div>
-        </form>
-        <div class="table-responsive">
-            <table class="table align-middle">
-                <thead>
-                    <tr>
-                        <th style="width: 50px;"><i class="bi bi-sort-numeric-down me-1"></i></th>
-                        <th><i class="bi bi-question-circle me-2"></i>Pregunta</th>
-                        <th><i class="bi bi-folder me-2"></i>Tema</th>
-                        <th><i class="bi bi-toggle-on me-2"></i>Estado</th>
-                        <th class="text-end">Acciones</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for faq in faqs %}
-                    <tr>
-                        <td><span class="badge-orden">{{ faq.orden }}</span></td>
-                        <td>
-                            <div class="fw-bold" style="color: #2d3848;">{{ faq.pregunta|truncatewords:10 }}</div>
-                            <small class="text-muted">{{ faq.respuesta|truncatewords:15 }}</small>
-                        </td>
-                        <td><span class="badge-tema">{{ faq.tema.nombre }}</span></td>
-                        <td>
-                            <form method="post" action="{% url 'consultas:toggle_estado_faq' faq.id %}" class="d-inline">
-                                {% csrf_token %}
-                                <button type="submit" class="btn btn-sm {% if faq.activa %}btn-success{% else %}btn-secondary{% endif %} rounded-pill px-3">
-                                    {% if faq.activa %}
-                                        <i class="bi bi-check-circle me-1"></i> Activa
-                                    {% else %}
-                                        <i class="bi bi-x-circle me-1"></i> Inactiva
-                                    {% endif %}
-                                </button>
-                            </form>
-                        </td>
-                        <td>
-                            <div class="d-flex gap-2 justify-content-end">
-                                <a href="{% url 'consultas:editar_faq' faq.id %}" class="btn-action btn-edit-ig text-decoration-none">
-                                    <i class="bi bi-pencil-square"></i> Editar
-                                </a>
-                                <button type="button" class="btn-action btn-delete-ig text-decoration-none"
-                                        data-bs-toggle="modal" data-bs-target="#deleteModal{{ faq.id }}">
-                                    <i class="bi bi-trash"></i> Eliminar
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="5" class="text-center py-5">
-                            <i class="bi bi-question-circle text-muted display-1 opacity-25"></i>
-                            <p class="mt-3 text-muted">No hay preguntas frecuentes.</p>
-                            <a href="{% url 'consultas:crear_faq' %}" class="btn btn-outline-dark mt-2">
-                                <i class="bi bi-plus-lg me-1"></i> Crear primera pregunta
-                            </a>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+    <div class="header-right">
+      <div class="item-count">{{ faqs|length|stringformat:"02d" }}</div>
+      <div class="item-count-label">preguntas</div>
     </div>
+  </div>
 
-    {% for faq in faqs %}
-    <div class="modal fade" id="deleteModal{{ faq.id }}" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Confirmar eliminación</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <p>¿Eliminar la pregunta <strong>"{{ faq.pregunta|truncatewords:8 }}"</strong>?</p>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <form method="post" action="{% url 'consultas:eliminar_faq' faq.id %}" class="d-inline">
-                        {% csrf_token %}
-                        <button type="submit" class="btn btn-danger">Eliminar</button>
-                    </form>
-                </div>
-            </div>
-        </div>
+  {% if messages %}
+    {% for message in messages %}
+    <div class="alert-custom">
+      {{ message }}
     </div>
     {% endfor %}
+  {% endif %}
+
+  <div class="search-bar">
+    <form method="get" class="search-input-wrap">
+      <input type="text" name="q" class="search-input" placeholder="Buscar por pregunta o tema..." value="{{ request.GET.q }}">
+      <button type="submit" class="search-btn">
+        <i class="bi bi-search"></i>
+      </button>
+    </form>
+  </div>
+
+  <ul class="faq-list">
+    {% for faq in faqs %}
+    <li class="faq-item" data-id="{{ faq.id }}">
+      <span class="faq-index">{{ faq.orden|stringformat:"02d" }}</span>
+      <div class="faq-info">
+        <div class="faq-question">{{ faq.pregunta|truncatewords:12 }}</div>
+        <div class="faq-meta">
+          <span class="faq-tema">{{ faq.tema.nombre }}</span>
+        </div>
+        <div class="faq-answer">{{ faq.respuesta|truncatewords:15 }}</div>
+      </div>
+      <div class="faq-actions">
+        <form method="post" action="{% url 'consultas:toggle_estado_faq' faq.id %}" style="display: contents;">
+          {% csrf_token %}
+          <button type="submit" class="btn-toggle {% if faq.activa %}active{% else %}inactive{% endif %}">
+            <i class="bi bi-{% if faq.activa %}check-circle{% else %}x-circle{% endif %}"></i>
+            {% if faq.activa %}Activa{% else %}Inactiva{% endif %}
+          </button>
+        </form>
+        <a href="{% url 'consultas:editar_faq' faq.id %}" class="btn-action edit" title="Editar">
+          <i class="bi bi-pencil"></i>
+        </a>
+        <button class="btn-action js-delete-trigger"
+                data-id="{{ faq.id }}"
+                data-pregunta="{{ faq.pregunta|truncatewords:8 }}"
+                title="Eliminar">
+          <i class="bi bi-x"></i>
+        </button>
+      </div>
+    </li>
+    {% empty %}
+    <li class="empty-state">
+      <i class="bi bi-question-circle"></i>
+      <p>No hay preguntas frecuentes.</p>
+    </li>
+    {% endfor %}
+  </ul>
+
+  <a href="{% url 'consultas:crear_faq' %}" class="add-faq-row">
+    <div class="add-icon-ring"><i class="bi bi-plus-lg"></i></div>
+    <span class="add-label">Nueva pregunta</span>
+  </a>
+
 </div>
+
+<!-- Modal: Confirmar eliminación -->
+<div class="modal-backdrop-custom" id="modalDelete">
+  <div class="modal-box">
+    <p class="modal-eyebrow">Acción irreversible</p>
+    <h2 class="modal-title">¿Eliminar pregunta?</h2>
+    <p class="modal-subtitle">Estás por eliminar: "<span id="deleteFaqPregunta"></span>"</p>
+    <form id="deleteForm" method="post" action="">
+      {% csrf_token %}
+      <div class="modal-actions">
+        <button type="button" class="btn-cancel" onclick="closeModal()">Cancelar</button>
+        <button type="submit" class="btn-confirm">Sí, eliminar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  function closeModal() {
+    document.getElementById('modalDelete').classList.remove('open');
+  }
+
+  document.querySelectorAll('.js-delete-trigger').forEach(btn => {
+    btn.addEventListener('click', function(e) {
+      e.preventDefault();
+      const id = this.dataset.id;
+      const pregunta = this.dataset.pregunta;
+
+      document.getElementById('deleteFaqPregunta').textContent = pregunta;
+      document.getElementById('deleteForm').action = `/consultas/faq/${id}/eliminar/`;
+      document.getElementById('modalDelete').classList.add('open');
+    });
+  });
+
+  document.getElementById('modalDelete').addEventListener('click', function(e) {
+    if (e.target === this) closeModal();
+  });
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeModal();
+  });
+</script>
 {% endblock %}

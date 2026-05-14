@@ -1,127 +1,234 @@
 {% extends 'users/dashboard_cliente.html' %}
 
+{% block extra_head %}
+{{ block.super }}
+<style>
+  .estado-main {
+    min-height: calc(100vh - 60px);
+    display: flex;
+    flex-direction: column;
+    padding: 3.5rem 4rem 5rem;
+    width: 100%;
+    max-width: 750px;
+    margin-left: 22%;
+    margin-right: auto;
+  }
+
+  /* Back Link */
+  .back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--muted);
+    text-decoration: none;
+    margin-bottom: 2rem;
+    transition: color 0.18s;
+  }
+
+  .back-link:hover {
+    color: var(--burgundy);
+  }
+
+  .page-header {
+    text-align: center;
+    margin-bottom: 3.5rem;
+    padding-bottom: 2rem;
+    border-bottom: 1px solid var(--border-faint);
+    position: relative;
+  }
+
+  .page-header::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 48px;
+    height: 2px;
+    background: var(--burgundy);
+  }
+
+  .header-eyebrow {
+    font-size: 0.6rem;
+    font-weight: 600;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--burgundy);
+    margin-bottom: 0.75rem;
+  }
+
+  .page-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(2rem, 4vw, 2.8rem);
+    font-weight: 600;
+    color: var(--dark);
+    letter-spacing: -0.01em;
+    line-height: 1;
+    margin-bottom: 0.5rem;
+  }
+
+  .pedido-number {
+    font-size: 0.9rem;
+    color: var(--muted);
+  }
+
+  /* Timeline */
+  .timeline {
+    position: relative;
+    padding-left: 3rem;
+  }
+
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 15px;
+    top: 8px;
+    bottom: 8px;
+    width: 2px;
+    background: var(--border);
+  }
+
+  .timeline-item {
+    position: relative;
+    padding-bottom: 2.5rem;
+  }
+
+  .timeline-item:last-child {
+    padding-bottom: 0;
+  }
+
+  .timeline-icon {
+    position: absolute;
+    left: -3rem;
+    top: 0;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #fff;
+    border: 2px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--muted);
+    z-index: 2;
+    transition: all 0.3s ease;
+  }
+
+  .timeline-icon.completed {
+    background: #3d6e2a;
+    border-color: #3d6e2a;
+    color: #fff;
+  }
+
+  .timeline-icon.active {
+    background: var(--burgundy);
+    border-color: var(--burgundy);
+    color: #fff;
+    box-shadow: 0 0 0 6px rgba(110, 14, 46, 0.12);
+  }
+
+  .timeline-content {
+    padding-top: 0.25rem;
+  }
+
+  .timeline-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.4rem;
+    font-weight: 600;
+    color: var(--dark);
+    margin-bottom: 0.3rem;
+    transition: color 0.2s;
+  }
+
+  .timeline-item:hover .timeline-title {
+    color: var(--burgundy);
+  }
+
+  .timeline-desc {
+    font-size: 0.85rem;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  /* Info Card */
+  .info-card {
+    margin-top: 3rem;
+    padding: 1.5rem 2rem;
+    background: var(--gold-faint);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    text-align: center;
+  }
+
+  .info-card p {
+    font-size: 0.85rem;
+    color: var(--text);
+    margin: 0;
+  }
+
+  .info-card i {
+    color: var(--burgundy);
+    margin-right: 0.5rem;
+  }
+
+  @media (max-width: 768px) {
+    .estado-main {
+      padding: 2rem 1.5rem;
+      margin-left: 0;
+    }
+    .timeline {
+      padding-left: 2.5rem;
+    }
+    .timeline-icon {
+      left: -2.5rem;
+      width: 28px;
+      height: 28px;
+    }
+  }
+</style>
+{% endblock %}
+
 {% block content %}
+<div class="estado-main">
 
-<div class="container py-5">
+  <a href="{% url 'pedidos:mis_pedidos' %}" class="back-link">
+    <i class="bi bi-arrow-left"></i> Volver a mis pedidos
+  </a>
 
-    <div class="mx-auto" style="max-width:900px;">
+  <div class="page-header">
+    <p class="header-eyebrow">Seguimiento</p>
+    <h1 class="page-title">Estado de tu pedido</h1>
+    <p class="pedido-number">Pedido #{{ pedido.id }}</p>
+  </div>
 
-        <div class="card border-0 shadow-lg rounded-5 p-5">
-
-            <div class="text-center mb-5">
-
-                <h1 class="fw-bold text-luxury">
-                    Estado de tu pedido
-                </h1>
-
-                <p class="text-muted">
-                    Pedido #{{ pedido.id }}
-                </p>
-
-            </div>
-
-            <div class="timeline">
-
-                {% for paso in pasos %}
-
-                    <div class="timeline-item">
-
-                        <div class="
-                            timeline-icon
-
-                            {% if paso.completado %}
-                                completed
-                            {% elif paso.actual %}
-                                active
-                            {% endif %}
-                        ">
-                            {% if paso.completado %}
-                                ✓
-                            {% elif paso.actual %}
-                                ●
-                            {% endif %}
-                        </div>
-
-                        <div class="timeline-content">
-
-                            <h5 class="fw-bold mb-1">
-                                {{ paso.nombre }}
-                            </h5>
-
-                            <p class="text-muted mb-0">
-                                {{ paso.descripcion }}
-                            </p>
-
-                        </div>
-
-                    </div>
-
-                {% endfor %}
-
-            </div>
-
-        </div>
-
+  <div class="timeline">
+    {% for paso in pasos %}
+    <div class="timeline-item">
+      <div class="timeline-icon {% if paso.completado %}completed{% elif paso.actual %}active{% endif %}">
+        {% if paso.completado %}
+          <i class="bi bi-check"></i>
+        {% elif paso.actual %}
+          <i class="bi bi-circle-fill" style="font-size: 0.5rem;"></i>
+        {% endif %}
+      </div>
+      <div class="timeline-content">
+        <h3 class="timeline-title">{{ paso.nombre }}</h3>
+        <p class="timeline-desc">{{ paso.descripcion }}</p>
+      </div>
     </div>
+    {% endfor %}
+  </div>
+
+  <div class="info-card">
+    <p>
+      <i class="bi bi-info-circle"></i>
+      Si tenés alguna consulta sobre tu pedido, contactanos por WhatsApp.
+    </p>
+  </div>
 
 </div>
-
-<style>
-
-.timeline{
-    position:relative;
-    margin-left:20px;
-}
-
-.timeline::before{
-    content:'';
-    position:absolute;
-    left:19px;
-    top:0;
-    width:3px;
-    height:100%;
-    background:#e9e9e9;
-}
-
-.timeline-item{
-    display:flex;
-    align-items:flex-start;
-    margin-bottom:40px;
-    position:relative;
-}
-
-.timeline-icon{
-    width:40px;
-    height:40px;
-    border-radius:50%;
-    background:#ddd;
-    color:white;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    font-weight:bold;
-    z-index:2;
-    flex-shrink:0;
-}
-
-.timeline-icon.completed{
-    background:#28a745;
-}
-
-.timeline-icon.active{
-    background:#d4af37;
-    box-shadow:0 0 0 8px rgba(212,175,55,.15);
-}
-
-.timeline-content{
-    margin-left:20px;
-    padding-top:5px;
-}
-
-.text-luxury{
-    color:#1f1f1f;
-}
-
-</style>
-
 {% endblock %}

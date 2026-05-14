@@ -4,95 +4,337 @@
 {% block sidebar_menu %}
 <div class="nav-section">Mi Cuenta</div>
 <nav class="sidebar__nav">
-    <a href="{% url 'users:dashboard_cliente' %}" 
+    <a href="{% url 'users:dashboard_cliente' %}"
        class="nav-link {% if request.resolver_match.view_name == 'users:dashboard_cliente' %}active{% endif %}">
         <i class="bi bi-grid-1x2-fill me-2"></i> Inicio
     </a>
 
-    <a href="{% url 'users:password_change' %}" 
+    <a href="{% url 'users:perfil' %}"
+       class="nav-link {% if request.resolver_match.view_name == 'users:perfil' %}active{% endif %}">
+        <i class="bi bi-person-fill me-2"></i> Mi perfil
+    </a>
+
+    <a href="{% url 'users:password_change' %}"
        class="nav-link {% if request.resolver_match.view_name == 'users:password_change' %}active{% endif %}">
         <i class="bi bi-shield-lock-fill me-2"></i> Seguridad
     </a>
 
-    <a href="{% url 'pedidos:checkout' %}" 
+    <a href="{% url 'pedidos:checkout' %}"
        class="nav-link {% if request.resolver_match.view_name == 'pedidos:checkout' %}active{% endif %}">
         <i class="bi bi-cart-check me-2"></i> Ver carrito
     </a>
-    <a href="{% url 'pedidos:mis_pedidos' %}" 
+    <a href="{% url 'pedidos:mis_pedidos' %}"
        class="nav-link {% if request.resolver_match.view_name == 'pedidos:mis_pedidos' %}active{% endif %}">
-        <i class="bi bi-cart-check me-2"></i> Mis pedidos
+        <i class="bi bi-bag me-2"></i> Mis pedidos
     </a>
-    
+
     <hr class="mx-3 opacity-10">
 </nav>
 {% endblock %}
 
-{% block content %}
+{% block extra_head %}
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,600&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-<link rel="stylesheet" href="{% static 'css/users.css' %}">
 
-<div class="client-dashboard-wrapper" style="display: flex; flex-direction: column; align-items: center; justify-content: flex-start; min-height: 90vh; padding: 3rem 2rem; background: #fdfaf5;margin-left: 300px;">
-    
-    <div class="welcome-header mb-5" style="width: 150%; max-width: 2000px; background: linear-gradient(135deg, #1a1612 0%, #6E0E2E 100%); border-radius: 24px; padding: 4rem; position: relative; overflow: hidden; box-shadow: 0 15px 35px rgba(110, 14, 46, 0.2); border-bottom: 5px solid #b8922a;">
-        
-        <div style="position: absolute; top: -10px; right: -10px; font-size: 12rem; color: rgba(255,255,255,0.03); transform: rotate(-15deg); font-family: 'Cormorant Garamond', serif; pointer-events: none;">
-            IG
-        </div>
+<style>
+  :root {
+    --gold: #b8922a;
+    --gold-soft: #c9a84c;
+    --gold-pale: #f7f0e0;
+    --gold-faint: #faf7f0;
+    --burgundy: #6E0E2E;
+    --dark: #1a1612;
+    --dark-mid: #2e2720;
+    --text: #3d342a;
+    --muted: #9c8c7c;
+    --border: #e8dfd4;
+    --border-faint: rgba(184,146,42,0.12);
+  }
 
-        <div class="position-relative" style="z-index: 1;">
-            <p style="color: #e8c96a; text-transform: uppercase; letter-spacing: 4px; font-size: 0.8rem; font-weight: 700; margin-bottom: 1rem;">
-                Panel de Gestión Exclusiva
-            </p>
-            <h1 style="font-family: 'Cormorant Garamond', serif; font-size: 3.5rem; color: #fff; font-weight: 700; margin: 0; line-height: 1.1;">
-                Bienvenido/a, <span style="color: #e8c96a;">{{ request.user.first_name|default:request.user.username }}</span>
-            </h1>
-            <div style="width: 50px; height: 3px; background: #b8922a; margin: 1.5rem 0;"></div>
-            <p style="color: rgba(255,255,255,0.8); font-size: 1.1rem; max-width: 500px; line-height: 1.5;">
-                Desde aquí podés proteger tu cuenta y próximamente gestionar todos tus pedidos de alta gama.
-            </p>
-        </div>
+  .cliente-main {
+    min-height: calc(100vh - 60px);
+    display: flex;
+    flex-direction: column;
+    padding: 3.5rem 4rem 5rem;
+    width: 100%;
+    max-width: 900px;
+    margin-left: 20%;
+    margin-right: auto;
+  }
+
+  /* Hero Section */
+  .hero-section {
+    position: relative;
+    margin-bottom: 3.5rem;
+    padding-bottom: 3rem;
+    border-bottom: 1px solid var(--border-faint);
+  }
+
+  .hero-section::after {
+    content: '';
+    position: absolute;
+    bottom: -1px; left: 0;
+    width: 48px; height: 2px;
+    background: var(--burgundy);
+  }
+
+  .hero-bg-word {
+    position: absolute;
+    right: -1rem;
+    top: 50%;
+    transform: translateY(-55%);
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(6rem, 12vw, 9rem);
+    font-weight: 700;
+    font-style: italic;
+    color: rgba(110, 14, 46, 0.04);
+    line-height: 1;
+    pointer-events: none;
+    user-select: none;
+    white-space: nowrap;
+    letter-spacing: -0.02em;
+  }
+
+  .hero-eyebrow {
+    font-size: 0.6rem;
+    font-weight: 600;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--burgundy);
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+
+  .hero-eyebrow::before {
+    content: '';
+    display: inline-block;
+    width: 20px;
+    height: 1.5px;
+    background: var(--burgundy);
+  }
+
+  .hero-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(2.4rem, 4vw, 3.5rem);
+    font-weight: 600;
+    color: var(--dark);
+    letter-spacing: -0.015em;
+    line-height: 1.1;
+    margin-bottom: 0.5rem;
+  }
+
+  .hero-title span {
+    color: var(--burgundy);
+  }
+
+  .hero-subtitle {
+    font-size: 0.9rem;
+    color: var(--muted);
+    max-width: 400px;
+    line-height: 1.6;
+  }
+
+  /* Cards Grid */
+  .cards-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+  }
+
+  .feature-card {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 2.5rem 2rem;
+    text-align: center;
+    transition: all 0.25s ease;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .feature-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background: var(--burgundy);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.3s ease;
+  }
+
+  .feature-card:hover {
+    border-color: rgba(110, 14, 46, 0.2);
+    transform: translateY(-4px);
+    box-shadow: 0 12px 30px rgba(110, 14, 46, 0.08);
+  }
+
+  .feature-card:hover::before {
+    transform: scaleX(1);
+  }
+
+  .card-icon {
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    background: var(--gold-faint);
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.5rem;
+    color: var(--burgundy);
+    font-size: 1.6rem;
+    transition: all 0.25s ease;
+  }
+
+  .feature-card:hover .card-icon {
+    background: var(--burgundy);
+    border-color: var(--burgundy);
+    color: #fff;
+  }
+
+  .card-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.6rem;
+    font-weight: 600;
+    color: var(--dark);
+    margin-bottom: 0.75rem;
+  }
+
+  .card-desc {
+    font-size: 0.82rem;
+    color: var(--muted);
+    line-height: 1.6;
+    margin-bottom: 1.5rem;
+  }
+
+  .card-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.8rem;
+    border-radius: 50px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    text-decoration: none;
+    transition: all 0.2s ease;
+  }
+
+  .card-btn.primary {
+    background: var(--dark);
+    color: #fff;
+    border: none;
+  }
+
+  .card-btn.primary:hover {
+    background: var(--burgundy);
+  }
+
+  .card-btn.secondary {
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--border);
+  }
+
+  .card-btn.secondary:hover {
+    border-color: var(--burgundy);
+    color: var(--burgundy);
+  }
+
+  .card-btn i {
+    font-size: 0.85rem;
+  }
+
+  @media (max-width: 768px) {
+    .cliente-main {
+      padding: 2rem 1.5rem;
+      margin-left: 0;
+    }
+    .cards-grid {
+      grid-template-columns: 1fr;
+    }
+    .hero-bg-word {
+      display: none;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="cliente-main">
+
+  <section class="hero-section">
+    <div class="hero-bg-word">Bienvenido</div>
+
+    <p class="hero-eyebrow">Mi cuenta</p>
+    <h1 class="hero-title">Hola, <span>{{ request.user.first_name|default:request.user.username }}</span></h1>
+    <p class="hero-subtitle">
+      Desde acá podés gestionar tu cuenta, ver tus pedidos y mantener tu información actualizada.
+    </p>
+  </section>
+
+  <div class="cards-grid">
+
+    <div class="feature-card">
+      <div class="card-icon">
+        <i class="bi bi-shield-lock"></i>
+      </div>
+      <h3 class="card-title">Seguridad</h3>
+      <p class="card-desc">
+        Actualizá tu contraseña periódicamente para mantener tu cuenta protegida.
+      </p>
+      <a href="{% url 'users:password_change' %}" class="card-btn primary">
+        Cambiar clave <i class="bi bi-chevron-right"></i>
+      </a>
     </div>
 
-    <div class="row g-4 justify-content-center" style="width: 100%; max-width: 1000px;">
-        
-        <div class="col-md-6">
-            <div class="ig-card h-100 border-0" style="background: #ffffff; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.04); border: 1px solid rgba(184, 146, 42, 0.15); transition: 0.3s;" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='translateY(0)'">
-                <div class="p-5 text-center">
-                    <div class="d-inline-flex align-items-center justify-content-center mb-4" 
-                         style="width: 80px; height: 80px; background: #fdfaf5; border-radius: 50%; color: #b8922a; border: 1px solid rgba(184, 146, 42, 0.2);">
-                        <i class="bi bi-shield-lock fs-1"></i>
-                    </div>
-                    <h3 class="fw-bold h4 mb-3" style="font-family: 'Cormorant Garamond', serif; color: #1a1612; font-size: 1.8rem;">Seguridad de Cuenta</h3>
-                    <p class="text-muted mb-4" style="font-size: 0.9rem; line-height: 1.6;">
-                        Actualizá tu contraseña periódicamente para mantener tus datos protegidos.
-                    </p>
-                    
-                    <a href="{% url 'users:password_change' %}" class="btn-ig-pill" style="background: #6E0E2E; color: #fff; padding: 14px 30px; border-radius: 100px; text-decoration: none; font-weight: 700; font-size: 0.85rem; letter-spacing: 2px; display: inline-block; border: 1.5px solid #b8922a;">
-                        CAMBIAR MI CLAVE <i class="bi bi-chevron-right ms-2"></i>
-                    </a>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-6">
-            <div class="ig-card h-100 border-0" style="background: #ffffff; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.04); border: 1px solid rgba(184, 146, 42, 0.15); transition: 0.3s;" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='translateY(0)'">
-                <div class="p-5 text-center">
-                    <div class="d-inline-flex align-items-center justify-content-center mb-4" 
-                         style="width: 80px; height: 80px; background: #fdfaf5; border-radius: 50%; color: #6E0E2E; border: 1px solid rgba(110, 14, 46, 0.1);">
-                        <i class="bi bi-bag-heart fs-1"></i>
-                    </div>
-                    <h3 class="fw-bold h4 mb-3" style="font-family: 'Cormorant Garamond', serif; color: #1a1612; font-size: 1.8rem;">Mis Compras</h3>
-                    <p class="text-muted mb-4" style="font-size: 0.9rem; line-height: 1.6;">
-                        Revisá el historial de tus pedidos y el estado de tus envíos exclusivos.
-                    </p>
-                    
-                    <div class="d-inline-block px-4 py-2 rounded-pill bg-light border text-muted small fw-bold" style="letter-spacing: 2px;">
-                        <i class="bi bi-clock-history me-2"></i> PRÓXIMAMENTE
-                    </div>
-                </div>
-            </div>
-        </div>
-
+    <div class="feature-card">
+      <div class="card-icon">
+        <i class="bi bi-bag-heart"></i>
+      </div>
+      <h3 class="card-title">Mis pedidos</h3>
+      <p class="card-desc">
+        Revisá el historial de tus compras y seguí el estado de tus envíos.
+      </p>
+      <a href="{% url 'pedidos:mis_pedidos' %}" class="card-btn primary">
+        Ver pedidos <i class="bi bi-chevron-right"></i>
+      </a>
     </div>
+
+    <div class="feature-card">
+      <div class="card-icon">
+        <i class="bi bi-cart3"></i>
+      </div>
+      <h3 class="card-title">Mi carrito</h3>
+      <p class="card-desc">
+        Revisá los productos que agregaste y completá tu compra.
+      </p>
+      <a href="{% url 'pedidos:checkout' %}" class="card-btn primary">
+        Ver carrito <i class="bi bi-chevron-right"></i>
+      </a>
+    </div>
+
+    <div class="feature-card">
+      <div class="card-icon">
+        <i class="bi bi-shop"></i>
+      </div>
+      <h3 class="card-title">Seguir comprando</h3>
+      <p class="card-desc">
+        Explorá nuestro catálogo y descubrí las últimas novedades.
+      </p>
+      <a href="{% url 'home:home' %}" class="card-btn secondary">
+        Ver catálogo <i class="bi bi-arrow-right"></i>
+      </a>
+    </div>
+
+  </div>
+
 </div>
 {% endblock %}

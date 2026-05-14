@@ -2,469 +2,597 @@
 {% load static %}
 
 {% block extra_head %}
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-    <link rel="stylesheet" href="{% static 'css/users.css' %}">
-    <style>
-    .main-stats-wrapper {
-        min-height: calc(100vh - 60px);
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: flex-start;
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,600&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+
+<style>
+  :root {
+    --gold: #b8922a;
+    --gold-soft: #c9a84c;
+    --gold-pale: #f7f0e0;
+    --gold-faint: #faf7f0;
+    --burgundy: #6E0E2E;
+    --dark: #1a1612;
+    --dark-mid: #2e2720;
+    --text: #3d342a;
+    --muted: #9c8c7c;
+    --border: #e8dfd4;
+    --border-faint: rgba(184,146,42,0.12);
+  }
+
+  .gestion-main {
+    min-height: calc(100vh - 60px);
+    display: flex;
+    flex-direction: column;
+    padding: 3.5rem 4rem 5rem;
+    width: 100%;
+    max-width: 1100px;
+    margin-left: 18%;
+    margin-right: auto;
+  }
+
+  .page-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    margin-bottom: 2.5rem;
+    padding-bottom: 1.75rem;
+    border-bottom: 1px solid var(--border-faint);
+    position: relative;
+  }
+
+  .page-header::after {
+    content: '';
+    position: absolute;
+    bottom: -1px; left: 0;
+    width: 64px; height: 2px;
+    background: var(--burgundy);
+  }
+
+  .header-eyebrow {
+    font-size: 0.62rem;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--burgundy);
+    margin-bottom: 0.5rem;
+  }
+
+  .page-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(2.4rem, 4vw, 3.6rem);
+    font-weight: 600;
+    color: var(--dark);
+    letter-spacing: -0.01em;
+    line-height: 1;
+  }
+
+  /* Filter Bar */
+  .filter-bar {
+    display: flex;
+    align-items: flex-end;
+    gap: 1.5rem;
+    margin-bottom: 2.5rem;
+    flex-wrap: wrap;
+    padding: 1.5rem;
+    background: var(--gold-faint);
+    border-radius: 12px;
+    border: 1px solid var(--border);
+  }
+
+  .filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  .filter-label {
+    font-size: 0.65rem;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .filter-select,
+  .filter-input {
+    border: none;
+    border-bottom: 1.5px solid var(--border);
+    padding: 0.6rem 0;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.85rem;
+    background: transparent;
+    color: var(--dark);
+    min-width: 150px;
+  }
+
+  .filter-select:focus,
+  .filter-input:focus {
+    outline: none;
+    border-bottom-color: var(--burgundy);
+  }
+
+  .filter-btn {
+    background: var(--dark);
+    color: #fff;
+    border: none;
+    border-radius: 50px;
+    padding: 0.6rem 1.5rem;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.18s;
+  }
+
+  .filter-btn:hover {
+    background: var(--burgundy);
+  }
+
+  .date-range-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 50px;
+    padding: 0.5rem 1rem;
+    font-size: 0.75rem;
+    color: var(--burgundy);
+    font-weight: 500;
+    margin-top: 0.5rem;
+  }
+
+  /* KPI Grid */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    margin-bottom: 3rem;
+  }
+
+  .kpi-card {
+    background: #fff;
+    padding: 2rem 1.5rem;
+    text-align: center;
+    transition: background 0.18s;
+  }
+
+  .kpi-card:hover {
+    background: var(--gold-faint);
+  }
+
+  .kpi-label {
+    font-size: 0.65rem;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+  }
+
+  .kpi-label i {
+    color: var(--burgundy);
+    font-size: 0.8rem;
+  }
+
+  .kpi-value {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 2.8rem;
+    font-weight: 600;
+    color: var(--dark);
+    line-height: 1;
+  }
+
+  .kpi-value .currency {
+    font-size: 1.5rem;
+    color: var(--burgundy);
+    margin-right: 0.2rem;
+  }
+
+  /* Section */
+  .section {
+    margin-bottom: 3rem;
+  }
+
+  .section-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.4rem;
+    font-weight: 600;
+    color: var(--dark);
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .section-title i {
+    color: var(--burgundy);
+    font-size: 1rem;
+  }
+
+  /* Data Tables */
+  .data-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 2rem;
+  }
+
+  .data-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .data-table thead th {
+    font-size: 0.65rem;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    text-align: left;
+    padding: 0 0 0.75rem 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .data-table thead th:last-child {
+    text-align: right;
+  }
+
+  .data-table tbody tr {
+    border-bottom: 1px solid rgba(232, 223, 212, 0.5);
+  }
+
+  .data-table tbody tr:hover {
+    background: var(--gold-faint);
+  }
+
+  .data-table tbody td {
+    padding: 0.9rem 0;
+    font-size: 0.9rem;
+  }
+
+  .data-table tbody td:last-child {
+    text-align: right;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--burgundy);
+  }
+
+  .data-table .cantidad-badge {
+    background: rgba(232, 223, 212, 0.5);
+    padding: 0.25rem 0.6rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  .data-table .empty-row td {
+    text-align: center;
+    color: var(--muted);
+    padding: 2rem;
+  }
+
+  .data-table .empty-row i {
+    font-size: 2rem;
+    opacity: 0.3;
+    display: block;
+    margin-bottom: 0.5rem;
+  }
+
+  /* Chart Container */
+  .chart-card {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+  }
+
+  .chart-container {
+    position: relative;
+    height: 320px;
+    width: 100%;
+  }
+
+  .chart-legend {
+    display: flex;
+    gap: 1.5rem;
+    margin-top: 1rem;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.75rem;
+    color: var(--muted);
+  }
+
+  .legend-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+  }
+
+  .legend-dot.gold { background: var(--gold); }
+  .legend-dot.burgundy { background: var(--burgundy); }
+
+  @media (max-width: 900px) {
+    .gestion-main {
+      padding: 2rem 1.5rem;
+      margin-left: 0;
     }
-    .stats-header {
-        width: 100%;
-        max-width: 1100px;
-        margin-left: 20%;
-        margin-right: auto;
-        text-align: center;
-        margin-bottom: 1.5rem;
+    .kpi-grid {
+      grid-template-columns: 1fr;
     }
-    .ig-stats-card {
-        background: #fff;
-        border-radius: 18px;
-        box-shadow: 0 4px 32px rgba(184,146,42,0.10);
-        padding: 2rem;
-        margin-bottom: 1.5rem;
-        width: 100%;
-        max-width: 1100px;
-        margin-left: 20%;
-        margin-right: auto;
+    .data-grid {
+      grid-template-columns: 1fr;
     }
-    .stat-card {
-        background: #fff;
-        border-radius: 18px;
-        border: 1px solid rgba(184, 146, 42, 0.15);
-        padding: 1.5rem;
-        text-align: center;
-        box-shadow: 0 4px 20px rgba(184,146,42,0.08);
-        transition: transform 0.2s, box-shadow 0.2s;
-    }
-    .stat-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 30px rgba(184,146,42,0.15);
-    }
-    .stat-card__label {
-        font-size: 0.8rem;
-        text-transform: uppercase;
-        letter-spacing: 2px;
-        color: #8c7e70;
-        font-weight: 700;
-        margin-bottom: 0.5rem;
-    }
-    .stat-card__value {
-        font-family: 'Cormorant Garamond', serif;
-        font-size: 2.2rem;
-        font-weight: 700;
-        color: #1a1612;
-    }
-    .stat-card__currency {
-        font-size: 1.3rem;
-        margin-right: 0.25rem;
-    }
-    .table thead th {
-        background: #f8f5ef;
-        color: #b8922a;
-        font-weight: 700;
-        border-top: none;
-        border-bottom: 2px solid #f3e7c6;
-        letter-spacing: 1px;
-        font-size: 0.85rem;
-        text-transform: uppercase;
-    }
-    .table tbody tr {
-        transition: background 0.18s;
-    }
-    .table tbody tr:hover {
-        background: #fdf6e3;
-    }
-    .section-title {
-        font-family: 'Cormorant Garamond', serif;
-        font-size: 1.4rem;
-        font-weight: 700;
-        color: #1a1612;
-        margin-bottom: 1rem;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-    }
-    .section-title i {
-        color: #b8922a;
-    }
-    .filter-card {
-        background: #fdf6e3;
-        border: 1px solid #f3e7c6;
-    }
-    .filter-card .form-select,
-    .filter-card .form-control {
-        border-radius: 8px;
-        border: 1.5px solid #e8dfd4;
-        background: #fff;
-    }
-    .filter-card .form-select:focus,
-    .filter-card .form-control:focus {
-        border-color: #b8922a;
-        box-shadow: 0 0 0 0.2rem rgba(184,146,42,0.15);
-    }
-    .btn-filter {
-        background: #b8922a;
-        color: #fff;
-        border: none;
-        border-radius: 8px;
-        font-weight: 600;
-    }
-    .btn-filter:hover {
-        background: #6E0E2E;
-        color: #fff;
-    }
-    .chart-container {
-        position: relative;
-        height: 320px;
-        width: 100%;
-    }
-    @media (max-width: 900px) {
-        .stats-header {
-            margin-left: auto;
-            max-width: 98vw;
-        }
-        .ig-stats-card {
-            padding: 1.2rem;
-            max-width: 98vw;
-            margin-left: auto;
-        }
-        .stat-card__value {
-            font-size: 1.8rem;
-        }
-    }
-    </style>
+  }
+</style>
 {% endblock %}
 
 {% block content %}
-<div class="main-stats-wrapper">
-    <!-- HEADER -->
-    <div class="stats-header">
-        <h2 class="display-6 fw-bold mb-1" style="font-family: 'Cormorant Garamond'; color: var(--dark-ig, #1a1612);">
-            <i class="bi bi-graph-up-arrow me-2" style="color: #b8922a;"></i>Estadísticas de Ventas
-        </h2>
-        <p class="text-muted small text-uppercase" style="letter-spacing: 1px;">Analiza el desempeño de tu negocio</p>
+<div class="gestion-main">
+
+  <div class="page-header">
+    <div class="header-left">
+      <p class="header-eyebrow">Análisis</p>
+      <h1 class="page-title">Estadísticas de ventas</h1>
+    </div>
+  </div>
+
+  <!-- Filtros -->
+  <form method="get" class="filter-bar">
+    <div class="filter-group">
+      <span class="filter-label"><i class="bi bi-calendar3"></i> Período</span>
+      <select name="tipo_periodo" class="filter-select" onchange="this.form.submit()">
+        <option value="7dias" {% if tipo_periodo == '7dias' %}selected{% endif %}>Últimos 7 días</option>
+        <option value="30dias" {% if tipo_periodo == '30dias' %}selected{% endif %}>Últimos 30 días</option>
+        <option value="90dias" {% if tipo_periodo == '90dias' %}selected{% endif %}>Últimos 90 días</option>
+        <option value="personalizado" {% if tipo_periodo == 'personalizado' %}selected{% endif %}>Personalizado</option>
+      </select>
     </div>
 
-    <!-- FILTROS DE PERÍODO -->
-    <div class="ig-stats-card filter-card">
-        <form method="get" class="row g-3 align-items-end">
-            <div class="col-md-4">
-                <label for="tipo_periodo" class="form-label fw-bold text-uppercase" style="font-size: 0.8rem; letter-spacing: 1px; color: #8c7e70;">
-                    <i class="bi bi-calendar3 me-1"></i>Período
-                </label>
-                <select name="tipo_periodo" id="tipo_periodo" class="form-select" onchange="this.form.submit()">
-                    <option value="7dias" {% if tipo_periodo == '7dias' %}selected{% endif %}>Últimos 7 días</option>
-                    <option value="30dias" {% if tipo_periodo == '30dias' %}selected{% endif %}>Últimos 30 días</option>
-                    <option value="90dias" {% if tipo_periodo == '90dias' %}selected{% endif %}>Últimos 90 días</option>
-                    <option value="personalizado" {% if tipo_periodo == 'personalizado' %}selected{% endif %}>Personalizado</option>
-                </select>
-            </div>
-
-            {% if tipo_periodo == 'personalizado' %}
-                <div class="col-md-3">
-                    <label for="fecha_inicio" class="form-label fw-bold text-uppercase" style="font-size: 0.8rem; letter-spacing: 1px; color: #8c7e70;">Desde</label>
-                    <input type="date" name="fecha_inicio" id="fecha_inicio" class="form-control" value="{{ fecha_inicio_str }}">
-                </div>
-                <div class="col-md-3">
-                    <label for="fecha_fin" class="form-label fw-bold text-uppercase" style="font-size: 0.8rem; letter-spacing: 1px; color: #8c7e70;">Hasta</label>
-                    <input type="date" name="fecha_fin" id="fecha_fin" class="form-control" value="{{ fecha_fin_str }}">
-                </div>
-                <div class="col-md-2">
-                    <button type="submit" class="btn btn-filter w-100">
-                        <i class="bi bi-funnel me-1"></i>Filtrar
-                    </button>
-                </div>
-            {% endif %}
-        </form>
-        <div class="mt-2">
-            <span class="badge" style="background: #f8f5ef; color: #6E0E2E; font-size: 0.85rem; padding: 0.5rem 1rem;">
-                <i class="bi bi-calendar-range me-1"></i>{{ fecha_inicio|date:"d/m/Y" }} — {{ fecha_fin|date:"d/m/Y" }}
-            </span>
-        </div>
+    {% if tipo_periodo == 'personalizado' %}
+    <div class="filter-group">
+      <span class="filter-label">Desde</span>
+      <input type="date" name="fecha_inicio" class="filter-input" value="{{ fecha_inicio_str }}">
     </div>
-
-    <!-- KPIs PRINCIPALES -->
-    <div class="ig-stats-card">
-        <div class="section-title">
-            <i class="bi bi-speedometer2"></i> Resumen del Período
-        </div>
-        <div class="row g-3">
-            <div class="col-md-4">
-                <div class="stat-card">
-                    <div class="stat-card__label"><i class="bi bi-cash-coin me-1"></i>Total de ventas</div>
-                    <div class="stat-card__value">
-                        <span class="stat-card__currency">$</span>{{ total_ventas|floatformat:2 }}
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="stat-card">
-                    <div class="stat-card__label"><i class="bi bi-bag-check me-1"></i>Pedidos</div>
-                    <div class="stat-card__value">{{ cantidad_pedidos }}</div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="stat-card">
-                    <div class="stat-card__label"><i class="bi bi-calculator me-1"></i>Promedio por pedido</div>
-                    <div class="stat-card__value">
-                        <span class="stat-card__currency">$</span>{{ promedio_por_pedido|floatformat:2 }}
-                    </div>
-                </div>
-            </div>
-        </div>
+    <div class="filter-group">
+      <span class="filter-label">Hasta</span>
+      <input type="date" name="fecha_fin" class="filter-input" value="{{ fecha_fin_str }}">
     </div>
+    <button type="submit" class="filter-btn">
+      <i class="bi bi-funnel"></i> Filtrar
+    </button>
+    {% endif %}
 
-    <!-- ESTADÍSTICAS POR ESTADO Y TIPO -->
-    <div class="ig-stats-card">
-        <div class="row g-4">
-            <div class="col-lg-6">
-                <div class="section-title">
-                    <i class="bi bi-clipboard-data"></i> Pedidos por Estado
-                </div>
-                <div class="table-responsive">
-                    <table class="table mb-0 align-middle">
-                        <thead>
-                            <tr>
-                                <th><i class="bi bi-tag me-1"></i>Estado</th>
-                                <th class="text-end">Cantidad</th>
-                                <th class="text-end">Total</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for item in pedidos_por_estado %}
-                                <tr>
-                                    <td><strong>{{ item.estado_label }}</strong></td>
-                                    <td class="text-end">
-                                        <span class="badge bg-light text-dark border px-2 py-1">{{ item.cantidad }}</span>
-                                    </td>
-                                    <td class="text-end fw-bold" style="color: #6E0E2E;">${{ item.total|floatformat:2 }}</td>
-                                </tr>
-                            {% empty %}
-                                <tr>
-                                    <td colspan="3" class="text-center text-muted py-4">
-                                        <i class="bi bi-inbox display-6 opacity-25"></i>
-                                        <p class="mt-2 mb-0">Sin datos</p>
-                                    </td>
-                                </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <div class="col-lg-6">
-                <div class="section-title">
-                    <i class="bi bi-shop"></i> Ventas por Tipo
-                </div>
-                <div class="table-responsive">
-                    <table class="table mb-0 align-middle">
-                        <thead>
-                            <tr>
-                                <th><i class="bi bi-cart3 me-1"></i>Tipo de Venta</th>
-                                <th class="text-end">Cantidad</th>
-                                <th class="text-end">Total</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for item in ventas_por_tipo %}
-                                <tr>
-                                    <td><strong>{{ item.tipo_label }}</strong></td>
-                                    <td class="text-end">
-                                        <span class="badge bg-light text-dark border px-2 py-1">{{ item.cantidad }}</span>
-                                    </td>
-                                    <td class="text-end fw-bold" style="color: #6E0E2E;">${{ item.total|floatformat:2 }}</td>
-                                </tr>
-                            {% empty %}
-                                <tr>
-                                    <td colspan="3" class="text-center text-muted py-4">
-                                        <i class="bi bi-inbox display-6 opacity-25"></i>
-                                        <p class="mt-2 mb-0">Sin datos</p>
-                                    </td>
-                                </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
+    <div class="date-range-badge">
+      <i class="bi bi-calendar-range"></i>
+      {{ fecha_inicio|date:"d/m/Y" }} — {{ fecha_fin|date:"d/m/Y" }}
     </div>
+  </form>
 
-    <!-- PRODUCTOS MÁS VENDIDOS -->
-    <div class="ig-stats-card">
-        <div class="section-title">
-            <i class="bi bi-trophy"></i> Productos Más Vendidos
-        </div>
-        <div class="chart-container">
-            <canvas id="productosChart"></canvas>
-        </div>
+  <!-- KPIs -->
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-label"><i class="bi bi-cash-coin"></i> Total de ventas</div>
+      <div class="kpi-value"><span class="currency">$</span>{{ total_ventas|floatformat:2 }}</div>
     </div>
+    <div class="kpi-card">
+      <div class="kpi-label"><i class="bi bi-bag-check"></i> Pedidos</div>
+      <div class="kpi-value">{{ cantidad_pedidos }}</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label"><i class="bi bi-calculator"></i> Promedio por pedido</div>
+      <div class="kpi-value"><span class="currency">$</span>{{ promedio_por_pedido|floatformat:2 }}</div>
+    </div>
+  </div>
 
-    <!-- EVOLUCIÓN DIARIA - GRÁFICO DE LÍNEAS -->
-    <div class="ig-stats-card">
-        <div class="section-title">
-            <i class="bi bi-graph-up"></i> Evolución de Ventas (Últimos 30 días)
-        </div>
-        <div class="chart-container" style="height: 350px;">
-            <canvas id="evolucionChart"></canvas>
-        </div>
-        <div class="row mt-3">
-            <div class="col-auto">
-                <span class="badge" style="background: rgba(184, 146, 42, 0.2); color: #b8922a;">
-                    <i class="bi bi-circle-fill me-1" style="font-size: 0.5rem;"></i> Total Ventas ($)
-                </span>
-            </div>
-            <div class="col-auto">
-                <span class="badge" style="background: rgba(110, 14, 46, 0.2); color: #6E0E2E;">
-                    <i class="bi bi-circle-fill me-1" style="font-size: 0.5rem;"></i> Cantidad Pedidos
-                </span>
-            </div>
-        </div>
+  <!-- Tablas de datos -->
+  <div class="section">
+    <div class="data-grid">
+      <div>
+        <h3 class="section-title"><i class="bi bi-clipboard-data"></i> Pedidos por estado</h3>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Estado</th>
+              <th>Cantidad</th>
+              <th>Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in pedidos_por_estado %}
+            <tr>
+              <td><strong>{{ item.estado_label }}</strong></td>
+              <td><span class="cantidad-badge">{{ item.cantidad }}</span></td>
+              <td>${{ item.total|floatformat:2 }}</td>
+            </tr>
+            {% empty %}
+            <tr class="empty-row">
+              <td colspan="3">
+                <i class="bi bi-inbox"></i>
+                Sin datos
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <div>
+        <h3 class="section-title"><i class="bi bi-shop"></i> Ventas por tipo</h3>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Tipo de venta</th>
+              <th>Cantidad</th>
+              <th>Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in ventas_por_tipo %}
+            <tr>
+              <td><strong>{{ item.tipo_label }}</strong></td>
+              <td><span class="cantidad-badge">{{ item.cantidad }}</span></td>
+              <td>${{ item.total|floatformat:2 }}</td>
+            </tr>
+            {% empty %}
+            <tr class="empty-row">
+              <td colspan="3">
+                <i class="bi bi-inbox"></i>
+                Sin datos
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
     </div>
+  </div>
+
+  <!-- Gráfico de productos más vendidos -->
+  <div class="section">
+    <h3 class="section-title"><i class="bi bi-trophy"></i> Productos más vendidos</h3>
+    <div class="chart-card">
+      <div class="chart-container">
+        <canvas id="productosChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Gráfico de evolución -->
+  <div class="section">
+    <h3 class="section-title"><i class="bi bi-graph-up"></i> Evolución de ventas (últimos 30 días)</h3>
+    <div class="chart-card">
+      <div class="chart-container" style="height: 350px;">
+        <canvas id="evolucionChart"></canvas>
+      </div>
+      <div class="chart-legend">
+        <div class="legend-item">
+          <span class="legend-dot gold"></span> Total ventas ($)
+        </div>
+        <div class="legend-item">
+          <span class="legend-dot burgundy"></span> Cantidad pedidos
+        </div>
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Gráfico de Productos Más Vendidos (Barras)
-    const ctxProductos = document.getElementById('productosChart');
-    if (ctxProductos) {
-        new Chart(ctxProductos, {
-            type: 'bar',
-            data: {
-                labels: [{% for item in productos_top %}'{{ item.variante__producto__nombre|truncatechars:20|escapejs }}'{% if not forloop.last %}, {% endif %}{% endfor %}],
-                datasets: [{
-                    label: 'Unidades Vendidas',
-                    data: [{% for item in productos_top %}{{ item.cantidad_total }}{% if not forloop.last %}, {% endif %}{% endfor %}],
-                    backgroundColor: 'rgba(184, 146, 42, 0.8)',
-                    borderColor: 'rgba(184, 146, 42, 1)',
-                    borderWidth: 1,
-                    borderRadius: 8
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: false }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        grid: { color: 'rgba(0,0,0,0.05)' }
-                    },
-                    x: {
-                        grid: { display: false }
-                    }
-                }
-            }
-        });
-    }
+  const ctxProductos = document.getElementById('productosChart');
+  if (ctxProductos) {
+    new Chart(ctxProductos, {
+      type: 'bar',
+      data: {
+        labels: [{% for item in productos_top %}'{{ item.variante__producto__nombre|truncatechars:20|escapejs }}'{% if not forloop.last %}, {% endif %}{% endfor %}],
+        datasets: [{
+          label: 'Unidades Vendidas',
+          data: [{% for item in productos_top %}{{ item.cantidad_total }}{% if not forloop.last %}, {% endif %}{% endfor %}],
+          backgroundColor: 'rgba(110, 14, 46, 0.8)',
+          borderColor: 'rgba(110, 14, 46, 1)',
+          borderWidth: 1,
+          borderRadius: 6
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)' } },
+          x: { grid: { display: false } }
+        }
+      }
+    });
+  }
 
-    // Gráfico de Evolución de Ventas (Líneas)
-    const ctxEvolucion = document.getElementById('evolucionChart');
-    if (ctxEvolucion) {
-        new Chart(ctxEvolucion, {
-            type: 'line',
-            data: {
-                labels: [{% for dia in evolucion_diaria %}'{{ dia.fecha|slice:":5"|escapejs }}'{% if not forloop.last %}, {% endif %}{% endfor %}],
-                datasets: [
-                    {
-                        label: 'Total Ventas ($)',
-                        data: [{% for dia in evolucion_diaria %}{{ dia.total|default:0 }}{% if not forloop.last %}, {% endif %}{% endfor %}],
-                        borderColor: 'rgba(184, 146, 42, 1)',
-                        backgroundColor: 'rgba(184, 146, 42, 0.1)',
-                        borderWidth: 3,
-                        fill: true,
-                        tension: 0.4,
-                        pointBackgroundColor: 'rgba(184, 146, 42, 1)',
-                        pointBorderColor: '#fff',
-                        pointBorderWidth: 2,
-                        pointRadius: 4,
-                        pointHoverRadius: 6,
-                        yAxisID: 'y'
-                    },
-                    {
-                        label: 'Cantidad Pedidos',
-                        data: [{% for dia in evolucion_diaria %}{{ dia.cantidad|default:0 }}{% if not forloop.last %}, {% endif %}{% endfor %}],
-                        borderColor: 'rgba(110, 14, 46, 1)',
-                        backgroundColor: 'rgba(110, 14, 46, 0.1)',
-                        borderWidth: 3,
-                        fill: false,
-                        tension: 0.4,
-                        pointBackgroundColor: 'rgba(110, 14, 46, 1)',
-                        pointBorderColor: '#fff',
-                        pointBorderWidth: 2,
-                        pointRadius: 4,
-                        pointHoverRadius: 6,
-                        yAxisID: 'y1'
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                interaction: {
-                    mode: 'index',
-                    intersect: false
-                },
-                plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        backgroundColor: 'rgba(26, 22, 18, 0.9)',
-                        titleColor: '#fff',
-                        bodyColor: '#fff',
-                        borderColor: 'rgba(184, 146, 42, 0.5)',
-                        borderWidth: 1,
-                        cornerRadius: 8,
-                        padding: 12,
-                        callbacks: {
-                            label: function(context) {
-                                if (context.datasetIndex === 0) {
-                                    return 'Ventas: $' + context.raw.toLocaleString('es-AR', {minimumFractionDigits: 2});
-                                }
-                                return 'Pedidos: ' + context.raw;
-                            }
-                        }
-                    }
-                },
-                scales: {
-                    y: {
-                        type: 'linear',
-                        display: true,
-                        position: 'left',
-                        beginAtZero: true,
-                        grid: { color: 'rgba(184, 146, 42, 0.1)' },
-                        ticks: {
-                            color: '#b8922a',
-                            callback: function(value) {
-                                return '$' + value.toLocaleString('es-AR');
-                            }
-                        }
-                    },
-                    y1: {
-                        type: 'linear',
-                        display: true,
-                        position: 'right',
-                        beginAtZero: true,
-                        grid: { drawOnChartArea: false },
-                        ticks: { color: '#6E0E2E' }
-                    },
-                    x: {
-                        grid: { display: false },
-                        ticks: {
-                            color: '#8c7e70',
-                            maxRotation: 45,
-                            minRotation: 45
-                        }
-                    }
-                }
+  const ctxEvolucion = document.getElementById('evolucionChart');
+  if (ctxEvolucion) {
+    new Chart(ctxEvolucion, {
+      type: 'line',
+      data: {
+        labels: [{% for dia in evolucion_diaria %}'{{ dia.fecha|slice:":5"|escapejs }}'{% if not forloop.last %}, {% endif %}{% endfor %}],
+        datasets: [
+          {
+            label: 'Total Ventas ($)',
+            data: [{% for dia in evolucion_diaria %}{{ dia.total|default:0 }}{% if not forloop.last %}, {% endif %}{% endfor %}],
+            borderColor: 'rgba(184, 146, 42, 1)',
+            backgroundColor: 'rgba(184, 146, 42, 0.1)',
+            borderWidth: 2,
+            fill: true,
+            tension: 0.4,
+            pointBackgroundColor: 'rgba(184, 146, 42, 1)',
+            pointBorderColor: '#fff',
+            pointBorderWidth: 2,
+            pointRadius: 3,
+            yAxisID: 'y'
+          },
+          {
+            label: 'Cantidad Pedidos',
+            data: [{% for dia in evolucion_diaria %}{{ dia.cantidad|default:0 }}{% if not forloop.last %}, {% endif %}{% endfor %}],
+            borderColor: 'rgba(110, 14, 46, 1)',
+            backgroundColor: 'rgba(110, 14, 46, 0.05)',
+            borderWidth: 2,
+            fill: false,
+            tension: 0.4,
+            pointBackgroundColor: 'rgba(110, 14, 46, 1)',
+            pointBorderColor: '#fff',
+            pointBorderWidth: 2,
+            pointRadius: 3,
+            yAxisID: 'y1'
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: { legend: { display: false } },
+        scales: {
+          y: {
+            type: 'linear',
+            display: true,
+            position: 'left',
+            beginAtZero: true,
+            grid: { color: 'rgba(184, 146, 42, 0.1)' },
+            ticks: {
+              color: '#b8922a',
+              callback: function(value) { return '$' + value.toLocaleString('es-AR'); }
             }
-        });
-    }
+          },
+          y1: {
+            type: 'linear',
+            display: true,
+            position: 'right',
+            beginAtZero: true,
+            grid: { drawOnChartArea: false },
+            ticks: { color: '#6E0E2E' }
+          },
+          x: {
+            grid: { display: false },
+            ticks: { color: '#8c7e70', maxRotation: 45, minRotation: 45 }
+          }
+        }
+      }
+    });
+  }
 });
 </script>
 {% endblock %}

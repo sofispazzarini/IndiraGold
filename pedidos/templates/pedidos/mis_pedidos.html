@@ -1,115 +1,269 @@
 {% extends 'users/dashboard_cliente.html' %}
 
-{% block content %}
+{% block extra_head %}
+{{ block.super }}
 <style>
+  .pedidos-main {
+    min-height: calc(100vh - 60px);
+    display: flex;
+    flex-direction: column;
+    padding: 3.5rem 4rem 5rem;
+    width: 100%;
+    max-width: 900px;
+    margin-left: 20%;
+    margin-right: auto;
+  }
 
-.pedidos-container{
-    margin-left:20%;
-}
+  .page-header {
+    margin-bottom: 3rem;
+    padding-bottom: 1.75rem;
+    border-bottom: 1px solid var(--border-faint);
+    position: relative;
+  }
 
+  .page-header::after {
+    content: '';
+    position: absolute;
+    bottom: -1px; left: 0;
+    width: 48px; height: 2px;
+    background: var(--burgundy);
+  }
+
+  .header-eyebrow {
+    font-size: 0.6rem;
+    font-weight: 600;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--burgundy);
+    margin-bottom: 0.5rem;
+  }
+
+  .page-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(2.2rem, 4vw, 3rem);
+    font-weight: 600;
+    color: var(--dark);
+    letter-spacing: -0.01em;
+    line-height: 1;
+    margin-bottom: 0.5rem;
+  }
+
+  .page-subtitle {
+    font-size: 0.88rem;
+    color: var(--muted);
+  }
+
+  /* Pedido List */
+  .pedido-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .pedido-item {
+    display: grid;
+    grid-template-columns: auto 1fr auto auto;
+    align-items: center;
+    gap: 1.5rem;
+    padding: 1.25rem 0;
+    border-bottom: 1px solid rgba(232, 223, 212, 0.6);
+    position: relative;
+    transition: all 0.2s ease;
+  }
+
+  .pedido-item::before {
+    content: '';
+    position: absolute;
+    left: -1.2rem;
+    top: 50%; transform: translateY(-50%);
+    width: 3px; height: 0;
+    background: var(--burgundy);
+    border-radius: 2px;
+    transition: height 0.22s ease;
+  }
+
+  .pedido-item:hover { border-bottom-color: rgba(110, 14, 46, 0.25); }
+  .pedido-item:hover::before { height: 60%; }
+
+  .pedido-id {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.8rem;
+    font-weight: 600;
+    color: var(--burgundy);
+    min-width: 80px;
+  }
+
+  .pedido-info {
+    min-width: 0;
+  }
+
+  .pedido-fecha {
+    font-size: 0.8rem;
+    color: var(--muted);
+    margin-bottom: 0.2rem;
+  }
+
+  .pedido-estado {
+    display: inline-block;
+    padding: 0.3rem 0.8rem;
+    border-radius: 50px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+  }
+
+  .estado-pendiente { background: rgba(110, 14, 46, 0.08); color: #6E0E2E; }
+  .estado-aceptado { background: rgba(184, 146, 42, 0.1); color: #7a5f15; }
+  .estado-en_preparacion { background: rgba(91, 121, 184, 0.1); color: #2a4a8a; }
+  .estado-enviado { background: rgba(124, 173, 106, 0.12); color: #3d6e2a; }
+  .estado-entregado { background: rgba(124, 173, 106, 0.12); color: #3d6e2a; }
+  .estado-cancelado { background: rgba(156, 140, 124, 0.15); color: #5c5248; }
+
+  .pedido-total {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--dark);
+    text-align: right;
+  }
+
+  .pedido-action {
+    opacity: 0;
+    transform: translateX(8px);
+    transition: all 0.22s ease;
+  }
+
+  .pedido-item:hover .pedido-action {
+    opacity: 1;
+    transform: translateX(0);
+  }
+
+  .btn-ver {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.6rem 1.2rem;
+    border-radius: 50px;
+    background: var(--dark);
+    color: #fff;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background 0.2s;
+  }
+
+  .btn-ver:hover {
+    background: var(--burgundy);
+    color: #fff;
+  }
+
+  /* Empty State */
+  .empty-state {
+    text-align: center;
+    padding: 5rem 2rem;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+  }
+
+  .empty-icon {
+    font-size: 4rem;
+    margin-bottom: 1.5rem;
+    opacity: 0.15;
+  }
+
+  .empty-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.8rem;
+    font-weight: 600;
+    color: var(--dark);
+    margin-bottom: 0.75rem;
+  }
+
+  .empty-desc {
+    font-size: 0.9rem;
+    color: var(--muted);
+    margin-bottom: 2rem;
+  }
+
+  .btn-explore {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.9rem 2rem;
+    border-radius: 50px;
+    background: var(--dark);
+    color: #fff;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background 0.2s;
+  }
+
+  .btn-explore:hover {
+    background: var(--burgundy);
+    color: #fff;
+  }
+
+  @media (max-width: 768px) {
+    .pedidos-main {
+      padding: 2rem 1.5rem;
+      margin-left: 0;
+    }
+    .pedido-item {
+      grid-template-columns: 1fr;
+      gap: 0.75rem;
+    }
+    .pedido-action {
+      opacity: 1;
+      transform: none;
+    }
+    .pedido-total {
+      text-align: left;
+    }
+  }
 </style>
-<div class="container py-5 pedidos-container">
-    
-    <div class="d-flex justify-content-between align-items-center mb-5">
+{% endblock %}
 
-        <div>
-            <h1 class="fw-bold">
-                Mis pedidos
-            </h1>
+{% block content %}
+<div class="pedidos-main">
 
-            <p class="text-muted mb-0">
-                Consultá el estado de tus compras
-            </p>
-        </div>
+  <div class="page-header">
+    <p class="header-eyebrow">Mi cuenta</p>
+    <h1 class="page-title">Mis pedidos</h1>
+    <p class="page-subtitle">Consultá el estado de tus compras</p>
+  </div>
 
+  {% if pedidos %}
+  <ul class="pedido-list">
+    {% for pedido in pedidos %}
+    <li class="pedido-item">
+      <span class="pedido-id">#{{ pedido.id }}</span>
+      <div class="pedido-info">
+        <div class="pedido-fecha">{{ pedido.created_at|date:"d/m/Y H:i" }}</div>
+        <span class="pedido-estado estado-{{ pedido.estado }}">{{ pedido.get_estado_display }}</span>
+      </div>
+      <span class="pedido-total">${{ pedido.total }}</span>
+      <div class="pedido-action">
+        <a href="{% url 'pedidos:estado_pedido' pedido.id %}" class="btn-ver">
+          Ver seguimiento <i class="bi bi-chevron-right"></i>
+        </a>
+      </div>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <div class="empty-state">
+    <div class="empty-icon">
+      <i class="bi bi-bag"></i>
     </div>
-
-    {% if pedidos %}
-
-        <div class="row g-4">
-
-            {% for pedido in pedidos %}
-
-                <div class="col-lg-6">
-
-                    <div class="card border-0 shadow-sm rounded-5 p-4 h-100">
-
-                        <div class="d-flex justify-content-between mb-3">
-
-                            <div>
-                                <h5 class="fw-bold mb-1">
-                                    Pedido #{{ pedido.id }}
-                                </h5>
-
-                                <small class="text-muted">
-                                    {{ pedido.created_at|date:"d/m/Y H:i" }}
-                                </small>
-                            </div>
-
-                            <span class="badge bg-dark">
-                                {{ pedido.get_estado_display }}
-                            </span>
-
-                        </div>
-
-                        <div class="mb-4">
-
-                            <div class="d-flex justify-content-between">
-
-                                <span class="text-muted">
-                                    Total
-                                </span>
-
-                                <span class="fw-bold">
-                                    ${{ pedido.total }}
-                                </span>
-
-                            </div>
-
-                        </div>
-
-                        <a
-                            href="{% url 'pedidos:estado_pedido' pedido.id %}"
-                            class="btn btn-dark rounded-pill"
-                        >
-                            Ver seguimiento
-                        </a>
-
-                    </div>
-
-                </div>
-
-            {% endfor %}
-
-        </div>
-
-    {% else %}
-
-        <div class="card border-0 shadow-sm rounded-5 p-5 text-center">
-
-            <div class="mb-4" style="font-size:70px;">
-                📦
-            </div>
-
-            <h3 class="fw-bold mb-3">
-                Todavía no realizaste ninguna compra
-            </h3>
-
-            <p class="text-muted mb-4">
-                Cuando hagas un pedido podrás seguirlo desde acá.
-            </p>
-
-            <a
-                href="{% url 'home:home' %}"
-                class="btn btn-dark rounded-pill px-4"
-            >
-                Explorar productos
-            </a>
-
-        </div>
-
-    {% endif %}
+    <h3 class="empty-title">Todavía no realizaste ninguna compra</h3>
+    <p class="empty-desc">Cuando hagas un pedido podrás seguirlo desde acá.</p>
+    <a href="{% url 'home:home' %}" class="btn-explore">
+      Explorar productos <i class="bi bi-arrow-right"></i>
+    </a>
+  </div>
+  {% endif %}
 
 </div>
-
 {% endblock %}
