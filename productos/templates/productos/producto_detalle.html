@@ -466,18 +466,23 @@
                     <div class="variantes-titulo">Selecciona tu talle</div>
                     <div class="talles-grid">
                         {% for variante in variantes %}
-                            <button class="talle-btn {% if forloop.first %}seleccionado{% endif %}" 
-                                    onclick="seleccionarTalle(this, {{ variante.id }})">
+                            <button class="talle-btn {% if forloop.first %}seleccionado{% endif %}"
+                                    data-variante-id="{{ variante.id }}"
+                                    data-stock="{{ variante.stock }}"
+                                    onclick="seleccionarTalle(this)">
                                 {{ variante.talle.nombre|upper }}
                             </button>
                         {% endfor %}
                     </div>
+                    <small id="stockVarianteInfo" style="display:block; margin-top:0.5rem; color:#8c7e70;">
+                        Disponibles: {% if variantes %}{{ variantes.0.stock }}{% else %}0{% endif %}
+                    </small>
                 </div>
             {% endif %}
 
             <!-- BOTONES -->
             <div class="botones-compra">
-                <button type="button" class="btn-compra btn-compra-primary" onclick="abrirModalCantidadDetalle({{ producto.id }}, '{{ producto.nombre }}', {{ producto.stock }})">
+                <button type="button" class="btn-compra btn-compra-primary" id="btnAgregarCarrito" onclick="abrirModalCantidadDetalle()">
                     <svg width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
                         <path d="M8 1a2.5 2.5 0 0 1 2.5 2.5V4h-5v-.5A2.5 2.5 0 0 1 8 1zm3.5 3v-.5a3.5 3.5 0 1 0-7 0V4H1v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V4h-3.5zM2 5h12v9a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V5z"/>
                     </svg>
@@ -556,7 +561,7 @@
         </div>
         <form id="modalCantidadDetalleForm" method="post" action="/carritos/agregar/" style="padding:1.25rem; display:grid; gap:1rem;">
             {% csrf_token %}
-            <input type="hidden" name="producto_id" id="modalCantidadDetalleProductoId">
+            <input type="hidden" name="variante_id" id="modalCantidadDetalleProductoId">
             <input type="hidden" name="next" value="{{ request.get_full_path }}">
             <div>
                 <label for="modalCantidadDetalleInput" style="display:block; margin-bottom:.5rem; font-size:0.9rem; font-weight:600; color:#3d342a;">Cantidad</label>
@@ -572,15 +577,38 @@
 </div>
 
 <script>
+let varianteSeleccionada = null;
+const productoNombre = '{{ producto.nombre }}';
+
+document.addEventListener('DOMContentLoaded', function() {
+    const primerTalle = document.querySelector('.talle-btn');
+    if (primerTalle) {
+        varianteSeleccionada = {
+            id: primerTalle.dataset.varianteId,
+            stock: parseInt(primerTalle.dataset.stock) || 0
+        };
+    }
+});
+
 function cambiarImagen(element, urlImagen) {
     document.getElementById('imagenPrincipal').src = urlImagen;
     document.querySelectorAll('.miniatura').forEach(el => el.classList.remove('activa'));
     element.classList.add('activa');
 }
 
-function seleccionarTalle(element, varianteId) {
+function seleccionarTalle(element) {
     document.querySelectorAll('.talle-btn').forEach(el => el.classList.remove('seleccionado'));
     element.classList.add('seleccionado');
+
+    varianteSeleccionada = {
+        id: element.dataset.varianteId,
+        stock: parseInt(element.dataset.stock) || 0
+    };
+
+    const stockInfo = document.getElementById('stockVarianteInfo');
+    if (stockInfo) {
+        stockInfo.textContent = `Disponibles: ${varianteSeleccionada.stock}`;
+    }
 }
 
 async function abrirTablamedidas() {
@@ -603,13 +631,17 @@ function cerrarTablamedidas() {
     document.getElementById('modalMedidas').style.display = 'none';
 }
 
-function abrirModalCantidadDetalle(productoId, productoNombre, stockDisponible) {
+function abrirModalCantidadDetalle() {
+    if (!varianteSeleccionada) {
+        alert('Por favor selecciona un talle');
+        return;
+    }
     const modal = document.getElementById('modalCantidadDetalle');
-    document.getElementById('modalCantidadDetalleProductoId').value = productoId;
+    document.getElementById('modalCantidadDetalleProductoId').value = varianteSeleccionada.id;
     document.getElementById('modalCantidadDetalleProducto').textContent = productoNombre;
     document.getElementById('modalCantidadDetalleInput').value = 1;
-    document.getElementById('modalCantidadDetalleInput').max = stockDisponible || 9999;
-    document.getElementById('modalCantidadDetalleStock').textContent = stockDisponible ? `Disponibles: ${stockDisponible}` : '';
+    document.getElementById('modalCantidadDetalleInput').max = varianteSeleccionada.stock || 9999;
+    document.getElementById('modalCantidadDetalleStock').textContent = varianteSeleccionada.stock ? `Disponibles: ${varianteSeleccionada.stock}` : '';
     modal.style.display = 'flex';
 }
 
@@ -621,7 +653,6 @@ document.getElementById('modalCantidadDetalle').addEventListener('click', functi
     if (event.target === this) cerrarModalCantidadDetalle();
 });
 
-// Cargar tabla de medidas al cargar la página
 window.addEventListener('load', async () => {
     const productoId = {{ producto.id }};
     try {

@@ -59,6 +59,13 @@ class Producto(models.Model):
     activo = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     imagen_tecnica = models.ImageField(upload_to='productos/fichas/', blank=True, null=True)
+
+    @property
+    def stock_total(self):
+        return self.variantes.filter(activa=True).aggregate(
+            total=models.Sum('stock')
+        )['total'] or 0
+
     def __str__(self):
         return self.nombre
     def obtener_oferta_activa(self):
