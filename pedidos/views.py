@@ -6,19 +6,16 @@ from django.contrib import messages
 from django.db.models import Sum, Count, Avg, Q, F
 from datetime import datetime, timedelta
 from decimal import Decimal
-<<<<<<< HEAD
 from .models import Pedido, PedidoItem, VentaLocal, PagoVentaLocal
 from carritos.models import Carrito, CarritoItem
 from carritos.utils import get_or_create_cart, vincular_carrito_con_usuario
 from .models import Pedido, PedidoItem, Gasto, VentaLocal, VentaLocalItem
 from .forms import GastoForm
-=======
 
 from pedidos.forms import GastoForm
 from .models import Gasto, Pedido, PedidoItem
 from carritos.models import Carrito, CarritoItem
 from carritos.utils import clear_cart_session, get_or_create_cart, vincular_carrito_con_usuario
->>>>>>> origin/feature/carrousel
 from users.models import Cliente
 from productos.models import Variante
 import mercadopago
