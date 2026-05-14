@@ -180,10 +180,17 @@
       border: none;
       cursor: pointer;
       transition: box-shadow .15s;
+      overflow: hidden;
+      padding: 0;
     }
     .avatar:focus, .avatar:hover {
       box-shadow: 0 0 0 2px #e8c96a55;
       outline: none;
+    }
+    .avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
     }
 
     .main {
@@ -248,9 +255,17 @@
         </span>
         <div class="dropdown">
           <button class="avatar dropdown-toggle" type="button" id="avatarDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-            {{ user.first_name|default:''|slice:":1" }}{{ user.last_name|default:''|slice:":1" }}
+            {% if user.is_authenticated and user.cliente.foto_perfil %}
+              <img src="{{ user.cliente.foto_perfil.url }}" alt="Foto de perfil">
+            {% else %}
+              {{ user.first_name|default:''|slice:":1" }}{{ user.last_name|default:''|slice:":1" }}
+            {% endif %}
           </button>
           <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="avatarDropdown">
+            {% if not user.is_superuser %}
+            <li><a class="dropdown-item" href="{% url 'users:perfil' %}"><i class="bi bi-person me-2"></i>Mi perfil</a></li>
+            <li><hr class="dropdown-divider"></li>
+            {% endif %}
             <li><a class="dropdown-item text-danger fw-bold" href="{% url 'users:logout' %}">Cerrar sesión</a></li>
           </ul>
         </div>

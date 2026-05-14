@@ -1,209 +1,347 @@
 {% extends 'users/dashboard_admin.html' %}
 
 {% block extra_head %}
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,600&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+
 <style>
-body {
-  background: #f6f8fa;
-  min-height: 100vh;
-  
-  justify-content: center;
-}
-.main-wrapper {
-  min-height: calc(100vh - 60px); /* ajusta si tu header es más alto */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.modern-card {
-  background: #fff;
-  border-radius: 18px;
-  box-shadow: 0 4px 32px rgba(60,72,100,0.10);
-  padding: 2.5rem 2rem 2rem 2rem;
-  max-width: 540px;
-  margin: 0 auto;
-  margin-left: 40%;
-}
-.modern-title {
-  font-family: 'Montserrat', Arial, sans-serif;
-  font-size: 2.1rem;
-  font-weight: 700;
-  color: #2d3848;
-  text-align: center;
-  margin-bottom: 0.2rem;
-  letter-spacing: 1px;
-}
-.modern-sub {
-  text-align: center;
-  color: #a0aec0;
-  font-size: 0.98rem;
-  margin-bottom: 2.2rem;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-}
-.modern-section {
-  margin-bottom: 2.2rem;
-}
-.modern-section-title {
-  font-size: 1.08rem;
-  font-weight: 700;
-  color: #3b4252;
-  margin-bottom: 1.1rem;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-}
-.modern-row {
-  display: flex;
-  gap: 18px;
-  margin-bottom: 1.1rem;
-  flex-wrap: wrap;
-}
-.modern-col {
-  flex: 1 1 220px;
-  min-width: 180px;
-  display: flex;
-  flex-direction: column;
-}
-.modern-label {
-  font-size: 0.97rem;
-  color: #4a5568;
-  margin-bottom: 0.3rem;
-  font-weight: 500;
-}
-.modern-input, .modern-select {
-  border: 1.2px solid #cbd5e1;
-  border-radius: 7px;
-  padding: 0.7rem 1rem;
-  font-size: 1rem;
-  background: #f9fafb;
-  transition: border-color 0.18s, box-shadow 0.18s;
-}
-.modern-input:focus, .modern-select:focus {
-  border-color: #b8922a;
-  background: #fff;
-  box-shadow: 0 0 0 2px #e8c96a33;
-  outline: none;
-}
-.modern-actions {
-  text-align: center;
-  margin-top: 2.2rem;
-}
-.modern-btn {
-  background: linear-gradient(90deg, #fbe18b 0%, #b8922a 100%);
-  color: #6E0E2E;
-  border: none;
-  border-radius: 10px;
-  padding: 1rem 3rem;
-  font-size: 1.1rem;
-  font-weight: 700;
-  letter-spacing: 2px;
-  box-shadow: 0 2px 8px 0 rgba(184,146,42,0.10);
-  cursor: pointer;
-  transition: background 0.18s, box-shadow 0.18s, color 0.18s;
-  text-transform: uppercase;
-}
-.modern-btn:hover {
-  background: linear-gradient(90deg, #b8922a 0%, #fbe18b 100%);
-  color: #fff;
-  box-shadow: 0 4px 16px 0 rgba(184,146,42,0.18);
-}
-@media (max-width: 700px) {
-  .modern-card {
-    padding: 1.2rem 0.5rem 1.5rem 0.5rem;
-    max-width: 98vw;
+  :root {
+    --gold: #b8922a;
+    --gold-soft: #c9a84c;
+    --gold-pale: #f7f0e0;
+    --gold-faint: #faf7f0;
+    --burgundy: #6E0E2E;
+    --dark: #1a1612;
+    --dark-mid: #2e2720;
+    --text: #3d342a;
+    --muted: #9c8c7c;
+    --border: #e8dfd4;
+    --border-faint: rgba(184,146,42,0.12);
   }
-  .modern-row {
+
+  .gestion-main {
+    min-height: calc(100vh - 60px);
+    display: flex;
     flex-direction: column;
-    gap: 0;
+    padding: 3.5rem 4rem 5rem;
+    width: 100%;
+    max-width: 700px;
+    margin-left: 25%;
+    margin-right: auto;
   }
-  .modern-col {
-    min-width: 0;
+
+  /* Back Link */
+  .back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--muted);
+    text-decoration: none;
+    margin-bottom: 2rem;
+    transition: color 0.18s;
   }
-}
+
+  .back-link:hover {
+    color: var(--burgundy);
+  }
+
+  .back-link i {
+    font-size: 0.9rem;
+  }
+
+  /* Page Header */
+  .page-header {
+    margin-bottom: 3rem;
+    padding-bottom: 1.75rem;
+    border-bottom: 1px solid var(--border-faint);
+    position: relative;
+  }
+
+  .page-header::after {
+    content: '';
+    position: absolute;
+    bottom: -1px; left: 0;
+    width: 64px; height: 2px;
+    background: var(--burgundy);
+  }
+
+  .header-eyebrow {
+    font-size: 0.62rem;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--burgundy);
+    margin-bottom: 0.5rem;
+  }
+
+  .page-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(2.4rem, 4vw, 3.2rem);
+    font-weight: 600;
+    color: var(--dark);
+    letter-spacing: -0.01em;
+    line-height: 1;
+  }
+
+  /* Alerts */
+  .alert-success-custom {
+    background: rgba(124, 173, 106, 0.1);
+    border: 1px solid rgba(124, 173, 106, 0.3);
+    border-radius: 12px;
+    padding: 1rem 1.5rem;
+    margin-bottom: 2rem;
+    font-size: 0.85rem;
+    color: #3d6e2a;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .alert-success-custom i {
+    font-size: 1.2rem;
+  }
+
+  .alert-error-custom {
+    background: rgba(110, 14, 46, 0.06);
+    border: 1px solid rgba(110, 14, 46, 0.2);
+    border-radius: 12px;
+    padding: 1rem 1.5rem;
+    margin-bottom: 2rem;
+    font-size: 0.82rem;
+    color: var(--burgundy);
+  }
+
+  .alert-error-custom ul {
+    margin: 0;
+    padding-left: 1.2rem;
+  }
+
+  /* Form Sections */
+  .form-section {
+    margin-bottom: 2.5rem;
+  }
+
+  .section-title {
+    font-size: 0.65rem;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .section-title::before {
+    content: '';
+    width: 16px;
+    height: 1px;
+    background: var(--burgundy);
+  }
+
+  /* Form Row */
+  .form-row {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+    margin-bottom: 1.2rem;
+  }
+
+  .form-row.three-cols {
+    grid-template-columns: 2fr 2fr 1fr;
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .form-label {
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: var(--text);
+    margin-bottom: 0.4rem;
+  }
+
+  .form-input,
+  .form-select {
+    border: none;
+    border-bottom: 1.5px solid var(--border);
+    padding: 0.75rem 0;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.9rem;
+    background: transparent;
+    color: var(--dark);
+    transition: border-color 0.2s;
+  }
+
+  .form-input:focus,
+  .form-select:focus {
+    outline: none;
+    border-bottom-color: var(--burgundy);
+  }
+
+  .form-input::placeholder {
+    color: var(--muted);
+    font-size: 0.85rem;
+  }
+
+  .form-select {
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%239c8c7c' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0 center;
+    padding-right: 1.5rem;
+  }
+
+  /* Submit Button */
+  .form-actions {
+    margin-top: 3rem;
+    text-align: center;
+  }
+
+  .btn-submit {
+    background: var(--dark);
+    color: #fff;
+    border: none;
+    border-radius: 50px;
+    padding: 1rem 3rem;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    transition: background 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+
+  .btn-submit:hover {
+    background: var(--burgundy);
+  }
+
+  .btn-submit i {
+    font-size: 1rem;
+  }
+
+  @media (max-width: 768px) {
+    .gestion-main {
+      padding: 2rem 1.5rem;
+      margin-left: 0;
+    }
+    .form-row {
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+    .form-row.three-cols {
+      grid-template-columns: 1fr;
+    }
+  }
 </style>
 {% endblock %}
 
 {% block content %}
-<a href="{% url 'users:listado_clientes' %}" class="btn btn-light mb-4" style="font-size: 1.1rem; border: none; padding: 6px 22px 6px 14px; background: #f8f5ef; color: #b8922a; border-radius: 8px; box-shadow: 0 2px 8px #e8c96a22; font-weight: 600;">
-  <i class="bi bi-arrow-left"></i> Volver
-</a>
-<div class="modern-card">
-  <div class="modern-title">Alta de Cliente</div>
-  <div class="modern-sub">Registro manual - Sistema interno</div>
+<div class="gestion-main">
+
+  <a href="{% url 'users:listado_clientes' %}" class="back-link">
+    <i class="bi bi-arrow-left"></i> Volver al listado
+  </a>
+
+  <div class="page-header">
+    <p class="header-eyebrow">Clientes</p>
+    <h1 class="page-title">Alta de cliente</h1>
+  </div>
+
   {% if mensaje %}
-    <div class="alert alert-success border-0 shadow-sm rounded-4 p-3 d-flex align-items-center mb-4">
-      <i class="bi bi-check-circle-fill me-3 fs-4 text-success"></i> {{ mensaje }}
-    </div>
+  <div class="alert-success-custom">
+    <i class="bi bi-check-circle-fill"></i>
+    {{ mensaje }}
+  </div>
   {% endif %}
+
+  {% if form.errors %}
+  <div class="alert-error-custom">
+    <ul>
+      {% for field, errors in form.errors.items %}
+        {% for error in errors %}
+        <li><strong>{{ field|capfirst }}:</strong> {{ error }}</li>
+        {% endfor %}
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
   <form method="post" autocomplete="off">
     {% csrf_token %}
-    <div class="modern-section">
-      <div class="modern-section-title">1. Identidad y Contacto</div>
-      <div class="modern-row">
-        <div class="modern-col">
-          <label class="modern-label">DNI (Username)</label>
-          <input type="text" name="dni" value="{{ form.dni.value|default:'' }}" class="modern-input" placeholder="DNI sin puntos">
+
+    <div class="form-section">
+      <p class="section-title">Identidad y contacto</p>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">DNI (Username)</label>
+          <input type="text" name="dni" value="{{ form.dni.value|default:'' }}" class="form-input" placeholder="Sin puntos">
         </div>
-        <div class="modern-col">
-          <label class="modern-label">Nombre Completo</label>
-          <input type="text" name="nombre" value="{{ form.nombre.value|default:'' }}" class="modern-input" placeholder="Ej: Martina Colombo">
+        <div class="form-group">
+          <label class="form-label">Nombre completo</label>
+          <input type="text" name="nombre" value="{{ form.nombre.value|default:'' }}" class="form-input" placeholder="Ej: Martina Colombo">
         </div>
       </div>
-      <div class="modern-row">
-        <div class="modern-col">
-          <label class="modern-label">Email Personal</label>
-          <input type="email" name="email" value="{{ form.email.value|default:'' }}" class="modern-input" placeholder="correo@ejemplo.com">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input type="email" name="email" value="{{ form.email.value|default:'' }}" class="form-input" placeholder="correo@ejemplo.com">
         </div>
-        <div class="modern-col">
-          <label class="modern-label">Teléfono</label>
-          <input type="text" name="telefono" value="{{ form.telefono.value|default:'' }}" class="modern-input" placeholder="Celular / WhatsApp">
+        <div class="form-group">
+          <label class="form-label">Teléfono</label>
+          <input type="text" name="telefono" value="{{ form.telefono.value|default:'' }}" class="form-input" placeholder="Celular / WhatsApp">
         </div>
       </div>
     </div>
-    <div class="modern-section">
-      <div class="modern-section-title">2. Domicilio de Entrega</div>
-      <div class="modern-row">
-        <div class="modern-col">
-          <label class="modern-label">Calle / Avenida</label>
-          <input type="text" name="calle" value="{{ form.calle.value|default:'' }}" class="modern-input">
+
+    <div class="form-section">
+      <p class="section-title">Domicilio de entrega</p>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Calle / Avenida</label>
+          <input type="text" name="calle" value="{{ form.calle.value|default:'' }}" class="form-input">
         </div>
-        <div class="modern-col">
-          <label class="modern-label">Número</label>
-          <input type="text" name="numero" value="{{ form.numero.value|default:'' }}" class="modern-input">
+        <div class="form-group">
+          <label class="form-label">Número</label>
+          <input type="text" name="numero" value="{{ form.numero.value|default:'' }}" class="form-input">
         </div>
       </div>
-      <div class="modern-row">
-        <div class="modern-col">
-          <label class="modern-label">Provincia</label>
-          <select name="provincia" class="modern-select">
+      <div class="form-row three-cols">
+        <div class="form-group">
+          <label class="form-label">Provincia</label>
+          <select name="provincia" class="form-select">
             {% for value, label in form.provincia.field.choices %}
               <option value="{{ value }}" {% if form.provincia.value == value %}selected{% endif %}>{{ label }}</option>
             {% endfor %}
           </select>
         </div>
-        <div class="modern-col">
-          <label class="modern-label">Localidad</label>
-          <input type="text" name="ciudad" value="{{ form.ciudad.value|default:'' }}" class="modern-input">
+        <div class="form-group">
+          <label class="form-label">Localidad</label>
+          <input type="text" name="ciudad" value="{{ form.ciudad.value|default:'' }}" class="form-input">
         </div>
-        <div class="modern-col">
-          <label class="modern-label">C.P.</label>
-          <input type="text" name="codigo_postal" value="{{ form.codigo_postal.value|default:'' }}" class="modern-input">
+        <div class="form-group">
+          <label class="form-label">C.P.</label>
+          <input type="text" name="codigo_postal" value="{{ form.codigo_postal.value|default:'' }}" class="form-input">
         </div>
       </div>
     </div>
-    {% if form.errors %}
-      <div class="alert alert-danger mt-4 border-start border-danger border-5 rounded-4 bg-white shadow-sm">
-        <ul class="mb-0 small">
-          {% for field, errors in form.errors.items %}
-            {% for error in errors %}<li><strong>{{ field|capfirst }}:</strong> {{ error }}</li>{% endfor %}
-          {% endfor %}
-        </ul>
-      </div>
-    {% endif %}
-    <div class="modern-actions">
-      <button type="submit" class="modern-btn">
-        <i class="bi bi-person-check-fill"></i> REGISTRAR CLIENTE
+
+    <div class="form-actions">
+      <button type="submit" class="btn-submit">
+        <i class="bi bi-person-check"></i>
+        REGISTRAR CLIENTE
       </button>
     </div>
   </form>
+
 </div>
 {% endblock %}

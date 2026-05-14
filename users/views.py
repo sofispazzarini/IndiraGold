@@ -41,6 +41,49 @@ def dashboard_cliente(request):
 
 
 @login_required
+def perfil(request):
+    cliente = request.user.cliente
+    mensaje = None
+    mensaje_tipo = None
+
+    if request.method == 'POST':
+        nombre = request.POST.get('nombre', '').strip()
+        apellido = request.POST.get('apellido', '').strip()
+        email = request.POST.get('email', '').strip()
+        telefono = request.POST.get('telefono', '').strip()
+
+        if nombre:
+            request.user.first_name = nombre
+        if apellido:
+            request.user.last_name = apellido
+        if email:
+            request.user.email = email
+        if telefono:
+            cliente.telefono = telefono
+
+        if 'foto_perfil' in request.FILES:
+            cliente.foto_perfil = request.FILES['foto_perfil']
+
+        if 'eliminar_foto' in request.POST:
+            cliente.foto_perfil.delete(save=False)
+            cliente.foto_perfil = None
+
+        request.user.save()
+        cliente.save()
+        mensaje = 'Perfil actualizado correctamente.'
+        mensaje_tipo = 'success'
+
+    direcciones = cliente.direcciones.all()
+
+    return render(request, 'users/perfil.html', {
+        'cliente': cliente,
+        'direcciones': direcciones,
+        'mensaje': mensaje,
+        'mensaje_tipo': mensaje_tipo,
+    })
+
+
+@login_required
 @user_passes_test(lambda u: u.is_superuser)
 def dashboard_admin(request):
     from productos.models import Categoria, Producto

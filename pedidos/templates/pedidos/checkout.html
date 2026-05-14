@@ -1,638 +1,682 @@
-```html
 {% extends 'users/dashboard_cliente.html' %}
 
-{% block content %}
-
+{% block extra_head %}
+{{ block.super }}
 <style>
+  :root {
+    --gold: #b8922a;
+    --gold-faint: #faf7f0;
+    --burgundy: #6E0E2E;
+    --dark: #1a1612;
+    --text: #3d342a;
+    --muted: #9c8c7c;
+    --border: #e8dfd4;
+  }
 
-.checkout-container{
-    margin-left: 12%;
-    max-width: 1300px;
-}
+  .checkout-main {
+    min-height: calc(100vh - 60px);
+    padding: 3rem 3rem 5rem;
+    width: 100%;
+    max-width: 1150px;
+    margin-left: 15%;
+    margin-right: auto;
+  }
 
-.text-luxury{
-    color:#1f1f1f;
-}
+  .page-header {
+    text-align: center;
+    margin-bottom: 3rem;
+    padding-bottom: 2rem;
+    border-bottom: 1px solid rgba(184,146,42,0.12);
+    position: relative;
+  }
 
-.text-gold{
-    color:#d4af37;
-}
+  .page-header::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 48px;
+    height: 2px;
+    background: var(--burgundy);
+  }
 
-.text-gold-dark{
-    color:#b9922f;
-}
+  .header-eyebrow {
+    font-size: 0.6rem;
+    font-weight: 600;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--burgundy);
+    margin-bottom: 0.5rem;
+  }
 
-.bg-white-glass{
-    background:rgba(255,255,255,.92);
-    backdrop-filter:blur(12px);
-}
+  .page-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(2.2rem, 4vw, 3rem);
+    font-weight: 600;
+    color: var(--dark);
+    letter-spacing: -0.01em;
+  }
 
-.card{
-    border:none;
-    box-shadow:0 8px 30px rgba(0,0,0,.05);
-}
+  .checkout-grid {
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    gap: 2rem;
+    align-items: start;
+  }
 
-.alert{
-    border:none;
-    border-radius:18px;
-    padding:18px;
-}
+  /* Cards */
+  .checkout-card {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 2rem;
+    margin-bottom: 1.5rem;
+  }
 
-.form-control-luxury{
-    border:1px solid #e5e5e5;
-    border-radius:14px;
-    padding:12px 15px;
-    width:100%;
-    transition:.2s;
-}
+  .card-title {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--burgundy);
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
 
-.form-control-luxury:focus{
-    outline:none;
-    border-color:#d4af37;
-    box-shadow:0 0 0 4px rgba(212,175,55,.12);
-}
+  .card-title span {
+    width: 24px;
+    height: 24px;
+    background: var(--burgundy);
+    color: #fff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+  }
 
-.btn-outline-gold{
-    border:1px solid #d4af37;
-    color:#b9922f;
-    transition:.2s;
-    background:white;
-}
+  /* Product Item */
+  .product-item {
+    display: grid;
+    grid-template-columns: 70px 1fr auto;
+    gap: 1rem;
+    align-items: center;
+    padding: 1rem 0;
+    border-bottom: 1px solid rgba(232, 223, 212, 0.5);
+  }
 
-.btn-outline-gold:hover{
-    background:#fff8e7;
-    color:#b9922f;
-    border-color:#d4af37;
-}
-.cantidad-btn{
-    width:32px;
-    height:32px;
-    border-radius:50%;
-    border:none;
-    background:#f3f3f3;
-    font-weight:bold;
-    transition:.2s;
-}
+  .product-item:last-of-type {
+    border-bottom: none;
+  }
 
-.cantidad-btn:hover{
-    background:#d4af37;
-    color:white;
-}
-.btn-check:checked + .btn-outline-gold{
-    background:#fff8e7;
-    border:2px solid #d4af37;
-    color:#b9922f;
-}
+  .product-img {
+    width: 70px;
+    height: 90px;
+    object-fit: cover;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+  }
 
-.btn-gold-capsule{
-    background:linear-gradient(135deg,#d4af37,#b9922f);
-    border:none;
-    color:white;
-    border-radius:50px;
-    transition:.25s;
-    box-shadow:0 10px 30px rgba(212,175,55,.25);
-}
+  .product-name {
+    font-weight: 600;
+    color: var(--dark);
+    font-size: 0.9rem;
+    margin-bottom: 0.25rem;
+  }
 
-.btn-gold-capsule:hover{
-    transform:translateY(-2px);
-    box-shadow:0 14px 35px rgba(212,175,55,.35);
-    color:white;
-}
+  .product-talle {
+    font-size: 0.78rem;
+    color: var(--muted);
+  }
 
-.resumen-pago{
-    background:#fffdf9;
-    border:1px solid rgba(212,175,55,.18);
-    box-shadow:0 10px 35px rgba(0,0,0,.06);
-    top:20px;
-}
+  .product-precio-unit {
+    font-size: 0.75rem;
+    color: var(--muted);
+    margin-top: 0.5rem;
+  }
 
-.total-precio{
-    font-size:38px;
-    font-weight:700;
-    color:#d4af37;
-}
+  .cantidad-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+  }
 
-.direccion-card{
-    display:block;
-    border:1px solid #e8e8e8;
-    border-radius:18px;
-    padding:18px;
-    cursor:pointer;
-    transition:.2s;
-    background:white;
-}
+  .cantidad-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: #fff;
+    color: var(--muted);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.18s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
 
-.direccion-card:hover{
-    border-color:#c9a14a;
-    transform:translateY(-1px);
-}
+  .cantidad-btn:hover {
+    background: var(--burgundy);
+    border-color: var(--burgundy);
+    color: #fff;
+  }
 
-.direccion-content{
-    transition:.2s;
-}
+  .cantidad-num {
+    font-weight: 600;
+    min-width: 24px;
+    text-align: center;
+  }
 
-.direccion-card input:checked + .direccion-content{
-    color:#c9a14a;
-}
+  .product-subtotal {
+    text-align: right;
+  }
 
-.product-item{
-    border-bottom:1px solid #f0f0f0;
-    padding-bottom:18px;
-    margin-bottom:18px;
-}
+  .subtotal-price {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: var(--dark);
+  }
 
-.product-item:last-child{
-    border-bottom:none;
-    margin-bottom:0;
-    padding-bottom:0;
-}
+  .btn-quitar {
+    font-size: 0.75rem;
+    color: var(--burgundy);
+    background: none;
+    border: none;
+    cursor: pointer;
+    margin-top: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+  }
 
+  .btn-quitar:hover {
+    text-decoration: underline;
+  }
+
+  .btn-agregar-mas {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 1.5rem;
+    padding: 0.7rem 1.5rem;
+    border: 1px solid var(--border);
+    border-radius: 50px;
+    background: transparent;
+    color: var(--muted);
+    font-size: 0.8rem;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.18s;
+  }
+
+  .btn-agregar-mas:hover {
+    border-color: var(--burgundy);
+    color: var(--burgundy);
+  }
+
+  .empty-cart {
+    text-align: center;
+    padding: 2rem;
+    color: var(--muted);
+  }
+
+  /* Entrega */
+  .entrega-options {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+
+  .entrega-option {
+    position: relative;
+  }
+
+  .entrega-option input {
+    position: absolute;
+    opacity: 0;
+  }
+
+  .entrega-label {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 1.5rem;
+    border: 1.5px solid var(--border);
+    border-radius: 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+  }
+
+  .entrega-label i {
+    font-size: 1.8rem;
+    color: var(--muted);
+    margin-bottom: 0.75rem;
+    transition: color 0.2s;
+  }
+
+  .entrega-label .label-title {
+    font-weight: 600;
+    color: var(--dark);
+    font-size: 0.85rem;
+  }
+
+  .entrega-label .label-sub {
+    font-size: 0.75rem;
+    color: var(--muted);
+    margin-top: 0.25rem;
+  }
+
+  .entrega-option input:checked + .entrega-label {
+    border-color: var(--burgundy);
+    background: rgba(110, 14, 46, 0.03);
+  }
+
+  .entrega-option input:checked + .entrega-label i {
+    color: var(--burgundy);
+  }
+
+  /* Direcciones */
+  .direcciones-wrap {
+    margin-top: 1.5rem;
+    display: none;
+  }
+
+  .direcciones-wrap.visible {
+    display: block;
+  }
+
+  .direccion-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem 0;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 1rem;
+  }
+
+  .direccion-info i {
+    font-size: 1.5rem;
+    color: var(--burgundy);
+  }
+
+  .direccion-info-text h6 {
+    font-weight: 600;
+    color: var(--dark);
+    margin: 0 0 0.2rem 0;
+    font-size: 0.9rem;
+  }
+
+  .direccion-info-text small {
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+
+  .direccion-card {
+    display: block;
+    padding: 1rem 1.25rem;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 0.75rem;
+    cursor: pointer;
+    transition: all 0.18s;
+  }
+
+  .direccion-card:hover {
+    border-color: rgba(110, 14, 46, 0.3);
+  }
+
+  .direccion-card input {
+    display: none;
+  }
+
+  .direccion-card input:checked + .direccion-content {
+    color: var(--burgundy);
+  }
+
+  .direccion-card input:checked ~ .direccion-card {
+    border-color: var(--burgundy);
+    background: rgba(110, 14, 46, 0.02);
+  }
+
+  .direccion-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .direccion-alias {
+    font-weight: 600;
+    color: var(--dark);
+    font-size: 0.88rem;
+    margin-bottom: 0.2rem;
+  }
+
+  .direccion-detail {
+    font-size: 0.78rem;
+    color: var(--muted);
+  }
+
+  .direccion-content i {
+    color: var(--muted);
+    font-size: 1.2rem;
+  }
+
+  .alert-warning {
+    background: rgba(184, 146, 42, 0.08);
+    border: 1px solid rgba(184, 146, 42, 0.2);
+    color: #7a5f15;
+    padding: 1rem;
+    border-radius: 10px;
+    font-size: 0.85rem;
+  }
+
+  /* Resumen Pago */
+  .resumen-card {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 2rem;
+    position: sticky;
+    top: 2rem;
+  }
+
+  .resumen-title {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--burgundy);
+    margin-bottom: 1.5rem;
+  }
+
+  .resumen-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.75rem;
+    font-size: 0.9rem;
+  }
+
+  .resumen-row .label {
+    color: var(--muted);
+  }
+
+  .resumen-row .value {
+    font-weight: 600;
+    color: var(--dark);
+  }
+
+  .resumen-row .value.green {
+    color: #3d6e2a;
+  }
+
+  .resumen-divider {
+    height: 1px;
+    background: var(--border);
+    margin: 1.25rem 0;
+  }
+
+  .resumen-total {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-bottom: 1.5rem;
+  }
+
+  .resumen-total .label {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--dark);
+  }
+
+  .resumen-total .value {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 2.5rem;
+    font-weight: 600;
+    color: var(--burgundy);
+    line-height: 1;
+  }
+
+  .btn-pagar {
+    width: 100%;
+    padding: 1rem;
+    border: none;
+    border-radius: 50px;
+    background: var(--dark);
+    color: #fff;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+  }
+
+  .btn-pagar:hover {
+    background: var(--burgundy);
+    transform: translateY(-2px);
+  }
+
+  .secure-text {
+    text-align: center;
+    margin-top: 1rem;
+    font-size: 0.75rem;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+  }
+
+  @media (max-width: 992px) {
+    .checkout-main {
+      padding: 2rem 1.5rem;
+      margin-left: 0;
+    }
+    .checkout-grid {
+      grid-template-columns: 1fr;
+    }
+    .resumen-card {
+      position: static;
+    }
+  }
 </style>
-
-<div class="container py-5 checkout-container">
-
-    <div class="row justify-content-center">
-
-        <div class="col-lg-10">
-
-            <h2
-                class="text-luxury fw-bold mb-5 text-center"
-                style="
-                    font-family:'Cormorant Garamond';
-                    letter-spacing:4px;
-                    font-size:52px;
-                "
-            >
-                FINALIZAR COMPRA
-            </h2>
-
-            
-
-            <form
-                action="{% url 'pedidos:crear_pago' %}"
-                method="POST"
-            >
-
-                {% csrf_token %}
-
-                <div class="row g-4">
-
-                    <!-- IZQUIERDA -->
-                    <div class="col-lg-7">
-
-                        <!-- PRODUCTOS -->
-                        <div class="card rounded-5 p-4 mb-4 bg-white-glass">
-
-                            <h5 class="fw-bold mb-4 border-bottom pb-3 text-gold-dark">
-                                1. RESUMEN DE PRODUCTOS
-                            </h5>
-
-                            {% if items %}
-
-                                {% for item in items %}
-
-                                    <div class="d-flex align-items-center product-item">
-
-                                        <div class="me-3">
-
-                                            {% with img=item.variante.producto.imagenes.first %}
-
-                                                <img
-                                                    src="{{ img.imagen.url }}"
-                                                    style="
-                                                        width:70px;
-                                                        height:90px;
-                                                        object-fit:cover;
-                                                        border-radius:10px;
-                                                    "
-                                                >
-
-                                            {% endwith %}
-
-                                        </div>
-
-                                        <div class="flex-grow-1">
-
-                                            <h6 class="mb-1 fw-bold">
-                                                {{ item.variante.producto.nombre|upper }}
-                                            </h6>
-
-                                            <small class="text-muted">
-                                                Talle:
-                                                {{ item.variante.talle.nombre }}
-                                            </small>
-
-                                            <br>
-
-                                            <div class="d-flex align-items-center mt-2">
-
-                                                <!-- RESTAR -->
-                                                <form
-                                                    action="{% url 'pedidos:disminuir_cantidad' item.variante.id %}"
-                                                    method="POST"
-                                                    class="me-2"
-                                                >
-
-                                                    {% csrf_token %}
-
-                                                    <button
-                                                        type="submit"
-                                                        class="cantidad-btn"
-                                                    >
-                                                        -
-                                                    </button>
-
-                                                </form>
-
-                                                <!-- CANTIDAD -->
-                                                <span class="fw-bold px-2">
-                                                    {{ item.cantidad }}
-                                                </span>
-
-                                                <!-- SUMAR -->
-                                                <form
-                                                    action="{% url 'pedidos:aumentar_cantidad' item.variante.id %}"
-                                                    method="POST"
-                                                    class="ms-2"
-                                                >
-
-                                                    {% csrf_token %}
-
-                                                    <button
-                                                        type="submit"
-                                                        class="cantidad-btn"
-                                                    >
-                                                        +
-                                                    </button>
-
-                                                </form>
-
-                                            </div>
-
-                                            <br>
-
-                                            <small class="text-muted">
-                                                Precio unitario:
-                                                ${{ item.precio_unitario }}
-                                            </small>
-
-                                        </div>
-
-                                        <div class="text-end">
-
-                                            <div class="fw-bold fs-5 mb-2">
-                                                ${{ item.subtotal }}
-                                            </div>
-
-                                            <form
-                                                action="{% url 'pedidos:eliminar_item_carrito' item.variante.id %}"
-                                                method="POST"
-                                            >
-
-                                                {% csrf_token %}
-
-                                                <button
-                                                    type="submit"
-                                                    class="btn btn-link text-danger p-0"
-                                                >
-                                                    <i class="bi bi-x-circle"></i>
-                                                    Quitar
-                                                </button>
-
-                                            </form>
-
-                                        </div>
-
-                                    </div>
-
-                                {% endfor %}
-
-                            {% else %}
-
-                                <div class="alert alert-info mb-0">
-                                    No hay productos en tu carrito.
-                                </div>
-
-                            {% endif %}
-
-                            <div class="mt-4">
-
-                                <a
-                                    href="{% url 'home:home' %}"
-                                    class="btn btn-outline-gold rounded-pill px-4"
-                                >
-                                    <i class="bi bi-plus-circle me-1"></i>
-                                    Agregar más productos
-                                </a>
-
-                            </div>
-
-                        </div>
-
-                        <!-- ENTREGA -->
-                        <div class="card rounded-5 p-4 bg-white-glass">
-
-                            <h5 class="fw-bold mb-4 border-bottom pb-3 text-gold-dark">
-                                2. MÉTODO DE ENTREGA
-                            </h5>
-
-                            <div class="row g-3">
-
-                                <!-- RETIRO -->
-                                <div class="col-6">
-
-                                    <input
-                                        type="radio"
-                                        class="btn-check"
-                                        name="metodo_entrega"
-                                        id="local"
-                                        value="local"
-                                        checked
-                                    >
-
-                                    <label
-                                        class="btn btn-outline-gold w-100 p-4 rounded-4"
-                                        for="local"
-                                    >
-
-                                        <i class="bi bi-shop d-block fs-2 mb-3"></i>
-
-                                        <div class="fw-bold">
-                                            Retiro en Local
-                                        </div>
-
-                                        <small>
-                                            Gratis
-                                        </small>
-
-                                    </label>
-
-                                </div>
-
-                                <!-- ENVIO -->
-                                <div class="col-6">
-
-                                    <input
-                                        type="radio"
-                                        class="btn-check"
-                                        name="metodo_entrega"
-                                        id="domicilio"
-                                        value="domicilio"
-                                    >
-
-                                    <label
-                                        class="btn btn-outline-gold w-100 p-4 rounded-4"
-                                        for="domicilio"
-                                    >
-
-                                        <i class="bi bi-truck d-block fs-2 mb-3"></i>
-
-                                        <div class="fw-bold">
-                                            Envío a domicilio
-                                        </div>
-
-                                        <small>
-                                            Correo Argentino
-                                        </small>
-
-                                    </label>
-
-                                </div>
-
-                            </div>
-
-                            <!-- DIRECCIONES -->
-                            <div
-                                id="campos-direccion"
-                                class="mt-4 d-none"
-                            >
-
-                                <div class="d-flex align-items-center mb-3">
-
-                                    <i class="bi bi-box-seam fs-3 text-gold-dark me-3"></i>
-
-                                    <div>
-
-                                        <h6 class="fw-bold mb-1">
-                                            Envío por Correo Argentino
-                                        </h6>
-
-                                        <small class="text-muted">
-                                            Entrega estimada:
-                                            3 a 5 días hábiles
-                                        </small>
-
-                                    </div>
-
-                                </div>
-
-                                <p class="small text-muted mb-4">
-
-                                    Seleccioná la dirección donde querés
-                                    recibir tu pedido.
-
-                                </p>
-
-                                {% for direccion in direcciones %}
-
-                                    <label class="direccion-card mb-3 w-100">
-
-                                        <input
-                                            type="radio"
-                                            name="direccion_id"
-                                            value="{{ direccion.id }}"
-                                            class="d-none"
-                                        >
-
-                                        <div class="direccion-content">
-
-                                            <div class="d-flex justify-content-between">
-
-                                                <div>
-
-                                                    <div class="fw-bold mb-1">
-                                                        {{ direccion.alias }}
-                                                    </div>
-
-                                                    <small class="text-muted">
-
-                                                        {{ direccion.calle_numero }}
-
-                                                        <br>
-
-                                                        {{ direccion.localidad }}
-
-                                                        ({{ direccion.codigo_postal }})
-
-                                                    </small>
-
-                                                </div>
-
-                                                <i class="bi bi-geo-alt fs-3 text-muted"></i>
-
-                                            </div>
-
-                                        </div>
-
-                                    </label>
-
-                                {% empty %}
-
-                                    <div class="alert alert-warning rounded-4">
-
-                                        No tenés direcciones registradas.
-
-                                    </div>
-
-                                {% endfor %}
-
-                            </div>
-
-                        </div>
-
-                    </div>
-
-                    <!-- DERECHA -->
-                    <div class="col-lg-5">
-
-                        <div
-                            class="card resumen-pago rounded-5 p-4 sticky-top"
-                        >
-
-                            <h5 class="fw-bold mb-4 text-gold">
-                                RESUMEN DE PAGO
-                            </h5>
-
-                            <div class="d-flex justify-content-between mb-3">
-
-                                <span class="opacity-75">
-                                    Subtotal
-                                </span>
-
-                                <span class="fw-bold">
-                                    ${{ subtotal }}
-                                </span>
-
-                            </div>
-
-                            <div class="d-flex justify-content-between mb-4">
-
-                                <span class="opacity-75">
-                                    Envío
-                                </span>
-
-                                <span
-                                    id="envio-label"
-                                    class="text-success fw-bold"
-                                >
-                                    Gratis
-                                </span>
-
-                            </div>
-
-                            <hr class="opacity-25">
-
-                            <div class="d-flex justify-content-between align-items-end mb-4">
-
-                                <span class="h5 mb-0">
-                                    TOTAL
-                                </span>
-
-                                <span
-                                    class="total-precio"
-                                    id="total-final-display"
-                                >
-                                    ${{ total }}
-                                </span>
-
-                            </div>
-
-                            <button
-                                type="submit"
-                                class="btn btn-gold-capsule w-100 py-3 fw-bold"
-                            >
-
-                                PAGAR AHORA
-
-                                <i class="bi bi-credit-card-fill ms-2"></i>
-
-                            </button>
-
-                            <p class="text-center mt-4 mb-0 small opacity-50">
-
-                                <i class="bi bi-lock-fill me-1"></i>
-
-                                Pago procesado de forma segura
-
-                            </p>
-
-                        </div>
-
-                    </div>
-
+{% endblock %}
+
+{% block content %}
+<div class="checkout-main">
+
+  <div class="page-header">
+    <p class="header-eyebrow">Carrito</p>
+    <h1 class="page-title">Finalizar compra</h1>
+  </div>
+
+  <form action="{% url 'pedidos:crear_pago' %}" method="POST">
+    {% csrf_token %}
+
+    <div class="checkout-grid">
+
+      <div class="checkout-left">
+
+        <!-- Productos -->
+        <div class="checkout-card">
+          <h3 class="card-title"><span>1</span> Resumen de productos</h3>
+
+          {% if items %}
+            {% for item in items %}
+            <div class="product-item">
+              <div>
+                {% with img=item.variante.producto.imagenes.first %}
+                  <img src="{{ img.imagen.url }}" alt="" class="product-img">
+                {% endwith %}
+              </div>
+              <div>
+                <div class="product-name">{{ item.variante.producto.nombre }}</div>
+                <div class="product-talle">Talle: {{ item.variante.talle.nombre }}</div>
+                <div class="cantidad-wrap">
+                  <form action="{% url 'pedidos:disminuir_cantidad' item.variante.id %}" method="POST" style="display:contents;">
+                    {% csrf_token %}
+                    <button type="submit" class="cantidad-btn">-</button>
+                  </form>
+                  <span class="cantidad-num">{{ item.cantidad }}</span>
+                  <form action="{% url 'pedidos:aumentar_cantidad' item.variante.id %}" method="POST" style="display:contents;">
+                    {% csrf_token %}
+                    <button type="submit" class="cantidad-btn">+</button>
+                  </form>
                 </div>
+                <div class="product-precio-unit">Precio unit: ${{ item.precio_unitario }}</div>
+              </div>
+              <div class="product-subtotal">
+                <div class="subtotal-price">${{ item.subtotal }}</div>
+                <form action="{% url 'pedidos:eliminar_item_carrito' item.variante.id %}" method="POST" style="display:contents;">
+                  {% csrf_token %}
+                  <button type="submit" class="btn-quitar">
+                    <i class="bi bi-x-circle"></i> Quitar
+                  </button>
+                </form>
+              </div>
+            </div>
+            {% endfor %}
 
-            </form>
-
+            <a href="{% url 'home:home' %}" class="btn-agregar-mas">
+              <i class="bi bi-plus-circle"></i> Agregar más productos
+            </a>
+          {% else %}
+            <div class="empty-cart">
+              <i class="bi bi-cart" style="font-size: 2.5rem; opacity: 0.2;"></i>
+              <p style="margin-top: 1rem;">No hay productos en tu carrito.</p>
+            </div>
+          {% endif %}
         </div>
 
+        <!-- Entrega -->
+        <div class="checkout-card">
+          <h3 class="card-title"><span>2</span> Método de entrega</h3>
+
+          <div class="entrega-options">
+            <div class="entrega-option">
+              <input type="radio" name="metodo_entrega" id="local" value="local" checked>
+              <label for="local" class="entrega-label">
+                <i class="bi bi-shop"></i>
+                <span class="label-title">Retiro en local</span>
+                <span class="label-sub">Gratis</span>
+              </label>
+            </div>
+            <div class="entrega-option">
+              <input type="radio" name="metodo_entrega" id="domicilio" value="domicilio">
+              <label for="domicilio" class="entrega-label">
+                <i class="bi bi-truck"></i>
+                <span class="label-title">Envío a domicilio</span>
+                <span class="label-sub">Correo Argentino</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="direcciones-wrap" id="campos-direccion">
+            <div class="direccion-info">
+              <i class="bi bi-box-seam"></i>
+              <div class="direccion-info-text">
+                <h6>Envío por Correo Argentino</h6>
+                <small>Entrega estimada: 3 a 5 días hábiles</small>
+              </div>
+            </div>
+
+            <p style="font-size: 0.82rem; color: var(--muted); margin-bottom: 1rem;">
+              Seleccioná la dirección donde querés recibir tu pedido.
+            </p>
+
+            {% for direccion in direcciones %}
+            <label class="direccion-card">
+              <input type="radio" name="direccion_id" value="{{ direccion.id }}">
+              <div class="direccion-content">
+                <div>
+                  <div class="direccion-alias">{{ direccion.alias }}</div>
+                  <div class="direccion-detail">{{ direccion.calle_numero }} - {{ direccion.localidad }} ({{ direccion.codigo_postal }})</div>
+                </div>
+                <i class="bi bi-geo-alt"></i>
+              </div>
+            </label>
+            {% empty %}
+            <div class="alert-warning">
+              <i class="bi bi-exclamation-triangle"></i> No tenés direcciones registradas.
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Resumen -->
+      <div class="checkout-right">
+        <div class="resumen-card">
+          <h3 class="resumen-title">Resumen de pago</h3>
+
+          <div class="resumen-row">
+            <span class="label">Subtotal</span>
+            <span class="value">${{ subtotal }}</span>
+          </div>
+
+          <div class="resumen-row">
+            <span class="label">Envío</span>
+            <span class="value green" id="envio-label">Gratis</span>
+          </div>
+
+          <div class="resumen-divider"></div>
+
+          <div class="resumen-total">
+            <span class="label">Total</span>
+            <span class="value" id="total-final-display">${{ total }}</span>
+          </div>
+
+          <button type="submit" class="btn-pagar">
+            PAGAR AHORA <i class="bi bi-credit-card"></i>
+          </button>
+
+          <p class="secure-text">
+            <i class="bi bi-lock-fill"></i> Pago procesado de forma segura
+          </p>
+        </div>
+      </div>
+
     </div>
+  </form>
 
 </div>
 
 <script>
-
 const subtotalBase = parseFloat("{{ subtotal }}");
 const costoEnvio = 5000;
 
-document
-.querySelectorAll('input[name="metodo_entrega"]')
-.forEach((input) => {
+document.querySelectorAll('input[name="metodo_entrega"]').forEach((input) => {
+  input.addEventListener('change', (e) => {
+    const campos = document.getElementById('campos-direccion');
+    const envioTexto = document.getElementById('envio-label');
+    const totalDisplay = document.getElementById('total-final-display');
 
-    input.addEventListener('change', (e) => {
-
-        const campos = document.getElementById(
-            'campos-direccion'
-        );
-
-        const envioTexto = document.getElementById(
-            'envio-label'
-        );
-
-        const totalDisplay = document.getElementById(
-            'total-final-display'
-        );
-
-        if (e.target.value === 'domicilio') {
-
-            campos.classList.remove('d-none');
-
-            envioTexto.innerText = '$5.000';
-
-            totalDisplay.innerText =
-                '$' +
-                (subtotalBase + costoEnvio)
-                .toLocaleString();
-
-        }
-
-        else {
-
-            campos.classList.add('d-none');
-
-            envioTexto.innerText = 'Gratis';
-
-            totalDisplay.innerText =
-                '$' +
-                subtotalBase.toLocaleString();
-
-        }
-
-    });
-
+    if (e.target.value === 'domicilio') {
+      campos.classList.add('visible');
+      envioTexto.innerText = '$5.000';
+      envioTexto.classList.remove('green');
+      totalDisplay.innerText = '$' + (subtotalBase + costoEnvio).toLocaleString('es-AR');
+    } else {
+      campos.classList.remove('visible');
+      envioTexto.innerText = 'Gratis';
+      envioTexto.classList.add('green');
+      totalDisplay.innerText = '$' + subtotalBase.toLocaleString('es-AR');
+    }
+  });
 });
-
 </script>
-
 {% endblock %}
-

@@ -46,4 +46,12 @@ urlpatterns = [
     path('variante-color/<int:vc_id>/qr/', views.variante_color_qr, name='variante_color_qr'),
     path('producto/<int:producto_id>/qrs/', views.producto_qrs_impresion, name='producto_qrs_impresion'),
     path('variantes/<int:producto_id>/',views.obtener_variantes_producto,name='obtener_variantes_producto'),
+
+    # --- CATEGORÍAS DE ORDEN ---
+    path('categorias-orden/', views.gestion_categorias_orden, name='gestion_categorias_orden'),
+    path('categorias-orden/crear/', views.crear_categoria_orden, name='crear_categoria_orden'),
+    path('categorias-orden/<int:cat_id>/editar/', views.editar_categoria_orden, name='editar_categoria_orden'),
+    path('categorias-orden/<int:cat_id>/eliminar/', views.eliminar_categoria_orden, name='eliminar_categoria_orden'),
+    path('categorias-orden/<int:cat_id>/toggle/', views.toggle_categoria_orden, name='toggle_categoria_orden'),
+    path('categorias-orden/<int:cat_id>/productos/', views.gestionar_productos_categoria_orden, name='gestionar_productos_categoria_orden'),
 ]

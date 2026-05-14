@@ -1,0 +1,523 @@
+{% extends 'users/dashboard_cliente.html' %}
+{% load static %}
+
+{% block extra_head %}
+{{ block.super }}
+<style>
+  .perfil-main {
+    min-height: calc(100vh - 60px);
+    display: flex;
+    flex-direction: column;
+    padding: 3.5rem 4rem 5rem;
+    width: 100%;
+    max-width: 800px;
+    margin-left: 20%;
+    margin-right: auto;
+  }
+
+  .page-header {
+    margin-bottom: 3rem;
+    padding-bottom: 1.75rem;
+    border-bottom: 1px solid var(--border-faint);
+    position: relative;
+  }
+
+  .page-header::after {
+    content: '';
+    position: absolute;
+    bottom: -1px; left: 0;
+    width: 48px; height: 2px;
+    background: var(--burgundy);
+  }
+
+  .header-eyebrow {
+    font-size: 0.6rem;
+    font-weight: 600;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--burgundy);
+    margin-bottom: 0.5rem;
+  }
+
+  .page-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(2.2rem, 4vw, 3rem);
+    font-weight: 600;
+    color: var(--dark);
+    letter-spacing: -0.01em;
+    line-height: 1;
+    margin-bottom: 0.5rem;
+  }
+
+  .page-subtitle {
+    font-size: 0.88rem;
+    color: var(--muted);
+  }
+
+  /* Alert */
+  .alert {
+    border-radius: 12px;
+    padding: 1rem 1.5rem;
+    margin-bottom: 2rem;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .alert-success {
+    background: rgba(124, 173, 106, 0.1);
+    border: 1px solid rgba(124, 173, 106, 0.25);
+    color: #3d6e2a;
+  }
+
+  .alert i {
+    font-size: 1.1rem;
+  }
+
+  /* Avatar Section */
+  .avatar-section {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 2.5rem;
+    margin-bottom: 2rem;
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+  }
+
+  .avatar-preview {
+    position: relative;
+    width: 120px;
+    height: 120px;
+    flex-shrink: 0;
+  }
+
+  .avatar-image {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid var(--border);
+  }
+
+  .avatar-initials {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: var(--gold);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 2.8rem;
+    font-weight: 600;
+    color: #fff;
+    border: 3px solid var(--border);
+  }
+
+  .avatar-upload-btn {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--dark);
+    border: 2px solid #fff;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+
+  .avatar-upload-btn:hover {
+    background: var(--burgundy);
+  }
+
+  .avatar-upload-btn i {
+    font-size: 0.9rem;
+  }
+
+  .avatar-info {
+    flex: 1;
+  }
+
+  .avatar-name {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.8rem;
+    font-weight: 600;
+    color: var(--dark);
+    margin-bottom: 0.25rem;
+  }
+
+  .avatar-email {
+    font-size: 0.9rem;
+    color: var(--muted);
+    margin-bottom: 1rem;
+  }
+
+  .avatar-member {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 0.9rem;
+    background: var(--gold-faint);
+    border: 1px solid var(--border);
+    border-radius: 50px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    color: var(--muted);
+  }
+
+  .avatar-member i {
+    color: var(--burgundy);
+  }
+
+  /* Form Card */
+  .form-card {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 2.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .form-card-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.4rem;
+    font-weight: 600;
+    color: var(--dark);
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .form-card-title i {
+    color: var(--burgundy);
+    font-size: 1.1rem;
+  }
+
+  .form-card-subtitle {
+    font-size: 0.82rem;
+    color: var(--muted);
+    margin-bottom: 2rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border-faint);
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem 2rem;
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .form-group.full-width {
+    grid-column: span 2;
+  }
+
+  .form-label {
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 0.6rem;
+  }
+
+  .form-input {
+    width: 100%;
+    padding: 0.9rem 0;
+    border: none;
+    border-bottom: 1.5px solid var(--border);
+    font-family: 'Montserrat', sans-serif;
+    font-size: 1rem;
+    color: var(--dark);
+    background: transparent;
+    transition: border-color 0.2s;
+    box-sizing: border-box;
+  }
+
+  .form-input:focus {
+    outline: none;
+    border-bottom-color: var(--burgundy);
+  }
+
+  .form-input:read-only {
+    color: var(--muted);
+    cursor: not-allowed;
+  }
+
+  /* Addresses */
+  .direcciones-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .direccion-item {
+    padding: 1rem 0;
+    border-bottom: 1px solid var(--border-faint);
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .direccion-item:last-child {
+    border-bottom: none;
+  }
+
+  .direccion-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--gold-faint);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--burgundy);
+    flex-shrink: 0;
+  }
+
+  .direccion-info {
+    flex: 1;
+  }
+
+  .direccion-calle {
+    font-size: 0.95rem;
+    color: var(--dark);
+    font-weight: 500;
+  }
+
+  .direccion-ciudad {
+    font-size: 0.82rem;
+    color: var(--muted);
+    margin-top: 0.2rem;
+  }
+
+  .empty-direcciones {
+    text-align: center;
+    padding: 2rem;
+    color: var(--muted);
+    font-size: 0.85rem;
+  }
+
+  /* Buttons */
+  .btn-submit {
+    padding: 1rem 2.5rem;
+    border: none;
+    border-radius: 50px;
+    background: var(--dark);
+    color: #fff;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.2s;
+    margin-top: 1rem;
+  }
+
+  .btn-submit:hover {
+    background: var(--burgundy);
+    transform: translateY(-2px);
+  }
+
+  .btn-delete-photo {
+    padding: 0.6rem 1.2rem;
+    border: 1px solid rgba(110, 14, 46, 0.2);
+    border-radius: 50px;
+    background: transparent;
+    color: var(--burgundy);
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-top: 1rem;
+  }
+
+  .btn-delete-photo:hover {
+    background: rgba(110, 14, 46, 0.08);
+  }
+
+  @media (max-width: 768px) {
+    .perfil-main {
+      padding: 2rem 1.5rem;
+      margin-left: 0;
+    }
+    .avatar-section {
+      flex-direction: column;
+      text-align: center;
+      gap: 1.5rem;
+    }
+    .form-card {
+      padding: 2rem 1.5rem;
+    }
+    .form-grid {
+      grid-template-columns: 1fr;
+    }
+    .form-group.full-width {
+      grid-column: span 1;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="perfil-main">
+
+  <div class="page-header">
+    <p class="header-eyebrow">Mi cuenta</p>
+    <h1 class="page-title">Mi perfil</h1>
+    <p class="page-subtitle">Gestioná tu información personal y foto de perfil</p>
+  </div>
+
+  {% if mensaje %}
+  <div class="alert alert-{{ mensaje_tipo }}">
+    <i class="bi bi-check-circle-fill"></i>
+    {{ mensaje }}
+  </div>
+  {% endif %}
+
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+
+    <div class="avatar-section">
+      <div class="avatar-preview">
+        {% if cliente.foto_perfil %}
+          <img src="{{ cliente.foto_perfil.url }}" alt="Foto de perfil" class="avatar-image">
+        {% else %}
+          <div class="avatar-initials">
+            {{ request.user.first_name|default:''|slice:":1" }}{{ request.user.last_name|default:''|slice:":1" }}
+          </div>
+        {% endif %}
+        <label for="foto_perfil" class="avatar-upload-btn">
+          <i class="bi bi-camera-fill"></i>
+        </label>
+        <input type="file" id="foto_perfil" name="foto_perfil" accept="image/*" style="display: none;" onchange="previewImage(this)">
+      </div>
+
+      <div class="avatar-info">
+        <h2 class="avatar-name">{{ request.user.first_name }} {{ request.user.last_name }}</h2>
+        <p class="avatar-email">{{ request.user.email }}</p>
+        <span class="avatar-member">
+          <i class="bi bi-calendar3"></i>
+          Miembro desde {{ cliente.created_at|date:"F Y" }}
+        </span>
+
+        {% if cliente.foto_perfil %}
+        <div>
+          <button type="submit" name="eliminar_foto" class="btn-delete-photo">
+            <i class="bi bi-trash3"></i> Eliminar foto
+          </button>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="form-card">
+      <h3 class="form-card-title">
+        <i class="bi bi-person"></i>
+        Datos personales
+      </h3>
+      <p class="form-card-subtitle">Actualizá tu información de contacto</p>
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">Nombre</label>
+          <input type="text" name="nombre" class="form-input" value="{{ request.user.first_name }}" placeholder="Tu nombre">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Apellido</label>
+          <input type="text" name="apellido" class="form-input" value="{{ request.user.last_name }}" placeholder="Tu apellido">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input type="email" name="email" class="form-input" value="{{ request.user.email }}" placeholder="tu@email.com">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Teléfono</label>
+          <input type="text" name="telefono" class="form-input" value="{{ cliente.telefono }}" placeholder="Tu teléfono">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">DNI</label>
+          <input type="text" class="form-input" value="{{ cliente.dni }}" readonly>
+        </div>
+      </div>
+
+      <button type="submit" class="btn-submit">
+        GUARDAR CAMBIOS
+      </button>
+    </div>
+  </form>
+
+  <div class="form-card">
+    <h3 class="form-card-title">
+      <i class="bi bi-geo-alt"></i>
+      Mis direcciones
+    </h3>
+    <p class="form-card-subtitle">Direcciones guardadas en tu cuenta</p>
+
+    {% if direcciones %}
+    <ul class="direcciones-list">
+      {% for dir in direcciones %}
+      <li class="direccion-item">
+        <div class="direccion-icon">
+          <i class="bi bi-house-door"></i>
+        </div>
+        <div class="direccion-info">
+          <div class="direccion-calle">{{ dir.calle }} {{ dir.numero }}</div>
+          <div class="direccion-ciudad">{{ dir.ciudad }}, {{ dir.provincia }} - CP {{ dir.codigo_postal }}</div>
+        </div>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <div class="empty-direcciones">
+      <i class="bi bi-geo-alt" style="font-size: 2rem; opacity: 0.3;"></i>
+      <p>No tenés direcciones guardadas</p>
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+
+<script>
+function previewImage(input) {
+  if (input.files && input.files[0]) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const preview = document.querySelector('.avatar-preview');
+      const existingImg = preview.querySelector('.avatar-image');
+      const existingInitials = preview.querySelector('.avatar-initials');
+
+      if (existingImg) {
+        existingImg.src = e.target.result;
+      } else if (existingInitials) {
+        const img = document.createElement('img');
+        img.src = e.target.result;
+        img.alt = 'Foto de perfil';
+        img.className = 'avatar-image';
+        existingInitials.replaceWith(img);
+      }
+    };
+    reader.readAsDataURL(input.files[0]);
+  }
+}
+</script>
+{% endblock %}

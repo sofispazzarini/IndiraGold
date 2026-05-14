@@ -26,7 +26,7 @@
     flex-direction: column;
     padding: 3.5rem 4rem 5rem;
     width: 100%;
-    max-width: 900px;
+    max-width: 950px;
     margin-left: 20%;
     margin-right: auto;
   }
@@ -35,7 +35,7 @@
     display: flex;
     align-items: flex-end;
     justify-content: space-between;
-    margin-bottom: 2.5rem;
+    margin-bottom: 3rem;
     padding-bottom: 1.75rem;
     border-bottom: 1px solid var(--border-faint);
     position: relative;
@@ -88,52 +88,6 @@
     color: var(--muted);
   }
 
-  /* Search */
-  .search-bar {
-    margin-bottom: 2rem;
-  }
-
-  .search-input-wrap {
-    display: flex;
-    align-items: center;
-    gap: 0;
-    max-width: 400px;
-  }
-
-  .search-input {
-    flex: 1;
-    border: none;
-    border-bottom: 1.5px solid var(--border);
-    padding: 0.75rem 0;
-    font-family: 'Montserrat', sans-serif;
-    font-size: 0.9rem;
-    background: transparent;
-    color: var(--dark);
-    transition: border-color 0.2s;
-  }
-
-  .search-input:focus {
-    outline: none;
-    border-bottom-color: var(--burgundy);
-  }
-
-  .search-input::placeholder {
-    color: var(--muted);
-  }
-
-  .search-btn {
-    background: none;
-    border: none;
-    padding: 0.75rem;
-    color: var(--muted);
-    cursor: pointer;
-    transition: color 0.2s;
-  }
-
-  .search-btn:hover {
-    color: var(--burgundy);
-  }
-
   /* Alerts */
   .alert-custom {
     background: var(--gold-faint);
@@ -145,14 +99,14 @@
     color: var(--text);
   }
 
-  /* FAQ List */
-  .faq-list {
+  /* Category List */
+  .cat-list {
     list-style: none;
     padding: 0;
     margin: 0 0 2rem;
   }
 
-  .faq-item {
+  .cat-item {
     display: grid;
     grid-template-columns: 2.2rem 1fr auto;
     align-items: center;
@@ -163,7 +117,7 @@
     transition: border-color 0.2s ease;
   }
 
-  .faq-item::before {
+  .cat-item::before {
     content: '';
     position: absolute;
     left: -1.2rem;
@@ -174,10 +128,10 @@
     transition: height 0.22s ease;
   }
 
-  .faq-item:hover { border-bottom-color: rgba(110, 14, 46, 0.3); }
-  .faq-item:hover::before { height: 60%; }
+  .cat-item:hover { border-bottom-color: rgba(110, 14, 46, 0.3); }
+  .cat-item:hover::before { height: 60%; }
 
-  .faq-index {
+  .cat-index {
     font-family: 'Cormorant Garamond', serif;
     font-size: 0.8rem;
     font-weight: 400;
@@ -188,53 +142,33 @@
     transition: opacity 0.2s;
   }
 
-  .faq-item:hover .faq-index { opacity: 1; }
+  .cat-item:hover .cat-index { opacity: 1; }
 
-  .faq-info {
+  .cat-info {
     min-width: 0;
   }
 
-  .faq-question {
+  .cat-nombre {
     font-family: 'Cormorant Garamond', serif;
-    font-size: clamp(1.3rem, 2.2vw, 1.6rem);
+    font-size: clamp(1.4rem, 2.5vw, 1.8rem);
     font-weight: 500;
     color: var(--dark);
     line-height: 1.2;
     letter-spacing: -0.005em;
     transition: color 0.2s ease;
-    margin-bottom: 0.2rem;
+    margin-bottom: 0.15rem;
   }
 
-  .faq-item:hover .faq-question {
+  .cat-item:hover .cat-nombre {
     color: var(--burgundy);
   }
 
-  .faq-meta {
-    display: flex;
-    align-items: center;
-    gap: 0.8rem;
+  .cat-descripcion {
     font-size: 0.75rem;
     color: var(--muted);
   }
 
-  .faq-tema {
-    background: rgba(184, 146, 42, 0.1);
-    color: #7a5f15;
-    padding: 0.2rem 0.6rem;
-    border-radius: 4px;
-    font-size: 0.7rem;
-    font-weight: 500;
-    border: 1px solid rgba(184, 146, 42, 0.2);
-  }
-
-  .faq-answer {
-    color: var(--muted);
-    font-size: 0.78rem;
-    margin-top: 0.3rem;
-    line-height: 1.4;
-  }
-
-  .faq-actions {
+  .cat-actions {
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -243,7 +177,7 @@
     transition: all 0.22s ease;
   }
 
-  .faq-item:hover .faq-actions {
+  .cat-item:hover .cat-actions {
     opacity: 1;
     transform: translateX(0);
   }
@@ -270,6 +204,11 @@
   .btn-action.edit:hover {
     background: var(--gold);
     border-color: var(--gold);
+  }
+
+  .btn-action.products:hover {
+    background: #3d6e2a;
+    border-color: #3d6e2a;
   }
 
   .btn-toggle {
@@ -300,7 +239,7 @@
   }
 
   /* Add Row */
-  .add-faq-row {
+  .add-cat-row {
     display: flex;
     align-items: center;
     gap: 1rem;
@@ -313,9 +252,9 @@
     transition: all 0.2s;
   }
 
-  .add-faq-row:hover .add-icon-ring { background: var(--burgundy); border-color: var(--burgundy); }
-  .add-faq-row:hover .add-icon-ring i { color: #fff; }
-  .add-faq-row:hover .add-label { color: var(--burgundy); }
+  .add-cat-row:hover .add-icon-ring { background: var(--burgundy); border-color: var(--burgundy); }
+  .add-cat-row:hover .add-icon-ring i { color: #fff; }
+  .add-cat-row:hover .add-label { color: var(--burgundy); }
 
   .add-icon-ring {
     width: 40px; height: 40px;
@@ -339,6 +278,22 @@
     color: var(--muted);
     letter-spacing: 0.01em;
     transition: color 0.2s;
+  }
+
+  /* Tip Card */
+  .tip-card {
+    margin-top: 2rem;
+    padding: 1rem 1.5rem;
+    background: var(--gold-faint);
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    font-size: 0.8rem;
+    color: var(--text);
+  }
+
+  .tip-card i {
+    color: var(--burgundy);
+    margin-right: 0.5rem;
   }
 
   /* Empty State */
@@ -447,14 +402,14 @@
       padding: 2rem 1.5rem;
       margin-left: 0;
     }
-    .faq-item {
+    .cat-item {
       grid-template-columns: 1fr;
       gap: 0.5rem;
     }
-    .faq-index {
+    .cat-index {
       display: none;
     }
-    .faq-actions {
+    .cat-actions {
       opacity: 1;
       transform: none;
       justify-content: flex-start;
@@ -469,12 +424,12 @@
 
   <div class="page-header">
     <div class="header-left">
-      <p class="header-eyebrow">Consultas</p>
-      <h1 class="page-title">Preguntas frecuentes</h1>
+      <p class="header-eyebrow">Catálogo</p>
+      <h1 class="page-title">Categorías de orden</h1>
     </div>
     <div class="header-right">
-      <div class="item-count">{{ faqs|length|stringformat:"02d" }}</div>
-      <div class="item-count-label">preguntas</div>
+      <div class="item-count">{{ categorias|length|stringformat:"02d" }}</div>
+      <div class="item-count-label">categorías</div>
     </div>
   </div>
 
@@ -486,40 +441,33 @@
     {% endfor %}
   {% endif %}
 
-  <div class="search-bar">
-    <form method="get" class="search-input-wrap">
-      <input type="text" name="q" class="search-input" placeholder="Buscar por pregunta o tema..." value="{{ request.GET.q }}">
-      <button type="submit" class="search-btn">
-        <i class="bi bi-search"></i>
-      </button>
-    </form>
-  </div>
-
-  <ul class="faq-list">
-    {% for faq in faqs %}
-    <li class="faq-item" data-id="{{ faq.id }}">
-      <span class="faq-index">{{ faq.orden|stringformat:"02d" }}</span>
-      <div class="faq-info">
-        <div class="faq-question">{{ faq.pregunta|truncatewords:12 }}</div>
-        <div class="faq-meta">
-          <span class="faq-tema">{{ faq.tema.nombre }}</span>
-        </div>
-        <div class="faq-answer">{{ faq.respuesta|truncatewords:15 }}</div>
+  <ul class="cat-list">
+    {% for cat in categorias %}
+    <li class="cat-item" data-id="{{ cat.id }}">
+      <span class="cat-index">{{ forloop.counter|stringformat:"02d" }}</span>
+      <div class="cat-info">
+        <div class="cat-nombre">{{ cat.nombre }}</div>
+        {% if cat.descripcion %}
+        <div class="cat-descripcion">{{ cat.descripcion|truncatewords:15 }}</div>
+        {% endif %}
       </div>
-      <div class="faq-actions">
-        <form method="post" action="{% url 'consultas:toggle_estado_faq' faq.id %}" style="display: contents;">
+      <div class="cat-actions">
+        <form method="post" action="{% url 'productos:toggle_categoria_orden' cat.id %}" style="display: contents;">
           {% csrf_token %}
-          <button type="submit" class="btn-toggle {% if faq.activa %}active{% else %}inactive{% endif %}">
-            <i class="bi bi-{% if faq.activa %}check-circle{% else %}x-circle{% endif %}"></i>
-            {% if faq.activa %}Activa{% else %}Inactiva{% endif %}
+          <button type="submit" class="btn-toggle {% if cat.activo %}active{% else %}inactive{% endif %}">
+            <i class="bi bi-{% if cat.activo %}check-circle{% else %}x-circle{% endif %}"></i>
+            {% if cat.activo %}Activo{% else %}Inactivo{% endif %}
           </button>
         </form>
-        <a href="{% url 'consultas:editar_faq' faq.id %}" class="btn-action edit" title="Editar">
+        <a href="{% url 'productos:gestionar_productos_categoria_orden' cat.id %}" class="btn-action products" title="Gestionar productos">
+          <i class="bi bi-box-seam"></i>
+        </a>
+        <a href="{% url 'productos:editar_categoria_orden' cat.id %}" class="btn-action edit" title="Editar">
           <i class="bi bi-pencil"></i>
         </a>
         <button class="btn-action js-delete-trigger"
-                data-id="{{ faq.id }}"
-                data-pregunta="{{ faq.pregunta|truncatewords:8 }}"
+                data-id="{{ cat.id }}"
+                data-nombre="{{ cat.nombre }}"
                 title="Eliminar">
           <i class="bi bi-x"></i>
         </button>
@@ -527,16 +475,21 @@
     </li>
     {% empty %}
     <li class="empty-state">
-      <i class="bi bi-question-circle"></i>
-      <p>No hay preguntas frecuentes.</p>
+      <i class="bi bi-tags"></i>
+      <p>No hay categorías de orden creadas.</p>
     </li>
     {% endfor %}
   </ul>
 
-  <a href="{% url 'consultas:crear_faq' %}" class="add-faq-row">
+  <a href="{% url 'productos:crear_categoria_orden' %}" class="add-cat-row">
     <div class="add-icon-ring"><i class="bi bi-plus-lg"></i></div>
-    <span class="add-label">Nueva pregunta</span>
+    <span class="add-label">Nueva categoría</span>
   </a>
+
+  <div class="tip-card">
+    <i class="bi bi-lightbulb"></i>
+    <strong>Tip:</strong> Las categorías de orden permiten agrupar productos en secciones destacadas. Un producto puede pertenecer a múltiples categorías de orden sin afectar su categoría principal.
+  </div>
 
 </div>
 
@@ -544,8 +497,8 @@
 <div class="modal-backdrop-custom" id="modalDelete">
   <div class="modal-box">
     <p class="modal-eyebrow">Acción irreversible</p>
-    <h2 class="modal-title">¿Eliminar pregunta?</h2>
-    <p class="modal-subtitle">Estás por eliminar: "<span id="deleteFaqPregunta"></span>"</p>
+    <h2 class="modal-title">¿Eliminar categoría?</h2>
+    <p class="modal-subtitle">Estás por eliminar "<span id="deleteCatNombre"></span>"</p>
     <form id="deleteForm" method="post" action="">
       {% csrf_token %}
       <div class="modal-actions">
@@ -565,10 +518,10 @@
     btn.addEventListener('click', function(e) {
       e.preventDefault();
       const id = this.dataset.id;
-      const pregunta = this.dataset.pregunta;
+      const nombre = this.dataset.nombre;
 
-      document.getElementById('deleteFaqPregunta').textContent = pregunta;
-      document.getElementById('deleteForm').action = `/consultas/faq/${id}/eliminar/`;
+      document.getElementById('deleteCatNombre').textContent = nombre;
+      document.getElementById('deleteForm').action = `/productos/categoria-orden/${id}/eliminar/`;
       document.getElementById('modalDelete').classList.add('open');
     });
   });

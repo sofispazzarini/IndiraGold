@@ -49,4 +49,7 @@
         <i class="bi bi-images me-2"></i> Carrousel Home
     </a>
     
+    <a href="{% url 'productos:gestion_categorias_orden' %}" class="nav-link{% if 'categorias_orden' in request.resolver_match.url_name %} active{% endif %}">
+        <i class="bi bi-collection me-2"></i> Categorías de Orden
+    </a>
 </nav>
