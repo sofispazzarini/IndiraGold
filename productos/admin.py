@@ -53,3 +53,9 @@ class VarianteColorAdmin(admin.ModelAdmin):
         url = reverse('productos:variante_color_qr', args=[obj.id])
         return format_html('<a href="{}" target="_blank">Ver QR</a>', url)
     ver_qr_link.short_description = 'QR'
+from .models import Oferta
+
+@admin.register(Oferta)
+class OfertaAdmin(admin.ModelAdmin):
+    list_display = ('nombre', 'descuento', 'aplicar_a_todos', 'activa')
+    filter_horizontal = ('productos',)

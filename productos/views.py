@@ -9,11 +9,11 @@ from django.http import JsonResponse, HttpResponse
 from django.template.loader import render_to_string
 from django.core.paginator import Paginator
 from django.http import JsonResponse
-from .models import Producto
+
 from .models import (
     Subcategoria, Producto, Talle, Color, Medida,
     Variante, Proveedor, ImagenProducto, Categoria, TipoMedida,
-    VarianteColor, CategoriaOrden, CategoriaOrdenProducto
+    VarianteColor, CategoriaOrden, CategoriaOrdenProducto, Oferta
 )
 from .forms import (
     ProductoForm, SubcategoriaForm, CategoriaForm,
@@ -21,7 +21,8 @@ from .forms import (
     CategoriaOrdenForm
 )
 from django.db.models import Q
-
+from decimal import Decimal
+from django.utils import timezone
 # --- DECORADOR AUXILIAR ---
 def admin_required(view_func):
     return login_required(user_passes_test(lambda u: u.is_superuser)(view_func))
@@ -705,3 +706,74 @@ def gestionar_productos_categoria_orden(request, cat_id):
         'productos_en_categoria': productos_en_categoria,
         'productos_disponibles': productos_disponibles,
     })
+def obtener_oferta_activa(self):
+    ahora = timezone.now()
+
+    return self.ofertas.filter(
+        activa=True
+    ).filter(
+        models.Q(aplicar_a_todos=True) |
+        models.Q(productos=self)
+    ).filter(
+        models.Q(fecha_inicio__isnull=True) | models.Q(fecha_inicio__lte=ahora),
+        models.Q(fecha_fin__isnull=True) | models.Q(fecha_fin__gte=ahora)
+    ).first()
+
+
+@property
+def precio_final(self):
+    oferta = self.obtener_oferta_activa()
+
+    if oferta:
+        descuento = (self.precio * Decimal(oferta.descuento)) / Decimal(100)
+        return self.precio - descuento
+
+    return self.precio
+@login_required
+def admin_ofertas(request):
+
+    ofertas = Oferta.objects.all().order_by('-id')
+    productos = Producto.objects.filter(activo=True)
+
+    if request.method == 'POST':
+
+        nombre = request.POST.get('nombre')
+        descuento = request.POST.get('descuento')
+        aplicar_a_todos = request.POST.get('aplicar_a_todos') == 'on'
+
+        oferta = Oferta.objects.create(
+            nombre=nombre,
+            descuento=descuento,
+            aplicar_a_todos=aplicar_a_todos,
+            activa=True
+        )
+
+        if not aplicar_a_todos:
+            productos_ids = request.POST.getlist('productos')
+
+            oferta.productos.set(productos_ids)
+
+        return redirect('productos:admin_ofertas')
+
+    context = {
+        'ofertas': ofertas,
+        'productos': productos,
+    }
+
+    return render(
+        request,
+        'productos/admin_ofertas.html',
+        context
+    )
+@login_required
+def toggle_oferta(request, oferta_id):
+
+    oferta = get_object_or_404(
+        Oferta,
+        id=oferta_id
+    )
+
+    oferta.activa = not oferta.activa
+    oferta.save()
+
+    return redirect('productos:admin_ofertas')

@@ -1,0 +1,597 @@
+{% extends 'users/dashboard_admin.html' %}
+
+{% block content %}
+
+<style>
+
+.ofertas-page{
+    padding:2rem;
+}
+
+.ofertas-header{
+    margin-bottom:2rem;
+}
+
+.ofertas-header h1{
+    font-size:3rem;
+    font-weight:700;
+    color:#1f2937;
+    margin:0;
+}
+
+.ofertas-header p{
+    color:#6b7280;
+    margin-top:.5rem;
+}
+
+.ofertas-card{
+    background:#fff;
+    border-radius:24px;
+    padding:2rem;
+    width: 100%;
+    margin-left: 20%;
+    box-shadow:0 10px 30px rgba(0,0,0,.06);
+    border:1px solid #eee;
+    margin-bottom:2rem;
+}
+
+.ofertas-card h2{
+    font-size:1.5rem;
+    margin-bottom:2rem;
+    color:#b8922a;
+}
+
+.form-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr 260px;
+    gap:1.5rem;
+    margin-bottom:2rem;
+}
+
+.form-group{
+    display:flex;
+    flex-direction:column;
+    gap:.5rem;
+}
+
+.form-group label{
+    font-weight:600;
+    color:#374151;
+    font-size:.95rem;
+}
+
+.form-group input{
+    height:52px;
+    border:1px solid #ddd;
+    border-radius:14px;
+    padding:0 1rem;
+    font-size:1rem;
+    outline:none;
+    transition:.2s;
+}
+
+.form-group input:focus{
+    border-color:#b8922a;
+    box-shadow:0 0 0 4px rgba(184,146,42,.15);
+}
+
+.switch-container{
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    gap:.7rem;
+}
+
+.switch-row{
+    display:flex;
+    align-items:center;
+    gap:1rem;
+}
+
+.switch{
+    position:relative;
+    width:58px;
+    height:32px;
+}
+
+.switch input{
+    display:none;
+}
+
+.slider{
+    position:absolute;
+    inset:0;
+    background:#ddd;
+    border-radius:999px;
+    cursor:pointer;
+    transition:.2s;
+}
+
+.slider::before{
+    content:'';
+    position:absolute;
+    width:24px;
+    height:24px;
+    border-radius:50%;
+    background:white;
+    top:4px;
+    left:4px;
+    transition:.2s;
+}
+
+.switch input:checked + .slider{
+    background:#b8922a;
+}
+
+.switch input:checked + .slider::before{
+    transform:translateX(26px);
+}
+
+.productos-box{
+    border:1px solid #e5e7eb;
+    border-radius:18px;
+    overflow:hidden;
+}
+
+.productos-header{
+    padding:1rem;
+    border-bottom:1px solid #eee;
+}
+
+.productos-search{
+    width:100%;
+    height:50px;
+    border:1px solid #ddd;
+    border-radius:12px;
+    padding:0 1rem;
+    font-size:.95rem;
+    outline:none;
+}
+
+.productos-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+}
+
+.producto-item{
+    display:flex;
+    align-items:center;
+    gap:1rem;
+    padding:1rem;
+    border-bottom:1px solid #f3f4f6;
+}
+
+.producto-item:nth-child(odd){
+    border-right:1px solid #f3f4f6;
+}
+
+.producto-item img{
+    width:60px;
+    height:60px;
+    object-fit:cover;
+    border-radius:12px;
+}
+
+.producto-info{
+    flex:1;
+}
+
+.producto-info strong{
+    display:block;
+    color:#111827;
+}
+
+.producto-info span{
+    color:#6b7280;
+    font-size:.9rem;
+}
+
+.producto-check{
+    width:20px;
+    height:20px;
+}
+
+.ofertas-actions{
+    display:flex;
+    justify-content:flex-end;
+    gap:1rem;
+    margin-top:2rem;
+}
+
+.btn-secondary{
+    border:none;
+    background:#f3f4f6;
+    color:#374151;
+    padding:.9rem 1.5rem;
+    border-radius:12px;
+    font-weight:600;
+    cursor:pointer;
+}
+
+.btn-primary{
+    border:none;
+    background:#b8922a;
+    color:white;
+    padding:.9rem 1.8rem;
+    border-radius:12px;
+    font-weight:600;
+    cursor:pointer;
+    transition:.2s;
+}
+
+.btn-primary:hover{
+    background:#a27d1f;
+}
+
+.ofertas-table{
+    width:100%;
+    border-collapse:collapse;
+}
+
+.ofertas-table th{
+    text-align:left;
+    padding:1rem;
+    color:#6b7280;
+    font-size:.85rem;
+    border-bottom:1px solid #eee;
+}
+
+.ofertas-table td{
+    padding:1rem;
+    border-bottom:1px solid #f3f4f6;
+}
+
+.badge{
+    padding:.4rem .8rem;
+    border-radius:999px;
+    font-size:.8rem;
+    font-weight:600;
+}
+
+.badge-success{
+    background:#dcfce7;
+    color:#166534;
+}
+
+.badge-warning{
+    background:#fef3c7;
+    color:#92400e;
+}
+
+.btn-danger{
+    background:#fee2e2;
+    color:#b91c1c;
+    padding:.5rem .9rem;
+    border-radius:10px;
+    text-decoration:none;
+    font-weight:600;
+    font-size:.85rem;
+}
+
+.btn-success{
+    background:#dcfce7;
+    color:#166534;
+    padding:.5rem .9rem;
+    border-radius:10px;
+    text-decoration:none;
+    font-weight:600;
+    font-size:.85rem;
+}
+
+.btn-danger:hover,
+.btn-success:hover{
+    opacity:.9;
+}
+
+@media(max-width:1100px){
+
+    .form-grid{
+        grid-template-columns:1fr;
+    }
+
+    .productos-grid{
+        grid-template-columns:1fr;
+    }
+
+    .producto-item:nth-child(odd){
+        border-right:none;
+    }
+
+}
+
+</style>
+
+<div class="ofertas-page">
+
+    <div class="ofertas-header">
+        <h1>🏷 Ofertas</h1>
+        <p>Crea y gestiona las ofertas de tus productos.</p>
+    </div>
+
+    <form method="POST" class="ofertas-card">
+
+        {% csrf_token %}
+
+        <h2>Crear nueva oferta</h2>
+
+        <div class="form-grid">
+
+            <div class="form-group">
+
+                <label>Nombre de la oferta</label>
+
+                <input
+                    type="text"
+                    name="nombre"
+                    placeholder="Ej: Oferta Primavera"
+                    required
+                >
+
+            </div>
+
+            <div class="form-group">
+
+                <label>Porcentaje de descuento</label>
+
+                <input
+                    type="number"
+                    name="descuento"
+                    placeholder="Ej: 20"
+                    required
+                >
+
+            </div>
+
+            <div class="switch-container">
+
+                <label>
+                    Aplicar a todos los productos
+                </label>
+
+                <div class="switch-row">
+
+                    <label class="switch">
+
+                        <input
+                            type="checkbox"
+                            name="aplicar_a_todos"
+                            id="aplicarTodos"
+                        >
+
+                        <span class="slider"></span>
+
+                    </label>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <div
+            class="productos-box"
+            id="productosContainer"
+        >
+
+            <div class="productos-header">
+
+                <input
+                    type="text"
+                    class="productos-search"
+                    placeholder="Buscar producto..."
+                    id="buscarProducto"
+                >
+
+            </div>
+
+            <div class="productos-grid">
+
+                {% for producto in productos %}
+
+                <label
+                    class="producto-item producto-card-search"
+                    data-name="{{ producto.nombre|lower }}"
+                >
+
+                    <input
+                        type="checkbox"
+                        name="productos"
+                        value="{{ producto.id }}"
+                        class="producto-check"
+                    >
+
+                    {% if producto.imagen %}
+
+                        <img
+                            src="{{ producto.imagen.url }}"
+                            alt="{{ producto.nombre }}"
+                        >
+
+                    {% endif %}
+
+                    <div class="producto-info">
+
+                        <strong>
+                            {{ producto.nombre }}
+                        </strong>
+
+                        <span>
+                            ${{ producto.precio }}
+                        </span>
+
+                    </div>
+
+                </label>
+
+                {% endfor %}
+
+            </div>
+
+        </div>
+
+        <div class="ofertas-actions">
+
+            <button
+                type="reset"
+                class="btn-secondary"
+            >
+                Limpiar
+            </button>
+
+            <button
+                type="submit"
+                class="btn-primary"
+            >
+                Crear oferta
+            </button>
+
+        </div>
+
+    </form>
+
+    <div class="ofertas-card">
+
+        <h2>🏷 Ofertas creadas</h2>
+
+        <table class="ofertas-table">
+
+            <thead>
+
+                <tr>
+                    <th>NOMBRE</th>
+                    <th>DESCUENTO</th>
+                    <th>APLICA A</th>
+                    <th>ESTADO</th>
+                    <th>ACCIONES</th>
+                </tr>
+
+            </thead>
+
+            <tbody>
+
+                {% for oferta in ofertas %}
+
+                <tr>
+
+                    <td>
+                        {{ oferta.nombre }}
+                    </td>
+
+                    <td>
+                        <strong>
+                            {{ oferta.descuento }}%
+                        </strong>
+                    </td>
+
+                    <td>
+
+                        {% if oferta.aplicar_a_todos %}
+                            Todos los productos
+                        {% else %}
+                            Productos seleccionados
+                        {% endif %}
+
+                    </td>
+
+                    <td>
+
+                        {% if oferta.activa %}
+
+                            <span class="badge badge-success">
+                                Activa
+                            </span>
+
+                        {% else %}
+
+                            <span class="badge badge-warning">
+                                Pausada
+                            </span>
+
+                        {% endif %}
+
+                    </td>
+
+                    <td>
+
+                        <a
+                            href="{% url 'productos:toggle_oferta' oferta.id %}"
+                            class="
+                                {% if oferta.activa %}
+                                    btn-danger
+                                {% else %}
+                                    btn-success
+                                {% endif %}
+                            "
+                        >
+
+                            {% if oferta.activa %}
+                                Desactivar
+                            {% else %}
+                                Activar
+                            {% endif %}
+
+                        </a>
+
+                    </td>
+
+                </tr>
+
+                {% empty %}
+
+                <tr>
+
+                    <td colspan="5">
+                        No hay ofertas creadas.
+                    </td>
+
+                </tr>
+
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</div>
+
+<script>
+
+const aplicarTodos =
+    document.getElementById('aplicarTodos');
+
+const productosContainer =
+    document.getElementById('productosContainer');
+
+aplicarTodos.addEventListener('change', function(){
+
+    productosContainer.style.display =
+        this.checked ? 'none' : 'block';
+
+});
+
+const buscarProducto =
+    document.getElementById('buscarProducto');
+
+buscarProducto.addEventListener('input', function(){
+
+    const value =
+        this.value.toLowerCase();
+
+    document.querySelectorAll('.producto-card-search')
+        .forEach(card => {
+
+            const match =
+                card.dataset.name.includes(value);
+
+            card.style.display =
+                match ? 'flex' : 'none';
+
+        });
+
+});
+
+</script>
+
+{% endblock %}

@@ -54,4 +54,6 @@ urlpatterns = [
     path('categorias-orden/<int:cat_id>/eliminar/', views.eliminar_categoria_orden, name='eliminar_categoria_orden'),
     path('categorias-orden/<int:cat_id>/toggle/', views.toggle_categoria_orden, name='toggle_categoria_orden'),
     path('categorias-orden/<int:cat_id>/productos/', views.gestionar_productos_categoria_orden, name='gestionar_productos_categoria_orden'),
+    path('admin/ofertas/',views.admin_ofertas,name='admin_ofertas'),
+    path('admin/ofertas/toggle/<int:oferta_id>/',views.toggle_oferta,name='toggle_oferta'),
 ]

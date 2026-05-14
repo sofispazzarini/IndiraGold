@@ -1,6 +1,7 @@
 import uuid
 import io
 from django.db import models
+from decimal import Decimal
 # Tipos de medida globales (ej: Largo, Ancho, Circunferencia)
 class TipoMedida(models.Model):
     nombre = models.CharField(max_length=50, unique=True)
@@ -60,6 +61,24 @@ class Producto(models.Model):
     imagen_tecnica = models.ImageField(upload_to='productos/fichas/', blank=True, null=True)
     def __str__(self):
         return self.nombre
+    def obtener_oferta_activa(self):
+        return self.ofertas.filter(
+            activa=True
+        ).first()
+
+
+    @property
+    def precio_final(self):
+        oferta = self.obtener_oferta_activa()
+
+        if oferta:
+            descuento = (
+                Decimal(self.precio) * Decimal(oferta.descuento)
+            ) / Decimal(100)
+
+            return self.precio - descuento
+
+        return self.precio
 class ImagenProducto(models.Model):
     producto = models.ForeignKey(Producto, related_name='imagenes', on_delete=models.CASCADE)
     imagen = models.ImageField(upload_to='productos/')
@@ -177,3 +196,27 @@ class VarianteColor(models.Model):
 
     def __str__(self):
         return f"{self.variante.producto.nombre} - {self.variante.talle} - {self.color.nombre}"
+class Oferta(models.Model):
+    nombre = models.CharField(max_length=100)
+
+    descuento = models.PositiveIntegerField(
+        help_text='Porcentaje de descuento'
+    )
+
+    aplicar_a_todos = models.BooleanField(default=False)
+
+    productos = models.ManyToManyField(
+        Producto,
+        blank=True,
+        related_name='ofertas'
+    )
+
+    activa = models.BooleanField(default=True)
+
+    fecha_inicio = models.DateTimeField(null=True, blank=True)
+    fecha_fin = models.DateTimeField(null=True, blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.nombre} - {self.descuento}%"
