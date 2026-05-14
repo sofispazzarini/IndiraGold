@@ -251,28 +251,31 @@
     font-size: 0.8rem;
     color: var(--muted);
   }
+  .estado-badge{
+    border-radius:30px;
+    padding:8px 14px;
+    font-size:.75rem;
+    font-weight:700;
+}
+  .btn-ver{
+        border:none;
+        background:#f8f5ef;
+        color:#6E0E2E;
+        border-radius:30px;
+        padding:8px 16px;
+        font-size:.8rem;
+        font-weight:600;
+        text-decoration:none;
+        display:inline-flex;
+        align-items:center;
+        gap:6px;
+        transition:.2s;
+    }
 
-  .btn-ver {
-    background: transparent;
-    color: var(--muted);
-    border: 1px solid var(--border);
-    border-radius: 50px;
-    padding: 0.4rem 1rem;
-    font-size: 0.75rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.18s;
-    text-decoration: none;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.3rem;
-  }
-
-  .btn-ver:hover {
-    background: var(--burgundy);
-    color: #fff;
-    border-color: var(--burgundy);
-  }
+    .btn-ver:hover{
+        background:#b8922a;
+        color:white;
+    }
 
   /* Pagination */
   .pagination-wrap {
@@ -494,6 +497,33 @@
     .pedidos-table tbody td {
       padding: 0.75rem 0.5rem;
     }
+    .table-responsive{
+    background:white;
+    border-radius:24px;
+    overflow:hidden;
+    box-shadow:0 10px 30px rgba(0,0,0,.04);
+}
+
+.table{
+    margin-bottom:0;
+}
+
+.table tbody tr{
+    transition:.2s;
+}
+
+.table tbody tr:hover{
+    background:#faf7f2;
+}
+
+.table td{
+    vertical-align:middle;
+    padding:22px 14px;
+}
+
+.table th{
+    padding:18px 14px;
+}
   }
 </style>
 {% endblock %}
@@ -601,7 +631,7 @@
                                     </small>
 
                                 </td>
-                                <td><strong style="color: #6E0E2E; font-size: 1.05rem;">${{ pedido.total }}</strong></td>
+                                <td><strong class='badge-tipo'>${{ pedido.total }}</strong></td>
                                 <td>
 
                                     {% if pedido.metodo_entrega == 'local' %}
@@ -631,13 +661,13 @@
                                     <div
                                         class="d-flex justify-content-end align-items-center gap-2 flex-wrap"
                                     >
-                                        <a href="{% url 'pedidos:detalle_pedido' pedido.id %}" class="btn-action btn-ver-ig" title="Ver detalles">
+                                        <a href="{% url 'pedidos:detalle_pedido' pedido.id %}" class="btn-ver" >
                                             <i class="bi bi-eye"></i> Ver
                                         </a>
                                     <!-- CAMBIAR ESTADO -->
                                         <button
                                             type="button"
-                                            class="btn-action btn-ver-ig"
+                                            class="btn-ver"
                                             data-bs-toggle="modal"
                                             data-bs-target="#estadoModal{{ pedido.id }}"
                                         >
@@ -848,74 +878,7 @@
     {% endif %}
   </form>
 
-  {% if pedidos %}
-  <table class="pedidos-table">
-    <thead>
-      <tr>
-        <th>ID</th>
-        <th>Cliente</th>
-        <th>Total</th>
-        <th>Tipo</th>
-        <th>Estado</th>
-        <th>Fecha</th>
-        <th>Acciones</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for pedido in pedidos %}
-      <tr>
-        <td><span class="pedido-id">#{{ pedido.id }}</span></td>
-        <td><span class="pedido-cliente">{{ pedido.cliente.nombre }}</span></td>
-        <td><span class="pedido-total">${{ pedido.total }}</span></td>
-        <td><span class="pedido-tipo">{{ pedido.get_tipo_venta_display }}</span></td>
-        <td><span class="estado-badge estado-{{ pedido.estado }}">{{ pedido.get_estado_display }}</span></td>
-        <td><span class="pedido-fecha">{{ pedido.created_at|date:"d/m/Y H:i" }}</span></td>
-        <td>
-          <a href="{% url 'pedidos:detalle_pedido' pedido.id %}" class="btn-ver">
-            <i class="bi bi-eye"></i> Ver
-          </a>
-        </td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-
-  {% if page_obj.has_other_pages %}
-  <nav class="pagination-wrap">
-    {% if page_obj.has_previous %}
-      <a href="?page=1{% if estado %}&estado={{ estado }}{% endif %}" class="page-btn arrow">
-        <i class="bi bi-chevron-double-left"></i>
-      </a>
-      <a href="?page={{ page_obj.previous_page_number }}{% if estado %}&estado={{ estado }}{% endif %}" class="page-btn arrow">
-        <i class="bi bi-chevron-left"></i>
-      </a>
-    {% endif %}
-
-    {% for num in page_obj.paginator.page_range %}
-      {% if page_obj.number == num %}
-        <span class="page-btn active">{{ num }}</span>
-      {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
-        <a href="?page={{ num }}{% if estado %}&estado={{ estado }}{% endif %}" class="page-btn">{{ num }}</a>
-      {% endif %}
-    {% endfor %}
-
-    {% if page_obj.has_next %}
-      <a href="?page={{ page_obj.next_page_number }}{% if estado %}&estado={{ estado }}{% endif %}" class="page-btn arrow">
-        <i class="bi bi-chevron-right"></i>
-      </a>
-      <a href="?page={{ page_obj.paginator.num_pages }}{% if estado %}&estado={{ estado }}{% endif %}" class="page-btn arrow">
-        <i class="bi bi-chevron-double-right"></i>
-      </a>
-    {% endif %}
-  </nav>
-  {% endif %}
-
-  {% else %}
-  <div class="empty-state">
-    <i class="bi bi-box-seam"></i>
-    <p>No hay pedidos registrados{% if estado %} con el estado seleccionado{% endif %}.</p>
-  </div>
-  {% endif %}
+  
 
 </div>
 {% endblock %}
