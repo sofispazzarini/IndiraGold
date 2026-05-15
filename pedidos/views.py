@@ -6,17 +6,17 @@ from django.contrib import messages
 from django.db.models import Sum, Count, Avg, Q, F
 from datetime import datetime, timedelta
 from decimal import Decimal
-from .models import Pedido, PedidoItem, VentaLocal, PagoVentaLocal
+from .models import Pedido, PedidoItem, VentaLocal, PagoVentaLocal, ConfiguracionEnvio
 from carritos.models import Carrito, CarritoItem
 from carritos.utils import get_or_create_cart, vincular_carrito_con_usuario
 from .models import Pedido, PedidoItem, Gasto, VentaLocal, VentaLocalItem
-from .forms import GastoForm
+from .forms import GastoForm, ConfiguracionEnvioForm
 
-from pedidos.forms import GastoForm
+from pedidos.forms import GastoForm, ConfiguracionEnvioForm
 from .models import Gasto, Pedido, PedidoItem
 from carritos.models import Carrito, CarritoItem
 from carritos.utils import clear_cart_session, get_or_create_cart, vincular_carrito_con_usuario
-from users.models import Cliente
+from users.models import Cliente, Direccion
 from productos.models import Variante
 import mercadopago
 from django.conf import settings
@@ -302,6 +302,9 @@ def checkout_view(request):
     carrito = get_or_create_cart(request)
     # Traemos los items con sus variantes y fotos
     items = carrito.items.all().select_related('variante__producto', 'variante__talle')
+    configuracion_envio = ConfiguracionEnvio.actual()
+    cliente, _ = Cliente.objects.get_or_create(user=request.user)
+    direcciones = cliente.direcciones.all()
     
     subtotal = sum(
         item.subtotal for item in items
@@ -309,8 +312,12 @@ def checkout_view(request):
     return render(request, 'pedidos/checkout.html', {
         'items': items,
         'subtotal': subtotal,
-        'total': subtotal, # El JS sumará el envío después
-        'carrito': carrito
+        'total': subtotal,
+        'carrito': carrito,
+        'configuracion_envio': configuracion_envio,
+        'precio_flex': configuracion_envio.costo_flex,
+        'zonas_flex': configuracion_envio.zonas_flex_lista,
+        'direcciones': direcciones,
     })
 # pedidos/views.py
 
@@ -330,10 +337,27 @@ def confirmar_pedido(request):
 
     if request.method == 'POST':
         metodo = request.POST.get('metodo_entrega')
-        costo_envio = Decimal('5000.00') if metodo == 'domicilio' else Decimal('0.00')
+        configuracion_envio = ConfiguracionEnvio.actual()
+        costo_envio = (
+            Decimal(configuracion_envio.costo_flex)
+            if metodo == 'flex' and configuracion_envio.flex_activo
+            else Decimal('0.00')
+        )
 
         cliente, _ = Cliente.objects.get_or_create(user=request.user)
         subtotal_productos = sum(item.precio_total for item in items_del_carrito)
+        direccion = None
+
+        if metodo == 'flex':
+            direccion = Direccion.objects.filter(
+                id=request.POST.get('direccion_id'),
+                cliente=cliente
+            ).first()
+        elif metodo == 'correo':
+            direccion = Direccion.objects.filter(
+                id=request.POST.get('direccion_correo_id'),
+                cliente=cliente
+            ).first()
 
         # VALIDACIÓN DE STOCK
         variantes_sin_stock = []
@@ -350,9 +374,13 @@ def confirmar_pedido(request):
             total=subtotal_productos + costo_envio,
             costo_envio=costo_envio,
             metodo_entrega=metodo,
-            codigo_postal=request.POST.get('codigo_postal'),
-            localidad=request.POST.get('localidad'),
-            calle_numero=request.POST.get('calle_numero'),
+            direccion=direccion,
+            codigo_postal=direccion.codigo_postal if direccion else request.POST.get('codigo_postal'),
+            localidad=direccion.ciudad if direccion else request.POST.get('localidad'),
+            calle_numero=f'{direccion.calle} {direccion.numero}' if direccion else request.POST.get('calle_numero'),
+            correo=request.POST.get('correo'),
+            tipo_correo=request.POST.get('tipo_correo'),
+            sucursal_correo=request.POST.get('sucursal_correo'),
             tipo_venta='online',
             estado='pendiente',
         )
@@ -483,6 +511,50 @@ def crear_pago(request):
     request.session['calle_numero'] = request.POST.get(
         'calle_numero'
     )
+    request.session['direccion_id'] = request.POST.get('direccion_id')
+    request.session['direccion_correo_id'] = request.POST.get('direccion_correo_id')
+    request.session['correo'] = request.POST.get('correo')
+    request.session['tipo_correo'] = request.POST.get('tipo_correo')
+    request.session['sucursal_correo'] = request.POST.get('sucursal_correo')
+
+    configuracion_envio = ConfiguracionEnvio.actual()
+    cliente, _ = Cliente.objects.get_or_create(user=request.user)
+
+    if request.session['metodo_entrega'] == 'flex' and not configuracion_envio.flex_activo:
+        messages.error(request, 'El Envio Flex no esta disponible en este momento.')
+        return redirect('pedidos:checkout')
+
+    if request.session['metodo_entrega'] == 'flex':
+        direccion_valida = Direccion.objects.filter(
+            id=request.session.get('direccion_id'),
+            cliente=cliente
+        ).exists()
+        if not direccion_valida:
+            messages.error(request, 'Selecciona una direccion para Envio Flex.')
+            return redirect('pedidos:checkout')
+
+    if request.session['metodo_entrega'] == 'correo':
+        direccion_valida = Direccion.objects.filter(
+            id=request.session.get('direccion_correo_id'),
+            cliente=cliente
+        ).exists()
+        if not direccion_valida:
+            messages.error(request, 'Selecciona una direccion para el envio por correo.')
+            return redirect('pedidos:checkout')
+
+    costo_envio = (
+        Decimal(configuracion_envio.costo_flex)
+        if request.session['metodo_entrega'] == 'flex' and configuracion_envio.flex_activo
+        else Decimal('0')
+    )
+
+    if costo_envio > 0:
+        productos.append({
+            "title": "Envio Flex",
+            "quantity": 1,
+            "currency_id": "ARS",
+            "unit_price": float(costo_envio)
+        })
     # CREAR PREFERENCIA
     preference_response = sdk.preference().create({
         "items": productos,
@@ -553,20 +625,37 @@ def pago_exitoso(request):
         'local'
     )
 
+    configuracion_envio = ConfiguracionEnvio.actual()
     costo_envio = (
-        Decimal('5000')
-        if metodo_entrega == 'domicilio'
+        Decimal(configuracion_envio.costo_flex)
+        if metodo_entrega == 'flex' and configuracion_envio.flex_activo
         else Decimal('0')
     )
+    direccion = None
+
+    if metodo_entrega == 'flex':
+        direccion = Direccion.objects.filter(
+            id=request.session.get('direccion_id'),
+            cliente=cliente
+        ).first()
+    elif metodo_entrega == 'correo':
+        direccion = Direccion.objects.filter(
+            id=request.session.get('direccion_correo_id'),
+            cliente=cliente
+        ).first()
 
     pedido = Pedido.objects.create(
         cliente=cliente,
         total=subtotal + costo_envio,
         costo_envio=costo_envio,
         metodo_entrega=metodo_entrega,
-        codigo_postal=request.session.get('codigo_postal'),
-        localidad=request.session.get('localidad'),
-        calle_numero=request.session.get('calle_numero'),
+        direccion=direccion,
+        codigo_postal=direccion.codigo_postal if direccion else request.session.get('codigo_postal'),
+        localidad=direccion.ciudad if direccion else request.session.get('localidad'),
+        calle_numero=f'{direccion.calle} {direccion.numero}' if direccion else request.session.get('calle_numero'),
+        correo=request.session.get('correo'),
+        tipo_correo=request.session.get('tipo_correo'),
+        sucursal_correo=request.session.get('sucursal_correo'),
         tipo_venta='online',
         estado='pendiente',
     )
@@ -1358,5 +1447,27 @@ def registrar_pago_venta(request, venta_id):
 
         'success': True,
 
-        'html': html
+        'html': html,
+
+        'estado': venta.estado_pago
+    })
+@admin_required
+def configurar_envios(request):
+    configuracion = ConfiguracionEnvio.actual()
+
+    if request.method == 'POST':
+        form = ConfiguracionEnvioForm(request.POST, instance=configuracion)
+        if form.is_valid():
+            configuracion = form.save(commit=False)
+            configuracion.flex_activo = True
+            configuracion.save()
+            messages.success(request, 'Configuración de envíos actualizada correctamente.')
+            return redirect('pedidos:configurar_envios')
+    else:
+        form = ConfiguracionEnvioForm(instance=configuracion)
+
+    return render(request, 'pedidos/configurar_envios.html', {
+        'form': form,
+        'configuracion': configuracion,
+        'zonas_flex': configuracion.zonas_flex_lista,
     })

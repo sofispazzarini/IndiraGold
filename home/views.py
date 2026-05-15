@@ -7,7 +7,7 @@ from django.shortcuts import redirect, render, get_object_or_404
 from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
 from django.shortcuts import redirect, render, get_object_or_404
-from productos.models import Producto, Categoria, Talle, Color, CategoriaOrden, Variante
+from productos.models import Producto, Categoria, Talle, Color, CategoriaOrden, Variante, Oferta
 from carritos.utils import clear_cart_session, expire_cart_if_needed, get_cart_seconds_left
 from consultas.models import TemaConsulta
 from .models import SlideCarrousel
@@ -34,13 +34,45 @@ class HomePublicaView(TemplateView):
             .distinct()
             .order_by('nombre')
         )
+        oferta_global_activa = Oferta.objects.filter(
+            activa=True,
+            aplicar_a_todos=True
+        ).exists()
 
+        if oferta_global_activa:
+
+            productos_oferta = productos.filter(
+                activo=True
+            )
+
+        else:
+
+            productos_oferta = productos.filter(
+                ofertas__activa=True
+            ).distinct()
         ctx['productos'] = productos
         ctx['productos_destacados'] = productos_destacados
         ctx['categorias'] = Categoria.objects.all()
         ctx['talles'] = talles
         ctx['colores'] = colores
+        oferta_global_activa = Oferta.objects.filter(
+            activa=True,
+            aplicar_a_todos=True
+        ).exists()
 
+        if oferta_global_activa:
+
+            productos_oferta = productos.filter(
+                activo=True
+            )
+
+        else:
+
+            productos_oferta = productos.filter(
+                ofertas__activa=True
+            ).distinct()
+
+        ctx['productos_oferta'] = productos_oferta
         cart = self.request.session.get('carrito')
         if not isinstance(cart, dict):
             cart = {}

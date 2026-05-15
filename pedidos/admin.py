@@ -1,10 +1,26 @@
 from django.contrib import admin
 from .models import Pedido, PedidoItem, Pago, Gasto
-from .models import VentaLocal, VentaLocalItem
+from .models import VentaLocal, VentaLocalItem, ConfiguracionEnvio
 
 admin.site.register(VentaLocal)
 admin.site.register(VentaLocalItem)
 
+
+@admin.register(ConfiguracionEnvio)
+class ConfiguracionEnvioAdmin(admin.ModelAdmin):
+    list_display = ('id', 'flex_activo', 'flex_gratis', 'precio_flex', 'zonas_disponibles')
+    fields = ('flex_activo', 'flex_gratis', 'precio_flex', 'zonas_flex')
+
+    def zonas_disponibles(self, obj):
+        zonas = obj.zonas_flex_lista
+        return ', '.join(zonas) if zonas else 'Sin zonas cargadas'
+
+    zonas_disponibles.short_description = 'Zonas Flex'
+
+    def has_add_permission(self, request):
+        if ConfiguracionEnvio.objects.exists():
+            return False
+        return super().has_add_permission(request)
 @admin.register(Pedido)
 class PedidoAdmin(admin.ModelAdmin):
     list_display = ('id', 'cliente', 'total', 'tipo_venta', 'estado', 'created_at')

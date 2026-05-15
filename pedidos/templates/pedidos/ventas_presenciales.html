@@ -7,41 +7,289 @@
 
 <style>
 
+    :root{
+        --gold:#b8922a;
+        --gold-soft:#f7e3a0;
+        --gold-faint:#faf7f0;
+        --burgundy:#6E0E2E;
+        --dark:#1a1612;
+        --text:#3d342a;
+        --muted:#8c7e70;
+        --border:#e8dfd4;
+        --surface:#ffffff;
+    }
+
     .ventas-wrapper{
         min-height:100vh;
-        max-width: 1200px;
-        margin: 0 auto;
-        padding: 40px 20px;
-        margin-left: 20%;
+        width:100%;
+        max-width:1180px;
+        margin-left:20%;
+        margin-right:auto;
+        padding:3rem 2.5rem 5rem;
     }
 
     .ventas-card{
-        background:white;
-        border-radius:20px;
-        padding:30px;
-        box-shadow:0 4px 30px rgba(0,0,0,.06);
+        background:var(--surface);
+        border:1px solid var(--border);
+        border-radius:16px;
+        padding:1.5rem;
+        box-shadow:0 16px 42px rgba(26,22,18,.05);
+    }
+
+    .ventas-hero{
+        display:flex;
+        align-items:flex-end;
+        justify-content:space-between;
+        gap:1.5rem;
+        margin-bottom:2rem;
+        padding-bottom:1.75rem;
+        border-bottom:1px solid rgba(184,146,42,.16);
+    }
+
+    .ventas-eyebrow{
+        font-size:.65rem;
+        letter-spacing:.2em;
+        text-transform:uppercase;
+        color:var(--gold);
+        font-weight:700;
+        margin-bottom:.55rem;
+    }
+
+    .ventas-title{
+        font-family:'Cormorant Garamond','Playfair Display',serif;
+        font-size:clamp(2.4rem,4vw,3.6rem);
+        color:var(--dark);
+        font-weight:700;
+        line-height:1;
+        margin:0;
+    }
+
+    .ventas-subtitle{
+        color:var(--muted);
+        font-size:.88rem;
+        margin:.75rem 0 0;
+        max-width:460px;
+    }
+
+    .ventas-toolbar{
+        display:flex;
+        justify-content:flex-end;
+        align-items:center;
+        gap:1rem;
+        margin-bottom:1rem;
+    }
+
+    .section-title{
+        font-size:.7rem;
+        text-transform:uppercase;
+        letter-spacing:.16em;
+        color:var(--burgundy);
+        font-weight:700;
+        margin:0;
+    }
+
+    .filter-grid{
+        display:grid;
+        grid-template-columns:minmax(220px,1.4fr) 90px 90px 120px auto;
+        gap:.9rem;
+        align-items:end;
+    }
+
+    .ventas-card .form-label{
+        color:var(--text);
+        font-size:.78rem;
+        margin-bottom:.4rem;
+    }
+
+    .ventas-card .form-control,
+    .ventas-card .form-select{
+        border:1px solid #ddd4c9;
+        border-radius:10px;
+        min-height:42px;
+        color:var(--text);
+        box-shadow:none;
+    }
+
+    .ventas-card .form-control:focus,
+    .ventas-card .form-select:focus{
+        border-color:var(--gold);
+        box-shadow:0 0 0 .2rem rgba(184,146,42,.12);
+    }
+
+    .filter-actions{
+        display:flex;
+        gap:.6rem;
     }
 
     .table thead th{
-        background:#f8f5ef;
-        color:#b8922a;
+        background:#faf7f0;
+        color:#9c781c;
         border:none;
+        font-size:.72rem;
+        text-transform:uppercase;
+        letter-spacing:.08em;
+        font-weight:800;
+        padding:.85rem .75rem;
+        white-space:nowrap;
+    }
+
+    .ventas-table{
+        margin:0;
+    }
+
+    .ventas-table tbody td{
+        border-color:#efe7dc;
+        padding:1rem .75rem;
+        vertical-align:middle;
+        color:var(--text);
+    }
+
+    .venta-id{
+        color:var(--muted);
+        font-weight:700;
+        font-size:.82rem;
+    }
+
+    .cliente-nombre{
+        color:var(--dark);
+        font-weight:800;
+    }
+
+    .cliente-email{
+        color:var(--muted);
+        font-size:.78rem;
+    }
+
+    .productos-count{
+        display:inline-flex;
+        align-items:center;
+        gap:.35rem;
+        color:var(--muted);
+        font-weight:700;
+        font-size:.82rem;
     }
 
     .badge-total{
-        background:linear-gradient(90deg,#fbe18b 0%,#b8922a 100%);
-        color:#6E0E2E;
-        padding:8px 14px;
-        border-radius:20px;
+        background:linear-gradient(90deg,var(--gold-soft) 0%,var(--gold) 100%);
+        color:var(--burgundy);
+        padding:.5rem .75rem;
+        border-radius:999px;
         font-weight:700;
+        white-space:nowrap;
+        display:inline-block;
+    }
+
+    .badge-estado{
+        border-radius:999px;
+        padding:.4rem .7rem;
+        font-size:.72rem;
+        font-weight:800;
+    }
+
+    .badge-estado.pagado{
+        background:rgba(88,145,88,.12);
+        color:#2f6b38;
+    }
+
+    .badge-estado.parcial{
+        background:rgba(184,146,42,.16);
+        color:#7a5f15;
     }
 
     .btn-gold{
-        background:linear-gradient(90deg,#fbe18b 0%,#b8922a 100%);
-        color:#6E0E2E;
+        background:linear-gradient(90deg,var(--gold-soft) 0%,var(--gold) 100%);
+        color:var(--burgundy);
         border:none;
-        border-radius:30px;
+        border-radius:999px;
         font-weight:700;
+        min-height:42px;
+        padding:.55rem 1.2rem;
+        box-shadow:0 8px 18px rgba(184,146,42,.18);
+    }
+
+    .btn-gold:hover{
+        color:#fff;
+        background:var(--burgundy);
+    }
+
+    .btn-soft{
+        border:1px solid #cfd6df;
+        color:#5c6673;
+        background:#fff;
+        border-radius:999px;
+        min-height:42px;
+        padding:.55rem 1.1rem;
+        font-weight:700;
+    }
+
+    .btn-soft:hover{
+        border-color:var(--burgundy);
+        color:var(--burgundy);
+    }
+
+    .btn-detail{
+        border:1px solid #d7cbbc;
+        border-radius:999px;
+        color:var(--text);
+        background:#fff;
+        font-weight:700;
+        white-space:nowrap;
+    }
+
+    .btn-detail:hover{
+        background:var(--dark);
+        color:#fff;
+        border-color:var(--dark);
+    }
+
+    .empty-state{
+        padding:3rem 1rem;
+        text-align:center;
+        color:var(--muted);
+    }
+
+    .modal-content{
+        border-radius:18px !important;
+    }
+
+    .modal .card{
+        border-radius:14px !important;
+        border:1px solid var(--border) !important;
+        box-shadow:none !important;
+    }
+
+    .modal .rounded-5,
+    .modal .rounded-4{
+        border-radius:12px !important;
+    }
+
+    @media (max-width: 1100px){
+        .ventas-wrapper{
+            margin-left:0;
+            padding:2rem 1rem 4rem;
+        }
+        .ventas-hero{
+            align-items:flex-start;
+            flex-direction:column;
+        }
+        .filter-grid{
+            grid-template-columns:1fr 1fr;
+        }
+        .filter-actions{
+            grid-column:1 / -1;
+        }
+    }
+
+    @media (max-width: 640px){
+        .filter-grid{
+            grid-template-columns:1fr;
+        }
+        .filter-actions{
+            flex-direction:column;
+        }
+        .ventas-card{
+            padding:1rem;
+        }
     }
 
 </style>
@@ -52,30 +300,19 @@
 
 <div class="ventas-wrapper">
 
-    <div class="text-center mb-5">
+    <div class="ventas-hero">
 
         <div>
 
-            <h1
-                style="
-                    font-family: 'Playfair Display', serif;
-                    color:#1d1d1d;
-                    font-size:3rem;
-                    font-weight:700;
-                "
-            >
+            <div class="ventas-eyebrow">Ventas presenciales</div>
+
+            <h1 class="ventas-title">
 
                 Ventas Local
 
             </h1>
 
-            <p
-                class="text-muted text-uppercase"
-                style="
-                    letter-spacing:1px;
-                    font-size:.9rem;
-                "
-            >
+            <p class="ventas-subtitle">
 
                 Visualizá todas las ventas realizadas
                 en el local
@@ -87,11 +324,11 @@
         
 
     </div>
-    <div class="d-flex justify-content-end mb-4">
+    <div class="ventas-toolbar">
 
         <button
             type="button"
-            class="btn btn-gold px-4 py-2"
+            class="btn btn-gold"
             data-bs-toggle="modal"
             data-bs-target="#nuevaVentaModal"
         >
@@ -107,12 +344,14 @@
     
     <div class="ventas-card mb-4">
 
+        <div class="section-title mb-3">Filtros</div>
+
         <form
             method="GET"
-            class="row g-3 align-items-end "
+            class="filter-grid"
         >
 
-            <div class="col-md-3">
+            <div>
 
                 <label class="form-label fw-bold">
 
@@ -130,7 +369,7 @@
 
             </div>
 
-            <div class="col-md-1">
+            <div>
 
                 <label class="form-label fw-bold">
 
@@ -143,11 +382,13 @@
                     name="dia"
                     class="form-control"
                     value="{{ dia }}"
+                    min="1"
+                    max="31"
                 >
 
             </div>
 
-            <div class="col-md-1">
+            <div>
 
                 <label class="form-label fw-bold">
 
@@ -160,11 +401,13 @@
                     name="mes"
                     class="form-control"
                     value="{{ mes }}"
+                    min="1"
+                    max="12"
                 >
 
             </div>
 
-            <div class="col-md-2">
+            <div>
 
                 <label class="form-label fw-bold">
 
@@ -181,22 +424,23 @@
 
             </div>
 
-            <div class="col-md-4 d-flex gap-2">
+            <div class="filter-actions">
 
                 
 
                     <button
                         type="submit"
-                        class="btn btn-gold w-100 py-2"
+                        class="btn btn-gold"
                     >
 
+                        <i class="bi bi-search me-1"></i>
                         Filtrar
 
                     </button>
 
                     <a
                         href="{% url 'pedidos:ventas_presenciales' %}"
-                        class="btn btn-outline-secondary w-100 py-2 rounded-pill"
+                        class="btn btn-soft"
                     >
 
                         Limpiar
@@ -215,9 +459,11 @@
 
     <div class="ventas-card">
 
+        <div class="section-title mb-3">Historial de ventas</div>
+
         <div class="table-responsive">
 
-            <table class="table align-middle">
+            <table class="table ventas-table align-middle">
 
                 <thead>
 
@@ -241,6 +487,8 @@
 
                         <th>Estado</th>
 
+                        <th class="text-end">Acción</th>
+
                     </tr>
 
                 </thead>
@@ -253,20 +501,20 @@
 
                             <td>
 
-                                #{{ venta.id }}
+                                <span class="venta-id">#{{ venta.id }}</span>
 
                             </td>
 
                             <td>
 
-                                <div class="fw-bold">
+                                <div class="cliente-nombre">
 
                                     {{ venta.cliente.user.first_name }}
                                     {{ venta.cliente.user.last_name }}
 
                                 </div>
 
-                                <small class="text-muted">
+                                <small class="cliente-email">
 
                                     {{ venta.cliente.user.email }}
 
@@ -288,7 +536,10 @@
 
                             <td>
 
-                                {{ venta.items.count }} productos
+                                <span class="productos-count">
+                                    <i class="bi bi-bag"></i>
+                                    {{ venta.items.count }} productos
+                                </span>
 
                             </td>
 
@@ -318,7 +569,7 @@
 
                                 {% if venta.estado_pago == 'PAGADO' %}
 
-                                    <span class="badge bg-success">
+                                    <span class="badge-estado pagado">
 
                                         Pagado
 
@@ -326,7 +577,7 @@
 
                                 {% else %}
 
-                                    <span class="badge bg-warning text-dark">
+                                    <span class="badge-estado parcial">
 
                                         Parcial
 
@@ -336,10 +587,10 @@
 
                             </td>
 
-                            <td>
+                            <td class="text-end">
 
                                 <button
-                                    class="btn btn-sm btn-outline-dark rounded-pill btn-detalle-venta"
+                                    class="btn btn-sm btn-detail btn-detalle-venta"
                                      data-id="{{ venta.id }}"
                                 >
 
@@ -356,11 +607,12 @@
                         <tr>
 
                             <td
-                                colspan="7"
-                                class="text-center py-5 text-muted"
+                                colspan="10"
+                                class="empty-state"
                             >
 
-                                No hay ventas registradas.
+                                <i class="bi bi-receipt" style="font-size:2rem; opacity:.35;"></i>
+                                <div class="mt-2">No hay ventas registradas.</div>
 
                             </td>
 
@@ -1022,13 +1274,7 @@ document.getElementById(
 
         if(data.success){
 
-            document.getElementById(
-                'nuevo-pago'
-            ).value = ''
-
-            document.getElementById(
-                'contenido-detalle-venta'
-            ).innerHTML = data.html
+            location.reload()
 
         }else{
 
@@ -1609,7 +1855,7 @@ document.querySelectorAll(
 
             html += `
 
-                <div class="mb-3">
+                <div class="mb-3" id="resumen-pago-venta">
 
                     <div class="d-flex justify-content-between">
 
@@ -1655,7 +1901,7 @@ document.querySelectorAll(
 
                 html += `
 
-                    <div class="mt-4">
+                    <div class="mt-4" id="registrar-pago-venta">
 
                         <label class="form-label fw-bold">
 
@@ -1676,6 +1922,7 @@ document.querySelectorAll(
                             <button
                                 class="btn btn-gold rounded-pill"
                                 onclick="registrarPago(${ventaId})"
+                                id="btn-guardar-pago"
                             >
 
                                 Guardar
@@ -1717,6 +1964,13 @@ async function registrarPago(ventaId){
         'nuevo-pago'
     ).value
 
+    const boton = document.getElementById('btn-guardar-pago')
+
+    if(boton){
+        boton.disabled = true
+        boton.innerText = 'Guardando...'
+    }
+
     const response = await fetch(
 
         `/pedidos/registrar-pago/${ventaId}/`,
@@ -1747,9 +2001,44 @@ async function registrarPago(ventaId){
 
     if(data.success){
 
-        location.reload()
+        const resumen = document.getElementById('resumen-pago-venta')
+        const formPago = document.getElementById('registrar-pago-venta')
+        const inputPago = document.getElementById('nuevo-pago')
+
+        if(resumen){
+            resumen.innerHTML = `
+                <div class="alert alert-success rounded-4 border-0 mb-3">
+                    <i class="bi bi-check-circle me-2"></i>
+                    Pago registrado correctamente.
+                </div>
+                ${data.html}
+            `
+        }
+
+        if(inputPago){
+            inputPago.value = ''
+        }
+
+        if(data.estado === 'PAGADO'){
+            if(formPago){
+                formPago.innerHTML = `
+                    <div class="alert alert-success rounded-4 border-0 mb-0">
+                        <i class="bi bi-check-circle me-2"></i>
+                        La venta quedó pagada.
+                    </div>
+                `
+            }
+        }else if(boton){
+            boton.disabled = false
+            boton.innerText = 'Guardar'
+        }
 
     }else{
+
+        if(boton){
+            boton.disabled = false
+            boton.innerText = 'Guardar'
+        }
 
         alert('Error al registrar pago')
     }

@@ -2,61 +2,6 @@
 
 {% block title %}IndiraGold — Tienda{% endblock %}
 
-<style>
-  .product-card__footer{
-      display:flex;
-      justify-content:space-between;
-      align-items:flex-end;
-      gap:.8rem;
-  }
-
-  .product-price-wrap{
-      display:flex;
-      flex-direction:column;
-      gap:.2rem;
-  }
-
-  .product-price-old{
-      font-size:.82rem;
-      color:#9ca3af;
-      text-decoration:line-through;
-      line-height:1;
-      font-family:'DM Sans', sans-serif;
-  }
-
-  .product-price-row{
-      display:flex;
-      align-items:center;
-      gap:.45rem;
-      flex-wrap:wrap;
-  }
-
-  .product-price-new{
-      font-family:'Cormorant Garamond', serif;
-      font-size:1.35rem;
-      font-weight:700;
-      color:#1a1612;
-      line-height:1;
-  }
-
-  .product-discount-badge{
-      background:#dc2626;
-      color:#fff;
-      font-size:.7rem;
-      font-weight:700;
-      padding:.22rem .55rem;
-      border-radius:999px;
-      line-height:1;
-  }
-
-  .product-card__price{
-      font-family:'Cormorant Garamond', serif;
-      font-size:1.35rem;
-      font-weight:700;
-      color:#1a1612;
-  }
-  
-</style>
 {% block content %}
 
 <div id="toastContainer" aria-live="polite" aria-atomic="true"></div>
@@ -170,18 +115,70 @@
                 <span class="product-card__cat">{{ producto.categoria.nombre }}</span>
                 <h3 class="product-card__name">{{ producto.nombre }}</h3>
                 <p class="product-card__meta">{{ producto.tipo }} · {{ producto.tela }}</p>
-                <div class="product-card__footer">
-                  <span class="product-card__price">${{ producto.precio }}</span>
-                  {% if producto.variantes.first and producto.stock_total > 0 %}
-                    <button type="button" class="product-card__btn" onclick="abrirModalCantidad({{ producto.variantes.first.id }}, '{{ producto.nombre }}', {{ producto.stock_total }})">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
-                        <path d="M8 1a2.5 2.5 0 0 1 2.5 2.5V4h-5v-.5A2.5 2.5 0 0 1 8 1zm3.5 3v-.5a3.5 3.5 0 1 0-7 0V4H1v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V4h-3.5zM2 5h12v9a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V5z"/>
-                      </svg>
-                      Agregar
-                    </button>
-                  {% else %}
-                    <span class="product-card__agotado">Sin stock</span>
+                  {% if producto.obtener_oferta_activa %}
+                    <div class="product-discount-circle">
+                      -{{ producto.obtener_oferta_activa.descuento }}%
+                    </div>
                   {% endif %}
+
+                  <div class="product-card__footer">
+
+                    <div>
+
+                      {% if producto.obtener_oferta_activa %}
+
+                        <span class="product-price-old">
+                          ${{ producto.precio }}
+                        </span>
+
+                        <span class="product-price-new">
+                          ${{ producto.precio_final }}
+                        </span>
+
+                      {% else %}
+
+                        <span class="product-card__price">
+                          ${{ producto.precio }}
+                        </span>
+
+                      {% endif %}
+
+                    </div>
+
+                    {% if producto.variantes.first and producto.stock_total > 0 %}
+
+                      <button
+                        type="button"
+                        class="product-card__btn"
+                        onclick="abrirModalCantidad(
+                          {{ producto.variantes.first.id }},
+                          '{{ producto.nombre }}',
+                          {{ producto.stock_total }}
+                        )"
+                      >
+
+                        <svg xmlns="http://www.w3.org/2000/svg"
+                            width="14"
+                            height="14"
+                            fill="currentColor"
+                            viewBox="0 0 16 16">
+
+                          <path d="M8 1a2.5 2.5 0 0 1 2.5 2.5V4h-5v-.5A2.5 2.5 0 0 1 8 1zm3.5 3v-.5a3.5 3.5 0 1 0-7 0V4H1v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V4h-3.5zM2 5h12v9a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V5z"/>
+
+                        </svg>
+
+                        Agregar
+
+                      </button>
+
+                    {% else %}
+
+                      <span class="product-card__agotado">
+                        Sin stock
+                      </span>
+
+                    {% endif %}
+
                 </div>
               </div>
             </div>
@@ -279,18 +276,70 @@
               <span class="product-card__cat">{{ producto.categoria.nombre }}</span>
               <h3 class="product-card__name">{{ producto.nombre }}</h3>
               <p class="product-card__meta">{{ producto.tipo }} - {{ producto.tela }}</p>
-              <div class="product-card__footer">
-                <span class="product-card__price">${{ producto.precio }}</span>
-                {% if producto.variantes.first and producto.stock_total > 0 %}
-                  <button type="button" class="product-card__btn" onclick="abrirModalCantidad({{ producto.variantes.first.id }}, '{{ producto.nombre }}', {{ producto.stock_total }})">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
-                      <path d="M8 1a2.5 2.5 0 0 1 2.5 2.5V4h-5v-.5A2.5 2.5 0 0 1 8 1zm3.5 3v-.5a3.5 3.5 0 1 0-7 0V4H1v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V4h-3.5zM2 5h12v9a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V5z"/>
-                    </svg>
-                    Agregar
-                  </button>
-                {% else %}
-                  <span class="product-card__agotado">Sin stock</span>
+                  {% if producto.obtener_oferta_activa %}
+                  <div class="product-discount-circle">
+                    -{{ producto.obtener_oferta_activa.descuento }}%
+                  </div>
                 {% endif %}
+
+                <div class="product-card__footer">
+
+                  <div>
+
+                    {% if producto.obtener_oferta_activa %}
+
+                      <span class="product-price-old">
+                        ${{ producto.precio }}
+                      </span>
+
+                      <span class="product-price-new">
+                        ${{ producto.precio_final }}
+                      </span>
+
+                    {% else %}
+
+                      <span class="product-card__price">
+                        ${{ producto.precio }}
+                      </span>
+
+                    {% endif %}
+
+                  </div>
+
+                  {% if producto.variantes.first and producto.stock_total > 0 %}
+
+                    <button
+                      type="button"
+                      class="product-card__btn"
+                      onclick="abrirModalCantidad(
+                        {{ producto.variantes.first.id }},
+                        '{{ producto.nombre }}',
+                        {{ producto.stock_total }}
+                      )"
+                    >
+
+                      <svg xmlns="http://www.w3.org/2000/svg"
+                          width="14"
+                          height="14"
+                          fill="currentColor"
+                          viewBox="0 0 16 16">
+
+                        <path d="M8 1a2.5 2.5 0 0 1 2.5 2.5V4h-5v-.5A2.5 2.5 0 0 1 8 1zm3.5 3v-.5a3.5 3.5 0 1 0-7 0V4H1v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V4h-3.5zM2 5h12v9a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V5z"/>
+
+                      </svg>
+
+                      Agregar
+
+                    </button>
+
+                  {% else %}
+
+                    <span class="product-card__agotado">
+                      Sin stock
+                    </span>
+
+                  {% endif %}
+
               </div>
             </div>
           </div>
@@ -312,7 +361,88 @@ function scrollCatOrden{{ cat_orden.id }}(dir) {
 </script>
 {% endif %}
 {% endfor %}
+{% if productos_oferta %}
 
+<section class="featured-section" aria-label="Ofertas">
+
+  <div class="container">
+
+    <div class="featured-top">
+
+      <h2 class="featured-title">
+        🔥 Ofertas
+      </h2>
+
+    </div>
+
+    <div class="featured-track">
+
+      {% for producto in productos_oferta %}
+
+      <div class="featured-item">
+        <article class="product-card">
+
+          {% if producto.obtener_oferta_activa %}
+
+            <div class="product-discount-circle">
+              -{{ producto.obtener_oferta_activa.descuento }}%
+            </div>
+
+          {% endif %}
+
+          <a href="{% url 'productos:detalle_producto' producto.id %}"
+            class="product-card__img-wrap">
+
+            {% if producto.imagen %}
+
+              <img src="{{ producto.imagen.url }}"
+                  alt="{{ producto.nombre }}"
+                  class="product-card__img">
+
+            {% endif %}
+
+          </a>
+
+          <div class="product-card__body">
+
+            <span class="product-card__cat">
+              {{ producto.categoria.nombre }}
+            </span>
+
+            <h3 class="product-card__name">
+              {{ producto.nombre }}
+            </h3>
+
+            <div class="product-card__footer">
+
+              <div>
+
+                <span class="product-price-old">
+                  ${{ producto.precio }}
+                </span>
+
+                <span class="product-price-new">
+                  ${{ producto.precio_final }}
+                </span>
+
+              </div>
+
+            </div>
+
+          </div>
+
+        </article>
+      </div>
+
+      {% endfor %}
+
+    </div>
+
+  </div>
+
+</section>
+
+{% endif %}
 <!-- CATEGORÍAS -->
 <section class="cats-section">
   <div class="container">
@@ -359,13 +489,6 @@ function scrollCatOrden{{ cat_orden.id }}(dir) {
       {% for producto in productos %}
           <div class="product-card" data-cat="{{ producto.categoria.id }}" data-name="{{ producto.nombre|lower }} {{ producto.tipo|lower }} {{ producto.tela|lower }}">
             <a href="{% url 'productos:detalle_producto' producto.id %}" class="product-card__img-wrap">
-          {% if producto.obtener_oferta_activa %}
-
-              <div class="product-discount-circle">
-                  -{{ producto.obtener_oferta_activa.descuento }}%
-              </div>
-
-          {% endif %}
           {% if producto.imagen %}
             <img src="{{ producto.imagen.url }}" alt="{{ producto.nombre }}" class="product-card__img" />
           {% else %}
@@ -386,65 +509,71 @@ function scrollCatOrden{{ cat_orden.id }}(dir) {
           <span class="product-card__cat">{{ producto.categoria.nombre }}</span>
           <h3 class="product-card__name">{{ producto.nombre }}</h3>
           <p class="product-card__meta">{{ producto.tipo }} · {{ producto.tela }}</p>
-          <div class="product-card__footer">
+          {% if producto.obtener_oferta_activa %}
+  <div class="product-discount-circle">
+    -{{ producto.obtener_oferta_activa.descuento }}%
+  </div>
+{% endif %}
 
-            <div>
+<div class="product-card__footer">
 
-                {% if producto.obtener_oferta_activa %}
+  <div>
 
-                    <span class="product-price-old">
-                        ${{ producto.precio }}
-                    </span>
+    {% if producto.obtener_oferta_activa %}
 
-                    <span class="product-price-new">
-                        ${{ producto.precio_final }}
-                    </span>
+      <span class="product-price-old">
+        ${{ producto.precio }}
+      </span>
 
-                {% else %}
+      <span class="product-price-new">
+        ${{ producto.precio_final }}
+      </span>
 
-                    <span class="product-card__price">
-                        ${{ producto.precio }}
-                    </span>
+    {% else %}
 
-                {% endif %}
+      <span class="product-card__price">
+        ${{ producto.precio }}
+      </span>
 
-            </div>
+    {% endif %}
 
-            {% if producto.variantes.first and producto.stock > 0 %}
+  </div>
 
-                <button
-                    type="button"
-                    class="product-card__btn"
-                    onclick="abrirModalCantidad(
-                        {{ producto.variantes.first.id }},
-                        '{{ producto.nombre }}',
-                        {{ producto.stock }}
-                    )"
-                >
+  {% if producto.variantes.first and producto.stock_total > 0 %}
 
-                    <svg xmlns="http://www.w3.org/2000/svg"
-                        width="14"
-                        height="14"
-                        fill="currentColor"
-                        viewBox="0 0 16 16">
+    <button
+      type="button"
+      class="product-card__btn"
+      onclick="abrirModalCantidad(
+        {{ producto.variantes.first.id }},
+        '{{ producto.nombre }}',
+        {{ producto.stock_total }}
+      )"
+    >
 
-                        <path d="M8 1a2.5 2.5 0 0 1 2.5 2.5V4h-5v-.5A2.5 2.5 0 0 1 8 1zm3.5 3v-.5a3.5 3.5 0 1 0-7 0V4H1v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V4h-3.5zM2 5h12v9a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V5z"/>
+      <svg xmlns="http://www.w3.org/2000/svg"
+           width="14"
+           height="14"
+           fill="currentColor"
+           viewBox="0 0 16 16">
 
-                    </svg>
+        <path d="M8 1a2.5 2.5 0 0 1 2.5 2.5V4h-5v-.5A2.5 2.5 0 0 1 8 1zm3.5 3v-.5a3.5 3.5 0 1 0-7 0V4H1v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V4h-3.5zM2 5h12v9a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V5z"/>
 
-                    Agregar
+      </svg>
 
-                </button>
+      Agregar
 
-            {% else %}
+    </button>
 
-                <span class="product-card__agotado">
-                    Sin stock
-                </span>
+  {% else %}
 
-            {% endif %}
+    <span class="product-card__agotado">
+      Sin stock
+    </span>
 
-        </div>
+  {% endif %}
+
+</div>
         </div>
       </div>
       {% empty %}
@@ -792,82 +921,50 @@ function scrollCatOrden{{ cat_orden.id }}(dir) {
   .product-card__cat  { font-size: .72rem; font-weight: 600; text-transform: uppercase; letter-spacing: .1em; color: #b8922a; }
   .product-card__name { font-family: 'Cormorant Garamond', serif; font-size: 1.1rem; font-weight: 600; color: #1a1612; margin: .2rem 0 .25rem; line-height: 1.25; }
   .product-card__meta { font-size: .78rem; color: #8c7e70; margin-bottom: .75rem; }
-  .product-card__footer{
-      display:flex;
-      justify-content:space-between;
-      align-items:flex-end;
-      gap:.8rem;
-  }
-
-  .product-card__price{
-      font-family:'Cormorant Garamond', serif;
-      font-size:1.35rem;
-      font-weight:700;
-      color:#1a1612;
-  }
- .product-card__btn {
+  .product-card__footer { display: flex; justify-content: space-between; align-items: center; }
+  .product-card__price { font-family: 'Cormorant Garamond', serif; font-size: 1.2rem; font-weight: 700; color: #1a1612; }
+  .product-card__btn {
     display: inline-flex; align-items: center; gap: .35rem;
     background: #1a1612; color: #fff;
     border: none; border-radius: 6px;
     padding: .4rem .75rem; font-size: .78rem; font-weight: 500;
     font-family: 'DM Sans', sans-serif; cursor: pointer; transition: background .15s;
   }
+  .product-discount-circle {
+    position: absolute;
+    top: .75rem;
+    right: .75rem;
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: #c1121f;
+    color: #fff;
+    font-size: .82rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 5;
+    box-shadow: 0 4px 14px rgba(0,0,0,.18);
+  }
+
+  .product-price-old {
+    display: block;
+    font-size: .82rem;
+    color: #8c7e70;
+    text-decoration: line-through;
+    margin-bottom: .1rem;
+  }
+
+  .product-price-new {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #c1121f;
+  }
   .product-card__btn:hover { background: #b8922a; }
   .product-card__agotado { font-size: .78rem; color: #8c7e70; }
-  .product-card{
-      position:relative;
-  }
 
-  .product-discount-circle{
-      position:absolute;
-      top:18px;
-      left:18px;
-      width:58px;
-      height:58px;
-      border-radius:50%;
-      background:#dc2626;
-      color:#fff;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      font-weight:700;
-      font-size:1.1rem;
-      z-index:5;
-      box-shadow:0 8px 20px rgba(220,38,38,.25);
-  }
-
-  .product-card__footer{
-      display:flex;
-      justify-content:space-between;
-      align-items:flex-end;
-      gap:1rem;
-  }
-
-  .product-price-old{
-      display:block;
-      font-size:1rem;
-      color:#9ca3af;
-      text-decoration:line-through;
-      margin-bottom:.2rem;
-      font-family:'Cormorant Garamond', serif;
-  }
-
-  .product-price-new{
-      display:block;
-      font-size:2rem;
-      font-weight:700;
-      color:#111827;
-      line-height:1;
-      font-family:'Cormorant Garamond', serif;
-  }
-
-  .product-card__price{
-      font-size:2rem;
-      font-weight:700;
-      color:#111827;
-      line-height:1;
-      font-family:'Cormorant Garamond', serif;
-  }
   .empty-catalog, .no-results { grid-column: 1/-1; text-align: center; padding: 4rem 1rem; color: #8c7e70; font-size: .95rem; }
 
   /* FAQ */

@@ -59,7 +59,8 @@ class Pedido(models.Model):
     )
     METODOS_ENTREGA = (
         ('local', 'Retiro en Local (Gratis)'),
-        ('domicilio', 'Envío a Domicilio'),
+        ('flex', 'Envio Flex'),
+        ('correo', 'Envio por Correo'),
     )
     metodo_entrega = models.CharField(max_length=20, choices=METODOS_ENTREGA, default='local')
     costo_envio = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
@@ -79,7 +80,30 @@ class Pedido(models.Model):
     )
     created_at = models.DateTimeField(auto_now_add=True)
     direccion_info = models.TextField(blank=True, null=True, help_text="Información de dirección del envío")
+    correo = models.CharField(
+        max_length=50,
+        blank=True,
+        null=True
+    )
 
+    tipo_correo = models.CharField(
+        max_length=20,
+        blank=True,
+        null=True
+    )
+
+    sucursal_correo = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True
+    )
+
+    direccion = models.ForeignKey(
+        'users.Direccion',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True
+    )
     def __str__(self):
         return f"Pedido {self.id}"
 
@@ -204,3 +228,45 @@ class PagoVentaLocal(models.Model):
     monto = models.DecimalField(max_digits=10, decimal_places=2)
 
     fecha = models.DateTimeField(auto_now_add=True)
+class ConfiguracionEnvio(models.Model):
+    flex_activo = models.BooleanField(
+        default=True,
+        help_text='Mostrar Envio Flex como opcion en el checkout'
+    )
+
+    precio_flex = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=0
+    )
+
+    flex_gratis = models.BooleanField(
+        default=False
+    )
+
+    zonas_flex = models.TextField(
+        blank=True,
+        help_text='Separar zonas con coma. Ej: CABA, La Plata, Quilmes'
+    )
+
+    def __str__(self):
+        return "Configuracion de Envios"
+
+    @classmethod
+    def actual(cls):
+        configuracion, _ = cls.objects.get_or_create(pk=1)
+        return configuracion
+
+    @property
+    def costo_flex(self):
+        if self.flex_gratis:
+            return 0
+        return self.precio_flex
+
+    @property
+    def zonas_flex_lista(self):
+        return [
+            zona.strip()
+            for zona in self.zonas_flex.split(',')
+            if zona.strip()
+        ]

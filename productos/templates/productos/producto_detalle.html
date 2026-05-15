@@ -5,6 +5,27 @@
 
 {% block content %}
 <style>
+    .product-price-wrapper{
+    display:flex;
+    flex-direction:column;
+    gap:.4rem;
+    }
+
+    .product-price-old{
+    font-size:1.1rem;
+    color:#9ca3af;
+    text-decoration:line-through;
+    }
+
+    .product-detail-discount{
+    width:max-content;
+    background:#dc2626;
+    color:#fff;
+    padding:.3rem .7rem;
+    border-radius:999px;
+    font-size:.85rem;
+    font-weight:700;
+    }
     .detalle-hero {
         max-width: 1200px;
         margin: 2rem auto;
@@ -449,9 +470,38 @@
                 </div>
             </div>
 
-            <div class="precio-principal">
-                <span class="precio-moneda">$</span>
-                <span class="precio-valor">{{ producto.precio }}</span>
+            <div class="product-price-wrapper">
+
+            {% if producto.obtener_oferta_activa %}
+
+                <div class="product-detail-discount">
+                -{{ producto.obtener_oferta_activa.descuento }}%
+                </div>
+
+                <div class="product-price-old">
+                ${{ producto.precio }}
+                </div>
+
+                <div class="product-price">
+
+                <span class="currency">$</span>
+
+                {{ producto.precio_final }}
+
+                </div>
+
+            {% else %}
+
+                <div class="product-price">
+
+                <span class="currency">$</span>
+
+                {{ producto.precio }}
+
+                </div>
+
+            {% endif %}
+
             </div>
 
             {% if producto.descripcion %}

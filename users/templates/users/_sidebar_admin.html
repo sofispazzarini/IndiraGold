@@ -26,12 +26,14 @@
     <a href="{% url 'pedidos:gestion_pedidos' %}" class="nav-link{% if request.resolver_match.url_name == 'gestion_pedidos' %} active{% endif %}">
         <i class="bi bi-bag-check me-2"></i> Gestión de Pedidos
     </a>
-     <a href="{% url 'pedidos:ventas_presenciales' %}" class="nav-link {% if request.resolver_match.url_name == 'ventas_presenciales' %}active{% endif %}">
+    <a href="{% url 'pedidos:ventas_presenciales' %}" class="nav-link {% if request.resolver_match.url_name == 'ventas_presenciales' %}active{% endif %}">
         <i class="bi bi-shop me-2"></i>
         Ventas local
     </a>
-    
-    <a href="{% url 'pedidos:estadisticas_ventas' %}" class="nav-link">
+    <a href="{% url 'pedidos:configurar_envios' %}" class="nav-link{% if request.resolver_match.url_name == 'configurar_envios' %} active{% endif %}">
+        <i class="bi bi-truck me-2"></i> Configurar envíos
+    </a>
+    <a href="{% url 'pedidos:estadisticas_ventas' %}" class="nav-link{% if request.resolver_match.url_name == 'estadisticas_ventas' %} active{% endif %}">
         <i class="bi bi-graph-up me-2"></i> Estadísticas
     </a>
     <a href="{% url 'pedidos:listado_gastos' %}" class="nav-link{% if request.resolver_match.url_name == 'listado_gastos' or request.resolver_match.url_name == 'crear_gasto' %} active{% endif %}">
@@ -39,10 +41,10 @@
     </a>
 
     <div class="nav-section">Consultas</div>
-    <a href="{% url 'consultas:gestion_temas' %}" class="nav-link">
+    <a href="{% url 'consultas:gestion_temas' %}" class="nav-link{% if request.resolver_match.url_name == 'gestion_temas' or request.resolver_match.url_name == 'crear_tema' or request.resolver_match.url_name == 'editar_tema' %} active{% endif %}">
         <i class="bi bi-folder me-2"></i> Temas
     </a>
-    <a href="{% url 'consultas:gestion_faqs' %}" class="nav-link">
+    <a href="{% url 'consultas:gestion_faqs' %}" class="nav-link{% if request.resolver_match.url_name == 'gestion_faqs' or request.resolver_match.url_name == 'crear_faq' or request.resolver_match.url_name == 'editar_faq' %} active{% endif %}">
         <i class="bi bi-question-circle me-2"></i> Preguntas Frecuentes
     </a>
 

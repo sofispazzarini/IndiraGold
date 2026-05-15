@@ -69,23 +69,32 @@ class Producto(models.Model):
     def __str__(self):
         return self.nombre
     def obtener_oferta_activa(self):
-        return self.ofertas.filter(
-            activa=True
+
+        oferta_global = Oferta.objects.filter(
+            activa=True,
+            aplicar_a_todos=True
+        ).first()
+
+        if oferta_global:
+            return oferta_global
+
+        return Oferta.objects.filter(
+            activa=True,
+            productos=self
         ).first()
 
 
     @property
     def precio_final(self):
+
         oferta = self.obtener_oferta_activa()
 
-        if oferta:
-            descuento = (
-                Decimal(self.precio) * Decimal(oferta.descuento)
-            ) / Decimal(100)
+        if not oferta:
+            return self.precio
 
-            return self.precio - descuento
+        descuento = Decimal(oferta.descuento) / Decimal(100)
 
-        return self.precio
+        return self.precio * (1 - descuento)
 class ImagenProducto(models.Model):
     producto = models.ForeignKey(Producto, related_name='imagenes', on_delete=models.CASCADE)
     imagen = models.ImageField(upload_to='productos/')

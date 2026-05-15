@@ -60,13 +60,13 @@
 
   .checkout-grid {
     display: grid;
-    grid-template-columns: 1fr 380px;
+    grid-template-columns: 1fr;
     gap: 2rem;
-    align-items: start;
   }
 
   /* Cards */
   .checkout-card {
+    width: 100%;
     background: #fff;
     border: 1px solid var(--border);
     border-radius: 20px;
@@ -231,11 +231,13 @@
   /* Entrega */
   .entrega-options {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 1rem;
-  }
+    width: 100%;
+    }
 
   .entrega-option {
+    width: 100%;
     position: relative;
   }
 
@@ -245,6 +247,8 @@
   }
 
   .entrega-label {
+    width: 100%;
+    height: 100%;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -273,6 +277,16 @@
     font-size: 0.75rem;
     color: var(--muted);
     margin-top: 0.25rem;
+  }
+
+  .entrega-label .label-zonas {
+    display: block;
+    max-width: 100%;
+    margin-top: 0.55rem;
+    color: var(--burgundy);
+    font-size: 0.72rem;
+    line-height: 1.35;
+    word-break: break-word;
   }
 
   .entrega-option input:checked + .entrega-label {
@@ -491,6 +505,13 @@
     .resumen-card {
       position: static;
     }
+    @media (max-width: 768px) {
+
+        .entrega-options {
+            grid-template-columns: 1fr;
+        }
+
+    }
   }
 </style>
 {% endblock %}
@@ -563,57 +584,312 @@
 
         <!-- Entrega -->
         <div class="checkout-card">
-          <h3 class="card-title"><span>2</span> Método de entrega</h3>
+            <h3 class="card-title">
+                <span>2</span> Método de entrega
+            </h3>
 
-          <div class="entrega-options">
-            <div class="entrega-option">
-              <input type="radio" name="metodo_entrega" id="local" value="local" checked>
-              <label for="local" class="entrega-label">
-                <i class="bi bi-shop"></i>
-                <span class="label-title">Retiro en local</span>
-                <span class="label-sub">Gratis</span>
-              </label>
-            </div>
-            <div class="entrega-option">
-              <input type="radio" name="metodo_entrega" id="domicilio" value="domicilio">
-              <label for="domicilio" class="entrega-label">
-                <i class="bi bi-truck"></i>
-                <span class="label-title">Envío a domicilio</span>
-                <span class="label-sub">Correo Argentino</span>
-              </label>
-            </div>
-          </div>
+            <div class="entrega-options">
 
-          <div class="direcciones-wrap" id="campos-direccion">
-            <div class="direccion-info">
-              <i class="bi bi-box-seam"></i>
-              <div class="direccion-info-text">
-                <h6>Envío por Correo Argentino</h6>
-                <small>Entrega estimada: 3 a 5 días hábiles</small>
-              </div>
-            </div>
+                <!-- RETIRO -->
+                <div class="entrega-option">
+                <input
+                    type="radio"
+                    name="metodo_entrega"
+                    id="local"
+                    value="local"
+                    checked
+                >
 
-            <p style="font-size: 0.82rem; color: var(--muted); margin-bottom: 1rem;">
-              Seleccioná la dirección donde querés recibir tu pedido.
-            </p>
+                <label for="local" class="entrega-label">
+                    <i class="bi bi-shop"></i>
 
-            {% for direccion in direcciones %}
-            <label class="direccion-card">
-              <input type="radio" name="direccion_id" value="{{ direccion.id }}">
-              <div class="direccion-content">
-                <div>
-                  <div class="direccion-alias">{{ direccion.alias }}</div>
-                  <div class="direccion-detail">{{ direccion.calle_numero }} - {{ direccion.localidad }} ({{ direccion.codigo_postal }})</div>
+                    <span class="label-title">
+                    Retiro en local
+                    </span>
+
+                    <span class="label-sub">
+                    Gratis
+                    </span>
+                </label>
                 </div>
-                <i class="bi bi-geo-alt"></i>
-              </div>
-            </label>
-            {% empty %}
-            <div class="alert-warning">
-              <i class="bi bi-exclamation-triangle"></i> No tenés direcciones registradas.
+
+                <!-- FLEX -->
+                {% if configuracion_envio.flex_activo %}
+                <div class="entrega-option">
+                <input
+                    type="radio"
+                    name="metodo_entrega"
+                    id="flex"
+                    value="flex"
+                >
+
+                <label for="flex" class="entrega-label">
+                    <i class="bi bi-lightning-charge"></i>
+
+                    <span class="label-title">
+                    Envío Flex
+                    </span>
+
+                    <span class="label-sub">
+                    {% if configuracion_envio.flex_gratis %}
+                    Gratis
+                    {% else %}
+                    ${{ precio_flex }}
+                    {% endif %}
+                    </span>
+
+                    <span class="label-zonas">
+                    {% if zonas_flex %}
+                    Llega a: {{ zonas_flex|join:", " }}
+                    {% else %}
+                    Zonas a confirmar
+                    {% endif %}
+                    </span>
+                </label>
+                </div>
+                {% endif %}
+
+                <!-- CORREO -->
+                <div class="entrega-option">
+                <input
+                    type="radio"
+                    name="metodo_entrega"
+                    id="correo"
+                    value="correo"
+                >
+
+                <label for="correo" class="entrega-label">
+                    <i class="bi bi-box-seam"></i>
+
+                    <span class="label-title">
+                    Envío por Correo
+                    </span>
+
+                    <span class="label-sub">
+                    Andreani o Correo Argentino
+                    </span>
+                </label>
+                </div>
+
             </div>
-            {% endfor %}
-          </div>
+
+            <!-- FLEX -->
+            <div
+                class="direcciones-wrap"
+                id="campos-flex"
+                style="display:none;"
+            >
+
+                <div class="direccion-info">
+                <i class="bi bi-lightning-charge"></i>
+
+                <div class="direccion-info-text">
+                    <h6>Envío Flex</h6>
+
+                    <small>
+                    {% if configuracion_envio.flex_gratis %}
+                    Gratis
+                    {% else %}
+                    Costo: ${{ precio_flex }}
+                    {% endif %}
+                    </small>
+                </div>
+                </div>
+
+                {% if zonas_flex %}
+                <div class="alert-warning" style="margin-bottom: 1rem;">
+                <i class="bi bi-geo-alt"></i>
+                Llega a: {{ zonas_flex|join:", " }}.
+                </div>
+                {% else %}
+                <div class="alert-warning" style="margin-bottom: 1rem;">
+                <i class="bi bi-exclamation-triangle"></i>
+                Todavía no hay zonas Flex cargadas.
+                </div>
+                {% endif %}
+
+                <p style="font-size: 0.82rem; color: var(--muted); margin-bottom: 1rem;">
+                Seleccioná la dirección donde querés recibir tu pedido.
+                </p>
+
+                {% for direccion in direcciones %}
+                <label class="direccion-card">
+
+                <input
+                    type="radio"
+                    name="direccion_id"
+                    value="{{ direccion.id }}"
+                >
+
+                <div class="direccion-content">
+
+                    <div>
+                    <div class="direccion-alias">
+                        {{ direccion.calle }} {{ direccion.numero }}
+                    </div>
+
+                    <div class="direccion-detail">
+                        {{ direccion.ciudad }}, {{ direccion.provincia }}
+                        ({{ direccion.codigo_postal }})
+                    </div>
+                    </div>
+
+                    <i class="bi bi-geo-alt"></i>
+
+                </div>
+
+                </label>
+                {% empty %}
+
+                <div class="alert-warning">
+                <i class="bi bi-exclamation-triangle"></i>
+                No tenés direcciones registradas.
+                </div>
+
+                {% endfor %}
+
+            </div>
+
+            <!-- CORREO -->
+            <div
+                class="direcciones-wrap"
+                id="campos-correo"
+                style="display:none;"
+            >
+
+                <div class="direccion-info">
+
+                <i class="bi bi-truck"></i>
+
+                <div class="direccion-info-text">
+                    <h6>Envío por Correo</h6>
+
+                    <small>
+                    Elegí correo y tipo de entrega
+                    </small>
+                </div>
+
+                </div>
+
+                <!-- SELECT CORREO -->
+                <div class="form-group" style="margin-bottom:1rem;">
+
+                <label>Correo</label>
+
+                <select name="correo" class="form-select">
+
+                    <option value="andreani">
+                    Andreani
+                    </option>
+
+                    <option value="correo_argentino">
+                    Correo Argentino
+                    </option>
+
+                </select>
+
+                </div>
+
+                <!-- TIPO -->
+                <div class="form-group" style="margin-bottom:1rem;">
+
+                <label>Tipo de entrega</label>
+
+                <div>
+
+                    <label>
+                    <input
+                        type="radio"
+                        name="tipo_correo"
+                        value="domicilio"
+                        checked
+                    >
+
+                    A domicilio
+                    </label>
+
+                </div>
+
+                <div>
+
+                    <label>
+                    <input
+                        type="radio"
+                        name="tipo_correo"
+                        value="sucursal"
+                    >
+
+                    Retiro en sucursal
+                    </label>
+
+                </div>
+
+                </div>
+
+                <!-- SUCURSAL -->
+                <div class="form-group">
+
+                <label>Sucursal</label>
+
+                <input
+                    type="text"
+                    name="sucursal_correo"
+                    class="form-control"
+                    placeholder="Ej: Sucursal La Plata Centro"
+                >
+
+                </div>
+
+                <!-- DIRECCIONES -->
+                <div style="margin-top:1rem;">
+
+                <p style="font-size: 0.82rem; color: var(--muted); margin-bottom: 1rem;">
+                    Seleccioná la dirección donde querés recibir tu pedido.
+                </p>
+
+                {% for direccion in direcciones %}
+                <label class="direccion-card">
+
+                    <input
+                    type="radio"
+                    name="direccion_correo_id"
+                    value="{{ direccion.id }}"
+                    >
+
+                    <div class="direccion-content">
+
+                    <div>
+
+                        <div class="direccion-alias">
+                        {{ direccion.calle }} {{ direccion.numero }}
+                        </div>
+
+                        <div class="direccion-detail">
+                        {{ direccion.ciudad }}, {{ direccion.provincia }}
+                        ({{ direccion.codigo_postal }})
+                        </div>
+
+                    </div>
+
+                    <i class="bi bi-geo-alt"></i>
+
+                    </div>
+
+                </label>
+                {% empty %}
+
+                <div class="alert-warning">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    No tenés direcciones registradas.
+                </div>
+
+                {% endfor %}
+
+                </div>
+
+            </div>
+
+            </div>
         </div>
 
       </div>
@@ -656,27 +932,59 @@
 </div>
 
 <script>
-const subtotalBase = parseFloat("{{ subtotal }}");
-const costoEnvio = 5000;
+const subtotalBase = parseFloat("{{ subtotal|floatformat:'2' }}".replace(',', '.'));
+const costoFlex = parseFloat("{{ precio_flex|floatformat:'2' }}".replace(',', '.'));
 
-document.querySelectorAll('input[name="metodo_entrega"]').forEach((input) => {
-  input.addEventListener('change', (e) => {
-    const campos = document.getElementById('campos-direccion');
-    const envioTexto = document.getElementById('envio-label');
-    const totalDisplay = document.getElementById('total-final-display');
+function formatearPesos(valor) {
+  return '$' + valor.toLocaleString('es-AR');
+}
+</script>
+<script>
 
-    if (e.target.value === 'domicilio') {
-      campos.classList.add('visible');
-      envioTexto.innerText = '$5.000';
-      envioTexto.classList.remove('green');
-      totalDisplay.innerText = '$' + (subtotalBase + costoEnvio).toLocaleString('es-AR');
-    } else {
-      campos.classList.remove('visible');
-      envioTexto.innerText = 'Gratis';
-      envioTexto.classList.add('green');
-      totalDisplay.innerText = '$' + subtotalBase.toLocaleString('es-AR');
-    }
-  });
+const radiosEntrega = document.querySelectorAll(
+  'input[name="metodo_entrega"]'
+);
+
+const camposFlex = document.getElementById('campos-flex');
+const camposCorreo = document.getElementById('campos-correo');
+const envioTexto = document.getElementById('envio-label');
+const totalDisplay = document.getElementById('total-final-display');
+
+function actualizarEntrega() {
+
+  const metodo = document.querySelector(
+    'input[name="metodo_entrega"]:checked'
+  ).value;
+
+  camposFlex.style.display = 'none';
+  camposCorreo.style.display = 'none';
+  let costoEnvio = 0;
+
+  if (metodo === 'flex') {
+    camposFlex.style.display = 'block';
+    costoEnvio = costoFlex;
+  }
+
+  if (metodo === 'correo') {
+    camposCorreo.style.display = 'block';
+  }
+
+  if (costoEnvio > 0) {
+    envioTexto.innerText = formatearPesos(costoEnvio);
+    envioTexto.classList.remove('green');
+  } else {
+    envioTexto.innerText = 'Gratis';
+    envioTexto.classList.add('green');
+  }
+
+  totalDisplay.innerText = formatearPesos(subtotalBase + costoEnvio);
+}
+
+radiosEntrega.forEach(radio => {
+  radio.addEventListener('change', actualizarEntrega);
 });
+
+actualizarEntrega();
+
 </script>
 {% endblock %}

@@ -707,28 +707,34 @@ def gestionar_productos_categoria_orden(request, cat_id):
         'productos_disponibles': productos_disponibles,
     })
 def obtener_oferta_activa(self):
-    ahora = timezone.now()
 
-    return self.ofertas.filter(
-        activa=True
-    ).filter(
-        models.Q(aplicar_a_todos=True) |
-        models.Q(productos=self)
-    ).filter(
-        models.Q(fecha_inicio__isnull=True) | models.Q(fecha_inicio__lte=ahora),
-        models.Q(fecha_fin__isnull=True) | models.Q(fecha_fin__gte=ahora)
+    oferta_global = Oferta.objects.filter(
+        activa=True,
+        aplicar_a_todos=True
+    ).first()
+
+    if oferta_global:
+        return oferta_global
+
+    return Oferta.objects.filter(
+        activa=True,
+        productos=self
     ).first()
 
 
 @property
 def precio_final(self):
+
     oferta = self.obtener_oferta_activa()
 
-    if oferta:
-        descuento = (self.precio * Decimal(oferta.descuento)) / Decimal(100)
-        return self.precio - descuento
+    if not oferta:
+        return self.precio
 
-    return self.precio
+    descuento = (
+        Decimal(oferta.descuento) / Decimal(100)
+    )
+
+    return self.precio * (1 - descuento)
 @login_required
 def admin_ofertas(request):
 
