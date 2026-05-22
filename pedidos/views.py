@@ -16,7 +16,7 @@ from pedidos.forms import GastoForm, ConfiguracionEnvioForm
 from .models import Gasto, Pedido, PedidoItem
 from carritos.models import Carrito, CarritoItem
 from carritos.utils import clear_cart_session, get_or_create_cart, vincular_carrito_con_usuario
-from users.models import Cliente, Direccion
+from users.models import Cliente, Direccion, direcciones_sin_duplicados
 from productos.models import Variante
 import mercadopago
 from django.conf import settings
@@ -305,7 +305,7 @@ def checkout_view(request):
     items = carrito.items.all().select_related('variante__producto', 'variante__talle')
     configuracion_envio = ConfiguracionEnvio.actual()
     cliente, _ = Cliente.objects.get_or_create(user=request.user)
-    direcciones = cliente.direcciones.all()
+    direcciones = direcciones_sin_duplicados(cliente.direcciones.all().order_by('etiqueta', 'calle', 'numero'))
     
     subtotal = sum(
         item.subtotal for item in items
@@ -728,6 +728,8 @@ def pago_exitoso(request):
             direccion_envio += f', {pedido.localidad}'
         if pedido.codigo_postal:
             direccion_envio += f' ({pedido.codigo_postal})'
+        if pedido.direccion and pedido.direccion.referencia:
+            direccion_envio += f' - Ref: {pedido.direccion.referencia}'
 
     if pedido.metodo_entrega == 'correo':
         correo_info = ', '.join(

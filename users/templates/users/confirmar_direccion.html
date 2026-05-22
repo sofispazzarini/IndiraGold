@@ -130,8 +130,22 @@
             </div>
             <div class="domicilio-box">
                 <h6>Domicilio Registrado:</h6>
-                <p>{{ data.calle }} {{ data.numero }}<br>{{ data.ciudad }}, {{ data.provincia }}</p>
+                <p><strong>{{ data.etiqueta|title }}</strong><br>{{ data.calle|title }} {{ data.numero }}<br>{{ data.ciudad|title }}, {{ data.provincia|title }}{% if data.referencia %}<br>Referencia: {{ data.referencia|title }}{% endif %}</p>
             </div>
+            {% if error %}
+            <div class="alert alert-danger border-0 shadow-sm rounded-4 mb-4 small">
+                {{ error }}
+                {% if form.errors %}
+                <ul style="margin: 8px 0 0; padding-left: 18px;">
+                    {% for field, errors in form.errors.items %}
+                        {% for field_error in errors %}
+                        <li>{{ field_error }}</li>
+                        {% endfor %}
+                    {% endfor %}
+                </ul>
+                {% endif %}
+            </div>
+            {% endif %}
             <form method="POST">
                 {% csrf_token %}
                 <button type="submit" class="btn-ig-submit">CONFIRMAR DIRECCIÓN</button>
@@ -142,6 +156,10 @@
                             <div style="background:#fff;border-radius:22px;box-shadow:0 8px 32px 0 rgba(198,167,94,0.18);border:2.5px solid #e8c96a;max-width:410px;padding:38px 36px 30px 36px;text-align:center;position:relative;margin:auto;">
                                 <h4 style="margin-bottom:2rem;font-family:'Cormorant Garamond',serif;font-size:1.5rem;font-weight:700;color:#1a1612;letter-spacing:1px;">Editar Dirección</h4>
                                 <form id="form-editar-direccion" autocomplete="off">
+                                    <div class="mb-3" style="text-align:left;margin-bottom:1.2rem;">
+                                        <label style="font-weight:700;font-size:0.95rem;color:#8c7e70;text-transform:uppercase;">Etiqueta</label>
+                                        <input type="text" name="etiqueta" id="edit_etiqueta" class="form-control" style="background:#fafafa;border:1.5px solid #eee;border-radius:8px;padding:12px;margin-top:3px;" required>
+                                    </div>
                                     <div class="mb-3" style="text-align:left;margin-bottom:1.2rem;">
                                         <label style="font-weight:700;font-size:0.95rem;color:#8c7e70;text-transform:uppercase;">Calle</label>
                                         <input type="text" name="calle" id="edit_calle" class="form-control" style="background:#fafafa;border:1.5px solid #eee;border-radius:8px;padding:12px;margin-top:3px;" required>
@@ -166,6 +184,10 @@
                                         <label style="font-weight:700;font-size:0.95rem;color:#8c7e70;text-transform:uppercase;">Código Postal</label>
                                         <input type="text" name="codigo_postal" id="edit_codigo_postal" class="form-control" style="background:#fafafa;border:1.5px solid #eee;border-radius:8px;padding:12px;margin-top:3px;" required>
                                     </div>
+                                    <div class="mb-3" style="text-align:left;margin-bottom:1.2rem;">
+                                        <label style="font-weight:700;font-size:0.95rem;color:#8c7e70;text-transform:uppercase;">Referencia opcional</label>
+                                        <input type="text" name="referencia" id="edit_referencia" class="form-control" style="background:#fafafa;border:1.5px solid #eee;border-radius:8px;padding:12px;margin-top:3px;">
+                                    </div>
                                     <div id="direccion-modal-error" style="color:#b92d2d;font-size:0.98rem;margin-bottom:10px;"></div>
                                     <button type="submit" class="btn-ig-submit" style="width:100%;margin-bottom:0;font-size:1.08rem;letter-spacing:2px;">CONFIRMAR DIRECCIÓN</button>
                                     <button type="button" id="cerrar-modal-direccion" style="margin-top:1.1rem;background:#fff;color:#b8922a;border:1.5px solid #e8c96a;border-radius:100px;padding:10px 0;width:100%;font-weight:700;letter-spacing:1px;transition:0.2s;">Cancelar</button>
@@ -185,11 +207,13 @@
     document.getElementById('btn-editar-direccion').onclick = function(e) {
         e.preventDefault();
         document.getElementById('modal-direccion-bg').style.display = 'flex';
+        document.getElementById('edit_etiqueta').value = '{{ data.etiqueta|escapejs }}';
         document.getElementById('edit_calle').value = '{{ data.calle|escapejs }}';
         document.getElementById('edit_numero').value = '{{ data.numero|escapejs }}';
         document.getElementById('edit_ciudad').value = '{{ data.ciudad|escapejs }}';
         document.getElementById('edit_provincia').value = '{{ data.provincia|escapejs }}';
         document.getElementById('edit_codigo_postal').value = '{{ data.codigo_postal|escapejs }}';
+        document.getElementById('edit_referencia').value = '{{ data.referencia|default:""|escapejs }}';
         document.getElementById('direccion-modal-error').textContent = '';
     };
     document.getElementById('cerrar-modal-direccion').onclick = function() {

@@ -287,15 +287,21 @@
           <input type="text" name="dni" value="{{ form.dni.value|default:'' }}" class="form-input" placeholder="Sin puntos">
         </div>
         <div class="form-group">
-          <label class="form-label">Nombre completo</label>
-          <input type="text" name="nombre" value="{{ form.nombre.value|default:'' }}" class="form-input" placeholder="Ej: Martina Colombo">
+          <label class="form-label">Nombre</label>
+          <input type="text" name="nombre" value="{{ form.nombre.value|default:'' }}" class="form-input" placeholder="Ej: Martina">
         </div>
       </div>
       <div class="form-row">
         <div class="form-group">
+          <label class="form-label">Apellido</label>
+          <input type="text" name="apellido" value="{{ form.apellido.value|default:'' }}" class="form-input" placeholder="Ej: Colombo">
+        </div>
+        <div class="form-group">
           <label class="form-label">Email</label>
           <input type="email" name="email" value="{{ form.email.value|default:'' }}" class="form-input" placeholder="correo@ejemplo.com">
         </div>
+      </div>
+      <div class="form-row">
         <div class="form-group">
           <label class="form-label">Teléfono</label>
           <input type="text" name="telefono" value="{{ form.telefono.value|default:'' }}" class="form-input" placeholder="Celular / WhatsApp">
@@ -305,6 +311,12 @@
 
     <div class="form-section">
       <p class="section-title">Domicilio de entrega</p>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Etiqueta</label>
+          <input type="text" name="etiqueta" value="{{ form.etiqueta.value|default:'' }}" class="form-input" placeholder="Ej: Casa, Trabajo">
+        </div>
+      </div>
       <div class="form-row">
         <div class="form-group">
           <label class="form-label">Calle / Avenida</label>
@@ -331,6 +343,12 @@
         <div class="form-group">
           <label class="form-label">C.P.</label>
           <input type="text" name="codigo_postal" value="{{ form.codigo_postal.value|default:'' }}" class="form-input">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Referencia opcional</label>
+          <input type="text" name="referencia" value="{{ form.referencia.value|default:'' }}" class="form-input" placeholder="Ej: Porton verde, timbre roto">
         </div>
       </div>
     </div>

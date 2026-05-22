@@ -71,6 +71,12 @@
     color: #3d6e2a;
   }
 
+  .alert-danger {
+    background: rgba(110, 14, 46, 0.08);
+    border: 1px solid rgba(110, 14, 46, 0.2);
+    color: var(--burgundy);
+  }
+
   .alert i {
     font-size: 1.1rem;
   }
@@ -211,6 +217,54 @@
     border-bottom: 1px solid var(--border-faint);
   }
 
+  .direcciones-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    border-bottom: 1px solid var(--border-faint);
+    margin-bottom: 1.5rem;
+    padding-bottom: 1.5rem;
+  }
+
+  .direcciones-header .form-card-subtitle {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+  }
+
+  .btn-add-toggle {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    border: 1px solid rgba(110, 14, 46, 0.25);
+    background: #fff;
+    color: var(--burgundy);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    flex: 0 0 auto;
+  }
+
+  .btn-add-toggle:hover,
+  .btn-add-toggle.is-open {
+    background: var(--burgundy);
+    color: #fff;
+    border-color: var(--burgundy);
+    transform: translateY(-1px);
+  }
+
+  .btn-add-toggle i {
+    font-size: 1.15rem;
+    transition: transform 0.2s ease;
+  }
+
+  .btn-add-toggle.is-open i {
+    transform: rotate(45deg);
+  }
+
   .form-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -293,10 +347,63 @@
     flex: 1;
   }
 
+  .direccion-content {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    width: 100%;
+  }
+
+  .direccion-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    flex: 0 0 auto;
+  }
+
+  .direccion-action-btn {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    border: 1px solid rgba(110, 14, 46, 0.18);
+    background: #fff;
+    color: var(--burgundy);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .direccion-action-btn:hover {
+    background: var(--burgundy);
+    border-color: var(--burgundy);
+    color: #fff;
+    transform: translateY(-1px);
+  }
+
+  .direccion-delete-form {
+    margin: 0;
+  }
+
   .direccion-calle {
     font-size: 0.95rem;
     color: var(--dark);
     font-weight: 500;
+  }
+
+  .direccion-etiqueta {
+    display: inline-flex;
+    align-items: center;
+    width: max-content;
+    padding: 0.25rem 0.65rem;
+    border-radius: 999px;
+    background: var(--gold-faint);
+    color: var(--burgundy);
+    font-size: 0.72rem;
+    font-weight: 700;
+    margin-bottom: 0.35rem;
   }
 
   .direccion-ciudad {
@@ -351,6 +458,71 @@
     background: rgba(110, 14, 46, 0.08);
   }
 
+  .address-form {
+    display: none;
+    margin-top: 1.5rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--border-faint);
+  }
+
+  .edit-address-form {
+    display: none;
+    width: 100%;
+    margin-top: 1.25rem;
+    padding: 1.25rem 0 0 3.5rem;
+    border-top: 1px solid var(--border-faint);
+  }
+
+  .edit-address-form.is-open {
+    display: block;
+  }
+
+  .edit-address-form .form-control {
+    width: 100%;
+    padding: 0.9rem 1rem;
+    border: none;
+    border-bottom: 1.5px solid var(--border);
+    font-family: 'Montserrat', sans-serif;
+    font-size: 1rem;
+    color: var(--dark);
+    background: transparent;
+    box-sizing: border-box;
+  }
+
+  .btn-secondary-action {
+    padding: 1rem 1.6rem;
+    border: 1px solid var(--border);
+    border-radius: 50px;
+    background: transparent;
+    color: var(--muted);
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    margin-top: 1rem;
+  }
+
+  .address-form.is-open {
+    display: block;
+  }
+
+  .address-form-title {
+    margin-bottom: 1rem;
+  }
+
+  .address-form .form-control {
+    width: 100%;
+    padding: 0.9rem 1rem;
+    border: none;
+    border-bottom: 1.5px solid var(--border);
+    font-family: 'Montserrat', sans-serif;
+    font-size: 1rem;
+    color: var(--dark);
+    background: transparent;
+    box-sizing: border-box;
+  }
+
   @media (max-width: 768px) {
     .perfil-main {
       padding: 2rem 1.5rem;
@@ -369,6 +541,15 @@
     }
     .form-group.full-width {
       grid-column: span 1;
+    }
+    .direcciones-header {
+      align-items: center;
+    }
+    .direccion-content {
+      flex-direction: column;
+    }
+    .edit-address-form {
+      padding-left: 0;
     }
   }
 </style>
@@ -399,7 +580,7 @@
           <img src="{{ cliente.foto_perfil.url }}" alt="Foto de perfil" class="avatar-image">
         {% else %}
           <div class="avatar-initials">
-            {{ request.user.first_name|default:''|slice:":1" }}{{ request.user.last_name|default:''|slice:":1" }}
+            {{ request.user.first_name|default:''|title|slice:":1" }}{{ request.user.last_name|default:''|title|slice:":1" }}
           </div>
         {% endif %}
         <label for="foto_perfil" class="avatar-upload-btn">
@@ -409,7 +590,7 @@
       </div>
 
       <div class="avatar-info">
-        <h2 class="avatar-name">{{ request.user.first_name }} {{ request.user.last_name }}</h2>
+        <h2 class="avatar-name">{{ request.user.first_name|title }} {{ request.user.last_name|title }}</h2>
         <p class="avatar-email">{{ request.user.email }}</p>
         <span class="avatar-member">
           <i class="bi bi-calendar3"></i>
@@ -436,12 +617,12 @@
       <div class="form-grid">
         <div class="form-group">
           <label class="form-label">Nombre</label>
-          <input type="text" name="nombre" class="form-input" value="{{ request.user.first_name }}" placeholder="Tu nombre">
+          <input type="text" name="nombre" class="form-input" value="{{ request.user.first_name|title }}" placeholder="Tu nombre">
         </div>
 
         <div class="form-group">
           <label class="form-label">Apellido</label>
-          <input type="text" name="apellido" class="form-input" value="{{ request.user.last_name }}" placeholder="Tu apellido">
+          <input type="text" name="apellido" class="form-input" value="{{ request.user.last_name|title }}" placeholder="Tu apellido">
         </div>
 
         <div class="form-group">
@@ -466,12 +647,19 @@
     </div>
   </form>
 
-  <div class="form-card">
-    <h3 class="form-card-title">
-      <i class="bi bi-geo-alt"></i>
-      Mis direcciones
-    </h3>
-    <p class="form-card-subtitle">Direcciones guardadas en tu cuenta</p>
+  <div class="form-card" id="direcciones">
+    <div class="direcciones-header">
+      <div>
+        <h3 class="form-card-title">
+          <i class="bi bi-geo-alt"></i>
+          Mis direcciones
+        </h3>
+        <p class="form-card-subtitle">Direcciones guardadas en tu cuenta</p>
+      </div>
+      <button type="button" class="btn-add-toggle{% if direccion_form.errors %} is-open{% endif %}" id="toggle-address-form" aria-label="Agregar direccion" aria-expanded="{% if direccion_form.errors %}true{% else %}false{% endif %}">
+        <i class="bi bi-plus-lg"></i>
+      </button>
+    </div>
 
     {% if direcciones %}
     <ul class="direcciones-list">
@@ -481,8 +669,67 @@
           <i class="bi bi-house-door"></i>
         </div>
         <div class="direccion-info">
-          <div class="direccion-calle">{{ dir.calle }} {{ dir.numero }}</div>
-          <div class="direccion-ciudad">{{ dir.ciudad }}, {{ dir.provincia }} - CP {{ dir.codigo_postal }}</div>
+          <div class="direccion-content">
+            <div>
+              <div class="direccion-etiqueta">{{ dir.etiqueta|title }}</div>
+              <div class="direccion-calle">{{ dir.calle|title }} {{ dir.numero }}</div>
+              <div class="direccion-ciudad">{{ dir.ciudad|title }}, {{ dir.provincia|title }} - CP {{ dir.codigo_postal }}</div>
+              {% if dir.referencia %}
+              <div class="direccion-ciudad">Referencia: {{ dir.referencia|title }}</div>
+              {% endif %}
+            </div>
+            <div class="direccion-actions">
+              <button type="button" class="direccion-action-btn edit-address-toggle" data-target="edit-address-{{ dir.id }}" aria-label="Editar direccion">
+                <i class="bi bi-pencil"></i>
+              </button>
+              <form method="post" class="direccion-delete-form" onsubmit="return confirm('¿Eliminar esta dirección?');">
+                {% csrf_token %}
+                <button type="submit" name="eliminar_direccion_cliente" value="{{ dir.id }}" class="direccion-action-btn" aria-label="Eliminar direccion">
+                  <i class="bi bi-trash3"></i>
+                </button>
+              </form>
+            </div>
+          </div>
+
+          <form method="post" class="edit-address-form" id="edit-address-{{ dir.id }}">
+            {% csrf_token %}
+            <div class="form-grid">
+              <div class="form-group">
+                <label class="form-label">Etiqueta</label>
+                <input type="text" name="etiqueta" class="form-control" value="{{ dir.etiqueta|title }}" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Calle</label>
+                <input type="text" name="calle" class="form-control" value="{{ dir.calle|title }}" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Numero</label>
+                <input type="text" name="numero" class="form-control" value="{{ dir.numero }}" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Ciudad</label>
+                <input type="text" name="ciudad" class="form-control" value="{{ dir.ciudad|title }}" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Provincia</label>
+                <input type="text" name="provincia" class="form-control" value="{{ dir.provincia|title }}" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Codigo postal</label>
+                <input type="text" name="codigo_postal" class="form-control" value="{{ dir.codigo_postal }}" required>
+              </div>
+              <div class="form-group full-width">
+                <label class="form-label">Referencia opcional</label>
+                <input type="text" name="referencia" class="form-control" value="{{ dir.referencia|title }}">
+              </div>
+            </div>
+            <button type="submit" name="editar_direccion_cliente" value="{{ dir.id }}" class="btn-submit">
+              GUARDAR DIRECCION
+            </button>
+            <button type="button" class="btn-secondary-action edit-address-cancel" data-target="edit-address-{{ dir.id }}">
+              CANCELAR
+            </button>
+          </form>
         </div>
       </li>
       {% endfor %}
@@ -493,11 +740,87 @@
       <p>No tenés direcciones guardadas</p>
     </div>
     {% endif %}
+
+    <form method="post" class="address-form{% if direccion_form.errors %} is-open{% endif %}" id="address-form">
+      {% csrf_token %}
+      <h4 class="form-card-title address-form-title">
+        <i class="bi bi-plus-circle"></i>
+        Agregar direccion
+      </h4>
+      {% if direccion_form.errors %}
+      <div class="alert alert-danger">
+        <i class="bi bi-exclamation-circle-fill"></i>
+        Revisá los datos de la dirección.
+      </div>
+      {% endif %}
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">Etiqueta</label>
+          {{ direccion_form.etiqueta }}
+        </div>
+        <div class="form-group">
+          <label class="form-label">Calle</label>
+          {{ direccion_form.calle }}
+        </div>
+        <div class="form-group">
+          <label class="form-label">Numero</label>
+          {{ direccion_form.numero }}
+        </div>
+        <div class="form-group">
+          <label class="form-label">Ciudad</label>
+          {{ direccion_form.ciudad }}
+        </div>
+        <div class="form-group">
+          <label class="form-label">Provincia</label>
+          {{ direccion_form.provincia }}
+        </div>
+        <div class="form-group">
+          <label class="form-label">Codigo postal</label>
+          {{ direccion_form.codigo_postal }}
+        </div>
+        <div class="form-group full-width">
+          <label class="form-label">Referencia opcional</label>
+          {{ direccion_form.referencia }}
+        </div>
+      </div>
+      <button type="submit" name="agregar_direccion_cliente" class="btn-submit">
+        AGREGAR DIRECCION
+      </button>
+    </form>
   </div>
 
 </div>
 
 <script>
+document.addEventListener('DOMContentLoaded', function() {
+  const toggle = document.getElementById('toggle-address-form');
+  const form = document.getElementById('address-form');
+
+  if (!toggle || !form) return;
+
+  toggle.addEventListener('click', function() {
+    const isOpen = form.classList.toggle('is-open');
+    toggle.classList.toggle('is-open', isOpen);
+    toggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    if (isOpen) {
+      const firstInput = form.querySelector('input, select, textarea');
+      if (firstInput) firstInput.focus({ preventScroll: true });
+    }
+  });
+
+  document.querySelectorAll('.edit-address-toggle, .edit-address-cancel').forEach(function(button) {
+    button.addEventListener('click', function() {
+      const target = document.getElementById(button.dataset.target);
+      if (!target) return;
+      const isOpen = target.classList.toggle('is-open');
+      if (isOpen) {
+        const firstInput = target.querySelector('input, select, textarea');
+        if (firstInput) firstInput.focus({ preventScroll: true });
+      }
+    });
+  });
+});
+
 function previewImage(input) {
   if (input.files && input.files[0]) {
     const reader = new FileReader();

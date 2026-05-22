@@ -359,7 +359,7 @@
     <li class="client-item">
       <span class="client-index">{{ forloop.counter|stringformat:"02d" }}</span>
       <div class="client-info">
-        <div class="client-name">{{ cliente.user.first_name }}</div>
+        <div class="client-name">{{ cliente.user.first_name|title }} {{ cliente.user.last_name|title }}</div>
         <div class="client-meta">
           <span><i class="bi bi-card-text"></i> {{ cliente.dni }}</span>
           <span><i class="bi bi-envelope"></i> {{ cliente.user.email }}</span>

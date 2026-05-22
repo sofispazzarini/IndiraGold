@@ -70,6 +70,71 @@
             background: #fff;
         }
 
+        .form-alert {
+            margin: 2rem 3rem 0;
+            padding: 1rem 1.15rem;
+            border-radius: 14px;
+            display: flex;
+            gap: 0.9rem;
+            align-items: flex-start;
+            background: rgba(110, 14, 46, 0.06);
+            border: 1px solid rgba(110, 14, 46, 0.18);
+            color: #6E0E2E;
+            box-shadow: 0 12px 28px rgba(110, 14, 46, 0.05);
+        }
+
+        .form-alert-icon {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex: 0 0 auto;
+            background: #6E0E2E;
+            color: #fff;
+            font-size: 1rem;
+        }
+
+        .form-alert-title {
+            margin: 0 0 0.25rem;
+            font-weight: 700;
+            color: #1a1612;
+        }
+
+        .form-alert-text {
+            margin: 0;
+            font-size: 0.92rem;
+            line-height: 1.45;
+            color: #6E0E2E;
+        }
+
+        .form-alert-list {
+            margin: 0.55rem 0 0;
+            padding: 0;
+            list-style: none;
+            display: grid;
+            gap: 0.35rem;
+        }
+
+        .form-alert-list li {
+            position: relative;
+            padding-left: 1rem;
+            font-size: 0.88rem;
+            line-height: 1.4;
+        }
+
+        .form-alert-list li::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0.55em;
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: #b8922a;
+        }
+
         .section-label-ig {
             font-family: 'Cormorant Garamond', serif;
             color: #1a1612;
@@ -90,6 +155,9 @@
                 border-right: none;
                 border-bottom: 1px solid #f0f0f0;
             }
+            .form-alert {
+                margin: 1.5rem 1rem 0;
+            }
         }
     </style>
 {% endblock %}
@@ -104,13 +172,20 @@
         </div>
 
             {% if error %}
-                <div class="alert alert-danger" style="margin: 2rem 0;">
-                    {{ error }}
+                <div class="form-alert">
+                    <span class="form-alert-icon"><i class="bi bi-exclamation-lg"></i></span>
+                    <div>
+                        <p class="form-alert-title">No pudimos continuar</p>
+                        <p class="form-alert-text">{{ error }}</p>
+                    </div>
                 </div>
             {% endif %}
             {% if form.errors %}
-                <div class="alert alert-danger" style="margin: 2rem 0;">
-                    <ul class="mb-0 small">
+                <div class="form-alert">
+                    <span class="form-alert-icon"><i class="bi bi-exclamation-lg"></i></span>
+                    <div>
+                    <p class="form-alert-title">Revisá estos datos</p>
+                    <ul class="form-alert-list">
                         {% for field, errors in form.errors.items %}
                             {% for error in errors %}
                                 <li><strong>{{ field|capfirst }}:</strong> {{ error }}</li>
@@ -120,6 +195,7 @@
                             <li>{{ error }}</li>
                         {% endfor %}
                     </ul>
+                    </div>
                 </div>
             {% endif %}
 
@@ -131,6 +207,11 @@
                 <div class="col-left-shipping">
                     <div class="section-label-ig">
                         <i class="bi bi-geo-alt" style="color: #b8922a;"></i> Dirección de Envío
+                    </div>
+
+                    <div class="mb-4">
+                        <label style="font-weight: 700; font-size: 0.7rem; color: #8c7e70; text-transform: uppercase;">Etiqueta</label>
+                        {{ form.etiqueta }}
                     </div>
 
                     <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 30px; margin-bottom: 1.5rem;">
@@ -159,6 +240,10 @@
                         <label style="font-weight: 700; font-size: 0.7rem; color: #8c7e70; text-transform: uppercase;">Código Postal</label>
                         {{ form.codigo_postal }}
                     </div>
+                    <div class="mt-4">
+                        <label style="font-weight: 700; font-size: 0.7rem; color: #8c7e70; text-transform: uppercase;">Referencia opcional</label>
+                        {{ form.referencia }}
+                    </div>
                 </div>
 
                 <div class="col-right-personal">
@@ -166,9 +251,15 @@
                         <i class="bi bi-person-circle" style="color: #b8922a;"></i> Datos Personales
                     </div>
                     
-                    <div class="mb-4">
-                        <label style="font-weight: 700; font-size: 0.7rem; color: #8c7e70; text-transform: uppercase;">Nombre Completo</label>
-                        {{ form.nombre }}
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 1.5rem;">
+                        <div>
+                            <label style="font-weight: 700; font-size: 0.7rem; color: #8c7e70; text-transform: uppercase;">Nombre</label>
+                            {{ form.nombre }}
+                        </div>
+                        <div>
+                            <label style="font-weight: 700; font-size: 0.7rem; color: #8c7e70; text-transform: uppercase;">Apellido</label>
+                            {{ form.apellido }}
+                        </div>
                     </div>
                     
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 1.5rem;">

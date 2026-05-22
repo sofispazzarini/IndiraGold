@@ -712,8 +712,16 @@
                 Seleccioná la dirección donde querés recibir tu pedido.
                 </p>
 
+                <input
+                    type="text"
+                    class="form-control direccion-filter"
+                    data-target="flex"
+                    placeholder="Filtrar por etiqueta: Casa, Trabajo..."
+                    style="margin-bottom:1rem;"
+                >
+
                 {% for direccion in direcciones %}
-                <label class="direccion-card">
+                <label class="direccion-card" data-address-group="flex" data-etiqueta="{{ direccion.etiqueta|lower }}">
 
                 <input
                     type="radio"
@@ -725,12 +733,14 @@
 
                     <div>
                     <div class="direccion-alias">
-                        {{ direccion.calle }} {{ direccion.numero }}
+                        {{ direccion.etiqueta|title }}
                     </div>
 
                     <div class="direccion-detail">
-                        {{ direccion.ciudad }}, {{ direccion.provincia }}
+                        {{ direccion.calle|title }} {{ direccion.numero }}<br>
+                        {{ direccion.ciudad|title }}, {{ direccion.provincia|title }}
                         ({{ direccion.codigo_postal }})
+                        {% if direccion.referencia %}<br>Ref: {{ direccion.referencia|title }}{% endif %}
                     </div>
                     </div>
 
@@ -743,7 +753,7 @@
 
                 <div class="alert-warning">
                 <i class="bi bi-exclamation-triangle"></i>
-                No tenés direcciones registradas.
+                No tenés direcciones registradas. <a href="{% url 'users:perfil' %}" style="color: var(--burgundy); font-weight: 700;">Agregar direccion</a>
                 </div>
 
                 {% endfor %}
@@ -847,8 +857,16 @@
                     Seleccioná la dirección donde querés recibir tu pedido.
                 </p>
 
+                <input
+                    type="text"
+                    class="form-control direccion-filter"
+                    data-target="correo"
+                    placeholder="Filtrar por etiqueta: Casa, Trabajo..."
+                    style="margin-bottom:1rem;"
+                >
+
                 {% for direccion in direcciones %}
-                <label class="direccion-card">
+                <label class="direccion-card" data-address-group="correo" data-etiqueta="{{ direccion.etiqueta|lower }}">
 
                     <input
                     type="radio"
@@ -861,12 +879,14 @@
                     <div>
 
                         <div class="direccion-alias">
-                        {{ direccion.calle }} {{ direccion.numero }}
+                        {{ direccion.etiqueta|title }}
                         </div>
 
                         <div class="direccion-detail">
-                        {{ direccion.ciudad }}, {{ direccion.provincia }}
+                        {{ direccion.calle|title }} {{ direccion.numero }}<br>
+                        {{ direccion.ciudad|title }}, {{ direccion.provincia|title }}
                         ({{ direccion.codigo_postal }})
+                        {% if direccion.referencia %}<br>Ref: {{ direccion.referencia|title }}{% endif %}
                         </div>
 
                     </div>
@@ -880,7 +900,7 @@
 
                 <div class="alert-warning">
                     <i class="bi bi-exclamation-triangle"></i>
-                    No tenés direcciones registradas.
+                    No tenés direcciones registradas. <a href="{% url 'users:perfil' %}" style="color: var(--burgundy); font-weight: 700;">Agregar direccion</a>
                 </div>
 
                 {% endfor %}
@@ -985,6 +1005,17 @@ radiosEntrega.forEach(radio => {
 });
 
 actualizarEntrega();
+
+document.querySelectorAll('.direccion-filter').forEach(input => {
+  input.addEventListener('input', () => {
+    const target = input.dataset.target;
+    const value = input.value.toLowerCase().trim();
+    document.querySelectorAll(`[data-address-group="${target}"]`).forEach(card => {
+      const etiqueta = card.dataset.etiqueta || '';
+      card.style.display = etiqueta.includes(value) ? '' : 'none';
+    });
+  });
+});
 
 </script>
 {% endblock %}

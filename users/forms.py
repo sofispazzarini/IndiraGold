@@ -4,6 +4,11 @@ from .models import Cliente, Direccion
 from django.core.exceptions import ValidationError
 from django.db import transaction
 
+
+def capitalizar_texto(value):
+    return " ".join(part.capitalize() for part in (value or "").strip().split())
+
+
 PROVINCIAS = [
     ("", "Seleccioná una provincia"),
     ("Buenos Aires", "Buenos Aires"),
@@ -32,7 +37,8 @@ PROVINCIAS = [
     ("Tucumán", "Tucumán"),
 ]
 class RegistroUsuarioForm(forms.ModelForm):
-    nombre = forms.CharField(label='Nombre completo', max_length=150)
+    nombre = forms.CharField(label='Nombre', max_length=150)
+    apellido = forms.CharField(label='Apellido', max_length=150)
     email = forms.EmailField(label='Correo electrónico')
     password1 = forms.CharField(label='Contraseña', widget=forms.PasswordInput)
     password2 = forms.CharField(label='Confirmar contraseña', widget=forms.PasswordInput)
@@ -41,10 +47,12 @@ class RegistroUsuarioForm(forms.ModelForm):
     telefono = forms.CharField(label='Teléfono', max_length=20)
 
     # 🔹 Campos de dirección
+    etiqueta = forms.CharField(label='Etiqueta', max_length=50)
     calle = forms.CharField(label='Calle', max_length=100)
     numero = forms.CharField(label='Número', max_length=10)
     ciudad = forms.CharField(label='Ciudad', widget=forms.Select(attrs={'id': 'id_ciudad'}))
     codigo_postal = forms.CharField(label='Código Postal', max_length=10)
+    referencia = forms.CharField(label='Referencia', max_length=255, required=False)
     provincia = forms.ChoiceField(
         choices=PROVINCIAS,
         label="Provincia"
@@ -71,15 +79,28 @@ class RegistroUsuarioForm(forms.ModelForm):
         if len(dni) not in [7, 8]:
             raise forms.ValidationError("El DNI debe tener 7 u 8 dígitos.")
 
-        if Cliente.objects.filter(dni=dni).exists():
+        if User.objects.filter(username=dni).exists() or Cliente.objects.filter(dni=dni).exists():
             raise forms.ValidationError("Ya existe un cliente con este DNI.")
 
         return dni
+    def clean_nombre(self):
+        return capitalizar_texto(self.cleaned_data['nombre'])
+
+    def clean_apellido(self):
+        return capitalizar_texto(self.cleaned_data['apellido'])
+
+    def clean_etiqueta(self):
+        return capitalizar_texto(self.cleaned_data['etiqueta'])
+
     def clean_calle(self):
-        return self.cleaned_data['calle'].title()
+        return capitalizar_texto(self.cleaned_data['calle'])
 
     def clean_ciudad(self):
-        return self.cleaned_data['ciudad'].title()
+        return capitalizar_texto(self.cleaned_data['ciudad'])
+
+    def clean_referencia(self):
+        return capitalizar_texto(self.cleaned_data.get('referencia', ''))
+
     def clean_email(self):
         email = self.cleaned_data['email']
         if User.objects.filter(email=email).exists():
@@ -95,13 +116,15 @@ class RegistroUsuarioForm(forms.ModelForm):
     def save(self, commit=True):
         dni = self.cleaned_data['dni']
         nombre = self.cleaned_data['nombre']
+        apellido = self.cleaned_data['apellido']
 
         # Crear usuario
         user = User.objects.create_user(
             username=dni,
             email=self.cleaned_data['email'],
             password=self.cleaned_data['password1'],
-            first_name=nombre
+            first_name=nombre,
+            last_name=apellido
         )
 
         # Crear cliente
@@ -114,11 +137,13 @@ class RegistroUsuarioForm(forms.ModelForm):
         # 🔹 Crear dirección asociada
         Direccion.objects.create(
             cliente=cliente,
+            etiqueta=self.cleaned_data['etiqueta'],
             calle=self.cleaned_data['calle'],
             numero=self.cleaned_data['numero'],
             ciudad=self.cleaned_data['ciudad'],
             provincia=self.cleaned_data['provincia'],
-            codigo_postal=self.cleaned_data['codigo_postal']
+            codigo_postal=self.cleaned_data['codigo_postal'],
+            referencia=self.cleaned_data.get('referencia', '')
         )
 
         return cliente
