@@ -30,6 +30,7 @@ import json
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.db import transaction
+from django.utils.html import escape
 print("===== PEDIDOS VIEWS CARGADO =====")
 print("TOKEN MP:", settings.MERCADO_PAGO_ACCESS_TOKEN)
 # Decorador para verificar que es administrador
@@ -657,7 +658,7 @@ def pago_exitoso(request):
         tipo_correo=request.session.get('tipo_correo'),
         sucursal_correo=request.session.get('sucursal_correo'),
         tipo_venta='online',
-        estado='pendiente',
+        estado='aceptado',
     )
 
     # CREAR ITEMS Y DESCONTAR STOCK
@@ -673,6 +674,253 @@ def pago_exitoso(request):
 
         item.variante.stock -= item.cantidad
         item.variante.save()
+
+    items_pedido = pedido.items.select_related(
+        'variante__producto',
+        'variante__talle'
+    ).prefetch_related(
+        'variante__colores'
+    )
+
+    productos_texto = []
+    productos_html = []
+
+    for item in items_pedido:
+        colores = ', '.join(
+            color.nombre
+            for color in item.variante.colores.all()
+        )
+        talle = item.variante.talle.nombre if item.variante.talle else 'Sin talle'
+        detalle_color = f' - Color: {colores}' if colores else ''
+
+        productos_texto.append(
+            f'- {item.variante.producto.nombre} '
+            f'(Talle: {talle}{detalle_color}) '
+            f'x{item.cantidad} - ${item.precio_total}'
+        )
+        productos_html.append(
+            '<tr>'
+            f'<td style="padding:14px 0;border-bottom:1px solid #efe7dc;">'
+            f'<strong style="color:#1f1712;">{escape(item.variante.producto.nombre)}</strong>'
+            f'<div style="font-size:13px;color:#786b60;margin-top:4px;">'
+            f'Talle {escape(talle)}{escape(detalle_color)}'
+            f'</div>'
+            f'</td>'
+            f'<td align="center" style="padding:14px 12px;border-bottom:1px solid #efe7dc;color:#1f1712;">'
+            f'{item.cantidad}'
+            f'</td>'
+            f'<td align="right" style="padding:14px 0;border-bottom:1px solid #efe7dc;color:#1f1712;font-weight:700;">'
+            f'${item.precio_total}'
+            f'</td>'
+            '</tr>'
+        )
+
+    nombre_cliente = pedido.cliente.user.first_name or pedido.cliente.user.username
+    cliente_nombre_completo = (
+        f'{pedido.cliente.user.first_name} {pedido.cliente.user.last_name}'
+    ).strip() or pedido.cliente.user.username
+    entrega_label = pedido.get_metodo_entrega_display()
+    direccion_envio = 'Retiro en local'
+
+    if pedido.metodo_entrega != 'local':
+        direccion_envio = pedido.direccion_info or pedido.calle_numero or 'Direccion no informada'
+        if pedido.localidad:
+            direccion_envio += f', {pedido.localidad}'
+        if pedido.codigo_postal:
+            direccion_envio += f' ({pedido.codigo_postal})'
+
+    if pedido.metodo_entrega == 'correo':
+        correo_info = ', '.join(
+            dato for dato in [
+                pedido.correo,
+                pedido.tipo_correo,
+                pedido.sucursal_correo
+            ]
+            if dato
+        )
+        if correo_info:
+            direccion_envio += f' - {correo_info}'
+
+    productos_html_markup = ''.join(productos_html)
+    productos_texto_markup = chr(10).join(productos_texto)
+    admin_email = getattr(settings, 'EMAIL_HOST_USER', None) or getattr(settings, 'DEFAULT_FROM_EMAIL', None)
+
+    html_cliente = f"""
+<!doctype html>
+<html>
+  <body style="margin:0;padding:0;background:#f6f1eb;font-family:Arial,Helvetica,sans-serif;color:#1f1712;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f6f1eb;padding:32px 12px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:640px;background:#fff;border-radius:18px;overflow:hidden;border:1px solid #eadfce;">
+            <tr>
+              <td style="background:#1f1712;padding:28px 32px;text-align:center;">
+                <div style="font-family:Georgia,serif;font-size:30px;letter-spacing:.04em;color:#d2ad3f;">IndiraGold</div>
+                <div style="font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:#eee3cf;margin-top:6px;">Pago aprobado</div>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:34px 34px 12px;">
+                <p style="margin:0 0 8px;font-size:15px;color:#786b60;">Hola {escape(nombre_cliente)},</p>
+                <h1 style="margin:0;font-family:Georgia,serif;font-size:30px;line-height:1.12;color:#6e0e2e;">Recibimos tu pago</h1>
+                <p style="margin:14px 0 0;font-size:15px;line-height:1.6;color:#4e433b;">
+                  Tu pedido <strong>#{pedido.id}</strong> fue registrado correctamente y el pago fue aceptado.
+                </p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:8px 34px 18px;">
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#faf7f2;border-radius:14px;">
+                  <tr>
+                    <td style="padding:16px 18px;font-size:14px;color:#786b60;">Entrega</td>
+                    <td align="right" style="padding:16px 18px;font-size:14px;font-weight:700;color:#1f1712;">{escape(entrega_label)}</td>
+                  </tr>
+                  <tr>
+                    <td colspan="2" style="padding:0 18px 16px;font-size:13px;color:#786b60;text-align:right;">{escape(direccion_envio)}</td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:0 34px 8px;">
+                <h2 style="margin:0 0 12px;font-family:Georgia,serif;font-size:22px;color:#1f1712;">Productos comprados</h2>
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;">
+                  <tr>
+                    <th align="left" style="padding:0 0 10px;border-bottom:1px solid #d8cbbb;font-size:12px;text-transform:uppercase;letter-spacing:.12em;color:#9b8978;">Producto</th>
+                    <th align="center" style="padding:0 12px 10px;border-bottom:1px solid #d8cbbb;font-size:12px;text-transform:uppercase;letter-spacing:.12em;color:#9b8978;">Cant.</th>
+                    <th align="right" style="padding:0 0 10px;border-bottom:1px solid #d8cbbb;font-size:12px;text-transform:uppercase;letter-spacing:.12em;color:#9b8978;">Subtotal</th>
+                  </tr>
+                  {productos_html_markup}
+                </table>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:22px 34px 34px;">
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#fff8df;border-radius:14px;border:1px solid #ead082;">
+                  <tr>
+                    <td style="padding:18px 20px;font-size:15px;color:#786b60;">Total abonado</td>
+                    <td align="right" style="padding:18px 20px;font-size:22px;font-weight:800;color:#6e0e2e;">${pedido.total}</td>
+                  </tr>
+                </table>
+                <p style="margin:22px 0 0;font-size:14px;line-height:1.6;color:#786b60;">
+                  Te vamos a avisar por mail cada avance importante de tu compra.
+                </p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
+"""
+
+    html_admin = f"""
+<!doctype html>
+<html>
+  <body style="margin:0;padding:0;background:#f6f1eb;font-family:Arial,Helvetica,sans-serif;color:#1f1712;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f6f1eb;padding:32px 12px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:680px;background:#fff;border-radius:18px;overflow:hidden;border:1px solid #eadfce;">
+            <tr>
+              <td style="background:#6e0e2e;padding:26px 32px;text-align:center;">
+                <div style="font-family:Georgia,serif;font-size:28px;color:#f5d779;">Nueva compra pagada</div>
+                <div style="font-size:12px;color:#f9e9ee;margin-top:7px;">Pedido #{pedido.id}</div>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:30px 34px 14px;">
+                <h1 style="margin:0;font-family:Georgia,serif;font-size:28px;color:#1f1712;">{escape(cliente_nombre_completo)}</h1>
+                <p style="margin:12px 0 0;font-size:14px;line-height:1.7;color:#4e433b;">
+                  Email: <strong>{escape(pedido.cliente.user.email)}</strong><br>
+                  DNI: <strong>{escape(pedido.cliente.dni)}</strong><br>
+                  Telefono: <strong>{escape(pedido.cliente.telefono)}</strong>
+                </p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:8px 34px 18px;">
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#faf7f2;border-radius:14px;">
+                  <tr>
+                    <td style="padding:16px 18px;font-size:14px;color:#786b60;">Envio elegido</td>
+                    <td align="right" style="padding:16px 18px;font-size:14px;font-weight:700;color:#1f1712;">{escape(entrega_label)}</td>
+                  </tr>
+                  <tr>
+                    <td colspan="2" style="padding:0 18px 16px;font-size:13px;color:#786b60;text-align:right;">{escape(direccion_envio)}</td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:0 34px 8px;">
+                <h2 style="margin:0 0 12px;font-family:Georgia,serif;font-size:22px;color:#1f1712;">Productos</h2>
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;">
+                  <tr>
+                    <th align="left" style="padding:0 0 10px;border-bottom:1px solid #d8cbbb;font-size:12px;text-transform:uppercase;letter-spacing:.12em;color:#9b8978;">Producto</th>
+                    <th align="center" style="padding:0 12px 10px;border-bottom:1px solid #d8cbbb;font-size:12px;text-transform:uppercase;letter-spacing:.12em;color:#9b8978;">Cant.</th>
+                    <th align="right" style="padding:0 0 10px;border-bottom:1px solid #d8cbbb;font-size:12px;text-transform:uppercase;letter-spacing:.12em;color:#9b8978;">Subtotal</th>
+                  </tr>
+                  {productos_html_markup}
+                </table>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:22px 34px 34px;">
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#fff8df;border-radius:14px;border:1px solid #ead082;">
+                  <tr>
+                    <td style="padding:18px 20px;font-size:15px;color:#786b60;">Total cobrado</td>
+                    <td align="right" style="padding:18px 20px;font-size:22px;font-weight:800;color:#6e0e2e;">${pedido.total}</td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
+"""
+
+    if pedido.cliente.user.email:
+        send_mail(
+            subject=f'Pago aprobado - Pedido #{pedido.id}',
+            message=(
+                f'Hola {nombre_cliente},\n\n'
+                f'Tu pago fue aceptado y registramos el pedido #{pedido.id}.\n\n'
+                f'Entrega: {entrega_label}\n'
+                f'{direccion_envio}\n\n'
+                f'Productos:\n{productos_texto_markup}\n\n'
+                f'Total abonado: ${pedido.total}\n\n'
+                f'Gracias por comprar en IndiraGold.'
+            ),
+            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', None),
+            recipient_list=[pedido.cliente.user.email],
+            fail_silently=True,
+            html_message=html_cliente
+        )
+
+    if admin_email:
+        send_mail(
+            subject=f'Nueva compra pagada - Pedido #{pedido.id}',
+            message=(
+                f'Nueva compra pagada.\n\n'
+                f'Pedido: #{pedido.id}\n'
+                f'Cliente: {cliente_nombre_completo}\n'
+                f'Email: {pedido.cliente.user.email}\n'
+                f'DNI: {pedido.cliente.dni}\n'
+                f'Telefono: {pedido.cliente.telefono}\n\n'
+                f'Envio: {entrega_label}\n'
+                f'{direccion_envio}\n\n'
+                f'Productos:\n{productos_texto_markup}\n\n'
+                f'Total cobrado: ${pedido.total}'
+            ),
+            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', None),
+            recipient_list=[admin_email],
+            fail_silently=True,
+            html_message=html_admin
+        )
 
     # VACIAR CARRITO
     carrito.items.all().delete()
@@ -1089,11 +1337,19 @@ def estadisticas_ventas(request):
 def actualizar_estado_pedido(request, pedido_id):
 
     pedido = get_object_or_404(
-        Pedido,
+        Pedido.objects.select_related(
+            'cliente',
+            'cliente__user'
+        ).prefetch_related(
+            'items__variante__producto',
+            'items__variante__talle',
+            'items__variante__colores',
+        ),
         id=pedido_id
     )
 
     nuevo_estado = request.POST.get('estado')
+    estado_anterior = pedido.estado
 
     estados_validos = [
         estado[0]
@@ -1105,33 +1361,150 @@ def actualizar_estado_pedido(request, pedido_id):
         pedido.estado = nuevo_estado
         pedido.save()
 
-        # MAIL
+        if estado_anterior != nuevo_estado and pedido.cliente.user.email:
+            estados_dict = dict(Pedido.ESTADOS)
+            productos = []
+            productos_html = []
 
-        send_mail(
-            subject=f'Actualización de tu pedido #{pedido.id}',
+            for item in pedido.items.all():
+                colores = ', '.join(
+                    color.nombre
+                    for color in item.variante.colores.all()
+                )
+                talle = item.variante.talle.nombre if item.variante.talle else 'Sin talle'
+                detalle_color = f' - Color: {colores}' if colores else ''
 
-            message=(
-                f'Hola {pedido.cliente.user.first_name},\n\n'
-                f'El estado de tu pedido ahora es:\n'
-                f'{pedido.get_estado_display()}.\n\n'
-                f'IndiraGold'
-            ),
+                productos.append(
+                    f'- {item.variante.producto.nombre} '
+                    f'(Talle: {talle}{detalle_color}) '
+                    f'x{item.cantidad} - ${item.precio_total}'
+                )
+                productos_html.append(
+                    '<tr>'
+                    f'<td style="padding:14px 0;border-bottom:1px solid #efe7dc;">'
+                    f'<strong style="color:#1f1712;">{escape(item.variante.producto.nombre)}</strong>'
+                    f'<div style="font-size:13px;color:#786b60;margin-top:4px;">'
+                    f'Talle {escape(talle)}{escape(detalle_color)}'
+                    f'</div>'
+                    f'</td>'
+                    f'<td align="center" style="padding:14px 12px;border-bottom:1px solid #efe7dc;color:#1f1712;">'
+                    f'{item.cantidad}'
+                    f'</td>'
+                    f'<td align="right" style="padding:14px 0;border-bottom:1px solid #efe7dc;color:#1f1712;font-weight:700;">'
+                    f'${item.precio_total}'
+                    f'</td>'
+                    '</tr>'
+                )
 
-            from_email=settings.DEFAULT_FROM_EMAIL,
+            estado_anterior_label = estados_dict.get(estado_anterior, estado_anterior)
+            estado_nuevo_label = pedido.get_estado_display()
+            nombre_cliente = pedido.cliente.user.first_name or pedido.cliente.user.username
+            productos_html_markup = ''.join(productos_html)
+            html_message = f"""
+<!doctype html>
+<html>
+  <body style="margin:0;padding:0;background:#f6f1eb;font-family:Arial,Helvetica,sans-serif;color:#1f1712;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f6f1eb;padding:32px 12px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:640px;background:#fff;border-radius:18px;overflow:hidden;border:1px solid #eadfce;">
+            <tr>
+              <td style="background:#1f1712;padding:28px 32px;text-align:center;">
+                <div style="font-family:Georgia,serif;font-size:30px;letter-spacing:.04em;color:#d2ad3f;">IndiraGold</div>
+                <div style="font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:#eee3cf;margin-top:6px;">Actualizacion de pedido</div>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:34px 34px 10px;">
+                <p style="margin:0 0 8px;font-size:15px;color:#786b60;">Hola {escape(nombre_cliente)},</p>
+                <h1 style="margin:0;font-family:Georgia,serif;font-size:30px;line-height:1.12;color:#6e0e2e;">Tu compra cambio de estado</h1>
+                <p style="margin:14px 0 0;font-size:15px;line-height:1.6;color:#4e433b;">
+                  Te avisamos que actualizamos el estado del pedido <strong>#{pedido.id}</strong>.
+                </p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:18px 34px 8px;">
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+                  <tr>
+                    <td style="width:50%;padding:14px;background:#faf7f2;border:1px solid #efe7dc;border-radius:14px 0 0 14px;">
+                      <div style="font-size:12px;text-transform:uppercase;letter-spacing:.12em;color:#9b8978;">Antes</div>
+                      <div style="font-size:15px;font-weight:700;color:#6e0e2e;margin-top:6px;">{escape(estado_anterior_label)}</div>
+                    </td>
+                    <td style="width:50%;padding:14px;background:#fff8df;border:1px solid #ead082;border-left:0;border-radius:0 14px 14px 0;">
+                      <div style="font-size:12px;text-transform:uppercase;letter-spacing:.12em;color:#9b7a18;">Ahora</div>
+                      <div style="font-size:15px;font-weight:700;color:#6e0e2e;margin-top:6px;">{escape(estado_nuevo_label)}</div>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:24px 34px 8px;">
+                <h2 style="margin:0 0 12px;font-family:Georgia,serif;font-size:22px;color:#1f1712;">Productos comprados</h2>
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;">
+                  <tr>
+                    <th align="left" style="padding:0 0 10px;border-bottom:1px solid #d8cbbb;font-size:12px;text-transform:uppercase;letter-spacing:.12em;color:#9b8978;">Producto</th>
+                    <th align="center" style="padding:0 12px 10px;border-bottom:1px solid #d8cbbb;font-size:12px;text-transform:uppercase;letter-spacing:.12em;color:#9b8978;">Cant.</th>
+                    <th align="right" style="padding:0 0 10px;border-bottom:1px solid #d8cbbb;font-size:12px;text-transform:uppercase;letter-spacing:.12em;color:#9b8978;">Subtotal</th>
+                  </tr>
+                  {productos_html_markup}
+                </table>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:22px 34px 34px;">
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#faf7f2;border-radius:14px;">
+                  <tr>
+                    <td style="padding:18px 20px;font-size:15px;color:#786b60;">Total del pedido</td>
+                    <td align="right" style="padding:18px 20px;font-size:22px;font-weight:800;color:#6e0e2e;">${pedido.total}</td>
+                  </tr>
+                </table>
+                <p style="margin:22px 0 0;font-size:14px;line-height:1.6;color:#786b60;">
+                  Gracias por comprar en IndiraGold. Te vamos a seguir avisando cada avance importante de tu pedido.
+                </p>
+              </td>
+            </tr>
+          </table>
+          <div style="max-width:640px;margin-top:16px;font-size:12px;color:#9b8978;text-align:center;">
+            IndiraGold
+          </div>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
+"""
 
-            recipient_list=[
-                pedido.cliente.user.email
-            ],
-
-            fail_silently=True
-        )
+            send_mail(
+                subject=f'Actualizacion de tu pedido #{pedido.id}',
+                message=(
+                    f'Hola {nombre_cliente},\n\n'
+                    f'Te avisamos que el estado de tu compra cambio.\n\n'
+                    f'Pedido: #{pedido.id}\n'
+                    f'Estado anterior: {estado_anterior_label}\n'
+                    f'Estado nuevo: {estado_nuevo_label}\n\n'
+                    f'Productos comprados:\n'
+                    f'{chr(10).join(productos)}\n\n'
+                    f'Total del pedido: ${pedido.total}\n\n'
+                    f'Gracias por comprar en IndiraGold.'
+                ),
+                from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', None),
+                recipient_list=[pedido.cliente.user.email],
+                fail_silently=True,
+                html_message=html_message
+            )
 
         messages.success(
             request,
             f'Estado del pedido #{pedido.id} actualizado.'
         )
 
+        return redirect('pedidos:gestion_pedidos')
+
     return redirect('pedidos:gestion_pedidos')
+
+
 @admin_required
 def ventas_presenciales(request):
 

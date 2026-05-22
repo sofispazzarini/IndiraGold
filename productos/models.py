@@ -68,6 +68,12 @@ class Producto(models.Model):
 
     def __str__(self):
         return self.nombre
+
+    @property
+    def imagen(self):
+        imagen = self.imagenes.filter(es_portada=True).first() or self.imagenes.first()
+        return imagen.imagen if imagen else None
+
     def obtener_oferta_activa(self):
 
         oferta_global = Oferta.objects.filter(
