@@ -23,6 +23,13 @@ from .forms import (
 from django.db.models import Q
 from decimal import Decimal
 from django.utils import timezone
+
+
+def recalcular_stock_producto(producto):
+    producto.stock = producto.stock_total
+    producto.save(update_fields=['stock'])
+    return producto.stock
+
 # --- DECORADOR AUXILIAR ---
 def admin_required(view_func):
     return login_required(user_passes_test(lambda u: u.is_superuser)(view_func))
@@ -104,20 +111,25 @@ def agregar_producto(request, subcat_id):
             producto.subcategoria = subcategoria
             producto.categoria = categoria_padre
             producto.activo = True
+            producto.stock = 0
             producto.save()
             for img in imagenes_galeria:
                 ImagenProducto.objects.create(producto=producto, imagen=img)
 
             if variantes_json:
                 variantes_list = json.loads(variantes_json)
+                stock_total = 0
                 for v in variantes_list:
-                    talle_obj, _ = Talle.objects.get_or_create(nombre=v.get('talle').strip())
+                    talle_nombre = (v.get('talle') or '').strip() or 'Sin talle'
+                    talle_obj, _ = Talle.objects.get_or_create(nombre=talle_nombre)
+                    stock_variante = max(int(v.get('stock') or 0), 0)
+                    stock_total += stock_variante
                     
                     # 2. Crear la Variante
                     nueva_variante = Variante.objects.create(
                         producto=producto,
                         talle=talle_obj,
-                        stock=int(v.get('stock', 0)),
+                        stock=stock_variante,
                         precio=float(v.get('precio', 0)),
                         qr_code=str(uuid.uuid4())
                     )
@@ -141,6 +153,8 @@ def agregar_producto(request, subcat_id):
                             tiro=m.get('tiro') or 0
                         )
                         nueva_variante.medidas.add(medida_obj)
+                producto.stock = stock_total
+                producto.save(update_fields=['stock'])
             
             messages.success(request, 'Producto guardado correctamente.')
             return redirect('productos:productos_por_subcategoria', subcat_id=subcat_id)
@@ -173,8 +187,20 @@ def editar_producto(request, prod_id):
             if esquema_nuevo:
                 producto_editado.imagen_tecnica = esquema_nuevo
             
+            producto_editado.stock = producto.stock_total
             producto_editado.save()
             form.save_m2m()
+
+            for variante in producto_editado.variantes.all():
+                stock_key = f'variante_stock_{variante.id}'
+                if stock_key in request.POST:
+                    try:
+                        variante.stock = max(int(request.POST.get(stock_key) or 0), 0)
+                        variante.save(update_fields=['stock'])
+                    except ValueError:
+                        messages.error(request, f"Stock inválido para {variante.talle.nombre}.")
+
+            recalcular_stock_producto(producto_editado)
             # 3. Guardado de fotos comerciales (Máximo 5 controlado en HTML)
             for foto in nuevas_fotos:
                 ImagenProducto.objects.create(producto=producto_editado, imagen=foto)
@@ -250,8 +276,10 @@ def eliminar_producto(request, prod_id):
 @require_POST
 def eliminar_variante(request, variante_id):
     variante = get_object_or_404(Variante, id=variante_id)
-    producto_id = variante.producto.id
+    producto = variante.producto
+    producto_id = producto.id
     variante.delete()
+    recalcular_stock_producto(producto)
     messages.success(request, 'Variante eliminada correctamente.')
     return redirect('productos:editar_producto', prod_id=producto_id)
 
@@ -371,6 +399,34 @@ def agregar_proveedor(request):
 
     return render(request, "productos/agregar_proveedor.html", {"form": form, "mensaje": mensaje, "proveedores": proveedores, "edit_form": edit_form, "edit_id": edit_id})
 
+
+@admin_required
+@require_POST
+def crear_proveedor_ajax(request):
+    form = ProveedorForm(request.POST)
+    if not form.is_valid():
+        return JsonResponse({
+            'success': False,
+            'errors': {field: [str(error) for error in errors] for field, errors in form.errors.items()},
+        }, status=400)
+
+    telefono = form.cleaned_data["telefono"]
+    if Proveedor.objects.filter(telefono=telefono).exists():
+        return JsonResponse({
+            'success': False,
+            'errors': {'telefono': ['Ya existe un proveedor con ese teléfono.']},
+        }, status=400)
+
+    proveedor = form.save()
+    return JsonResponse({
+        'success': True,
+        'proveedor': {
+            'id': proveedor.id,
+            'nombre': proveedor.nombre,
+            'telefono': proveedor.telefono,
+        }
+    })
+
 @admin_required
 def editar_proveedor(request, proveedor_id):
     proveedor = get_object_or_404(Proveedor, id=proveedor_id)
@@ -439,8 +495,9 @@ def actualizar_variante_ajax(request):
         variante.stock = int(nuevo_stock)
         variante.precio = float(nuevo_precio)
         variante.save()
+        stock_total = recalcular_stock_producto(variante.producto)
 
-        return JsonResponse({'status': 'ok', 'mensaje': 'Variante actualizada.'})
+        return JsonResponse({'status': 'ok', 'mensaje': 'Variante actualizada.', 'stock_total': stock_total})
     
     except Exception as e:
         return JsonResponse({'status': 'error', 'mensaje': str(e)}, status=400)

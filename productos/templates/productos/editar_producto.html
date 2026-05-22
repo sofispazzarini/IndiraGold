@@ -72,7 +72,11 @@
                         <h6 class="fw-bold text-muted small mb-3 text-uppercase">Valores Globales</h6>
                         <div class="row g-3">
                             <div class="col-6"><label class="small fw-bold">Precio ($)</label>{{ form.precio }}</div>
-                            <div class="col-6"><label class="small fw-bold">Stock Global</label>{{ form.stock }}</div>
+                            <div class="col-6">
+                                <label class="small fw-bold">Stock Global</label>
+                                <input type="number" name="stock" id="stockGlobalEdit" class="form-control" value="{{ producto.stock_total }}" readonly>
+                                <small class="text-muted">Se calcula sumando los stocks de variantes.</small>
+                            </div>
                             <div class="col-12 pt-2">
                                 <div class="form-check form-switch">
                                     {{ form.activo }} 
@@ -109,6 +113,7 @@
                                 <thead>
                                     <tr class="text-muted border-bottom small">
                                         <th>Talle</th>
+                                        <th style="width: 110px;">Stock</th>
                                         <th>Detalle (Color / Medidas)</th>
                                         <th class="text-end">Acción</th>
                                     </tr>
@@ -117,6 +122,9 @@
                                     {% for variante in producto.variantes.all %}
                                     <tr>
                                         <td class="fw-bold text-dark" style="font-size: 1rem;">{{ variante.talle.nombre }}</td>
+                                        <td>
+                                            <input type="number" min="0" step="1" name="variante_stock_{{ variante.id }}" value="{{ variante.stock }}" class="form-control form-control-sm variant-stock-input">
+                                        </td>
                                         <td>
                                             <div class="small mb-1">
                                                 <span class="text-dark fw-bold">Color:</span> 
@@ -192,4 +200,21 @@
     .border-dashed { border: 2px dashed #e9ecef !important; }
     .badge { font-size: 0.7rem; }
 </style>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const globalStock = document.getElementById('stockGlobalEdit');
+    const inputs = document.querySelectorAll('.variant-stock-input');
+
+    function recalcularStockGlobal() {
+        let total = 0;
+        inputs.forEach(input => {
+            total += parseInt(input.value || '0', 10) || 0;
+        });
+        if (globalStock) globalStock.value = total;
+    }
+
+    inputs.forEach(input => input.addEventListener('input', recalcularStockGlobal));
+    recalcularStockGlobal();
+});
+</script>
 {% endblock %}
