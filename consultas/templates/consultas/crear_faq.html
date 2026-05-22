@@ -1,288 +1,241 @@
-{% extends 'users/dashboard_admin.html' %}
+{% extends 'base.html' %}
 {% load static %}
 
+{% block title %}{% if faq %}Editar FAQ{% else %}Nueva FAQ{% endif %}{% endblock %}
+
 {% block extra_head %}
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-    <link rel="stylesheet" href="{% static 'css/users.css' %}">
-    <style>
-    .main-wrapper {
-        min-height: calc(100vh - 60px);
-        display: flex;
-        align-items: center;
-        justify-content: center;
+<style>
+    /* MAIN OVERRIDE - CENTRADO */
+    .main { max-width: 700px; padding: 3rem 3.5rem 5rem; margin: 0 auto; }
+
+    /* BACK LINK */
+    .back-link {
+        display: inline-flex; align-items: center; gap: 0.5rem;
+        font-size: 0.7rem; font-weight: 600; letter-spacing: 0.14em;
+        text-transform: uppercase; color: #9c8c7c; text-decoration: none;
+        margin-bottom: 1.75rem; transition: all 0.2s;
     }
-    .modern-card {
-        background: #fff;
-        border-radius: 18px;
-        box-shadow: 0 4px 32px rgba(60,72,100,0.10);
-        padding: 2.5rem 2rem 2rem 2rem;
-        max-width: 600px;
-        margin: 0 auto;
-        margin-left: 40%;
+    .back-link:hover { color: #b8922a; transform: translateX(-3px); }
+
+    /* PAGE HEADER */
+    .page-header {
+        margin-bottom: 2rem; padding-bottom: 1.5rem;
+        border-bottom: 1px solid rgba(184,146,42,0.12);
+        position: relative;
     }
-    .modern-title {
+    .page-header::after {
+        content: ''; position: absolute; bottom: -1px; left: 0;
+        width: 64px; height: 2px; background: #b8922a;
+    }
+    .header-eyebrow {
+        font-size: 0.6rem; font-weight: 600; letter-spacing: 0.2em;
+        text-transform: uppercase; color: #b8922a; margin-bottom: 0.5rem;
+    }
+    .page-title {
         font-family: 'Cormorant Garamond', serif;
-        font-size: 2.1rem;
-        font-weight: 700;
-        color: #2d3848;
-        text-align: center;
-        margin-bottom: 0.2rem;
-        letter-spacing: 1px;
+        font-size: 2.4rem; font-weight: 600;
+        color: #1a1612; letter-spacing: -0.015em; line-height: 1;
     }
-    .modern-sub {
-        text-align: center;
-        color: #a0aec0;
-        font-size: 0.98rem;
-        margin-bottom: 2.2rem;
-        letter-spacing: 2px;
-        text-transform: uppercase;
+    .page-subtitle {
+        font-size: 0.85rem; color: #9c8c7c; margin-top: 0.5rem;
     }
-    .modern-section {
-        margin-bottom: 2.2rem;
+
+    /* CARD */
+    .form-card {
+        background: #fff; border: 1px solid #e8dfd4;
+        border-radius: 14px; overflow: hidden;
     }
-    .modern-section-title {
-        font-size: 1.08rem;
-        font-weight: 700;
-        color: #b8922a;
-        margin-bottom: 1.1rem;
-        text-transform: uppercase;
-        letter-spacing: 1px;
+    .card-section {
+        padding: 1.5rem 1.6rem;
+        border-bottom: 1px solid rgba(184,146,42,0.12);
     }
-    .modern-row {
-        display: flex;
-        gap: 18px;
-        margin-bottom: 1.1rem;
-        flex-wrap: wrap;
+    .card-section:last-child { border-bottom: none; }
+    .section-title {
+        font-size: 0.65rem; font-weight: 600; letter-spacing: 0.14em;
+        text-transform: uppercase; color: #b8922a; margin-bottom: 1.25rem;
+        display: flex; align-items: center; gap: 0.5rem;
     }
-    .modern-col {
-        flex: 1 1 220px;
-        min-width: 180px;
-        display: flex;
-        flex-direction: column;
+    .section-title i { font-size: 0.85rem; }
+
+    /* FORM */
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
+    .form-row.full { grid-template-columns: 1fr; }
+    .form-group { margin-bottom: 0; }
+    .form-label {
+        font-size: 0.65rem; font-weight: 600; letter-spacing: 0.1em;
+        text-transform: uppercase; color: #9c8c7c; margin-bottom: 0.5rem;
+        display: block;
     }
-    .modern-col-full {
-        flex: 1 1 100%;
-        display: flex;
-        flex-direction: column;
+    .form-input, .form-select, .form-textarea {
+        width: 100%; border: 1.5px solid #e8dfd4; border-radius: 8px;
+        padding: 0.75rem 1rem; font-size: 0.9rem;
+        background: #faf7f4; transition: all 0.2s;
+        font-family: inherit; color: #3d342a;
     }
-    .modern-label {
-        font-size: 0.97rem;
-        color: #4a5568;
-        margin-bottom: 0.3rem;
-        font-weight: 500;
-    }
-    .modern-input, .modern-select, .modern-textarea {
-        border: 1.2px solid #cbd5e1;
-        border-radius: 7px;
-        padding: 0.7rem 1rem;
-        font-size: 1rem;
-        background: #f9fafb;
-        transition: border-color 0.18s, box-shadow 0.18s;
-        width: 100%;
-    }
-    .modern-textarea {
-        min-height: 120px;
-        resize: vertical;
-    }
-    .modern-input:focus, .modern-select:focus, .modern-textarea:focus {
-        border-color: #b8922a;
-        background: #fff;
-        box-shadow: 0 0 0 2px #e8c96a33;
-        outline: none;
-    }
-    .modern-checkbox {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        padding: 0.7rem 1rem;
-        background: #f9fafb;
-        border-radius: 7px;
-        border: 1.2px solid #cbd5e1;
-        cursor: pointer;
-        transition: background 0.18s, border-color 0.18s;
-    }
-    .modern-checkbox:hover {
-        background: #fdf6e3;
-        border-color: #b8922a;
-    }
-    .modern-checkbox input[type="checkbox"] {
-        width: 18px;
-        height: 18px;
-        accent-color: #b8922a;
-    }
-    .modern-actions {
-        text-align: center;
-        margin-top: 2.2rem;
-        display: flex;
-        gap: 1rem;
-        justify-content: center;
-    }
-    .modern-btn {
-        background: linear-gradient(90deg, #fbe18b 0%, #b8922a 100%);
-        color: #6E0E2E;
-        border: none;
-        border-radius: 10px;
-        padding: 1rem 2.5rem;
-        font-size: 1.1rem;
-        font-weight: 700;
-        letter-spacing: 2px;
-        box-shadow: 0 2px 8px 0 rgba(184,146,42,0.10);
-        cursor: pointer;
-        transition: background 0.18s, box-shadow 0.18s, color 0.18s;
-        text-transform: uppercase;
-    }
-    .modern-btn:hover {
-        background: linear-gradient(90deg, #b8922a 0%, #fbe18b 100%);
-        color: #fff;
-        box-shadow: 0 4px 16px 0 rgba(184,146,42,0.18);
-    }
-    .modern-btn-secondary {
-        background: #f8f5ef;
-        color: #6E0E2E;
-        border: 1.5px solid #e8dfd4;
-        border-radius: 10px;
-        padding: 1rem 2rem;
-        font-size: 1rem;
-        font-weight: 600;
-        letter-spacing: 1px;
-        cursor: pointer;
-        transition: background 0.18s, color 0.18s;
-        text-decoration: none;
-    }
-    .modern-btn-secondary:hover {
-        background: #6E0E2E;
-        color: #fff;
-        border-color: #6E0E2E;
-    }
-    .back-btn {
-        font-size: 1.1rem;
-        border: none;
-        padding: 6px 22px 6px 14px;
-        background: #f8f5ef;
-        color: #b8922a;
-        border-radius: 8px;
-        box-shadow: 0 2px 8px #e8c96a22;
-        font-weight: 600;
-        text-decoration: none;
-        display: inline-flex;
-        align-items: center;
-        gap: 0.5rem;
-        transition: background 0.18s, color 0.18s;
-    }
-    .back-btn:hover {
-        background: #b8922a;
-        color: #fff;
+    .form-textarea { min-height: 120px; resize: vertical; }
+    .form-input:focus, .form-select:focus, .form-textarea:focus {
+        border-color: #b8922a; background: #fff;
+        box-shadow: 0 0 0 3px rgba(184,146,42,0.1); outline: none;
     }
     .form-hint {
-        font-size: 0.85rem;
-        color: #a0aec0;
-        margin-top: 0.3rem;
+        font-size: 0.72rem; color: #9c8c7c; margin-top: 0.35rem;
     }
-    @media (max-width: 700px) {
-        .modern-card {
-            padding: 1.2rem 0.5rem 1.5rem 0.5rem;
-            max-width: 98vw;
-            margin-left: auto;
-        }
-        .modern-row {
-            flex-direction: column;
-            gap: 0;
-        }
-        .modern-col {
-            min-width: 0;
-        }
-        .modern-actions {
-            flex-direction: column;
-        }
+
+    /* CHECKBOX */
+    .checkbox-wrapper {
+        display: flex; align-items: center; gap: 0.75rem;
+        padding: 0.85rem 1rem; background: #faf7f4;
+        border-radius: 8px; border: 1.5px solid #e8dfd4;
+        cursor: pointer; transition: all 0.2s;
     }
-    </style>
+    .checkbox-wrapper:hover { border-color: #b8922a; background: #faf7f0; }
+    .checkbox-wrapper input[type="checkbox"] {
+        width: 18px; height: 18px; accent-color: #b8922a; cursor: pointer;
+    }
+    .checkbox-label { font-size: 0.88rem; color: #3d342a; font-weight: 500; }
+
+    /* ACTIONS */
+    .form-actions {
+        display: flex; gap: 1rem; justify-content: flex-end;
+        padding: 1.5rem 1.6rem; background: #faf7f4;
+    }
+    .btn-cancel {
+        display: inline-flex; align-items: center; gap: 0.5rem;
+        padding: 0.85rem 1.5rem; border-radius: 50px;
+        font-size: 0.76rem; font-weight: 600;
+        background: transparent; color: #3d342a;
+        border: 1.5px solid #e8dfd4; text-decoration: none;
+        transition: all 0.2s;
+    }
+    .btn-cancel:hover { border-color: #b8922a; color: #b8922a; }
+    .btn-submit {
+        display: inline-flex; align-items: center; gap: 0.5rem;
+        padding: 0.85rem 1.5rem; border-radius: 50px;
+        background: #1a1612; color: #fff; border: none;
+        font-family: 'Montserrat', sans-serif; font-size: 0.76rem; font-weight: 700;
+        letter-spacing: 0.1em; text-transform: uppercase;
+        cursor: pointer; transition: all 0.2s;
+    }
+    .btn-submit:hover { background: #b8922a; }
+
+    /* ALERT */
+    .alert-custom {
+        padding: 1rem 1.25rem; border-radius: 10px; margin-bottom: 1.5rem;
+        font-size: 0.85rem; display: flex; align-items: center; gap: 0.75rem;
+    }
+    .alert-success { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
+    .alert-danger { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+
+    /* Animations */
+    @keyframes fadeUp { from { opacity:0; transform:translateY(14px); } to { opacity:1; transform:translateY(0); } }
+    .page-header { animation: fadeUp 0.38s ease both; }
+    .form-card { animation: fadeUp 0.38s 0.08s ease both; }
+
+    /* Responsive */
+    @media (max-width: 600px) {
+        .main { padding: 2rem 1.5rem; }
+        .form-row { grid-template-columns: 1fr; }
+        .form-actions { flex-direction: column; }
+        .btn-cancel, .btn-submit { width: 100%; justify-content: center; }
+    }
+</style>
+{% endblock %}
+
+{% block sidebar_menu %}
+{% include 'users/_sidebar_admin.html' %}
 {% endblock %}
 
 {% block content %}
-<a href="{% url 'consultas:gestion_faqs' %}" class="back-btn mb-4">
-    <i class="bi bi-arrow-left"></i> Volver
+<a href="{% url 'consultas:gestion_faqs' %}" class="back-link">
+    <i class="bi bi-arrow-left"></i> Volver a FAQs
 </a>
-<div class="modern-card">
-    <div class="modern-title">{% if faq %}Editar Pregunta{% else %}Nueva Pregunta{% endif %}</div>
-    <div class="modern-sub">{% if faq %}Modificar FAQ existente{% else %}Agregar nueva FAQ{% endif %}</div>
 
-    {% if messages %}
-        {% for message in messages %}
-        <div class="alert alert-success border-0 shadow-sm rounded-4 p-3 d-flex align-items-center mb-4">
-            <i class="bi bi-check-circle-fill me-3 fs-4 text-success"></i> {{ message }}
-        </div>
-        {% endfor %}
-    {% endif %}
+<div class="page-header">
+    <p class="header-eyebrow">Preguntas frecuentes</p>
+    <h1 class="page-title">{% if faq %}Editar Pregunta{% else %}Nueva Pregunta{% endif %}</h1>
+    <p class="page-subtitle">{% if faq %}Modificar FAQ existente{% else %}Agregar nueva FAQ{% endif %}</p>
+</div>
 
-    <form method="post" autocomplete="off">
-        {% csrf_token %}
+{% if messages %}
+    {% for message in messages %}
+    <div class="alert-custom alert-success">
+        <i class="bi bi-check-circle"></i> {{ message }}
+    </div>
+    {% endfor %}
+{% endif %}
 
-        <div class="modern-section">
-            <div class="modern-section-title">1. Clasificación</div>
-            <div class="modern-row">
-                <div class="modern-col">
-                    <label class="modern-label"><i class="bi bi-folder me-1"></i> Tema</label>
-                    <select name="tema" class="modern-select" id="id_tema">
+<form method="post" autocomplete="off">
+    {% csrf_token %}
+    <div class="form-card">
+        <div class="card-section">
+            <div class="section-title">
+                <i class="bi bi-folder"></i> Clasificacion
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">Tema</label>
+                    <select name="tema" class="form-select">
                         {% for choice in form.tema.field.queryset %}
                         <option value="{{ choice.pk }}" {% if form.tema.value|stringformat:"s" == choice.pk|stringformat:"s" %}selected{% endif %}>{{ choice }}</option>
                         {% endfor %}
                     </select>
                 </div>
-                <div class="modern-col">
-                    <label class="modern-label"><i class="bi bi-sort-numeric-down me-1"></i> Orden</label>
-                    <input type="number" name="orden" value="{{ form.orden.value|default:'0' }}" class="modern-input" min="0">
-                    <div class="form-hint">Menor = aparece primero</div>
+                <div class="form-group">
+                    <label class="form-label">Orden</label>
+                    <input type="number" name="orden" value="{{ form.orden.value|default:'0' }}" class="form-input" min="0">
+                    <p class="form-hint">Menor = aparece primero</p>
                 </div>
             </div>
         </div>
 
-        <div class="modern-section">
-            <div class="modern-section-title">2. Contenido</div>
-            <div class="modern-row">
-                <div class="modern-col-full">
-                    <label class="modern-label"><i class="bi bi-question-circle me-1"></i> Pregunta</label>
-                    <input type="text" name="pregunta" value="{{ form.pregunta.value|default:'' }}" class="modern-input" placeholder="Ej: ¿Cuáles son los métodos de pago?">
+        <div class="card-section">
+            <div class="section-title">
+                <i class="bi bi-chat-left-text"></i> Contenido
+            </div>
+            <div class="form-row full">
+                <div class="form-group">
+                    <label class="form-label">Pregunta</label>
+                    <input type="text" name="pregunta" value="{{ form.pregunta.value|default:'' }}" class="form-input" placeholder="Ej: ¿Cuales son los metodos de pago?">
                 </div>
             </div>
-            <div class="modern-row">
-                <div class="modern-col-full">
-                    <label class="modern-label"><i class="bi bi-chat-left-text me-1"></i> Respuesta</label>
-                    <textarea name="respuesta" class="modern-textarea" placeholder="Escribe la respuesta detallada...">{{ form.respuesta.value|default:'' }}</textarea>
+            <div class="form-row full">
+                <div class="form-group">
+                    <label class="form-label">Respuesta</label>
+                    <textarea name="respuesta" class="form-textarea" placeholder="Escribe la respuesta detallada...">{{ form.respuesta.value|default:'' }}</textarea>
                 </div>
             </div>
         </div>
 
-        <div class="modern-section">
-            <div class="modern-section-title">3. Estado</div>
-            <div class="modern-row">
-                <div class="modern-col">
-                    <label class="modern-checkbox">
-                        <input type="checkbox" name="activa" {% if form.activa.value %}checked{% endif %}>
-                        <span><i class="bi bi-toggle-on me-1"></i> Pregunta activa</span>
-                    </label>
-                    <div class="form-hint">Las preguntas inactivas no se muestran a los usuarios</div>
-                </div>
+        <div class="card-section">
+            <div class="section-title">
+                <i class="bi bi-toggle-on"></i> Estado
             </div>
+            <label class="checkbox-wrapper">
+                <input type="checkbox" name="activa" {% if form.activa.value %}checked{% endif %}>
+                <span class="checkbox-label">Pregunta activa</span>
+            </label>
+            <p class="form-hint" style="margin-top: 0.5rem;">Las preguntas inactivas no se muestran a los usuarios</p>
         </div>
 
         {% if form.errors %}
-        <div class="alert alert-danger mt-4 border-start border-danger border-5 rounded-4 bg-white shadow-sm">
-            <ul class="mb-0 small">
-                {% for field, errors in form.errors.items %}
-                    {% for error in errors %}<li><strong>{{ field|capfirst }}:</strong> {{ error }}</li>{% endfor %}
-                {% endfor %}
-            </ul>
+        <div class="card-section">
+            <div class="alert-custom alert-danger">
+                <i class="bi bi-exclamation-circle"></i>
+                <div>
+                    {% for field, errors in form.errors.items %}
+                        {% for error in errors %}<strong>{{ field|capfirst }}:</strong> {{ error }}<br>{% endfor %}
+                    {% endfor %}
+                </div>
+            </div>
         </div>
         {% endif %}
 
-        <div class="modern-actions">
-            <a href="{% url 'consultas:gestion_faqs' %}" class="modern-btn-secondary">
-                Cancelar
-            </a>
-            <button type="submit" class="modern-btn">
-                <i class="bi bi-check-lg me-1"></i> {% if faq %}GUARDAR{% else %}CREAR{% endif %}
+        <div class="form-actions">
+            <a href="{% url 'consultas:gestion_faqs' %}" class="btn-cancel">Cancelar</a>
+            <button type="submit" class="btn-submit">
+                <i class="bi bi-check-circle"></i> {% if faq %}Guardar{% else %}Crear{% endif %}
             </button>
         </div>
-    </form>
-</div>
+    </div>
+</form>
 {% endblock %}

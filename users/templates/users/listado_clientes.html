@@ -26,9 +26,8 @@
     flex-direction: column;
     padding: 3.5rem 4rem 5rem;
     width: 100%;
-    max-width: 900px;
-    margin-left: 20%;
-    margin-right: auto;
+    max-width: 1100px;
+    margin: 0 auto;
   }
 
   .page-header {
@@ -46,7 +45,7 @@
     position: absolute;
     bottom: -1px; left: 0;
     width: 64px; height: 2px;
-    background: var(--burgundy);
+    background: var(--gold);
   }
 
   .header-eyebrow {
@@ -54,7 +53,7 @@
     font-weight: 600;
     letter-spacing: 0.2em;
     text-transform: uppercase;
-    color: var(--burgundy);
+    color: var(--gold);
     margin-bottom: 0.5rem;
   }
 
@@ -76,7 +75,7 @@
     font-family: 'Cormorant Garamond', serif;
     font-size: 3.2rem;
     font-weight: 300;
-    color: var(--burgundy);
+    color: var(--gold);
     line-height: 1;
   }
 
@@ -104,7 +103,7 @@
     flex: 1;
     border: none;
     border-bottom: 1.5px solid var(--border);
-    padding: 0.75rem 0;
+    padding: 0.75rem 1rem;
     font-family: 'Montserrat', sans-serif;
     font-size: 0.9rem;
     background: transparent;
@@ -158,19 +157,19 @@
     left: -1.2rem;
     top: 50%; transform: translateY(-50%);
     width: 3px; height: 0;
-    background: var(--burgundy);
+    background: var(--gold);
     border-radius: 2px;
     transition: height 0.22s ease;
   }
 
-  .client-item:hover { border-bottom-color: rgba(110, 14, 46, 0.3); }
+  .client-item:hover { border-bottom-color: rgba(184,146,42,0.3); }
   .client-item:hover::before { height: 60%; }
 
   .client-index {
     font-family: 'Cormorant Garamond', serif;
     font-size: 0.8rem;
     font-weight: 400;
-    color: var(--burgundy);
+    color: var(--gold);
     letter-spacing: 0.06em;
     opacity: 0.75;
     user-select: none;
@@ -195,7 +194,7 @@
   }
 
   .client-item:hover .client-name {
-    color: var(--burgundy);
+    color: var(--gold);
   }
 
   .client-meta {
@@ -245,14 +244,14 @@
   }
 
   .btn-action:hover {
-    background: var(--burgundy);
+    background: var(--gold);
     color: #fff;
-    border-color: var(--burgundy);
+    border-color: var(--gold);
   }
 
   .btn-action.edit:hover {
-    background: var(--gold);
-    border-color: var(--gold);
+    background: var(--dark);
+    border-color: var(--dark);
   }
 
   /* Add Row */
@@ -269,13 +268,13 @@
     transition: all 0.2s;
   }
 
-  .add-client-row:hover .add-icon-ring { background: var(--burgundy); border-color: var(--burgundy); }
+  .add-client-row:hover .add-icon-ring { background: var(--gold); border-color: var(--gold); }
   .add-client-row:hover .add-icon-ring i { color: #fff; }
-  .add-client-row:hover .add-label { color: var(--burgundy); }
+  .add-client-row:hover .add-label { color: var(--gold); }
 
   .add-icon-ring {
     width: 40px; height: 40px;
-    border: 1.5px solid rgba(110, 14, 46, 0.4);
+    border: 1.5px solid rgba(184,146,42,0.5);
     border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
     transition: all 0.2s;
@@ -284,7 +283,7 @@
 
   .add-icon-ring i {
     font-size: 1rem;
-    color: var(--burgundy);
+    color: var(--gold);
     transition: color 0.2s;
   }
 
@@ -317,7 +316,6 @@
   @media (max-width: 768px) {
     .gestion-main {
       padding: 2rem 1.5rem;
-      margin-left: 0;
     }
     .client-item {
       grid-template-columns: 2rem 1fr;

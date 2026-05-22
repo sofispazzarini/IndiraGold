@@ -1,334 +1,397 @@
-{% extends 'users/dashboard_admin.html' %}
+{% extends 'base.html' %}
 {% load static %}
 
+{% block title %}Editar Pedido #{{ pedido.id }}{% endblock %}
+
 {% block extra_head %}
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-<link rel="stylesheet" href="{% static 'css/users.css' %}">
 <style>
-    .edit-wrapper {
-        min-height: calc(100vh - 60px);
-        padding: 2rem;
-    }
-    .edit-header {
-        max-width: 1100px;
-        margin: 0 auto 2rem auto;
-        margin-left: 15%;
-    }
-    .edit-content {
-        max-width: 1100px;
+    /* MAIN OVERRIDE - CENTRADO */
+    .main {
+        max-width: 980px;
+        padding: 3rem 3.5rem 5rem;
         margin: 0 auto;
-        margin-left: 15%;
     }
-    .ig-card {
-        background: #fff;
-        border-radius: 18px;
-        box-shadow: 0 4px 32px rgba(184,146,42,0.10);
-        overflow: hidden;
+
+    /* BACK LINK */
+    .back-link {
+        display: inline-flex; align-items: center; gap: 0.5rem;
+        font-size: 0.7rem; font-weight: 600; letter-spacing: 0.14em;
+        text-transform: uppercase; color: #9c8c7c; text-decoration: none;
+        margin-bottom: 1.75rem; transition: all 0.2s;
     }
-    .ig-card-header {
-        background: #f8f5ef;
-        padding: 1.2rem 1.5rem;
-        border-bottom: 2px solid #f3e7c6;
+    .back-link:hover { color: #b8922a; transform: translateX(-3px); }
+
+    /* PAGE HEADER */
+    .page-header {
+        display: flex; align-items: flex-end; justify-content: space-between;
+        margin-bottom: 2rem; padding-bottom: 1.75rem;
+        border-bottom: 1px solid rgba(184,146,42,0.12);
+        position: relative; gap: 1.5rem; flex-wrap: wrap;
     }
-    .ig-card-header h5 {
-        color: #b8922a;
-        font-weight: 700;
-        margin: 0;
-        font-size: 1.1rem;
-        text-transform: uppercase;
-        letter-spacing: 1px;
+    .page-header::after {
+        content: ''; position: absolute; bottom: -1px; left: 0;
+        width: 64px; height: 2px; background: #b8922a;
     }
-    .ig-card-body {
-        padding: 1.5rem;
+    .header-eyebrow {
+        font-size: 0.6rem; font-weight: 600; letter-spacing: 0.2em;
+        text-transform: uppercase; color: #b8922a; margin-bottom: 0.5rem;
     }
-    .table thead th {
-        background: #f8f5ef;
-        color: #b8922a;
-        font-weight: 700;
-        border-top: none;
-        border-bottom: 2px solid #f3e7c6;
-        letter-spacing: 1px;
-        vertical-align: middle;
-        font-size: 0.9rem;
+    .page-title {
+        font-family: 'Cormorant Garamond', serif;
+        font-size: clamp(2rem, 4vw, 3rem); font-weight: 600;
+        color: #1a1612; letter-spacing: -0.015em; line-height: 1;
+        display: flex; align-items: center; gap: 0.8rem; flex-wrap: wrap;
     }
-    .table tbody tr {
+    .order-number {
+        font-family: 'Montserrat', sans-serif; font-size: 1.05rem; font-weight: 700;
+        color: #1a1612; background: transparent;
+        padding: 0.32rem 1rem; border-radius: 8px; letter-spacing: 0.02em;
+        border: 1.5px solid #b8922a; position: relative;
+    }
+    .order-number::before {
+        content: ''; position: absolute; inset: 0; border-radius: 8px;
+        background: linear-gradient(135deg, rgba(184,146,42,0.08), rgba(184,146,42,0.03));
+        z-index: -1;
+    }
+    .client-line {
+        font-size: 0.8rem; color: #9c8c7c; margin-top: 0.6rem;
+        display: flex; align-items: center; gap: 0.5rem;
+    }
+    .client-line strong { color: #3d342a; font-weight: 600; }
+
+    /* ALERT STATUS */
+    .status-alert {
+        display: flex; align-items: center; gap: 0.75rem;
+        padding: 1rem 1.25rem; border-radius: 12px;
+        background: #fffbeb; border: 1px solid rgba(184,146,42,0.2);
+        margin-bottom: 2rem; font-size: 0.82rem; color: #92400e;
+    }
+    .status-alert i { color: #b8922a; font-size: 1.1rem; }
+    .status-alert strong { color: #1a1612; }
+    .status-alert .warning-text { color: #dc2626; font-size: 0.75rem; margin-top: 0.3rem; }
+
+    /* BODY GRID */
+    .body-grid { display: grid; grid-template-columns: 1fr 290px; gap: 1.5rem; align-items: start; }
+
+    /* CARDS */
+    .card-section {
+        background: #fff; border: 1px solid #e8dfd4;
+        border-radius: 14px; overflow: hidden;
+    }
+    .card-head {
+        padding: 1.1rem 1.6rem; border-bottom: 1px solid rgba(184,146,42,0.12);
+        display: flex; align-items: center; gap: 0.6rem;
+    }
+    .card-head i { font-size: 0.9rem; color: #b8922a; }
+    .card-head-title {
+        font-family: 'Cormorant Garamond', serif;
+        font-size: 1.2rem; font-weight: 600; color: #1a1612;
+    }
+    .card-body-content { padding: 1.25rem 1.6rem; }
+
+    /* TABLE ITEMS */
+    .items-table { width: 100%; border-collapse: collapse; }
+    .items-table thead th {
+        font-size: 0.57rem; font-weight: 600; letter-spacing: 0.18em;
+        text-transform: uppercase; color: #9c8c7c;
+        padding: 0.75rem 1rem; background: #faf7f4; text-align: left;
+        border-bottom: 1px solid rgba(184,146,42,0.12);
+    }
+    .items-table thead th:last-child { text-align: center; }
+    .items-table tbody tr {
+        border-bottom: 1px solid rgba(232,223,212,0.5);
         transition: background 0.18s;
     }
-    .table tbody tr:hover {
-        background: #fdf6e3;
+    .items-table tbody tr:last-child { border-bottom: none; }
+    .items-table tbody tr:hover { background: #faf7f0; }
+    .items-table tbody td { padding: 1rem; vertical-align: middle; }
+    .item-name {
+        font-family: 'Cormorant Garamond', serif;
+        font-size: 1.1rem; font-weight: 600; color: #1a1612; line-height: 1.2;
     }
-    .back-btn {
-        font-size: 1.1rem;
-        border: none;
-        padding: 6px 22px 6px 14px;
-        background: #f8f5ef;
-        color: #b8922a;
-        border-radius: 8px;
-        box-shadow: 0 2px 8px #e8c96a22;
-        font-weight: 600;
-        text-decoration: none;
-        display: inline-flex;
-        align-items: center;
-        gap: 0.5rem;
-        transition: background 0.18s, color 0.18s;
+    .item-sku {
+        font-size: 0.64rem; color: #9c8c7c;
+        letter-spacing: 0.08em; text-transform: uppercase; margin-top: 0.2rem;
     }
-    .back-btn:hover {
-        background: #b8922a;
-        color: #fff;
+    .item-variant {
+        display: inline-block; padding: 0.18rem 0.6rem; border-radius: 50px;
+        font-size: 0.64rem; font-weight: 600;
+        background: #faf7f0; color: #b8922a;
+        border: 1px solid rgba(184,146,42,0.25);
     }
-    .badge-id {
-        background: linear-gradient(90deg, #fbe18b 0%, #b8922a 100%);
-        color: #6E0E2E;
-        font-weight: 700;
-        padding: 0.5rem 1rem;
-        border-radius: 10px;
-        font-size: 1.1rem;
+    .item-colors { font-size: 0.72rem; color: #6b7280; margin-top: 0.3rem; }
+    .item-price { font-size: 0.88rem; color: #3d342a; }
+    .item-subtotal { font-weight: 700; color: #6E0E2E; font-size: 0.95rem; }
+
+    /* INPUTS */
+    .modern-input {
+        border: 1.5px solid #e8dfd4; border-radius: 8px;
+        padding: 0.55rem 0.75rem; font-size: 0.88rem;
+        background: #faf7f4; transition: all 0.2s; width: 75px; text-align: center;
     }
-    .modern-input, .modern-select {
-        border: 1.2px solid #cbd5e1;
-        border-radius: 7px;
-        padding: 0.5rem 0.8rem;
-        font-size: 0.95rem;
-        background: #f9fafb;
-        transition: border-color 0.18s, box-shadow 0.18s;
+    .modern-input:focus {
+        border-color: #b8922a; background: #fff;
+        box-shadow: 0 0 0 3px rgba(184,146,42,0.1); outline: none;
     }
-    .modern-input:focus, .modern-select:focus {
-        border-color: #b8922a;
-        background: #fff;
-        box-shadow: 0 0 0 2px #e8c96a33;
-        outline: none;
+    .modern-select {
+        border: 1.5px solid #e8dfd4; border-radius: 8px;
+        padding: 0.65rem 1rem; font-size: 0.88rem;
+        background: #faf7f4; transition: all 0.2s; width: 100%;
+        cursor: pointer; color: #3d342a;
+    }
+    .modern-select:focus {
+        border-color: #b8922a; background: #fff;
+        box-shadow: 0 0 0 3px rgba(184,146,42,0.1); outline: none;
     }
     .modern-textarea {
-        border: 1.2px solid #cbd5e1;
-        border-radius: 7px;
-        padding: 0.7rem 1rem;
-        font-size: 1rem;
-        background: #f9fafb;
-        transition: border-color 0.18s, box-shadow 0.18s;
-        width: 100%;
+        border: 1.5px solid #e8dfd4; border-radius: 8px;
+        padding: 0.75rem 1rem; font-size: 0.88rem;
+        background: #faf7f4; transition: all 0.2s; width: 100%;
+        resize: vertical; min-height: 100px; font-family: inherit;
     }
     .modern-textarea:focus {
-        border-color: #b8922a;
-        background: #fff;
-        box-shadow: 0 0 0 2px #e8c96a33;
-        outline: none;
+        border-color: #b8922a; background: #fff;
+        box-shadow: 0 0 0 3px rgba(184,146,42,0.1); outline: none;
     }
-    .summary-item {
-        display: flex;
-        justify-content: space-between;
-        padding: 0.8rem 0;
-        border-bottom: 1px solid #f3e7c6;
-    }
-    .summary-item:last-child {
-        border-bottom: none;
-    }
-    .summary-label {
-        color: #6c757d;
-    }
-    .summary-value {
-        font-weight: 700;
-        color: #2d3848;
-    }
-    .summary-total {
-        font-size: 1.5rem;
-        color: #6E0E2E;
-    }
-    .modern-btn {
-        background: linear-gradient(90deg, #fbe18b 0%, #b8922a 100%);
-        color: #6E0E2E;
-        border: none;
-        border-radius: 10px;
-        padding: 1rem 2rem;
-        font-size: 1.1rem;
-        font-weight: 700;
-        letter-spacing: 1px;
-        box-shadow: 0 2px 8px 0 rgba(184,146,42,0.10);
-        cursor: pointer;
-        transition: background 0.18s, box-shadow 0.18s, color 0.18s;
-        width: 100%;
-    }
-    .modern-btn:hover {
-        background: linear-gradient(90deg, #b8922a 0%, #fbe18b 100%);
-        color: #fff;
-        box-shadow: 0 4px 16px 0 rgba(184,146,42,0.18);
-    }
+
+    /* DELETE CHECK */
     .delete-check {
-        accent-color: #6E0E2E;
+        width: 18px; height: 18px; accent-color: #dc2626; cursor: pointer;
     }
+    .delete-label {
+        display: flex; align-items: center; justify-content: center;
+        gap: 0.4rem; cursor: pointer;
+    }
+    .delete-label i { color: #dc2626; font-size: 0.85rem; }
+
+    /* ADD ITEM SECTION */
     .add-item-section {
-        background: #fdf6e3;
-        border-top: 2px solid #f3e7c6;
-        padding: 1.5rem;
+        background: #faf7f0; border-top: 1px solid rgba(184,146,42,0.12);
+        padding: 1.25rem 1.6rem;
     }
-    .add-item-section h6 {
-        color: #b8922a;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        margin-bottom: 1rem;
+    .add-item-title {
+        font-size: 0.65rem; font-weight: 600; letter-spacing: 0.14em;
+        text-transform: uppercase; color: #b8922a; margin-bottom: 1rem;
+        display: flex; align-items: center; gap: 0.5rem;
     }
+    .add-item-grid { display: grid; grid-template-columns: 1fr 120px; gap: 1rem; }
+
+    /* RIGHT COLUMN */
+    .right-col { display: flex; flex-direction: column; gap: 1rem; }
+
+    /* DETAIL ROWS */
+    .detail-rows {}
+    .detail-row {
+        display: flex; justify-content: space-between; align-items: center;
+        padding: 0.85rem 1.4rem; border-bottom: 1px solid rgba(232,223,212,0.4); gap: 1rem;
+    }
+    .detail-row:last-child { border-bottom: none; }
+    .detail-lbl { font-size: 0.74rem; color: #9c8c7c; }
+    .detail-val { font-size: 0.88rem; font-weight: 600; color: #1a1612; }
+    .detail-val.total { font-size: 1.6rem; color: #6E0E2E; font-family: 'Cormorant Garamond', serif; }
+
+    /* SUBMIT BUTTON */
+    .btn-submit {
+        display: flex; align-items: center; justify-content: center; gap: 0.6rem;
+        width: 100%; padding: 1rem 1.5rem; border-radius: 50px;
+        background: #1a1612; color: #fff; border: none;
+        font-family: 'Montserrat', sans-serif; font-size: 0.78rem; font-weight: 700;
+        letter-spacing: 0.1em; text-transform: uppercase;
+        cursor: pointer; transition: all 0.2s;
+    }
+    .btn-submit:hover { background: #b8922a; }
+
+    /* FORM LABEL */
+    .field-label {
+        font-size: 0.65rem; font-weight: 600; letter-spacing: 0.1em;
+        text-transform: uppercase; color: #9c8c7c; margin-bottom: 0.5rem;
+        display: block;
+    }
+
+    /* Animations */
+    @keyframes fadeUp { from { opacity:0; transform:translateY(14px); } to { opacity:1; transform:translateY(0); } }
+    .page-header { animation: fadeUp 0.38s ease both; }
+    .status-alert { animation: fadeUp 0.38s 0.06s ease both; }
+    .body-grid { animation: fadeUp 0.38s 0.12s ease both; }
+
+    /* Responsive */
     @media (max-width: 900px) {
-        .edit-header, .edit-content {
-            margin-left: auto;
-            margin-right: auto;
-            padding: 0 1rem;
-        }
+        .main { padding: 2rem 1.5rem; }
+        .body-grid { grid-template-columns: 1fr; }
+        .page-header { flex-direction: column; align-items: flex-start; }
+        .items-table { font-size: 0.85rem; }
+        .items-table thead th { padding: 0.6rem 0.5rem; font-size: 0.5rem; }
+        .items-table tbody td { padding: 0.75rem 0.5rem; }
+        .add-item-grid { grid-template-columns: 1fr; }
     }
 </style>
 {% endblock %}
 
+{% block sidebar_menu %}
+{% include 'users/_sidebar_admin.html' %}
+{% endblock %}
+
 {% block content %}
-<div class="edit-wrapper">
-    <div class="edit-header">
-        <a href="{% url 'pedidos:detalle_pedido' pedido.id %}" class="back-btn mb-4">
-            <i class="bi bi-arrow-left"></i> Cancelar
-        </a>
-        <div class="d-flex justify-content-between align-items-center mt-3">
-            <div>
-                <h2 class="display-6 fw-bold mb-1" style="font-family: 'Cormorant Garamond'; color: var(--dark-ig);">
-                    Editar Pedido <span class="badge-id">#{{ pedido.id }}</span>
-                </h2>
-                <p class="text-muted mb-0">
-                    <i class="bi bi-person me-1"></i> Cliente: <strong>{{ pedido.cliente.user.username }}</strong>
-                </p>
-            </div>
+<a href="{% url 'pedidos:detalle_pedido' pedido.id %}" class="back-link">
+    <i class="bi bi-arrow-left"></i> Cancelar edicion
+</a>
+
+<div class="page-header">
+    <div>
+        <p class="header-eyebrow">Edicion de pedido</p>
+        <h1 class="page-title">
+            Pedido <span class="order-number">#{{ pedido.id }}</span>
+        </h1>
+        <div class="client-line">
+            <i class="bi bi-person" style="color:#b8922a;font-size:0.85rem;"></i>
+            <strong>{{ pedido.cliente.user.username }}</strong>
+            <span style="color:#e8dfd4;">·</span>
+            DNI: {{ pedido.cliente.dni }}
         </div>
-    </div>
-
-    <div class="edit-content">
-        <div class="alert rounded-3 mb-4" style="background: #fff3cd; border: none; border-left: 4px solid #b8922a;">
-            <i class="bi bi-exclamation-triangle me-2" style="color: #b8922a;"></i>
-            <strong>Estado actual:</strong> {{ pedido.get_estado_display }}
-            {% if pedido.estado in estados_no_editables %}
-                <br><span class="small text-danger"><i class="bi bi-x-circle me-1"></i>Este pedido no puede ser editado en su estado actual.</span>
-            {% endif %}
-        </div>
-
-        <form method="post" class="row g-4">
-            {% csrf_token %}
-
-            <div class="col-lg-8">
-                <div class="ig-card">
-                    <div class="ig-card-header">
-                        <h5><i class="bi bi-box-seam me-2"></i>Ítems del pedido</h5>
-                    </div>
-                    <div class="table-responsive">
-                        <table class="table mb-0 align-middle">
-                            <thead>
-                                <tr>
-                                    <th>Producto</th>
-                                    <th>Variante</th>
-                                    <th>Cantidad</th>
-                                    <th>P. Unitario</th>
-                                    <th>Subtotal</th>
-                                    <th>Eliminar</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for item in items %}
-                                    <tr>
-                                        <td>
-                                            <strong style="color: #2d3848;">{{ item.variante.producto.nombre }}</strong>
-                                            <div class="text-muted small">Código: {{ item.variante.producto.codigo }}</div>
-                                        </td>
-                                        <td>
-                                            <span class="badge" style="background: #f8f5ef; color: #b8922a;">Talle {{ item.variante.talle.nombre }}</span>
-                                            {% with colores=item.variante.colores.all %}
-                                                {% if colores %}
-                                                    <div class="text-muted small mt-1">
-                                                        {{ colores|join:", " }}
-                                                    </div>
-                                                {% endif %}
-                                            {% endwith %}
-                                        </td>
-                                        <td>
-                                            <input type="number" name="cantidad_{{ item.id }}" value="{{ item.cantidad }}" min="1" class="modern-input" style="width: 80px;">
-                                        </td>
-                                        <td>${{ item.precio_unitario }}</td>
-                                        <td><strong style="color: #6E0E2E;">${{ item.precio_total }}</strong></td>
-                                        <td class="text-center">
-                                            <label class="d-flex align-items-center gap-2" style="cursor: pointer;">
-                                                <input type="checkbox" name="eliminar_item" value="{{ item.id }}" class="delete-check" style="width: 18px; height: 18px;">
-                                                <span class="text-danger small fw-bold"><i class="bi bi-trash"></i></span>
-                                            </label>
-                                        </td>
-                                    </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <div class="add-item-section">
-                        <h6><i class="bi bi-plus-circle me-2"></i>Agregar nuevo ítem</h6>
-                        <div class="row g-3">
-                            <div class="col-md-7">
-                                <label for="nueva_variante" class="form-label small fw-bold" style="color: #4a5568;">Variante:</label>
-                                <select name="nueva_variante_id" id="nueva_variante" class="modern-select w-100">
-                                    <option value="">-- Seleccionar producto --</option>
-                                    {% for variante in variantes_disponibles %}
-                                        <option value="{{ variante.id }}">
-                                            {{ variante.producto.nombre }} - Talle {{ variante.talle.nombre }} - ${{ variante.precio }}
-                                        </option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-                            <div class="col-md-5">
-                                <label for="nueva_cantidad" class="form-label small fw-bold" style="color: #4a5568;">Cantidad:</label>
-                                <input type="number" name="nueva_cantidad" id="nueva_cantidad" min="1" value="1" class="modern-input w-100">
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-lg-4">
-                <div class="ig-card mb-4">
-                    <div class="ig-card-header">
-                        <h5><i class="bi bi-clock-history me-2"></i>Estado</h5>
-                    </div>
-                    <div class="ig-card-body">
-                        <select name="estado" class="modern-select w-100">
-                            {% for value, label in pedido.ESTADOS %}
-                                <option value="{{ value }}" {% if pedido.estado == value %}selected{% endif %}>
-                                    {{ label }}
-                                </option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                </div>
-
-                <div class="ig-card mb-4">
-                    <div class="ig-card-header">
-                        <h5><i class="bi bi-geo-alt me-2"></i>Dirección de envío</h5>
-                    </div>
-                    <div class="ig-card-body">
-                        <textarea name="direccion_info" class="modern-textarea" rows="4" placeholder="Calle, número, ciudad, provincia, CP">{{ pedido.direccion_info }}</textarea>
-                    </div>
-                </div>
-
-                <div class="ig-card">
-                    <div class="ig-card-header">
-                        <h5><i class="bi bi-receipt me-2"></i>Resumen</h5>
-                    </div>
-                    <div class="ig-card-body">
-                        <div class="summary-item">
-                            <span class="summary-label">Total ítems</span>
-                            <span class="summary-value">{{ items.count }}</span>
-                        </div>
-                        <div class="summary-item">
-                            <span class="summary-label">Total</span>
-                            <span class="summary-value summary-total">${{ pedido.total }}</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="mt-4">
-                    <button type="submit" class="modern-btn">
-                        <i class="bi bi-check-circle me-2"></i> GUARDAR CAMBIOS
-                    </button>
-                </div>
-            </div>
-        </form>
     </div>
 </div>
+
+<div class="status-alert">
+    <i class="bi bi-exclamation-triangle"></i>
+    <div>
+        <strong>Estado actual:</strong> {{ pedido.get_estado_display }}
+        {% if pedido.estado in estados_no_editables %}
+        <div class="warning-text"><i class="bi bi-x-circle me-1"></i>Este pedido no puede ser editado en su estado actual.</div>
+        {% endif %}
+    </div>
+</div>
+
+<form method="post">
+    {% csrf_token %}
+    <div class="body-grid">
+        <div>
+            <div class="card-section">
+                <div class="card-head">
+                    <i class="bi bi-bag-check"></i>
+                    <span class="card-head-title">Items del pedido</span>
+                </div>
+                <table class="items-table">
+                    <thead>
+                        <tr>
+                            <th>Producto</th>
+                            <th>Variante</th>
+                            <th>Cant.</th>
+                            <th>P. Unit.</th>
+                            <th>Subtotal</th>
+                            <th>Quitar</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in items %}
+                        <tr>
+                            <td>
+                                <div class="item-name">{{ item.variante.producto.nombre }}</div>
+                                <div class="item-sku">{{ item.variante.producto.codigo }}</div>
+                            </td>
+                            <td>
+                                <span class="item-variant">Talle {{ item.variante.talle.nombre }}</span>
+                                {% with colores=item.variante.colores.all %}
+                                    {% if colores %}
+                                    <div class="item-colors">
+                                        <i class="bi bi-palette"></i>
+                                        {% for color in colores %}{{ color.nombre }}{% if not forloop.last %}, {% endif %}{% endfor %}
+                                    </div>
+                                    {% endif %}
+                                {% endwith %}
+                            </td>
+                            <td>
+                                <input type="number" name="cantidad_{{ item.id }}" value="{{ item.cantidad }}" min="1" class="modern-input">
+                            </td>
+                            <td class="item-price">${{ item.precio_unitario }}</td>
+                            <td class="item-subtotal">${{ item.precio_total }}</td>
+                            <td>
+                                <label class="delete-label">
+                                    <input type="checkbox" name="eliminar_item" value="{{ item.id }}" class="delete-check">
+                                    <i class="bi bi-trash"></i>
+                                </label>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" style="text-align:center;color:#9c8c7c;padding:2rem;">Sin items en este pedido</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+
+                <div class="add-item-section">
+                    <div class="add-item-title">
+                        <i class="bi bi-plus-circle"></i> Agregar nuevo item
+                    </div>
+                    <div class="add-item-grid">
+                        <div>
+                            <label class="field-label">Variante</label>
+                            <select name="nueva_variante_id" class="modern-select">
+                                <option value="">-- Seleccionar producto --</option>
+                                {% for variante in variantes_disponibles %}
+                                <option value="{{ variante.id }}">
+                                    {{ variante.producto.nombre }} - Talle {{ variante.talle.nombre }} - ${{ variante.precio }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="field-label">Cantidad</label>
+                            <input type="number" name="nueva_cantidad" min="1" value="1" class="modern-input" style="width:100%;">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="right-col">
+            <div class="card-section">
+                <div class="card-head">
+                    <i class="bi bi-clock-history"></i>
+                    <span class="card-head-title">Estado</span>
+                </div>
+                <div class="card-body-content">
+                    <select name="estado" class="modern-select">
+                        {% for value, label in pedido.ESTADOS %}
+                        <option value="{{ value }}" {% if pedido.estado == value %}selected{% endif %}>
+                            {{ label }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="card-section">
+                <div class="card-head">
+                    <i class="bi bi-geo-alt"></i>
+                    <span class="card-head-title">Direccion de envio</span>
+                </div>
+                <div class="card-body-content">
+                    <textarea name="direccion_info" class="modern-textarea" placeholder="Calle, numero, ciudad, provincia, CP">{{ pedido.direccion_info }}</textarea>
+                </div>
+            </div>
+
+            <div class="card-section">
+                <div class="card-head">
+                    <i class="bi bi-receipt"></i>
+                    <span class="card-head-title">Resumen</span>
+                </div>
+                <div class="detail-rows">
+                    <div class="detail-row">
+                        <span class="detail-lbl">Total items</span>
+                        <span class="detail-val">{{ items.count }}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-lbl">Total</span>
+                        <span class="detail-val total">${{ pedido.total }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <button type="submit" class="btn-submit">
+                <i class="bi bi-check-circle"></i> Guardar cambios
+            </button>
+        </div>
+    </div>
+</form>
 {% endblock %}

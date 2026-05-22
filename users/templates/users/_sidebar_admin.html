@@ -1,16 +1,15 @@
-<nav class="sidebar__nav">
-    <div class="nav-section">Principal</div>
-    <a href="{% url 'users:dashboard_admin' %}" class="nav-link{% if request.resolver_match.url_name == 'dashboard_admin' %} active{% endif %}">
-        <i class="bi bi-house-door me-2"></i> Inicio
-    </a>
+<div class="nav-section">Principal</div>
+<a href="{% url 'users:dashboard_admin' %}" class="nav-link{% if request.resolver_match.url_name == 'dashboard_admin' %} active{% endif %}">
+    <i class="bi bi-house-door"></i> Inicio
+</a>
 
-    <div class="nav-section">Clientes</div>
-    <a href="{% url 'users:registro_manual_cliente' %}" class="nav-link{% if request.resolver_match.url_name == 'registro_manual_cliente' %} active{% endif %}">
-        <i class="bi bi-person-plus me-2"></i> Registrar Cliente
-    </a>
-    <a href="{% url 'users:listado_clientes' %}" class="nav-link{% if request.resolver_match.url_name == 'listado_clientes' %} active{% endif %}">
-        <i class="bi bi-people me-2"></i> Listado de Clientes
-    </a>
+<div class="nav-section">Clientes</div>
+<a href="{% url 'users:registro_manual_cliente' %}" class="nav-link{% if request.resolver_match.url_name == 'registro_manual_cliente' %} active{% endif %}">
+    <i class="bi bi-person-plus"></i> Registrar Cliente
+</a>
+<a href="{% url 'users:listado_clientes' %}" class="nav-link{% if request.resolver_match.url_name == 'listado_clientes' %} active{% endif %}">
+    <i class="bi bi-people"></i> Listado de Clientes
+</a>
 
     <div class="nav-section">Catálogo</div>
     <a href="{% url 'productos:gestion_productos' %}" class="nav-link{% if request.resolver_match.url_name == 'gestion_productos' %} active{% endif %}">
@@ -59,3 +58,7 @@
     
     
 </nav>
+
+
+
+

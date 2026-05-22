@@ -9,6 +9,8 @@ from django.contrib.admin.views.decorators import staff_member_required
 from django.shortcuts import redirect, render, get_object_or_404
 from productos.models import Producto, Categoria, Talle, Color, CategoriaOrden, Variante, Oferta
 from carritos.utils import clear_cart_session, expire_cart_if_needed, get_cart_seconds_left
+from productos.models import Producto, Categoria, Talle, Color, CategoriaOrden, Variante
+from carritos.utils import clear_cart_session, expire_cart_if_needed, get_cart_seconds_left, get_or_create_cart
 from consultas.models import TemaConsulta
 from .models import SlideCarrousel
 from .forms import SlideCarrouselForm
@@ -20,9 +22,6 @@ class HomePublicaView(TemplateView):
         expire_cart_if_needed(self.request.session)
 
         productos = Producto.objects.filter(activo=True).prefetch_related('variantes__talle', 'variantes__colores')
-        productos_destacados = productos.order_by('-created_at')[:8]
-        if not productos_destacados:
-            productos_destacados = productos[:8]
 
         talles = (
             Talle.objects.filter(variante__activa=True, variante__stock__gt=0, variante__producto__activo=True)
@@ -51,7 +50,6 @@ class HomePublicaView(TemplateView):
                 ofertas__activa=True
             ).distinct()
         ctx['productos'] = productos
-        ctx['productos_destacados'] = productos_destacados
         ctx['categorias'] = Categoria.objects.all()
         ctx['talles'] = talles
         ctx['colores'] = colores
@@ -96,20 +94,68 @@ class HomePublicaView(TemplateView):
         items = []
         total_qty = 0
         total_price = 0
-        for pid, qty in quantities.items():
-            p = productos_by_id.get(pid)
-            if not p:
-                continue
-            subtotal = p.precio * qty
-            items.append({
-                'id': p.id,
-                'nombre': p.nombre,
-                'precio': p.precio,
-                'cantidad': qty,
-                'subtotal': subtotal,
-            })
-            total_qty += qty
-            total_price += subtotal
+
+        if self.request.user.is_authenticated:
+            try:
+                carrito = get_or_create_cart(self.request)
+                for item_db in carrito.items.all().select_related('variante__producto'):
+                    items.append({
+                        'id': item_db.variante.producto.id,
+                        'variante_id': item_db.variante.id,
+                        'nombre': item_db.variante.producto.nombre,
+                        'precio': item_db.precio_unitario,
+                        'cantidad': item_db.cantidad,
+                        'subtotal': item_db.precio_total,
+                    })
+                    total_qty += item_db.cantidad
+                    total_price += item_db.precio_total
+
+                carrito_sincronizado = {}
+                for item_db in carrito.items.all():
+                    carrito_sincronizado[str(item_db.variante.id)] = item_db.cantidad
+                self.request.session['carrito'] = carrito_sincronizado
+                self.request.session.modified = True
+            except Exception:
+                pass
+        else:
+            cart = self.request.session.get('carrito')
+            if not isinstance(cart, dict):
+                cart = {}
+                clear_cart_session(self.request.session)
+
+            quantities: dict[int, int] = {}
+            for key, value in cart.items():
+                try:
+                    variante_id = int(key)
+                    qty = int(value)
+                except (TypeError, ValueError):
+                    continue
+                if qty > 0:
+                    quantities[variante_id] = qty
+
+            variantes = Variante.objects.select_related('producto').filter(
+                id__in=quantities.keys(),
+                activa=True,
+                producto__activo=True
+            )
+            variantes_by_id = {v.id: v for v in variantes}
+
+            for variante_id, qty in quantities.items():
+                variante = variantes_by_id.get(variante_id)
+                if not variante:
+                    continue
+                precio = variante.precio or variante.producto.precio
+                subtotal = precio * qty
+                items.append({
+                    'id': variante.producto.id,
+                    'variante_id': variante.id,
+                    'nombre': variante.producto.nombre,
+                    'precio': precio,
+                    'cantidad': qty,
+                    'subtotal': subtotal,
+                })
+                total_qty += qty
+                total_price += subtotal
 
         ctx['cart_items'] = items
         ctx['cart_count'] = total_qty

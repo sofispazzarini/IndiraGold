@@ -64,6 +64,20 @@
       margin-bottom: .5rem;
       color: var(--text);
     }
+
+    /* ── GLOBAL INPUTS ── */
+    input[type="text"],
+    input[type="email"],
+    input[type="password"],
+    input[type="number"],
+    input[type="tel"],
+    input[type="url"],
+    input[type="search"],
+    input[type="date"],
+    textarea,
+    select {
+      padding: 0.75rem 1rem;
+    }
   </style>
 </head>
 <body>
@@ -82,7 +96,13 @@
     <nav class="navbar__links">
       <a href="{% url 'home:home' %}#catalogo" class="nb-link">Catálogo</a>
       <a href="{% url 'home:home' %}#contacto" class="nb-link">Contacto</a>
+      {% if request.user.is_superuser %}
+        <a href="{% url 'users:dashboard_admin' %}" class="nb-link" style="background: var(--gold); color: var(--white); padding: 0.5em 1em; border-radius: 6px; margin-left: 1em;">Panel Admin</a>
+      {% elif request.user.is_authenticated %}
+        <a href="{% url 'users:dashboard_cliente' %}" class="nb-link" style="background: var(--gold); color: var(--white); padding: 0.5em 1em; border-radius: 6px; margin-left: 1em;">Mi cuenta</a>
+      {% else %}
         <a href="{% url 'users:login' %}" class="nb-link" style="background: var(--gold); color: var(--white); padding: 0.5em 1em; border-radius: 6px; margin-left: 1em;">Iniciar sesión</a>
+      {% endif %}
     </nav>
   </div>
 </header>

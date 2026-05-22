@@ -1,278 +1,393 @@
-{% extends 'users/dashboard_admin.html' %}
+{% extends 'base.html' %}
 {% load static %}
 
+{% block title %}Pedido #{{ pedido.id }}{% endblock %}
+
 {% block extra_head %}
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-<link rel="stylesheet" href="{% static 'css/users.css' %}">
 <style>
-    .detail-wrapper {
-        min-height: calc(100vh - 60px);
-        padding: 2rem;
+    /* MAIN OVERRIDE - CENTRADO */
+    .main { max-width: 980px; padding: 3rem 3.5rem 5rem; margin: 0 auto; }
+
+    /* BACK LINK */
+    .back-link {
+        display: inline-flex; align-items: center; gap: 0.5rem;
+        font-size: 0.7rem; font-weight: 600; letter-spacing: 0.14em;
+        text-transform: uppercase; color: #9c8c7c; text-decoration: none;
+        margin-bottom: 1.75rem; transition: all 0.2s;
     }
-    .detail-header {
-        max-width: 1100px;
-        margin: 0 auto 2rem auto;
-        margin-left: 15%;
+    .back-link:hover { color: #b8922a; transform: translateX(-3px); }
+
+    /* PAGE HEADER */
+    .page-header {
+        display: flex; align-items: flex-end; justify-content: space-between;
+        margin-bottom: 2.5rem; padding-bottom: 1.75rem;
+        border-bottom: 1px solid rgba(184,146,42,0.12);
+        position: relative; gap: 1.5rem; flex-wrap: wrap;
     }
-    .detail-content {
-        max-width: 1100px;
-        margin: 0 auto;
-        margin-left: 15%;
+    .page-header::after {
+        content: ''; position: absolute; bottom: -1px; left: 0;
+        width: 64px; height: 2px; background: #b8922a;
     }
-    .ig-card {
-        background: #fff;
-        border-radius: 18px;
-        box-shadow: 0 4px 32px rgba(184,146,42,0.10);
-        overflow: hidden;
+    .header-eyebrow {
+        font-size: 0.6rem; font-weight: 600; letter-spacing: 0.2em;
+        text-transform: uppercase; color: #b8922a; margin-bottom: 0.5rem;
     }
-    .ig-card-header {
-        background: #f8f5ef;
-        padding: 1.2rem 1.5rem;
-        border-bottom: 2px solid #f3e7c6;
+    .page-title {
+        font-family: 'Cormorant Garamond', serif;
+        font-size: clamp(2.2rem, 4vw, 3.4rem); font-weight: 600;
+        color: #1a1612; letter-spacing: -0.015em; line-height: 1;
+        display: flex; align-items: center; gap: 0.8rem; flex-wrap: wrap;
     }
-    .ig-card-header h5 {
-        color: #b8922a;
-        font-weight: 700;
-        margin: 0;
-        font-size: 1.1rem;
-        text-transform: uppercase;
-        letter-spacing: 1px;
+    .order-number {
+        font-family: 'Montserrat', sans-serif; font-size: 1.05rem; font-weight: 700;
+        color: #1a1612; background: transparent;
+        padding: 0.32rem 1rem; border-radius: 8px; letter-spacing: 0.02em;
+        border: 1.5px solid #b8922a; position: relative;
     }
-    .ig-card-body {
-        padding: 1.5rem;
+    .order-number::before {
+        content: ''; position: absolute; inset: 0; border-radius: 8px;
+        background: linear-gradient(135deg, rgba(184,146,42,0.08), rgba(184,146,42,0.03));
+        z-index: -1;
     }
-    .table thead th {
-        background: #f8f5ef;
-        color: #b8922a;
-        font-weight: 700;
-        border-top: none;
-        border-bottom: 2px solid #f3e7c6;
-        letter-spacing: 1px;
-        vertical-align: middle;
-        font-size: 0.9rem;
+    .client-line {
+        font-size: 0.8rem; color: #9c8c7c; margin-top: 0.6rem;
+        display: flex; align-items: center; gap: 0.5rem;
     }
-    .table tbody tr {
-        transition: background 0.18s;
+    .client-line strong { color: #3d342a; font-weight: 600; }
+    .header-actions { display: flex; align-items: center; gap: 0.75rem; flex-shrink: 0; }
+    .btn-act {
+        display: inline-flex; align-items: center; gap: 0.5rem;
+        padding: 0.65rem 1.35rem; border-radius: 50px;
+        font-family: 'Montserrat', sans-serif; font-size: 0.76rem; font-weight: 600;
+        text-decoration: none; cursor: pointer; border: none; transition: all 0.2s;
     }
-    .table tbody tr:hover {
-        background: #fdf6e3;
+    .btn-edit { background: #1a1612; color: #fff; }
+    .btn-edit:hover { background: #b8922a; color: #fff; }
+    .btn-hist { background: transparent; color: #3d342a; border: 1.5px solid #e8dfd4; }
+    .btn-hist:hover { border-color: #b8922a; color: #b8922a; }
+
+    /* META STRIP */
+    .meta-strip {
+        display: grid; grid-template-columns: repeat(4, 1fr);
+        background: #fff; border: 1px solid #e8dfd4;
+        border-radius: 14px; overflow: hidden; margin-bottom: 2rem;
     }
-    .btn-action {
-        font-weight: 600;
-        border-radius: 8px;
-        padding: 0.5rem 1.2rem;
-        font-size: 0.95rem;
-        transition: background 0.18s, color 0.18s;
-        border: none;
-        display: inline-flex;
-        align-items: center;
-        gap: 0.4em;
-        text-decoration: none;
+    .meta-cell {
+        padding: 1.25rem 1.4rem; border-right: 1px solid rgba(184,146,42,0.12);
+        position: relative; transition: background 0.2s;
     }
-    .btn-edit-ig {
-        background: linear-gradient(90deg, #fbe18b 0%, #b8922a 100%);
-        color: #6E0E2E;
+    .meta-cell:last-child { border-right: none; }
+    .meta-cell::after {
+        content: ''; position: absolute; top: 0; left: 0;
+        width: 100%; height: 3px; background: #b8922a;
+        transform: scaleX(0); transform-origin: left; transition: transform 0.25s ease;
     }
-    .btn-edit-ig:hover {
-        background: linear-gradient(90deg, #b8922a 0%, #fbe18b 100%);
-        color: #fff;
+    .meta-cell:hover { background: #faf7f0; }
+    .meta-cell:hover::after { transform: scaleX(1); }
+    .meta-label {
+        font-size: 0.57rem; font-weight: 600; letter-spacing: 0.18em;
+        text-transform: uppercase; color: #9c8c7c; margin-bottom: 0.45rem;
     }
-    .btn-back-ig {
-        background: #f8f5ef;
-        color: #6E0E2E;
-        border: 1.5px solid #e8dfd4;
+    .meta-value {
+        font-size: 0.88rem; font-weight: 600; color: #1a1612;
+        display: flex; align-items: center; gap: 0.4rem;
     }
-    .btn-back-ig:hover {
-        background: #6E0E2E;
-        color: #fff;
-        border-color: #6E0E2E;
+    .status-dot {
+        width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
     }
-    .back-btn {
-        font-size: 1.1rem;
-        border: none;
-        padding: 6px 22px 6px 14px;
-        background: #f8f5ef;
-        color: #b8922a;
-        border-radius: 8px;
-        box-shadow: 0 2px 8px #e8c96a22;
-        font-weight: 600;
-        text-decoration: none;
-        display: inline-flex;
-        align-items: center;
-        gap: 0.5rem;
-        transition: background 0.18s, color 0.18s;
+    .status-pendiente_confirmacion { background: #e6a817; }
+    .status-confirmado { background: #3b82f6; }
+    .status-en_preparacion { background: #8b5cf6; }
+    .status-listo { background: #06b6d4; }
+    .status-enviado { background: #f97316; }
+    .status-entregado { background: #22c55e; }
+    .status-cancelado { background: #ef4444; }
+
+    /* BODY GRID */
+    .body-grid { display: grid; grid-template-columns: 1fr 290px; gap: 1.5rem; align-items: start; }
+
+    /* ITEMS CARD */
+    .items-card {
+        background: #fff; border: 1px solid #e8dfd4;
+        border-radius: 14px; overflow: hidden;
     }
-    .back-btn:hover {
-        background: #b8922a;
-        color: #fff;
+    .card-head {
+        padding: 1.1rem 1.6rem; border-bottom: 1px solid rgba(184,146,42,0.12);
+        display: flex; align-items: center; gap: 0.6rem;
     }
-    .badge-id {
-        background: linear-gradient(90deg, #fbe18b 0%, #b8922a 100%);
-        color: #6E0E2E;
-        font-weight: 700;
-        padding: 0.5rem 1rem;
-        border-radius: 10px;
-        font-size: 1.1rem;
+    .card-head i { font-size: 0.9rem; color: #b8922a; }
+    .card-head-title {
+        font-family: 'Cormorant Garamond', serif;
+        font-size: 1.2rem; font-weight: 600; color: #1a1612;
     }
-    .summary-item {
-        display: flex;
-        justify-content: space-between;
-        padding: 0.8rem 0;
-        border-bottom: 1px solid #f3e7c6;
+    .items-col-header {
+        display: grid; grid-template-columns: 1fr auto;
+        gap: 1rem; padding: 0.6rem 1.6rem;
+        background: #faf7f4; border-bottom: 1px solid rgba(184,146,42,0.12);
     }
-    .summary-item:last-child {
-        border-bottom: none;
+    .col-th {
+        font-size: 0.57rem; font-weight: 600; letter-spacing: 0.18em;
+        text-transform: uppercase; color: #9c8c7c;
     }
-    .summary-label {
-        color: #6c757d;
+    .col-th.right { text-align: right; }
+    .item-row {
+        display: grid; grid-template-columns: 1fr auto;
+        gap: 1.5rem; padding: 1.25rem 1.6rem;
+        border-bottom: 1px solid rgba(232,223,212,0.5);
+        align-items: center; transition: background 0.18s;
     }
-    .summary-value {
-        font-weight: 700;
-        color: #2d3848;
+    .item-row:last-child { border-bottom: none; }
+    .item-row:hover { background: #faf7f0; }
+    .item-name {
+        font-family: 'Cormorant Garamond', serif;
+        font-size: 1.25rem; font-weight: 600; color: #1a1612;
+        margin-bottom: 0.35rem; line-height: 1.1;
     }
-    .summary-total {
-        font-size: 1.5rem;
-        color: #6E0E2E;
+    .item-tags { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+    .item-sku {
+        font-size: 0.64rem; color: #9c8c7c;
+        letter-spacing: 0.08em; text-transform: uppercase;
     }
+    .item-variant {
+        display: inline-block; padding: 0.18rem 0.6rem; border-radius: 50px;
+        font-size: 0.64rem; font-weight: 600;
+        background: #faf7f0; color: #b8922a;
+        border: 1px solid rgba(184,146,42,0.25);
+    }
+    .item-color {
+        display: inline-flex; align-items: center; gap: 0.3rem;
+        padding: 0.18rem 0.6rem; border-radius: 50px;
+        font-size: 0.64rem; font-weight: 500;
+        background: #f5f5f5; color: #6b7280;
+        border: 1px solid #e5e7eb;
+    }
+    .item-amount { text-align: right; flex-shrink: 0; }
+    .item-subtotal {
+        font-family: 'Cormorant Garamond', serif;
+        font-size: 1.4rem; font-weight: 600; color: #6E0E2E; line-height: 1;
+    }
+    .item-qty-label { font-size: 0.66rem; color: #9c8c7c; margin-top: 0.2rem; }
+
+    /* RIGHT COLUMN */
+    .right-col { display: flex; flex-direction: column; gap: 1rem; }
+    .side-card {
+        background: #fff; border: 1px solid #e8dfd4;
+        border-radius: 14px; overflow: hidden;
+    }
+
+    /* Total block */
+    .total-block { padding: 1.5rem; border-bottom: 1px solid rgba(184,146,42,0.12); }
+    .total-eyebrow {
+        font-size: 0.57rem; font-weight: 600; letter-spacing: 0.18em;
+        text-transform: uppercase; color: #9c8c7c; margin-bottom: 0.35rem;
+    }
+    .total-amount {
+        font-family: 'Cormorant Garamond', serif;
+        font-size: 3.2rem; font-weight: 600; color: #6E0E2E;
+        line-height: 1; letter-spacing: -0.02em;
+    }
+    .detail-rows {}
+    .detail-row {
+        display: flex; justify-content: space-between; align-items: center;
+        padding: 0.78rem 1.4rem; border-bottom: 1px solid rgba(232,223,212,0.4); gap: 1rem;
+    }
+    .detail-row:last-child { border-bottom: none; }
+    .detail-lbl { font-size: 0.74rem; color: #9c8c7c; }
+    .detail-val { font-size: 0.82rem; font-weight: 600; color: #1a1612; }
+
+    /* Payment */
+    .payment-info { padding: 1.2rem 1.5rem; }
+    .payment-row {
+        display: flex; justify-content: space-between; align-items: center;
+        padding: 0.5rem 0; border-bottom: 1px solid rgba(232,223,212,0.4);
+    }
+    .payment-row:last-child { border-bottom: none; }
+    .payment-empty {
+        padding: 1.6rem 1.5rem; display: flex; flex-direction: column;
+        align-items: center; text-align: center; gap: 0.65rem;
+    }
+    .payment-icon {
+        width: 42px; height: 42px; background: rgba(184,146,42,0.07);
+        border: 1px solid rgba(184,146,42,0.18); border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1rem; color: #b8922a;
+    }
+    .payment-title {
+        font-family: 'Cormorant Garamond', serif;
+        font-size: 1.1rem; font-weight: 600; color: #1a1612;
+    }
+    .payment-desc { font-size: 0.72rem; color: #9c8c7c; line-height: 1.55; }
+
+    /* Animations */
+    @keyframes fadeUp { from { opacity:0; transform:translateY(14px); } to { opacity:1; transform:translateY(0); } }
+    .page-header { animation: fadeUp 0.38s ease both; }
+    .meta-strip   { animation: fadeUp 0.38s 0.08s ease both; }
+    .body-grid    { animation: fadeUp 0.38s 0.16s ease both; }
+
+    /* Responsive */
     @media (max-width: 900px) {
-        .detail-header, .detail-content {
-            margin-left: auto;
-            margin-right: auto;
-            padding: 0 1rem;
-        }
+        .main { padding: 2rem 1.5rem; }
+        .meta-strip { grid-template-columns: repeat(2, 1fr); }
+        .meta-cell:nth-child(2) { border-right: none; }
+        .body-grid { grid-template-columns: 1fr; }
+        .page-header { flex-direction: column; align-items: flex-start; }
+        .header-actions { width: 100%; justify-content: flex-start; }
+    }
+    @media (max-width: 500px) {
+        .meta-strip { grid-template-columns: 1fr; }
+        .meta-cell { border-right: none; border-bottom: 1px solid rgba(184,146,42,0.12); }
+        .meta-cell:last-child { border-bottom: none; }
     }
 </style>
 {% endblock %}
 
+{% block sidebar_menu %}
+{% include 'users/_sidebar_admin.html' %}
+{% endblock %}
+
 {% block content %}
-<div class="detail-wrapper">
-    <div class="detail-header">
-        <a href="{% url 'pedidos:gestion_pedidos' %}" class="back-btn mb-4">
-            <i class="bi bi-arrow-left"></i> Volver a pedidos
-        </a>
-        <div class="d-flex justify-content-between align-items-center mt-3">
-            <div>
-                <h2 class="display-6 fw-bold mb-1" style="font-family: 'Cormorant Garamond'; color: var(--dark-ig);">
-                    Pedido <span class="badge-id">#{{ pedido.id }}</span>
-                </h2>
-                <p class="text-muted mb-0">
-                    <i class="bi bi-person me-1"></i> Cliente: <strong>{{ pedido.cliente.user.username }}</strong> — DNI: {{ pedido.cliente.dni }}
-                </p>
-            </div>
-            <div class="d-flex gap-2">
-                {% if pedido.estado != 'entregado' and pedido.estado != 'cancelado' %}
-                    <a href="{% url 'pedidos:editar_pedido' pedido.id %}" class="btn-action btn-edit-ig">
-                        <i class="bi bi-pencil"></i> Editar
-                    </a>
-                {% endif %}
-                <a href="{% url 'pedidos:historial_cliente' pedido.cliente.id %}" class="btn-action btn-back-ig">
-                    <i class="bi bi-clock-history"></i> Historial
-                </a>
-            </div>
+<a href="{% url 'pedidos:gestion_pedidos' %}" class="back-link">
+    <i class="bi bi-arrow-left"></i> Volver a pedidos
+</a>
+
+<div class="page-header">
+    <div>
+        <p class="header-eyebrow">Gestión de pedidos</p>
+        <h1 class="page-title">
+            Pedido <span class="order-number">#{{ pedido.id }}</span>
+        </h1>
+        <div class="client-line">
+            <i class="bi bi-person" style="color:#b8922a;font-size:0.85rem;"></i>
+            <strong>{{ pedido.cliente.user.username }}</strong>
+            <span style="color:#e8dfd4;">·</span>
+            DNI: {{ pedido.cliente.dni }}
         </div>
     </div>
+    <div class="header-actions">
+        {% if pedido.estado != 'entregado' and pedido.estado != 'cancelado' %}
+        <a href="{% url 'pedidos:editar_pedido' pedido.id %}" class="btn-act btn-edit">
+            <i class="bi bi-pencil"></i> Editar
+        </a>
+        {% endif %}
+        <a href="{% url 'pedidos:historial_cliente' pedido.cliente.id %}" class="btn-act btn-hist">
+            <i class="bi bi-clock-history"></i> Historial
+        </a>
+    </div>
+</div>
 
-    <div class="detail-content">
-        <div class="row g-4 mb-4">
-            <div class="col-lg-8">
-                <div class="ig-card h-100">
-                    <div class="ig-card-header">
-                        <h5><i class="bi bi-box-seam me-2"></i>Ítems del pedido</h5>
-                    </div>
-                    <div class="table-responsive">
-                        <table class="table mb-0 align-middle">
-                            <thead>
-                                <tr>
-                                    <th>Producto</th>
-                                    <th>Variante</th>
-                                    <th>Cantidad</th>
-                                    <th>P. Unitario</th>
-                                    <th>Subtotal</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for item in items %}
-                                    <tr>
-                                        <td>
-                                            <strong style="color: #2d3848;">{{ item.variante.producto.nombre }}</strong>
-                                            <div class="text-muted small">Código: {{ item.variante.producto.codigo }}</div>
-                                        </td>
-                                        <td>
-                                            <span class="badge" style="background: #f8f5ef; color: #b8922a;">Talle {{ item.variante.talle.nombre }}</span>
-                                            {% with colores=item.variante.colores.all %}
-                                                {% if colores %}
-                                                    <div class="text-muted small mt-1">
-                                                        <i class="bi bi-palette me-1"></i>
-                                                        {% for color in colores %}
-                                                            {{ color.nombre }}{% if not forloop.last %}, {% endif %}
-                                                        {% endfor %}
-                                                    </div>
-                                                {% endif %}
-                                            {% endwith %}
-                                        </td>
-                                        <td><span class="fw-bold">{{ item.cantidad }}</span></td>
-                                        <td>${{ item.precio_unitario }}</td>
-                                        <td><strong style="color: #6E0E2E;">${{ item.precio_total }}</strong></td>
-                                    </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
+<!-- Meta strip -->
+<div class="meta-strip">
+    <div class="meta-cell">
+        <div class="meta-label">Estado</div>
+        <div class="meta-value">
+            <span class="status-dot status-{{ pedido.estado }}"></span>
+            {{ pedido.get_estado_display }}
+        </div>
+    </div>
+    <div class="meta-cell">
+        <div class="meta-label">Tipo de venta</div>
+        <div class="meta-value">{{ pedido.get_tipo_venta_display }}</div>
+    </div>
+    <div class="meta-cell">
+        <div class="meta-label">Fecha</div>
+        <div class="meta-value">{{ pedido.created_at|date:"d / m / Y" }}</div>
+    </div>
+    <div class="meta-cell">
+        <div class="meta-label">Hora</div>
+        <div class="meta-value">{{ pedido.created_at|date:"H:i" }} hs</div>
+    </div>
+</div>
 
-            <div class="col-lg-4">
-                <div class="ig-card mb-4">
-                    <div class="ig-card-header">
-                        <h5><i class="bi bi-receipt me-2"></i>Resumen</h5>
-                    </div>
-                    <div class="ig-card-body">
-                        <div class="summary-item">
-                            <span class="summary-label">Estado</span>
-                            <span class="summary-value">{{ pedido.get_estado_display }}</span>
-                        </div>
-                        <div class="summary-item">
-                            <span class="summary-label">Tipo de venta</span>
-                            <span class="summary-value">{{ pedido.get_tipo_venta_display }}</span>
-                        </div>
-                        <div class="summary-item">
-                            <span class="summary-label">Fecha</span>
-                            <span class="summary-value">{{ pedido.created_at|date:"d/m/Y H:i" }}</span>
-                        </div>
-                        <div class="summary-item">
-                            <span class="summary-label">Total</span>
-                            <span class="summary-value summary-total">${{ pedido.total }}</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="ig-card">
-                    <div class="ig-card-header">
-                        <h5><i class="bi bi-credit-card me-2"></i>Pago</h5>
-                    </div>
-                    <div class="ig-card-body">
-                        {% if pago %}
-                            <div class="summary-item">
-                                <span class="summary-label">Método</span>
-                                <span class="summary-value">{{ pago.metodo }}</span>
-                            </div>
-                            <div class="summary-item">
-                                <span class="summary-label">Monto</span>
-                                <span class="summary-value" style="color: #6E0E2E;">${{ pago.monto }}</span>
-                            </div>
-                            <div class="summary-item">
-                                <span class="summary-label">Fecha</span>
-                                <span class="summary-value">{{ pago.fecha_pago|date:"d/m/Y H:i" }}</span>
-                            </div>
-                        {% else %}
-                            <div class="alert alert-warning mb-0 rounded-3" style="background: #fff3cd; border: none;">
-                                <i class="bi bi-exclamation-triangle me-2"></i>
-                                Este pedido aún no tiene un pago registrado.
-                            </div>
+<!-- Body grid -->
+<div class="body-grid">
+    <div class="items-card">
+        <div class="card-head">
+            <i class="bi bi-bag-check"></i>
+            <span class="card-head-title">Items del pedido</span>
+        </div>
+        <div class="items-col-header">
+            <span class="col-th">Producto</span>
+            <span class="col-th right">Importe</span>
+        </div>
+        {% for item in items %}
+        <div class="item-row">
+            <div>
+                <div class="item-name">{{ item.variante.producto.nombre }}</div>
+                <div class="item-tags">
+                    <span class="item-sku">{{ item.variante.producto.codigo }}</span>
+                    <span class="item-variant">Talle {{ item.variante.talle.nombre }}</span>
+                    {% with colores=item.variante.colores.all %}
+                        {% if colores %}
+                            {% for color in colores %}
+                            <span class="item-color">
+                                <i class="bi bi-palette"></i> {{ color.nombre }}
+                            </span>
+                            {% endfor %}
                         {% endif %}
-                    </div>
+                    {% endwith %}
                 </div>
             </div>
+            <div class="item-amount">
+                <div class="item-subtotal">${{ item.precio_total }}</div>
+                <div class="item-qty-label">× {{ item.cantidad }} unidad{% if item.cantidad != 1 %}es{% endif %}</div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="item-row">
+            <div class="item-name" style="color:#9c8c7c;">Sin items</div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="right-col">
+        <div class="side-card">
+            <div class="total-block">
+                <div class="total-eyebrow">Total del pedido</div>
+                <div class="total-amount">${{ pedido.total }}</div>
+            </div>
+            <div class="detail-rows">
+                <div class="detail-row">
+                    <span class="detail-lbl">Subtotal</span>
+                    <span class="detail-val">${{ pedido.total }}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-lbl">Envio</span>
+                    <span class="detail-val" style="color:#9c8c7c;font-weight:400;">A coordinar</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-lbl">Articulos</span>
+                    <span class="detail-val">{{ items|length }} producto{% if items|length != 1 %}s{% endif %}</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="side-card">
+            <div class="card-head">
+                <i class="bi bi-credit-card"></i>
+                <span class="card-head-title">Pago</span>
+            </div>
+            {% if pago %}
+            <div class="payment-info">
+                <div class="payment-row">
+                    <span class="detail-lbl">Metodo</span>
+                    <span class="detail-val">{{ pago.metodo }}</span>
+                </div>
+                <div class="payment-row">
+                    <span class="detail-lbl">Monto</span>
+                    <span class="detail-val" style="color:#6E0E2E;">${{ pago.monto }}</span>
+                </div>
+                <div class="payment-row">
+                    <span class="detail-lbl">Fecha</span>
+                    <span class="detail-val">{{ pago.fecha_pago|date:"d/m/Y H:i" }}</span>
+                </div>
+            </div>
+            {% else %}
+            <div class="payment-empty">
+                <div class="payment-icon"><i class="bi bi-hourglass-split"></i></div>
+                <div class="payment-title">Sin pago registrado</div>
+                <div class="payment-desc">Este pedido todavia no tiene un pago asociado.</div>
+            </div>
+            {% endif %}
         </div>
     </div>
 </div>
