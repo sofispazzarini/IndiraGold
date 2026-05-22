@@ -1,137 +1,176 @@
-{% extends 'users/dashboard_admin.html' %}
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Editar Cliente{% endblock %}
+
+{% block extra_head %}
+<style>
+    /* MAIN OVERRIDE - CENTRADO */
+    .main { max-width: 700px; padding: 3rem 3.5rem 5rem; margin: 0 auto; }
+
+    /* BACK LINK */
+    .back-link {
+        display: inline-flex; align-items: center; gap: 0.5rem;
+        font-size: 0.7rem; font-weight: 600; letter-spacing: 0.14em;
+        text-transform: uppercase; color: #9c8c7c; text-decoration: none;
+        margin-bottom: 1.75rem; transition: all 0.2s;
+    }
+    .back-link:hover { color: #b8922a; transform: translateX(-3px); }
+
+    /* PAGE HEADER */
+    .page-header {
+        margin-bottom: 2rem; padding-bottom: 1.5rem;
+        border-bottom: 1px solid rgba(184,146,42,0.12);
+        position: relative;
+    }
+    .page-header::after {
+        content: ''; position: absolute; bottom: -1px; left: 0;
+        width: 64px; height: 2px; background: #b8922a;
+    }
+    .header-eyebrow {
+        font-size: 0.6rem; font-weight: 600; letter-spacing: 0.2em;
+        text-transform: uppercase; color: #b8922a; margin-bottom: 0.5rem;
+    }
+    .page-title {
+        font-family: 'Cormorant Garamond', serif;
+        font-size: 2.4rem; font-weight: 600;
+        color: #1a1612; letter-spacing: -0.015em; line-height: 1;
+    }
+
+    /* CARD */
+    .form-card {
+        background: #fff; border: 1px solid #e8dfd4;
+        border-radius: 14px; overflow: hidden;
+    }
+    .card-head {
+        padding: 1.1rem 1.6rem; border-bottom: 1px solid rgba(184,146,42,0.12);
+        display: flex; align-items: center; justify-content: space-between;
+    }
+    .card-head-left { display: flex; align-items: center; gap: 0.6rem; }
+    .card-head i { font-size: 0.9rem; color: #b8922a; }
+    .card-head-title {
+        font-family: 'Cormorant Garamond', serif;
+        font-size: 1.2rem; font-weight: 600; color: #1a1612;
+    }
+    .btn-add-address {
+        display: inline-flex; align-items: center; gap: 0.4rem;
+        padding: 0.5rem 1rem; border-radius: 50px;
+        font-size: 0.72rem; font-weight: 600;
+        background: transparent; color: #b8922a;
+        border: 1.5px solid rgba(184,146,42,0.3);
+        text-decoration: none; transition: all 0.2s;
+    }
+    .btn-add-address:hover { background: #b8922a; color: #fff; border-color: #b8922a; }
+
+    .card-body { padding: 1.5rem 1.6rem; }
+
+    /* FORM */
+    .form-group { margin-bottom: 1.25rem; }
+    .form-label {
+        font-size: 0.65rem; font-weight: 600; letter-spacing: 0.1em;
+        text-transform: uppercase; color: #9c8c7c; margin-bottom: 0.5rem;
+        display: block;
+    }
+    .form-input {
+        width: 100%; border: 1.5px solid #e8dfd4; border-radius: 8px;
+        padding: 0.75rem 1rem; font-size: 0.9rem;
+        background: #faf7f4; transition: all 0.2s;
+        font-family: inherit; color: #3d342a;
+    }
+    .form-input:focus {
+        border-color: #b8922a; background: #fff;
+        box-shadow: 0 0 0 3px rgba(184,146,42,0.1); outline: none;
+    }
+    .form-input:disabled {
+        background: #f5f3f0; color: #9c8c7c; cursor: not-allowed;
+    }
+
+    /* SUBMIT BUTTON */
+    .btn-submit {
+        display: flex; align-items: center; justify-content: center; gap: 0.6rem;
+        width: 100%; padding: 1rem 1.5rem; border-radius: 50px;
+        background: #1a1612; color: #fff; border: none;
+        font-family: 'Montserrat', sans-serif; font-size: 0.78rem; font-weight: 700;
+        letter-spacing: 0.1em; text-transform: uppercase;
+        cursor: pointer; transition: all 0.2s; margin-top: 1.5rem;
+    }
+    .btn-submit:hover { background: #b8922a; }
+
+    /* ALERT */
+    .alert-custom {
+        padding: 1rem 1.25rem; border-radius: 10px; margin-bottom: 1.5rem;
+        font-size: 0.85rem; display: flex; align-items: center; gap: 0.75rem;
+    }
+    .alert-success { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
+    .alert-danger { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+
+    /* Animations */
+    @keyframes fadeUp { from { opacity:0; transform:translateY(14px); } to { opacity:1; transform:translateY(0); } }
+    .page-header { animation: fadeUp 0.38s ease both; }
+    .form-card { animation: fadeUp 0.38s 0.08s ease both; }
+
+    /* Responsive */
+    @media (max-width: 600px) {
+        .main { padding: 2rem 1.5rem; }
+        .card-head { flex-direction: column; align-items: flex-start; gap: 0.75rem; }
+    }
+</style>
+{% endblock %}
+
+{% block sidebar_menu %}
+{% include 'users/_sidebar_admin.html' %}
+{% endblock %}
+
 {% block content %}
-<div class="editar-cliente-right">
-    <div class="editar-cliente-card">
-        <a href="{% url 'users:listado_clientes' %}" class="btn btn-light mb-3" style="font-size: 1.5rem; border: none; padding: 4px 16px 4px 10px;">
-            &#8592;
-        </a>
-        <h2>Editar Cliente</h2>
-        {% if mensaje %}
-            <div class="alert {% if 'correctamente' in mensaje %}alert-success{% else %}alert-danger{% endif %} mt-3">{{ mensaje }}</div>
-        {% endif %}
-        <div class="mb-3 text-end">
-            <a href="{% url 'users:agregar_direccion' cliente.id %}" class="btn btn-outline-secondary">+ Agregar dirección</a>
+<a href="{% url 'users:listado_clientes' %}" class="back-link">
+    <i class="bi bi-arrow-left"></i> Volver a clientes
+</a>
+
+<div class="page-header">
+    <p class="header-eyebrow">Gestion de clientes</p>
+    <h1 class="page-title">Editar Cliente</h1>
+</div>
+
+{% if mensaje %}
+<div class="alert-custom {% if 'correctamente' in mensaje %}alert-success{% else %}alert-danger{% endif %}">
+    <i class="bi {% if 'correctamente' in mensaje %}bi-check-circle{% else %}bi-exclamation-circle{% endif %}"></i>
+    {{ mensaje }}
+</div>
+{% endif %}
+
+<div class="form-card">
+    <div class="card-head">
+        <div class="card-head-left">
+            <i class="bi bi-person"></i>
+            <span class="card-head-title">Datos del cliente</span>
         </div>
+        <a href="{% url 'users:agregar_direccion' cliente.id %}" class="btn-add-address">
+            <i class="bi bi-plus"></i> Agregar direccion
+        </a>
+    </div>
+    <div class="card-body">
         <form method="post">
             {% csrf_token %}
-            <div class="mb-3">
-                <label for="id_nombre" class="form-label">Nombre completo</label>
-                {{ form.nombre }}
+            <div class="form-group">
+                <label class="form-label">Nombre completo</label>
+                <input type="text" name="nombre" value="{{ form.nombre.value|default:'' }}" class="form-input" placeholder="Nombre y apellido">
             </div>
-            <div class="mb-3">
-                <label for="id_email" class="form-label">Correo electrónico</label>
-                <input type="email" class="form-control" value="{{ form.email.value }}" disabled>
+            <div class="form-group">
+                <label class="form-label">Correo electronico</label>
+                <input type="email" class="form-input" value="{{ form.email.value }}" disabled>
             </div>
-            <div class="mb-3">
-                <label for="id_telefono" class="form-label">Teléfono</label>
-                {{ form.telefono }}
+            <div class="form-group">
+                <label class="form-label">Telefono</label>
+                <input type="tel" name="telefono" value="{{ form.telefono.value|default:'' }}" class="form-input" placeholder="Ej: 11 1234-5678">
             </div>
-            <div class="mb-3">
+            <div class="form-group">
                 <label class="form-label">DNI</label>
-                <input type="text" class="form-control" value="{{ cliente.dni }}" disabled>
+                <input type="text" class="form-input" value="{{ cliente.dni }}" disabled>
             </div>
-            <button type="submit" class="btn btn-primary">Guardar cambios</button>
+            <button type="submit" class="btn-submit">
+                <i class="bi bi-check-circle"></i> Guardar cambios
+            </button>
         </form>
     </div>
-        </div>
 </div>
-<style>
-.editar-cliente-right {
-    padding-top: 32px;
-    padding-bottom: 32px;
-    padding-left: 28vw;
-    display: flex;
-    justify-content: flex-start;
-}
-@media (max-width: 1100px) {
-    .editar-cliente-right {
-        padding-left: 10vw;
-    }
-}
-@media (max-width: 900px) {
-    .editar-cliente-right {
-        padding-left: 0;
-        justify-content: center;
-    }
-}
-.editar-cliente-card {
-    background: #fff;
-    max-width: 500px;
-    width: 100%;
-    border-radius: 18px;
-    box-shadow: 0 4px 32px rgba(184,146,42,0.10);
-    padding: 2.5rem 2rem 2rem 2rem;
-    margin: 2.5rem auto;
-}
-.editar-cliente-card h2 {
-    font-family: 'Montserrat', Arial, sans-serif;
-    font-size: 2.1rem;
-    font-weight: 700;
-    color: #2d3848;
-    text-align: left;
-    margin-bottom: 1.5rem;
-    letter-spacing: 1px;
-}
-.editar-cliente-card label {
-    font-weight: 600;
-    color: #3b4252;
-    margin-bottom: 0.3rem;
-}
-.editar-cliente-card .form-control[disabled] {
-    background: #f8f5ef;
-    color: #8c7e70;
-    border: 1.5px solid #e8dfd4;
-}
-.editar-cliente-card .btn-primary {
-    background: linear-gradient(90deg, #fbe18b 0%, #b8922a 100%);
-    color: #6E0E2E;
-    border: none;
-    border-radius: 10px;
-    padding: 0.85rem 2.5rem;
-    font-size: 1.08rem;
-    font-weight: 700;
-    letter-spacing: 2px;
-    box-shadow: 0 2px 8px 0 rgba(184,146,42,0.10);
-    cursor: pointer;
-    transition: background 0.18s, box-shadow 0.18s, color 0.18s;
-    text-transform: uppercase;
-    margin-top: 1.5rem;
-}
-.editar-cliente-card .btn-primary:hover {
-    background: linear-gradient(90deg, #b8922a 0%, #fbe18b 100%);
-    color: #fff;
-    box-shadow: 0 4px 16px 0 rgba(184,146,42,0.18);
-}
-.editar-cliente-card .btn-outline-secondary {
-    border-radius: 8px;
-    border: 1.5px solid #b8922a;
-    color: #b8922a;
-    font-weight: 600;
-    background: #fffbe6;
-    transition: background 0.18s, color 0.18s;
-}
-.editar-cliente-card .btn-outline-secondary:hover {
-    background: #b8922a;
-    color: #fff;
-}
-.editar-cliente-card .btn-light {
-    background: #f8f5ef;
-    color: #b8922a;
-    border-radius: 8px;
-    border: none;
-    font-size: 1.5rem;
-    padding: 4px 16px 4px 10px;
-    margin-bottom: 1.2rem;
-}
-.editar-cliente-card .btn-light:hover {
-    background: #b8922a;
-    color: #fff;
-}
-@media (max-width: 900px) {
-    .editar-cliente-card {
-        padding: 1.2rem 0.5rem 1.5rem 0.5rem;
-        max-width: 98vw;
-    }
-}
-</style>
 {% endblock %}

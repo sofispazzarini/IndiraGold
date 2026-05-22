@@ -25,9 +25,8 @@
     flex-direction: column;
     padding: 3.5rem 4rem 5rem;
     width: 100%;
-    max-width: 950px;
-    margin-left: 20%;
-    margin-right: auto;
+    max-width: 1100px;
+    margin: 0 auto;
   }
 
   .page-header {
@@ -45,7 +44,7 @@
     position: absolute;
     bottom: -1px; left: 0;
     width: 64px; height: 2px;
-    background: var(--burgundy);
+    background: var(--gold);
   }
 
   .header-eyebrow {
@@ -53,7 +52,7 @@
     font-weight: 600;
     letter-spacing: 0.2em;
     text-transform: uppercase;
-    color: var(--burgundy);
+    color: var(--gold);
     margin-bottom: 0.5rem;
   }
 
@@ -75,7 +74,7 @@
     font-family: 'Cormorant Garamond', serif;
     font-size: 3.2rem;
     font-weight: 300;
-    color: var(--burgundy);
+    color: var(--gold);
     line-height: 1;
   }
 
@@ -122,19 +121,19 @@
     left: -1.2rem;
     top: 50%; transform: translateY(-50%);
     width: 3px; height: 0;
-    background: var(--burgundy);
+    background: var(--gold);
     border-radius: 2px;
     transition: height 0.22s ease;
   }
 
-  .prov-item:hover { border-bottom-color: rgba(110, 14, 46, 0.3); }
+  .prov-item:hover { border-bottom-color: rgba(184,146,42,0.3); }
   .prov-item:hover::before { height: 60%; }
 
   .prov-index {
     font-family: 'Cormorant Garamond', serif;
     font-size: 0.8rem;
     font-weight: 400;
-    color: var(--burgundy);
+    color: var(--gold);
     letter-spacing: 0.06em;
     opacity: 0.75;
     user-select: none;
@@ -159,7 +158,7 @@
   }
 
   .prov-item:hover .prov-nombre {
-    color: var(--burgundy);
+    color: var(--gold);
   }
 
   .prov-meta {
@@ -209,14 +208,14 @@
   }
 
   .btn-action:hover {
-    background: var(--burgundy);
+    background: var(--gold);
     color: #fff;
-    border-color: var(--burgundy);
+    border-color: var(--gold);
   }
 
   .btn-action.edit:hover {
-    background: var(--gold);
-    border-color: var(--gold);
+    background: var(--dark);
+    border-color: var(--dark);
   }
 
   /* Add Row */
@@ -233,13 +232,13 @@
     transition: all 0.2s;
   }
 
-  .add-prov-row:hover .add-icon-ring { background: var(--burgundy); border-color: var(--burgundy); }
+  .add-prov-row:hover .add-icon-ring { background: var(--gold); border-color: var(--gold); }
   .add-prov-row:hover .add-icon-ring i { color: #fff; }
-  .add-prov-row:hover .add-label { color: var(--burgundy); }
+  .add-prov-row:hover .add-label { color: var(--gold); }
 
   .add-icon-ring {
     width: 40px; height: 40px;
-    border: 1.5px solid rgba(110, 14, 46, 0.4);
+    border: 1.5px solid rgba(184,146,42,0.5);
     border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
     transition: all 0.2s;
@@ -248,7 +247,7 @@
 
   .add-icon-ring i {
     font-size: 1rem;
-    color: var(--burgundy);
+    color: var(--gold);
     transition: color 0.2s;
   }
 
@@ -301,8 +300,8 @@
   }
 
   .page-btn:hover {
-    border-color: var(--burgundy);
-    color: var(--burgundy);
+    border-color: var(--gold);
+    color: var(--gold);
   }
 
   .page-btn.active {
@@ -344,7 +343,7 @@
     font-weight: 600;
     letter-spacing: 0.2em;
     text-transform: uppercase;
-    color: var(--burgundy);
+    color: var(--gold);
     margin-bottom: 0.6rem;
   }
 
@@ -365,7 +364,7 @@
     width: 100%;
     border: none;
     border-bottom: 1.5px solid var(--border);
-    padding: 0.85rem 0;
+    padding: 0.85rem 1rem;
     font-family: 'Montserrat', sans-serif;
     font-size: 0.95rem;
     text-align: center;
@@ -375,7 +374,7 @@
     transition: border-color 0.2s;
   }
 
-  .modal-input:focus { outline: none; border-bottom-color: var(--burgundy); }
+  .modal-input:focus { outline: none; border-bottom-color: var(--gold); }
   .modal-input::placeholder { color: var(--muted); }
 
   .modal-subtitle {
@@ -430,7 +429,6 @@
   @media (max-width: 768px) {
     .gestion-main {
       padding: 2rem 1.5rem;
-      margin-left: 0;
     }
     .prov-item {
       grid-template-columns: 1fr;

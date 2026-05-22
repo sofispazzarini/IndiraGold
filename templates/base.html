@@ -39,114 +39,59 @@
 
     /* ── SIDEBAR ── */
     .sidebar {
-      width: var(--sidebar-w);
-      background: var(--sidebar-bg);
+      width: 240px;
+      background: #ede9e3;
       min-height: 100vh;
       display: flex;
       flex-direction: column;
       position: fixed;
       top: 0; left: 0; bottom: 0;
       z-index: 101;
-      border-right: 2px solid var(--border);
+      border-right: 1.5px solid #e8dfd4;
     }
 
-    .sidebar__brand {
-      padding: 1.5rem 1.25rem 1rem;
-      border-bottom: none;
-    }
+    .sidebar__brand { padding: 1.5rem 1.25rem 1rem; }
     .brand-name {
       font-family: 'Cormorant Garamond', serif;
-      font-size: 1.6rem;
-      font-weight: 700;
-      color: var(--gold);
-      letter-spacing: .04em;
-      line-height: 1;
+      font-size: 1.6rem; font-weight: 700;
+      color: #b8922a; letter-spacing: .04em; line-height: 1;
     }
     .brand-tagline {
-      font-size: .7rem;
-      color: var(--text-muted);
-      letter-spacing: .15em;
-      text-transform: uppercase;
-      margin-top: .25rem;
+      font-size: .62rem; color: #9c8c7c;
+      letter-spacing: .15em; text-transform: uppercase; margin-top: .3rem;
     }
 
-    .sidebar__nav {
-      padding: 1rem 0;
-      flex: 1;
-      overflow-y: auto;
-    }
+    .sidebar__nav { padding: 1rem 0; flex: 1; overflow-y: auto; }
 
     .nav-section {
-      padding: .75rem 1.25rem .3rem;
-      font-size: .65rem;
-      font-weight: 600;
-      letter-spacing: .12em;
-      text-transform: uppercase;
-      color: var(--text-muted);
+      padding: .75rem 1.25rem .3rem; font-size: .6rem;
+      font-weight: 600; letter-spacing: .14em;
+      text-transform: uppercase; color: #9c8c7c;
     }
 
     .nav-link {
-      display: flex;
-      align-items: center;
-      gap: .65rem;
-      padding: 0.7rem 1.3rem;
-      color: var(--text);
-      text-decoration: none;
-      font-size: .97rem;
-      font-weight: 500;
-      border-radius: 18px;
-      margin: 0.22rem 0.3rem;
-      background: transparent;
-      border: none;
-      box-shadow: none;
-      position: relative;
-      transition: color .18s cubic-bezier(.4,0,.2,1);
-      overflow: hidden;
+      display: flex; align-items: center; gap: .6rem;
+      padding: 0.65rem 1.25rem; color: #3d342a;
+      text-decoration: none; font-size: .88rem; font-weight: 400;
+      border-radius: 10px; margin: 0.15rem 0.4rem; transition: all .18s;
     }
-    .nav-link::after {
-      content: '';
-      display: block;
-      position: absolute;
-      left: 1.3rem;
-      right: 1.3rem;
-      bottom: 8px;
-      height: 2.5px;
-      background: linear-gradient(90deg, #e8c96a 0%, #b8922a 100%);
-      border-radius: 2px;
-      opacity: 0;
-      transform: scaleX(0.5);
-      transition: all .18s cubic-bezier(.4,0,.2,1);
-    }
-    .nav-link:hover, .nav-link:focus {
-      color: var(--gold);
-    }
-    .nav-link:hover::after, .nav-link:focus::after {
-      opacity: 1;
-      transform: scaleX(1);
-    }
+    .nav-link:hover { color: #b8922a; background: rgba(184,146,42,0.06); }
     .nav-link.active {
-      color: var(--gold);
-      background: linear-gradient(90deg, #fffbe6 60%, #fbeec1 100%);
-      font-weight: 700;
-      box-shadow: 0 2px 12px 0 rgba(184,146,42,0.10);
-      border: 1.5px solid var(--gold);
+      color: #b8922a; background: rgba(184,146,42,0.1);
+      font-weight: 600; border: 1px solid rgba(184,146,42,0.25);
     }
-    .nav-link.active::after {
-      opacity: 0;
-    }
-    .nav-link svg { opacity: .7; flex-shrink: 0; }
-    .nav-link.active svg { opacity: 1; }
+    .nav-link i { font-size: 1rem; }
 
     .sidebar__footer {
       padding: 1rem 1.25rem;
-      border-top: 1px solid var(--border);
-      font-size: .78rem;
-      color: var(--text-muted);
+      border-top: 1px solid #e8dfd4;
+      font-size: .72rem;
+      color: #9c8c7c;
     }
 
     /* ── MAIN LAYOUT ── */
     .layout {
-      margin-left: var(--sidebar-w);
+      margin-left: 240px;
       flex: 1;
       display: flex;
       flex-direction: column;
@@ -218,6 +163,20 @@
     ::-webkit-scrollbar { width: 5px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+
+    /* ── GLOBAL INPUTS ── */
+    input[type="text"],
+    input[type="email"],
+    input[type="password"],
+    input[type="number"],
+    input[type="tel"],
+    input[type="url"],
+    input[type="search"],
+    input[type="date"],
+    textarea,
+    select {
+      padding: 0.75rem 1rem;
+    }
   </style>
 </head>
 <body>
