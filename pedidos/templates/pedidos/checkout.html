@@ -335,7 +335,9 @@
   }
 
   .direccion-card {
-    display: block;
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
     padding: 1rem 1.25rem;
     border: 1px solid var(--border);
     border-radius: 12px;
@@ -348,23 +350,29 @@
     border-color: rgba(110, 14, 46, 0.3);
   }
 
-  .direccion-card input {
-    display: none;
+  .direccion-card input[type="radio"] {
+    display: block;
+    width: 19px;
+    height: 19px;
+    flex: 0 0 auto;
+    accent-color: var(--burgundy);
+    cursor: pointer;
   }
 
   .direccion-card input:checked + .direccion-content {
     color: var(--burgundy);
   }
 
-  .direccion-card input:checked ~ .direccion-card {
+  .direccion-card:has(input[type="radio"]:checked) {
     border-color: var(--burgundy);
-    background: rgba(110, 14, 46, 0.02);
+    background: rgba(110, 14, 46, 0.03);
   }
 
   .direccion-content {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    flex: 1;
   }
 
   .direccion-alias {
@@ -382,6 +390,58 @@
   .direccion-content i {
     color: var(--muted);
     font-size: 1.2rem;
+  }
+
+  .direccion-card:has(input[type="radio"]:checked) .direccion-alias,
+  .direccion-card:has(input[type="radio"]:checked) .direccion-content i {
+    color: var(--burgundy);
+  }
+
+  .btn-checkout-add-address {
+    border: 1px solid rgba(110, 14, 46, 0.28);
+    background: #fff;
+    color: var(--burgundy);
+    border-radius: 999px;
+    padding: 0.75rem 1rem;
+    font-weight: 700;
+    font-size: 0.86rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    margin-bottom: 1rem;
+  }
+
+  .btn-checkout-add-address:hover {
+    background: rgba(110, 14, 46, 0.04);
+  }
+
+  .regalo-card {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .direccion-card input.regalo-check {
+    display: block;
+    width: 20px;
+    height: 20px;
+    flex: 0 0 auto;
+    accent-color: var(--burgundy);
+    cursor: pointer;
+  }
+
+  .regalo-card .direccion-content {
+    flex: 1;
+  }
+
+  .regalo-card:has(.regalo-check:checked) {
+    border-color: var(--burgundy);
+    background: rgba(110, 14, 46, 0.03);
+  }
+
+  .regalo-card:has(.regalo-check:checked) .direccion-alias,
+  .regalo-card:has(.regalo-check:checked) .direccion-content i {
+    color: var(--burgundy);
   }
 
   .alert-warning {
@@ -430,6 +490,71 @@
 
   .resumen-row .value.green {
     color: #3d6e2a;
+  }
+
+  .resumen-row .value.discount {
+    color: var(--burgundy);
+  }
+
+  .coupon-box {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 0.9rem;
+    margin: 1rem 0;
+    background: #fffdf9;
+  }
+
+  .coupon-toggle {
+    width: 100%;
+    border: 0;
+    background: transparent;
+    color: var(--burgundy);
+    font-weight: 700;
+    text-align: left;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .coupon-form {
+    display: none;
+    gap: 0.5rem;
+    margin-top: 0.85rem;
+  }
+
+  .coupon-form.active {
+    display: flex;
+  }
+
+  .coupon-form input {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .coupon-form button {
+    border: none;
+    border-radius: 999px;
+    background: var(--burgundy);
+    color: #fff;
+    padding: 0 1rem;
+    font-weight: 700;
+  }
+
+  .coupon-message {
+    display: none;
+    margin-top: 0.65rem;
+    font-size: 0.78rem;
+  }
+
+  .coupon-message.success {
+    display: block;
+    color: #2f6f3f;
+  }
+
+  .coupon-message.error {
+    display: block;
+    color: var(--burgundy);
   }
 
   .resumen-divider {
@@ -712,15 +837,22 @@
                 Seleccioná la dirección donde querés recibir tu pedido.
                 </p>
 
-                <input
-                    type="text"
-                    class="form-control direccion-filter"
+                <select
+                    class="form-select direccion-filter"
                     data-target="flex"
-                    placeholder="Filtrar por etiqueta: Casa, Trabajo..."
                     style="margin-bottom:1rem;"
                 >
+                    <option value="">Todas las etiquetas</option>
+                    {% for etiqueta in etiquetas_flex %}
+                    <option value="{{ etiqueta|lower }}">{{ etiqueta|title }}</option>
+                    {% endfor %}
+                </select>
 
-                {% for direccion in direcciones %}
+                <button type="button" class="btn-checkout-add-address" data-bs-toggle="modal" data-bs-target="#modalNuevaDireccionCheckout">
+                    <i class="bi bi-plus-circle"></i> Agregar direccion
+                </button>
+
+                {% for direccion in direcciones_flex %}
                 <label class="direccion-card" data-address-group="flex" data-etiqueta="{{ direccion.etiqueta|lower }}">
 
                 <input
@@ -753,7 +885,7 @@
 
                 <div class="alert-warning">
                 <i class="bi bi-exclamation-triangle"></i>
-                No tenés direcciones registradas. <a href="{% url 'users:perfil' %}" style="color: var(--burgundy); font-weight: 700;">Agregar direccion</a>
+                No tenés direcciones registradas para esta zona. Usá el botón Agregar direccion para cargar una nueva.
                 </div>
 
                 {% endfor %}
@@ -857,13 +989,20 @@
                     Seleccioná la dirección donde querés recibir tu pedido.
                 </p>
 
-                <input
-                    type="text"
-                    class="form-control direccion-filter"
+                <select
+                    class="form-select direccion-filter"
                     data-target="correo"
-                    placeholder="Filtrar por etiqueta: Casa, Trabajo..."
                     style="margin-bottom:1rem;"
                 >
+                    <option value="">Todas las etiquetas</option>
+                    {% for etiqueta in etiquetas_direcciones %}
+                    <option value="{{ etiqueta|lower }}">{{ etiqueta|title }}</option>
+                    {% endfor %}
+                </select>
+
+                <button type="button" class="btn-checkout-add-address" data-bs-toggle="modal" data-bs-target="#modalNuevaDireccionCheckout">
+                    <i class="bi bi-plus-circle"></i> Agregar direccion
+                </button>
 
                 {% for direccion in direcciones %}
                 <label class="direccion-card" data-address-group="correo" data-etiqueta="{{ direccion.etiqueta|lower }}">
@@ -900,7 +1039,7 @@
 
                 <div class="alert-warning">
                     <i class="bi bi-exclamation-triangle"></i>
-                    No tenés direcciones registradas. <a href="{% url 'users:perfil' %}" style="color: var(--burgundy); font-weight: 700;">Agregar direccion</a>
+                    No tenés direcciones registradas. Usá el botón Agregar direccion para cargar una nueva.
                 </div>
 
                 {% endfor %}
@@ -910,6 +1049,31 @@
             </div>
 
             </div>
+        </div>
+
+        <div class="checkout-card">
+          <h3 class="card-title">
+            <span>3</span> Opciones del pedido
+          </h3>
+
+          <label class="direccion-card regalo-card" for="es-regalo-check">
+            <input
+              type="checkbox"
+              id="es-regalo-check"
+              class="regalo-check"
+              name="es_regalo"
+              value="1"
+            >
+            <div class="direccion-content">
+              <div>
+                <div class="direccion-alias">Es para regalo</div>
+                <div class="direccion-detail">
+                  El ticket de cambio se imprime con los precios tachados.
+                </div>
+              </div>
+              <i class="bi bi-gift"></i>
+            </div>
+          </label>
         </div>
 
       </div>
@@ -927,6 +1091,32 @@
           <div class="resumen-row">
             <span class="label">Envío</span>
             <span class="value green" id="envio-label">Gratis</span>
+          </div>
+
+          <div class="coupon-box">
+            <button type="button" class="coupon-toggle" id="coupon-toggle">
+              Agregar codigo de descuento
+              <i class="bi bi-chevron-down"></i>
+            </button>
+            <div class="coupon-form" id="coupon-form">
+              <input
+                type="text"
+                class="form-control"
+                id="codigo-descuento-input"
+                placeholder="Ej: INDIRA15"
+                value="{{ codigo_descuento }}"
+              >
+                <button type="button" id="aplicar-codigo-btn">Aplicar</button>
+                <button type="button" id="quitar-codigo-btn" style="display:none;margin-left:8px;">Quitar</button>
+            </div>
+            <div class="coupon-message" id="coupon-message"></div>
+          </div>
+
+          <input type="hidden" name="codigo_descuento" id="codigo-descuento-hidden" value="{{ codigo_descuento }}">
+
+          <div class="resumen-row" id="descuento-row" {% if not descuento_monto %}style="display:none;"{% endif %}>
+            <span class="label">Descuento <span id="descuento-codigo-label">{% if codigo_descuento %}({{ codigo_descuento }}){% endif %}</span></span>
+            <span class="value discount" id="descuento-label">- ${{ descuento_monto }}</span>
           </div>
 
           <div class="resumen-divider"></div>
@@ -951,9 +1141,61 @@
 
 </div>
 
+<div class="modal fade" id="modalNuevaDireccionCheckout" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="border-radius: 16px; border: 1px solid var(--border);">
+      <div class="modal-header" style="border-bottom: 1px solid var(--border);">
+        <h5 class="modal-title" style="color: var(--burgundy); font-weight: 700;">Agregar direccion</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <form id="formNuevaDireccionCheckout">
+        {% csrf_token %}
+        <div class="modal-body">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">Etiqueta</label>
+              <input type="text" name="etiqueta" class="form-control" placeholder="Casa" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Calle</label>
+              <input type="text" name="calle" class="form-control" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Numero</label>
+              <input type="text" name="numero" class="form-control" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Ciudad</label>
+              <input type="text" name="ciudad" class="form-control" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Provincia</label>
+              <input type="text" name="provincia" class="form-control" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Codigo postal</label>
+              <input type="text" name="codigo_postal" class="form-control" required>
+            </div>
+            <div class="col-12">
+              <label class="form-label">Referencia opcional</label>
+              <input type="text" name="referencia" class="form-control" placeholder="Ej: Porton verde, timbre roto">
+            </div>
+          </div>
+          <div class="alert-warning" id="direccion-checkout-error" style="display:none; margin-top:1rem;"></div>
+        </div>
+        <div class="modal-footer" style="border-top: 1px solid var(--border);">
+          <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn-pagar" style="width:auto; padding:0.8rem 1.5rem;">Guardar direccion</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
 <script>
 const subtotalBase = parseFloat("{{ subtotal|floatformat:'2' }}".replace(',', '.'));
 const costoFlex = parseFloat("{{ precio_flex|floatformat:'2' }}".replace(',', '.'));
+let descuentoAplicado = parseFloat("{{ descuento_monto|floatformat:'2' }}".replace(',', '.')) || 0;
 
 function formatearPesos(valor) {
   return '$' + valor.toLocaleString('es-AR');
@@ -997,7 +1239,7 @@ function actualizarEntrega() {
     envioTexto.classList.add('green');
   }
 
-  totalDisplay.innerText = formatearPesos(subtotalBase + costoEnvio);
+  totalDisplay.innerText = formatearPesos(Math.max(0, subtotalBase - descuentoAplicado) + costoEnvio);
 }
 
 radiosEntrega.forEach(radio => {
@@ -1007,15 +1249,148 @@ radiosEntrega.forEach(radio => {
 actualizarEntrega();
 
 document.querySelectorAll('.direccion-filter').forEach(input => {
-  input.addEventListener('input', () => {
+  input.addEventListener('change', () => {
     const target = input.dataset.target;
     const value = input.value.toLowerCase().trim();
     document.querySelectorAll(`[data-address-group="${target}"]`).forEach(card => {
       const etiqueta = card.dataset.etiqueta || '';
-      card.style.display = etiqueta.includes(value) ? '' : 'none';
+      card.style.display = !value || etiqueta === value ? '' : 'none';
     });
   });
 });
+
+const formNuevaDireccionCheckout = document.getElementById('formNuevaDireccionCheckout');
+if (formNuevaDireccionCheckout) {
+  formNuevaDireccionCheckout.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const errorBox = document.getElementById('direccion-checkout-error');
+    errorBox.style.display = 'none';
+    errorBox.textContent = '';
+
+    try {
+      const response = await fetch("{% url 'users:crear_direccion_cliente_ajax' %}", {
+        method: 'POST',
+        body: new FormData(formNuevaDireccionCheckout),
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest',
+        },
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'No pudimos guardar la direccion.');
+      }
+      window.location.reload();
+    } catch (error) {
+      errorBox.textContent = error.message;
+      errorBox.style.display = 'block';
+    }
+  });
+}
+
+const couponToggle = document.getElementById('coupon-toggle');
+const couponForm = document.getElementById('coupon-form');
+const couponInput = document.getElementById('codigo-descuento-input');
+const couponHidden = document.getElementById('codigo-descuento-hidden');
+const couponButton = document.getElementById('aplicar-codigo-btn');
+const couponMessage = document.getElementById('coupon-message');
+const descuentoRow = document.getElementById('descuento-row');
+const descuentoLabel = document.getElementById('descuento-label');
+const descuentoCodigoLabel = document.getElementById('descuento-codigo-label');
+
+if (couponToggle && couponForm) {
+  couponToggle.addEventListener('click', () => {
+    couponForm.classList.toggle('active');
+    couponInput?.focus();
+  });
+}
+
+if (couponButton) {
+  couponButton.addEventListener('click', async () => {
+    const codigo = (couponInput.value || '').trim().toUpperCase();
+    couponMessage.className = 'coupon-message';
+    couponMessage.textContent = '';
+
+    if (!codigo) {
+      couponMessage.textContent = 'Escribi un codigo para aplicarlo.';
+      couponMessage.classList.add('error');
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('codigo_descuento', codigo);
+    formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+
+    try {
+      const response = await fetch("{% url 'pedidos:validar_codigo_descuento' %}", {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest',
+        },
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'No pudimos aplicar ese codigo.');
+      }
+
+      descuentoAplicado = Number(data.descuento) || 0;
+      couponHidden.value = data.codigo;
+      couponInput.value = data.codigo;
+      descuentoCodigoLabel.textContent = `(${data.codigo})`;
+      descuentoLabel.textContent = `- ${formatearPesos(descuentoAplicado)}`;
+      descuentoRow.style.display = '';
+      // Mostrar boton quitar
+      const quitarBtn = document.getElementById('quitar-codigo-btn');
+      if (quitarBtn) quitarBtn.style.display = '';
+      couponMessage.textContent = `${data.nombre}: ${data.porcentaje}% de descuento aplicado.`;
+      couponMessage.classList.add('success');
+      actualizarEntrega();
+    } catch (error) {
+      descuentoAplicado = 0;
+      couponHidden.value = '';
+      descuentoRow.style.display = 'none';
+      couponMessage.textContent = error.message;
+      couponMessage.classList.add('error');
+      actualizarEntrega();
+    }
+  });
+}
+
+// Quitar codigo
+const quitarCodigoBtn = document.getElementById('quitar-codigo-btn');
+if (quitarCodigoBtn) {
+  quitarCodigoBtn.addEventListener('click', async () => {
+    try {
+      const formData = new FormData();
+      formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+
+      const response = await fetch("{% url 'pedidos:quitar_codigo_descuento' %}", {
+        method: 'POST',
+        body: formData,
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+      });
+
+      const data = await response.json();
+      if (!response.ok || !data.success) throw new Error(data.error || 'No se pudo quitar el descuento');
+
+      // Actualizar UI
+      descuentoAplicado = 0;
+      couponHidden.value = '';
+      couponInput.value = '';
+      descuentoCodigoLabel.textContent = '';
+      descuentoLabel.textContent = '';
+      descuentoRow.style.display = 'none';
+      couponMessage.textContent = 'Descuento quitado.';
+      couponMessage.className = 'coupon-message success';
+      // ocultar boton quitar
+      quitarCodigoBtn.style.display = 'none';
+      actualizarEntrega();
+    } catch (err) {
+      couponMessage.textContent = err.message;
+      couponMessage.className = 'coupon-message error';
+    }
+  });
+}
 
 </script>
 {% endblock %}

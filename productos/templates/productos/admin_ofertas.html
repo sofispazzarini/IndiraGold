@@ -43,7 +43,7 @@
 
 .form-grid{
     display:grid;
-    grid-template-columns:1fr 1fr 260px;
+    grid-template-columns:1fr 1fr;
     gap:1.5rem;
     margin-bottom:2rem;
 }
@@ -60,7 +60,8 @@
     font-size:.95rem;
 }
 
-.form-group input{
+.form-group input,
+.form-group select{
     height:52px;
     border:1px solid #ddd;
     border-radius:14px;
@@ -70,9 +71,49 @@
     transition:.2s;
 }
 
-.form-group input:focus{
+.form-group input:focus,
+.form-group select:focus{
     border-color:#b8922a;
     box-shadow:0 0 0 4px rgba(184,146,42,.15);
+}
+
+.alcance-box{
+    display:grid;
+    grid-template-columns:repeat(3, 1fr);
+    gap:1rem;
+    margin-bottom:2rem;
+}
+
+.alcance-option{
+    border:1px solid #e5e7eb;
+    border-radius:16px;
+    padding:1rem;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    gap:.75rem;
+    color:#374151;
+    font-weight:600;
+}
+
+.alcance-option input{
+    width:18px;
+    height:18px;
+    accent-color:#b8922a;
+}
+
+.alcance-option:has(input:checked){
+    border-color:#b8922a;
+    background:#fff8e1;
+    color:#7a102f;
+}
+
+.categoria-box{
+    display:none;
+    border:1px solid #e5e7eb;
+    border-radius:18px;
+    padding:1rem;
+    margin-bottom:2rem;
 }
 
 .switch-container{
@@ -293,6 +334,10 @@
         grid-template-columns:1fr;
     }
 
+    .alcance-box{
+        grid-template-columns:1fr;
+    }
+
     .producto-item:nth-child(odd){
         border-right:none;
     }
@@ -311,6 +356,7 @@
     <form method="POST" class="ofertas-card">
 
         {% csrf_token %}
+        <input type="hidden" name="tipo_oferta" value="catalogo">
 
         <h2>Crear nueva oferta</h2>
 
@@ -342,27 +388,41 @@
 
             </div>
 
-            <div class="switch-container">
+        </div>
 
-                <label>
-                    Aplicar a todos los productos
-                </label>
+        <div class="alcance-box">
 
-                <div class="switch-row">
+            <label class="alcance-option">
+                <input type="radio" name="alcance" value="productos" checked>
+                Productos seleccionados
+            </label>
 
-                    <label class="switch">
+            <label class="alcance-option">
+                <input type="radio" name="alcance" value="categoria">
+                Una categoría
+            </label>
 
-                        <input
-                            type="checkbox"
-                            name="aplicar_a_todos"
-                            id="aplicarTodos"
-                        >
+            <label class="alcance-option">
+                <input type="radio" name="alcance" value="todos">
+                Todos los productos
+            </label>
 
-                        <span class="slider"></span>
+        </div>
 
-                    </label>
+        <div class="categoria-box" id="categoriaContainer">
 
-                </div>
+            <div class="form-group">
+
+                <label>Categoría</label>
+
+                <select name="categoria" id="categoriaOferta">
+                    <option value="">Seleccionar categoría</option>
+                    {% for categoria in categorias %}
+                        <option value="{{ categoria.id }}">
+                            {{ categoria.nombre }}
+                        </option>
+                    {% endfor %}
+                </select>
 
             </div>
 
@@ -449,6 +509,57 @@
 
     </form>
 
+    <form method="POST" class="ofertas-card">
+
+        {% csrf_token %}
+        <input type="hidden" name="tipo_oferta" value="cupon">
+
+        <h2>Crear codigo de descuento</h2>
+
+        <div class="form-grid">
+
+            <div class="form-group">
+                <label>Nombre del codigo</label>
+                <input
+                    type="text"
+                    name="nombre"
+                    placeholder="Ej: Bienvenida"
+                    required
+                >
+            </div>
+
+            <div class="form-group">
+                <label>Codigo</label>
+                <input
+                    type="text"
+                    name="codigo"
+                    placeholder="Ej: INDIRA15"
+                    required
+                >
+            </div>
+
+            <div class="form-group">
+                <label>Porcentaje de descuento</label>
+                <input
+                    type="number"
+                    name="descuento"
+                    min="1"
+                    max="100"
+                    placeholder="Ej: 15"
+                    required
+                >
+            </div>
+
+        </div>
+
+        <div class="ofertas-actions">
+            <button type="submit" class="btn-primary">
+                Crear codigo
+            </button>
+        </div>
+
+    </form>
+
     <div class="ofertas-card">
 
         <h2>🏷 Ofertas creadas</h2>
@@ -459,6 +570,7 @@
 
                 <tr>
                     <th>NOMBRE</th>
+                    <th>CODIGO</th>
                     <th>DESCUENTO</th>
                     <th>APLICA A</th>
                     <th>ESTADO</th>
@@ -478,6 +590,14 @@
                     </td>
 
                     <td>
+                        {% if oferta.codigo %}
+                            <strong>{{ oferta.codigo }}</strong>
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+
+                    <td>
                         <strong>
                             {{ oferta.descuento }}%
                         </strong>
@@ -485,8 +605,12 @@
 
                     <td>
 
-                        {% if oferta.aplicar_a_todos %}
+                        {% if oferta.es_cupon %}
+                            Codigo de descuento
+                        {% elif oferta.aplicar_a_todos %}
                             Todos los productos
+                        {% elif oferta.categoria %}
+                            Categoría: {{ oferta.categoria.nombre }}
                         {% else %}
                             Productos seleccionados
                         {% endif %}
@@ -540,7 +664,7 @@
 
                 <tr>
 
-                    <td colspan="5">
+                    <td colspan="6">
                         No hay ofertas creadas.
                     </td>
 
@@ -558,18 +682,41 @@
 
 <script>
 
-const aplicarTodos =
-    document.getElementById('aplicarTodos');
-
 const productosContainer =
     document.getElementById('productosContainer');
 
-aplicarTodos.addEventListener('change', function(){
+const categoriaContainer =
+    document.getElementById('categoriaContainer');
+
+const categoriaOferta =
+    document.getElementById('categoriaOferta');
+
+function actualizarAlcanceOferta(){
+
+    const alcance =
+        document.querySelector('input[name="alcance"]:checked').value;
 
     productosContainer.style.display =
-        this.checked ? 'none' : 'block';
+        alcance === 'productos' ? 'block' : 'none';
 
-});
+    categoriaContainer.style.display =
+        alcance === 'categoria' ? 'block' : 'none';
+
+    categoriaOferta.required =
+        alcance === 'categoria';
+}
+
+document.querySelectorAll('input[name="alcance"]')
+    .forEach(input => {
+
+        input.addEventListener(
+            'change',
+            actualizarAlcanceOferta
+        );
+
+    });
+
+actualizarAlcanceOferta();
 
 const buscarProducto =
     document.getElementById('buscarProducto');

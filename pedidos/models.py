@@ -62,6 +62,11 @@ class Pedido(models.Model):
         ('flex', 'Envio Flex'),
         ('correo', 'Envio por Correo'),
     )
+    METODOS_PAGO = (
+        ('efectivo', 'Efectivo'),
+        ('mercado_pago', 'Mercado Pago'),
+        ('tarjeta', 'Tarjeta'),
+    )
     metodo_entrega = models.CharField(max_length=20, choices=METODOS_ENTREGA, default='local')
     costo_envio = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     codigo_postal = models.CharField(max_length=10, blank=True, null=True)
@@ -69,6 +74,9 @@ class Pedido(models.Model):
     calle_numero = models.CharField(max_length=255, blank=True, null=True)
     cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE)
     total = models.DecimalField(max_digits=10, decimal_places=2)
+    codigo_descuento = models.CharField(max_length=40, blank=True, null=True)
+    descuento_porcentaje = models.PositiveIntegerField(default=0)
+    descuento_monto = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     tipo_venta = models.CharField(
         max_length=30,
         choices=TIPOS_VENTA
@@ -78,6 +86,12 @@ class Pedido(models.Model):
         choices=ESTADOS,
         default='pendiente'
     )
+    metodo_pago = models.CharField(max_length=20, choices=METODOS_PAGO, null=True, blank=True)
+    monto_pagado = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    deuda = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    es_presencial = models.BooleanField(default=False)
+    es_regalo = models.BooleanField(default=False)
+    fecha_creacion = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     direccion_info = models.TextField(blank=True, null=True, help_text="Información de dirección del envío")
     correo = models.CharField(
@@ -141,6 +155,15 @@ ESTADOS_PAGO = [
     ("PARCIAL", "Parcial"),
 ]
 class VentaLocal(models.Model):
+    METODOS_PAGO = (
+        ('efectivo', 'Efectivo'),
+        ('mercado_pago', 'Mercado Pago'),
+        ('tarjeta', 'Tarjeta'),
+    )
+    METODOS_ENTREGA = (
+        ('local', 'Retiro en local'),
+        ('envio', 'Con envio'),
+    )
 
     cliente = models.ForeignKey(
         Cliente,
@@ -156,7 +179,6 @@ class VentaLocal(models.Model):
     created_at = models.DateTimeField(
         auto_now_add=True
     )
-    total = models.DecimalField(max_digits=10, decimal_places=2)
 
     monto_pagado = models.DecimalField(
         max_digits=10,
@@ -175,6 +197,28 @@ class VentaLocal(models.Model):
         choices=ESTADOS_PAGO,
         default="PAGADO"
     )
+    
+    metodo_pago = models.CharField(
+        max_length=20,
+        choices=METODOS_PAGO,
+        default='efectivo'
+    )
+
+    metodo_entrega = models.CharField(
+        max_length=20,
+        choices=METODOS_ENTREGA,
+        default='local'
+    )
+
+    direccion = models.ForeignKey(
+        'users.Direccion',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True
+    )
+
+    es_regalo = models.BooleanField(default=False)
+    
     def __str__(self):
 
         return f"Venta #{self.id}"

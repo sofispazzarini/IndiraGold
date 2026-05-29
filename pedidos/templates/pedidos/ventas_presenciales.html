@@ -702,6 +702,9 @@
                                 Cliente
 
                             </h5>
+                            <button type="button" class="btn btn-sm btn-soft mb-3" data-bs-toggle="modal" data-bs-target="#modalNuevoClienteVenta">
+                                <i class="bi bi-plus-lg me-1"></i> Nuevo cliente
+                            </button>
 
                             <input
                                 type="text"
@@ -748,12 +751,35 @@
 
     <div class="mb-3">
 
+        <div class="d-flex gap-2">
+
         <input
             type="text"
             id="buscar-producto"
             class="form-control rounded-4"
             placeholder="Buscar por código o nombre"
         >
+
+        <button
+            type="button"
+            id="btn-escanear-qr"
+            class="btn btn-soft rounded-4 px-3"
+        >
+            <i class="bi bi-upc-scan me-1"></i>
+            Escanear
+        </button>
+
+        <button
+            type="button"
+            id="btn-cancelar-scanner"
+            class="btn btn-outline-secondary rounded-4 px-3"
+            style="display:none;"
+        >
+            Cancelar
+        </button>
+
+        </div>
+        <small class="text-muted d-block mt-2" id="scanner-status">Tambien podes escanear el QR de la etiqueta.</small>
 
     </div>
 
@@ -985,6 +1011,52 @@
 
                             <hr>
 
+                            <div class="mb-4">
+
+                                <label class="form-label fw-bold">
+                                    Entrega
+                                </label>
+
+                                <select id="metodo-entrega" class="form-select rounded-4">
+                                    <option value="local">Retiro en local</option>
+                                    <option value="envio">Con envío</option>
+                                </select>
+
+                            </div>
+
+                            <div class="mb-4" id="direccion-envio-box" style="display:none;">
+
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <label class="form-label fw-bold mb-0">
+                                        Dirección de envío
+                                    </label>
+                                    <button
+                                        type="button"
+                                        class="btn btn-sm btn-soft"
+                                        id="btn-abrir-direccion-venta"
+                                    >
+                                        <i class="bi bi-plus-lg me-1"></i>
+                                        Agregar dirección
+                                    </button>
+                                </div>
+
+                                <select id="direccion-envio" class="form-select rounded-4">
+                                    <option value="">Seleccionar dirección</option>
+                                </select>
+
+                                <small class="text-muted d-block mt-2" id="direccion-envio-help">
+                                    Elegí una dirección guardada de la clienta.
+                                </small>
+
+                            </div>
+
+                            <div class="form-check form-switch mb-4">
+                                <input class="form-check-input" type="checkbox" id="es-regalo">
+                                <label class="form-check-label fw-bold" for="es-regalo">
+                                    Es para regalo
+                                </label>
+                            </div>
+
                             <div
                                 class="d-flex justify-content-between align-items-end mb-4"
                             >
@@ -1009,17 +1081,41 @@
                                 </span>
 
                             </div>
+
                             <div class="mb-4">
 
                                 <label class="form-label fw-bold">
 
-                                    Monto pagado
+                                    Método de pago
+
+                                </label>
+
+                                <select
+                                    id="metodo-pago"
+                                    class="form-select rounded-4"
+                                    required
+                                >
+
+                                    <option value="">Seleccionar método</option>
+                                    <option value="efectivo">Efectivo</option>
+                                    <option value="mercado_pago">Mercado Pago</option>
+                                    <option value="tarjeta">Tarjeta</option>
+
+                                </select>
+
+                            </div>
+
+                            <div class="mb-4">
+
+                                <label class="form-label fw-bold">
+
+                                    Nueva deuda
 
                                 </label>
 
                                 <input
                                     type="number"
-                                    id="monto-pagado"
+                                    id="nueva-deuda"
                                     class="form-control rounded-4"
                                     min="0"
                                     step="0.01"
@@ -1034,7 +1130,7 @@
 
                                         <span class="text-muted">
 
-                                            Pendiente de pago
+                                            Cargá lo que le queda por pagar al cliente
 
                                         </span>
 
@@ -1114,6 +1210,105 @@
     </div>
 
 </div>
+<div class="modal fade" id="modalNuevoClienteVenta" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 rounded-5">
+            <div class="modal-header border-0 px-4 pt-4">
+                <div>
+                    <h4 class="fw-bold mb-1" style="color:#6E0E2E;">Nuevo cliente</h4>
+                    <p class="text-muted mb-0 small">La contraseña inicial será el DNI.</p>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="formNuevoClienteVenta">
+                {% csrf_token %}
+                <div class="modal-body px-4">
+                    <div id="nuevoClienteError" class="alert alert-danger d-none small"></div>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Nombre</label>
+                            <input type="text" name="nombre" class="form-control rounded-4" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Apellido</label>
+                            <input type="text" name="apellido" class="form-control rounded-4" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">DNI</label>
+                            <input type="text" name="dni" class="form-control rounded-4" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Teléfono</label>
+                            <input type="text" name="telefono" class="form-control rounded-4" required>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-bold">Email</label>
+                            <input type="email" name="email" class="form-control rounded-4" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 px-4 pb-4">
+                    <button type="button" class="btn btn-soft" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-gold">Guardar cliente</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="modalNuevaDireccionVenta" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 rounded-5">
+            <div class="modal-header border-0 px-4 pt-4">
+                <div>
+                    <h4 class="fw-bold mb-1" style="color:#6E0E2E;">Nueva dirección</h4>
+                    <p class="text-muted mb-0 small">Se guarda en la ficha de la clienta seleccionada.</p>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="formNuevaDireccionVenta">
+                {% csrf_token %}
+                <input type="hidden" name="cliente_id" id="direccion-cliente-id">
+                <div class="modal-body px-4">
+                    <div id="nuevaDireccionError" class="alert alert-danger d-none small"></div>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Etiqueta</label>
+                            <input type="text" name="etiqueta" class="form-control rounded-4" placeholder="Casa, Trabajo..." required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Calle</label>
+                            <input type="text" name="calle" class="form-control rounded-4" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Número</label>
+                            <input type="text" name="numero" class="form-control rounded-4" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Ciudad</label>
+                            <input type="text" name="ciudad" class="form-control rounded-4" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Provincia</label>
+                            <input type="text" name="provincia" class="form-control rounded-4" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Código postal</label>
+                            <input type="text" name="codigo_postal" class="form-control rounded-4" required>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-bold">Referencia opcional</label>
+                            <input type="text" name="referencia" class="form-control rounded-4" placeholder="Ej: portón verde, timbre roto">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 px-4 pb-4">
+                    <button type="button" class="btn btn-soft" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-gold">Guardar dirección</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 <script>
 
 const inputCliente = document.getElementById(
@@ -1124,11 +1319,88 @@ const resultadosClientes = document.getElementById(
     'resultados-clientes'
 )
 
+const metodoEntregaSelect = document.getElementById(
+    'metodo-entrega'
+)
+
+const direccionEnvioBox = document.getElementById(
+    'direccion-envio-box'
+)
+
+const direccionEnvioSelect = document.getElementById(
+    'direccion-envio'
+)
+
+const direccionEnvioHelp = document.getElementById(
+    'direccion-envio-help'
+)
+
+function renderDireccionesVenta(direcciones){
+
+    direccionEnvioSelect.innerHTML =
+        '<option value="">Seleccionar dirección</option>'
+
+    direcciones.forEach(direccion => {
+        direccionEnvioSelect.innerHTML += `
+            <option value="${direccion.id}">
+                ${direccion.texto}
+            </option>
+        `
+    })
+
+    direccionEnvioHelp.innerText = direcciones.length
+        ? 'Elegí una dirección guardada de la clienta.'
+        : 'La clienta no tiene direcciones guardadas. Agregá una para usar envío.'
+}
+
+async function cargarDireccionesCliente(clienteId){
+
+    if(!clienteId){
+        renderDireccionesVenta([])
+        return
+    }
+
+    const response = await fetch(
+        `/users/ajax/clientes/${clienteId}/direcciones/`
+    )
+    const data = await response.json()
+    renderDireccionesVenta(data.direcciones || [])
+}
+
+metodoEntregaSelect.addEventListener(
+    'change',
+    function(){
+        direccionEnvioBox.style.display =
+            this.value === 'envio' ? 'block' : 'none'
+    }
+)
+
+document.getElementById(
+    'btn-abrir-direccion-venta'
+).addEventListener(
+    'click',
+    function(){
+        if(!window.clienteSeleccionado){
+            mostrarMensaje('Seleccioná una clienta antes de agregar dirección')
+            return
+        }
+        document.getElementById('direccion-cliente-id').value =
+            window.clienteSeleccionado
+        new bootstrap.Modal(
+            document.getElementById('modalNuevaDireccionVenta')
+        ).show()
+    }
+)
+
 inputCliente.addEventListener(
     'keyup',
     async function() {
 
         const q = this.value.trim()
+
+        document.getElementById(
+            'configuracion-variante'
+        ).style.display = 'none'
 
         if(q.length < 2){
 
@@ -1208,9 +1480,69 @@ document.addEventListener(
             inputCliente.value = item.dataset.nombre
             window.clienteSeleccionado = item.dataset.id
             resultadosClientes.style.display = 'none'
+            cargarDireccionesCliente(window.clienteSeleccionado)
         }
     }
 )
+
+document.getElementById('formNuevoClienteVenta').addEventListener('submit', async function(e){
+    e.preventDefault()
+    const errorBox = document.getElementById('nuevoClienteError')
+    errorBox.classList.add('d-none')
+    errorBox.innerText = ''
+
+    try{
+        const response = await fetch('/users/ajax/crear-cliente/', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: new FormData(this)
+        })
+        const data = await response.json()
+        if(!response.ok || !data.success){
+            throw new Error(data.error || 'No se pudo crear el cliente')
+        }
+
+        window.clienteSeleccionado = data.cliente.id
+        inputCliente.value = data.cliente.nombre
+        renderDireccionesVenta([])
+        this.reset()
+        bootstrap.Modal.getInstance(document.getElementById('modalNuevoClienteVenta')).hide()
+    }catch(error){
+        errorBox.innerText = error.message
+        errorBox.classList.remove('d-none')
+    }
+})
+
+document.getElementById('formNuevaDireccionVenta').addEventListener('submit', async function(e){
+    e.preventDefault()
+    const errorBox = document.getElementById('nuevaDireccionError')
+    errorBox.classList.add('d-none')
+    errorBox.innerText = ''
+
+    try{
+        const response = await fetch('/users/ajax/crear-direccion/', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: new FormData(this)
+        })
+        const data = await response.json()
+        if(!response.ok || !data.success){
+            throw new Error(data.error || 'No se pudo crear la dirección')
+        }
+
+        await cargarDireccionesCliente(window.clienteSeleccionado)
+        direccionEnvioSelect.value = data.direccion.id
+        this.reset()
+        bootstrap.Modal.getInstance(document.getElementById('modalNuevaDireccionVenta')).hide()
+    }catch(error){
+        errorBox.innerText = error.message
+        errorBox.classList.remove('d-none')
+    }
+})
 document.getElementById(
     'btn-registrar-venta'
 ).addEventListener(
@@ -1235,52 +1567,115 @@ document.getElementById(
             return
         }
 
-        const response = await fetch(
+        const metodoPago = document.getElementById(
+            'metodo-pago'
+        ).value
 
-            '/pedidos/registrar-venta-local/',
+        const metodoEntrega = metodoEntregaSelect.value
+        const direccionId = direccionEnvioSelect.value
+        const esRegalo = document.getElementById(
+            'es-regalo'
+        ).checked
 
-            {
-
-                method: 'POST',
-
-                headers: {
-
-                    'Content-Type': 'application/json',
-
-                    'X-CSRFToken': getCookie('csrftoken')
-
-                },
-
-                body: JSON.stringify({
-
-                    cliente_id:
-                        window.clienteSeleccionado,
-
-                    productos:
-                        productosVenta,
-
-                    monto_pagado:
-                        document.getElementById(
-                            'monto-pagado'
-                        ).value
-
-                })
-
-            }
-
-        )
-
-        const data = await response.json()
-
-        if(data.success){
-
-            location.reload()
-
-        }else{
+        if(!metodoPago){
 
             mostrarMensaje(
-                'Error al registrar venta'
+                'Seleccioná un método de pago'
             )
+
+            return
+        }
+
+        if(metodoEntrega === 'envio' && !direccionId){
+
+            mostrarMensaje(
+                'Seleccioná una dirección para el envío'
+            )
+
+            return
+        }
+
+        const nuevaDeuda = document.getElementById(
+            'nueva-deuda'
+        ).value
+        const totalVenta = productosVenta.reduce(
+            (acc, p) => acc + (parseFloat(p.precio) * p.cantidad),
+            0
+        )
+        const deudaNumerica = parseFloat(nuevaDeuda) || 0
+
+        if(deudaNumerica < 0 || deudaNumerica > totalVenta){
+
+            mostrarMensaje(
+                'La deuda nueva no puede ser mayor al total de la venta'
+            )
+
+            return
+        }
+
+        try {
+
+            const response = await fetch(
+
+                '/pedidos/registrar-venta-local/',
+
+                {
+
+                    method: 'POST',
+
+                    headers: {
+
+                        'Content-Type': 'application/json',
+
+                        'X-CSRFToken': getCookie('csrftoken')
+
+                    },
+
+                    body: JSON.stringify({
+
+                        cliente_id:
+                            window.clienteSeleccionado,
+
+                        productos:
+                            productosVenta,
+
+                        nueva_deuda: nuevaDeuda,
+                        
+                        metodo_pago: metodoPago,
+
+                        metodo_entrega: metodoEntrega,
+
+                        direccion_id: direccionId,
+
+                        es_regalo: esRegalo
+
+                    })
+
+                }
+
+            )
+
+            const data = await response.json()
+
+            if(data.success){
+
+                location.reload()
+
+            }else{
+
+                mostrarMensaje(
+                    data.error || 'Error al registrar venta'
+                )
+            }
+
+        } catch(error) {
+
+            console.error('Error:', error)
+
+            mostrarMensaje(
+                'Error en la solicitud: ' + error.message
+            )
+
         }
 
     }
@@ -1318,6 +1713,43 @@ function getCookie(name){
 <script>
     
 let productosVenta = []
+
+function obtenerStockSeleccionado(){
+
+    const varianteId = document.getElementById(
+        'talle-select'
+    ).value
+
+    const color = document.getElementById(
+        'color-select'
+    ).value
+
+    const variante = (window.variantesProducto || []).find(
+        v => v.id == varianteId
+    )
+
+    if(!variante){
+        return null
+    }
+
+    if(variante.colores.length > 0 && !color){
+        return null
+    }
+
+    return variante.stock
+}
+
+function actualizarStockSeleccionado(){
+
+    const stockInput = document.getElementById(
+        'stock-variante'
+    )
+
+    const stock = obtenerStockSeleccionado()
+
+    stockInput.value = stock === null ? '-' : stock
+}
+
 const inputProducto = document.getElementById(
     'buscar-producto'
 )
@@ -1326,8 +1758,88 @@ const resultadosProductos = document.getElementById(
     'resultados-productos'
 )
 
+const btnEscanearQr = document.getElementById(
+    'btn-escanear-qr'
+)
+
+const btnCancelarScanner = document.getElementById(
+    'btn-cancelar-scanner'
+)
+
+const scannerStatus = document.getElementById(
+    'scanner-status'
+)
+
+let modoScannerActivo = false
+
+function activarModoScanner(){
+
+    modoScannerActivo = true
+    inputProducto.value = ''
+    inputProducto.focus()
+    inputProducto.placeholder = 'Escaneá el QR ahora'
+    resultadosProductos.style.display = 'none'
+    resultadosProductos.innerHTML = ''
+    btnEscanearQr.style.display = 'none'
+    btnCancelarScanner.style.display = 'inline-block'
+    scannerStatus.innerText = 'Esperando lectura del scanner...'
+    scannerStatus.classList.remove('text-muted')
+    scannerStatus.classList.add('text-success')
+}
+
+function cancelarModoScanner(){
+
+    modoScannerActivo = false
+    inputProducto.value = ''
+    inputProducto.placeholder = 'Buscar por código o nombre'
+    resultadosProductos.style.display = 'none'
+    resultadosProductos.innerHTML = ''
+    btnEscanearQr.style.display = 'inline-block'
+    btnCancelarScanner.style.display = 'none'
+    scannerStatus.innerText = 'También podés escanear el QR de la etiqueta.'
+    scannerStatus.classList.remove('text-success')
+    scannerStatus.classList.add('text-muted')
+    inputProducto.focus()
+}
+
+btnEscanearQr.addEventListener(
+    'click',
+    function(){
+
+        modoScannerActivo = true
+        inputProducto.value = ''
+        inputProducto.focus()
+        inputProducto.placeholder = 'Escaneá el QR ahora'
+        scannerStatus.innerText = 'Esperando lectura del scanner...'
+        scannerStatus.classList.remove('text-muted')
+        scannerStatus.classList.add('text-success')
+
+    }
+)
+
+btnEscanearQr.addEventListener(
+    'click',
+    activarModoScanner
+)
+
+btnCancelarScanner.addEventListener(
+    'click',
+    cancelarModoScanner
+)
+
 inputProducto.addEventListener(
-    'keyup',
+    'keydown',
+    function(e){
+
+        if(e.key === 'Enter'){
+            e.preventDefault()
+        }
+
+    }
+)
+
+inputProducto.addEventListener(
+    'input',
     async function(){
 
         const q = this.value.trim()
@@ -1342,12 +1854,24 @@ inputProducto.addEventListener(
         }
 
         const response = await fetch(
-            `/productos/buscar-productos/?q=${q}`
+            `/productos/buscar-productos/?q=${encodeURIComponent(q)}`
         )
 
         const productos = await response.json()
 
         resultadosProductos.innerHTML = ''
+
+        if(productos.length === 1 && productos[0].auto_select){
+            await seleccionarProducto(productos[0])
+            resultadosProductos.style.display = 'none'
+            btnEscanearQr.style.display = 'inline-block'
+            btnCancelarScanner.style.display = 'none'
+            modoScannerActivo = false
+            scannerStatus.innerText = 'Producto leído y agregado.'
+            scannerStatus.classList.remove('text-muted')
+            scannerStatus.classList.add('text-success')
+            return
+        }
 
         if(productos.length === 0){
 
@@ -1355,7 +1879,7 @@ inputProducto.addEventListener(
 
                 <div class="p-3 text-muted">
 
-                    No se encontraron productos
+                    ${modoScannerActivo ? 'No se encontró stock disponible para ese QR' : 'No se encontraron productos con stock'}
 
                 </div>
 
@@ -1371,6 +1895,9 @@ inputProducto.addEventListener(
                     style="cursor:pointer;"
                     data-id="${producto.id}"
                     data-nombre="${producto.nombre}"
+                    data-auto="${producto.auto_select || ''}"
+                    data-variante="${producto.scanned_variante_id || ''}"
+                    data-color="${producto.scanned_color || ''}"
                 >
 
                     <div class="fw-bold">
@@ -1425,7 +1952,21 @@ document.addEventListener(
                 `/productos/variantes/${productoId}/`
             )
 
-            const variantes = await responseVariantes.json()
+            const variantesData = await responseVariantes.json()
+            const variantes = variantesData.variantes || variantesData
+
+            if(variantes.length === 0){
+
+                mostrarMensaje(
+                    'Este producto no tiene stock disponible'
+                )
+
+                document.getElementById(
+                    'configuracion-variante'
+                ).style.display = 'none'
+
+                return
+            }
 
             // SELECTS
 
@@ -1463,11 +2004,88 @@ document.addEventListener(
             // GUARDAR VARIANTES
 
             window.variantesProducto = variantes
+            document.getElementById(
+                'stock-variante'
+            ).value = variantesData.stock_total ?? variantes.reduce(
+                (total, variante) => total + (parseInt(variante.stock, 10) || 0),
+                0
+            )
 
         }
 
     }
 )
+
+async function seleccionarProducto(producto){
+    inputProducto.value = producto.nombre
+
+    document.getElementById(
+        'configuracion-variante'
+    ).style.display = 'block'
+
+    const responseVariantes = await fetch(
+        `/productos/variantes/${producto.id}/`
+    )
+
+    const variantesData = await responseVariantes.json()
+    const variantes = variantesData.variantes || variantesData
+
+    if(variantes.length === 0){
+
+        mostrarMensaje(
+            'Este producto no tiene stock disponible'
+        )
+
+        document.getElementById(
+            'configuracion-variante'
+        ).style.display = 'none'
+
+        return
+    }
+
+    const talleSelect = document.getElementById(
+        'talle-select'
+    )
+
+    const colorSelect = document.getElementById(
+        'color-select'
+    )
+
+    talleSelect.innerHTML =
+        '<option value="">Seleccionar talle</option>'
+
+    colorSelect.innerHTML =
+        '<option value="">Seleccionar color</option>'
+
+    variantes.forEach(variante => {
+        talleSelect.innerHTML += `
+            <option value="${variante.id}">
+                ${variante.talle}
+            </option>
+        `
+    })
+
+    window.variantesProducto = variantes
+    document.getElementById(
+        'stock-variante'
+    ).value = variantesData.stock_total ?? variantes.reduce(
+        (total, variante) => total + (parseInt(variante.stock, 10) || 0),
+        0
+    )
+
+    if(producto.scanned_variante_id){
+        talleSelect.value = producto.scanned_variante_id
+        talleSelect.dispatchEvent(new Event('change'))
+
+        if(producto.scanned_color){
+            colorSelect.value = producto.scanned_color
+        }
+
+        document.getElementById('cantidad-producto').value = 1
+        document.getElementById('btn-agregar-producto').click()
+        inputProducto.value = ''
+    }
+}
 
 // CAMBIO TALLE
 
@@ -1490,6 +2108,15 @@ document.getElementById(
         colorSelect.innerHTML =
             '<option value="">Seleccionar color</option>'
 
+        if(!variante){
+
+            document.getElementById(
+                'stock-variante'
+            ).value = '-'
+
+            return
+        }
+
         variante.colores.forEach(color => {
 
             colorSelect.innerHTML += `
@@ -1503,11 +2130,7 @@ document.getElementById(
             `
         })
 
-        // STOCK
-
-        document.getElementById(
-            'stock-variante'
-        ).value = variante.stock
+        actualizarStockSeleccionado()
 
         // PRECIO
 
@@ -1515,6 +2138,14 @@ document.getElementById(
 
     }
 )
+
+document.getElementById(
+    'color-select'
+).addEventListener(
+    'change',
+    actualizarStockSeleccionado
+)
+
 document.getElementById(
     'btn-agregar-producto'
 ).addEventListener(
@@ -1547,10 +2178,39 @@ document.getElementById(
             return
         }
 
-        if(!color){
+        if(variante.colores.length > 0 && !color){
 
             mostrarMensaje(
                 'Seleccioná un color'
+            )
+
+            return
+        }
+
+        if(!cantidad || cantidad < 1){
+
+            mostrarMensaje(
+                'Ingresá una cantidad válida'
+            )
+
+            return
+        }
+
+        const stockDisponible = obtenerStockSeleccionado()
+
+        if(stockDisponible === null){
+
+            mostrarMensaje(
+                'Seleccioná talle y color para ver el stock disponible'
+            )
+
+            return
+        }
+
+        if(cantidad > stockDisponible){
+
+            mostrarMensaje(
+                'No hay stock suficiente para ese talle y color'
             )
 
             return
@@ -1578,6 +2238,10 @@ document.getElementById(
         })
         console.log(productosVenta)
         renderProductosVenta()
+        inputProducto.value = ''
+        document.getElementById(
+            'configuracion-variante'
+        ).style.display = 'none'
 
     }
 )
@@ -1650,15 +2314,18 @@ function renderProductosVenta(){
     document.getElementById(
         'total-venta'
     ).innerText = `$${total}`
-    const montoPagado = parseFloat(
+    const nuevaDeuda = parseFloat(
 
         document.getElementById(
-            'monto-pagado'
+            'nueva-deuda'
         ).value
 
     ) || 0
 
-    const saldoPendiente = total - montoPagado
+    const saldoPendiente = Math.max(
+        Math.min(nuevaDeuda, total),
+        0
+    )
 
     document.getElementById(
         'saldo-pendiente'
@@ -1774,6 +2441,87 @@ document.querySelectorAll(
 
                     </div>
 
+                </div>
+
+                <div class="mb-4">
+
+                    <div class="fw-bold">
+
+                        Entrega
+
+                    </div>
+
+                    <div>
+
+                        ${data.metodo_entrega || 'Retiro en local'}
+
+                    </div>
+
+                    ${data.direccion ? `<small class="text-muted">${data.direccion}</small>` : ''}
+
+                </div>
+
+                <div class="mb-4">
+
+                    <div class="fw-bold">
+
+                        Regalo
+
+                    </div>
+
+                    <div>
+
+                        ${data.es_regalo ? 'Sí' : 'No'}
+
+                    </div>
+
+                </div>
+
+                <div class="mb-4">
+
+                    <div class="fw-bold">
+
+                        Método de pago
+
+                    </div>
+
+                    <div>
+
+                        ${data.metodo_pago || 'No especificado'}
+
+                    </div>
+
+                </div>
+
+                <div class="mb-4">
+
+                    <div class="fw-bold">
+
+                        Estado
+
+                    </div>
+
+                    <div>
+
+                        <span class="badge ${data.estado === 'PAGADO' ? 'bg-success' : 'bg-warning'}">
+
+                            ${data.estado}
+
+                        </span>
+
+                    </div>
+
+                </div>
+
+                <div class="d-flex flex-wrap gap-2 mb-4">
+                    <a href="${data.ticket_cambio_url}" target="_blank" class="btn btn-sm btn-dark rounded-pill">
+                        <i class="bi bi-printer me-1"></i>
+                        Imprimir ticket de cambio
+                    </a>
+                    <a href="${data.ticket_envio_url}" target="_blank" class="btn btn-sm btn-outline-dark rounded-pill">
+                        <i class="bi bi-truck me-1"></i>
+                        Imprimir ticket de envío
+                    </a>
                 </div>
 
             `
@@ -1953,7 +2701,7 @@ document.querySelectorAll(
     )
 })
 document.getElementById(
-    'monto-pagado'
+    'nueva-deuda'
 ).addEventListener(
     'input',
     renderProductosVenta

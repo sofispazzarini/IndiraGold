@@ -298,6 +298,22 @@
     </div>
 </div>
 
+{% if pedido.es_regalo %}
+<div class="alert alert-warning rounded-4 border-0 mb-4" style="background:#fff3cd;color:#6E0E2E;font-weight:700;">
+    <i class="bi bi-gift me-2"></i>
+    Este pedido es para regalo. Imprimí el ticket de cambio con precios tachados.
+</div>
+{% endif %}
+
+<div class="header-actions" style="justify-content:flex-start;margin-bottom:1.5rem;">
+    <a href="{% url 'pedidos:ticket_cambio_pedido' pedido.id %}" target="_blank" class="btn-act btn-hist">
+        <i class="bi bi-printer"></i> Ticket de cambio
+    </a>
+    <a href="{% url 'pedidos:ticket_envio_pedido' pedido.id %}" target="_blank" class="btn-act btn-hist">
+        <i class="bi bi-truck"></i> Ticket de envío
+    </a>
+</div>
+
 <!-- Body grid -->
 <div class="body-grid">
     <div class="items-card">

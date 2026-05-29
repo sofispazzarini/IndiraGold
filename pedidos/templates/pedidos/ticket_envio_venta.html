@@ -1,0 +1,31 @@
+{% extends 'pedidos/ticket_base.html' %}
+
+{% block title %}Ticket de envío #{{ orden }}{% endblock %}
+
+{% block ticket %}
+<div class="brand">INDIRA GOLD</div>
+<div class="ticket-title">Ticket de envío</div>
+
+<div class="line">Fecha: {{ fecha_ticket }}</div>
+
+<div class="spacer"></div>
+
+<div class="line">Cliente: {{ cliente_nombre }}</div>
+<div class="line">Teléfono: {{ telefono|default:"No informado" }}</div>
+
+{% if direccion %}
+<div class="line">
+    Dirección de envío: {{ direccion.etiqueta }},
+    Calle: {{ direccion.calle }}, N° {{ direccion.numero }},
+    Ciudad: {{ direccion.ciudad }}, CP: {{ direccion.codigo_postal }},
+    Provincia: {{ direccion.provincia }}
+    {% if direccion.referencia %}. Ref: {{ direccion.referencia }}{% endif %}
+</div>
+{% elif pedido_direccion_texto %}
+<div class="line">Dirección de envío: {{ pedido_direccion_texto }}</div>
+{% else %}
+<div class="line">Dirección de envío: No informada</div>
+{% endif %}
+
+<div class="line strong">Costo de envío: {{ costo_envio }}</div>
+{% endblock %}

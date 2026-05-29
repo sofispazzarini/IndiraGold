@@ -20,7 +20,7 @@ from .forms import (
     TipoMedidaForm, ProveedorForm, SubcategoriaSoloNombreForm,
     CategoriaOrdenForm
 )
-from django.db.models import Q
+from django.db.models import Q, Sum
 from decimal import Decimal
 from django.utils import timezone
 
@@ -141,6 +141,10 @@ def agregar_producto(request, subcat_id):
                         if nombre_color:
                             color_obj, _ = Color.objects.get_or_create(nombre=nombre_color)
                             nueva_variante.colores.add(color_obj)
+                            VarianteColor.objects.get_or_create(
+                                variante=nueva_variante,
+                                color=color_obj,
+                            )
                     
                     # 4. VINCULAR MEDIDAS
                     medidas_data = v.get('medidas', [])
@@ -612,15 +616,52 @@ def producto_qrs_impresion(request, producto_id):
     })
 def buscar_productos(request):
 
-    q = request.GET.get('q', '')
+    q = request.GET.get('q', '').strip()
+    data = []
+
+    if q:
+        variante_color = None
+        variante = Variante.objects.filter(
+            qr_code=q,
+            activa=True,
+            stock__gt=0,
+            producto__activo=True
+        ).select_related('producto', 'talle').first()
+
+        if not variante:
+            qr_fragment = q.split('-')[-1] if q.upper().startswith('IG-') else q
+            variante_color = VarianteColor.objects.filter(
+                qr_code__startswith=qr_fragment,
+                activo=True,
+                variante__activa=True,
+                variante__stock__gt=0,
+                variante__producto__activo=True
+            ).select_related('variante__producto', 'variante__talle', 'color').first()
+            if variante_color:
+                variante = variante_color.variante
+
+        if variante:
+            producto = variante.producto
+            return JsonResponse([{
+                'id': producto.id,
+                'nombre': producto.nombre,
+                'codigo': producto.codigo,
+                'auto_select': True,
+                'scanned_variante_id': variante.id,
+                'scanned_color': variante_color.color.nombre if variante_color else '',
+            }], safe=False)
 
     productos = Producto.objects.filter(
-        Q(nombre__icontains=q)
-        |
-        Q(codigo__icontains=q)
-    )[:5]
-
-    data = []
+        (Q(nombre__icontains=q) | Q(codigo__icontains=q)),
+        activo=True
+    ).annotate(
+        stock_disponible=Sum(
+            'variantes__stock',
+            filter=Q(variantes__activa=True)
+        )
+    ).filter(
+        stock_disponible__gt=0
+    ).distinct()[:5]
 
     for producto in productos:
 
@@ -642,7 +683,10 @@ def obtener_variantes_producto(request, producto_id):
         id=producto_id
     )
 
-    variantes = producto.variantes.prefetch_related(
+    variantes = producto.variantes.filter(
+        activa=True,
+        stock__gt=0
+    ).prefetch_related(
         'colores'
     )
 
@@ -670,7 +714,10 @@ def obtener_variantes_producto(request, producto_id):
 
         })
 
-    return JsonResponse(data, safe=False)
+    return JsonResponse({
+        'variantes': data,
+        'stock_total': sum(variante['stock'] for variante in data),
+    })
 
 
 # --- CATEGORÍAS DE ORDEN ---
@@ -765,18 +812,34 @@ def gestionar_productos_categoria_orden(request, cat_id):
     })
 def obtener_oferta_activa(self):
 
+    oferta_producto = Oferta.objects.filter(
+        activa=True,
+        es_cupon=False,
+        productos=self
+    ).first()
+
+    if oferta_producto:
+        return oferta_producto
+
+    oferta_categoria = Oferta.objects.filter(
+        activa=True,
+        es_cupon=False,
+        categoria=self.categoria
+    ).first()
+
+    if oferta_categoria:
+        return oferta_categoria
+
     oferta_global = Oferta.objects.filter(
         activa=True,
+        es_cupon=False,
         aplicar_a_todos=True
     ).first()
 
     if oferta_global:
         return oferta_global
 
-    return Oferta.objects.filter(
-        activa=True,
-        productos=self
-    ).first()
+    return None
 
 
 @property
@@ -797,21 +860,61 @@ def admin_ofertas(request):
 
     ofertas = Oferta.objects.all().order_by('-id')
     productos = Producto.objects.filter(activo=True)
+    categorias = Categoria.objects.filter(activa=True).order_by('nombre')
 
     if request.method == 'POST':
 
         nombre = request.POST.get('nombre')
         descuento = request.POST.get('descuento')
-        aplicar_a_todos = request.POST.get('aplicar_a_todos') == 'on'
+        tipo_oferta = request.POST.get('tipo_oferta', 'catalogo')
+        codigo = request.POST.get('codigo', '').strip().upper()
+
+        try:
+            descuento_numero = int(descuento)
+        except (TypeError, ValueError):
+            messages.error(request, 'El descuento debe ser un numero.')
+            return redirect('productos:admin_ofertas')
+
+        if descuento_numero < 1 or descuento_numero > 100:
+            messages.error(request, 'El descuento debe estar entre 1 y 100.')
+            return redirect('productos:admin_ofertas')
+
+        if tipo_oferta == 'cupon':
+            if not codigo:
+                messages.error(request, 'Carga un codigo para el cupon.')
+                return redirect('productos:admin_ofertas')
+            if Oferta.objects.filter(codigo__iexact=codigo).exists():
+                messages.error(request, 'Ya existe una oferta con ese codigo.')
+                return redirect('productos:admin_ofertas')
+
+            Oferta.objects.create(
+                nombre=nombre,
+                descuento=descuento_numero,
+                codigo=codigo,
+                es_cupon=True,
+                activa=True
+            )
+
+            messages.success(request, 'Codigo de descuento creado correctamente.')
+            return redirect('productos:admin_ofertas')
+
+        alcance = request.POST.get('alcance', 'productos')
+        aplicar_a_todos = alcance == 'todos'
+        categoria = None
+
+        if alcance == 'categoria':
+            categoria_id = request.POST.get('categoria')
+            categoria = get_object_or_404(Categoria, id=categoria_id, activa=True)
 
         oferta = Oferta.objects.create(
             nombre=nombre,
-            descuento=descuento,
+            descuento=descuento_numero,
             aplicar_a_todos=aplicar_a_todos,
+            categoria=categoria,
             activa=True
         )
 
-        if not aplicar_a_todos:
+        if alcance == 'productos':
             productos_ids = request.POST.getlist('productos')
 
             oferta.productos.set(productos_ids)
@@ -821,6 +924,7 @@ def admin_ofertas(request):
     context = {
         'ofertas': ofertas,
         'productos': productos,
+        'categorias': categorias,
     }
 
     return render(

@@ -16,6 +16,7 @@ from django.db import IntegrityError
 from django.contrib.auth.models import User
 from .forms_manual import RegistroManualClienteForm, EditarClienteForm, NuevaDireccionForm
 from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
 from django.http import JsonResponse
 from django.contrib.auth.decorators import user_passes_test
 from carritos.utils import vincular_carrito_con_usuario
@@ -418,9 +419,11 @@ def buscar_clientes(request):
 
     q = request.GET.get('q', '')
 
-    clientes = User.objects.filter(
-        is_staff=False,
-        first_name__icontains=q
+    clientes = User.objects.filter(is_staff=False).filter(
+        Q(first_name__icontains=q)
+        | Q(last_name__icontains=q)
+        | Q(email__icontains=q)
+        | Q(username__icontains=q)
     )[:5]
 
     data = []
@@ -438,3 +441,158 @@ def buscar_clientes(request):
         })
 
     return JsonResponse(data, safe=False)
+
+
+@user_passes_test(lambda u: u.is_superuser)
+def direcciones_cliente_ajax(request, cliente_id):
+    cliente = get_object_or_404(Cliente, user_id=cliente_id)
+    direcciones = direcciones_sin_duplicados(
+        cliente.direcciones.all().order_by('etiqueta', 'calle', 'numero')
+    )
+
+    return JsonResponse({
+        'success': True,
+        'direcciones': [
+            {
+                'id': direccion.id,
+                'etiqueta': direccion.etiqueta,
+                'calle': direccion.calle,
+                'numero': direccion.numero,
+                'ciudad': direccion.ciudad,
+                'provincia': direccion.provincia,
+                'codigo_postal': direccion.codigo_postal,
+                'referencia': direccion.referencia,
+                'texto': (
+                    f'{direccion.etiqueta}: {direccion.calle} {direccion.numero}, '
+                    f'{direccion.ciudad}, {direccion.provincia} - CP {direccion.codigo_postal}'
+                ),
+            }
+            for direccion in direcciones
+        ],
+    })
+
+
+@user_passes_test(lambda u: u.is_superuser)
+@require_POST
+def crear_cliente_ajax(request):
+    nombre = capitalizar_texto(request.POST.get('nombre', ''))
+    apellido = capitalizar_texto(request.POST.get('apellido', ''))
+    dni = request.POST.get('dni', '').strip()
+    email = request.POST.get('email', '').strip()
+    telefono = request.POST.get('telefono', '').strip()
+
+    if not all([nombre, apellido, dni, email, telefono]):
+        return JsonResponse({'success': False, 'error': 'Completá todos los campos del cliente.'}, status=400)
+    if not dni.isdigit() or len(dni) not in [7, 8]:
+        return JsonResponse({'success': False, 'error': 'El DNI debe tener 7 u 8 números.'}, status=400)
+    if User.objects.filter(username=dni).exists() or Cliente.objects.filter(dni=dni).exists():
+        return JsonResponse({'success': False, 'error': 'Ya existe un cliente con ese DNI.'}, status=400)
+    if User.objects.filter(email=email).exists():
+        return JsonResponse({'success': False, 'error': 'Ya existe un usuario con ese email.'}, status=400)
+
+    user = User.objects.create_user(
+        username=dni,
+        email=email,
+        password=dni,
+        first_name=nombre,
+        last_name=apellido,
+    )
+    Cliente.objects.create(user=user, dni=dni, telefono=telefono)
+
+    return JsonResponse({
+        'success': True,
+        'cliente': {
+            'id': user.id,
+            'nombre': f'{nombre} {apellido}',
+            'email': email,
+        }
+    })
+
+
+@user_passes_test(lambda u: u.is_superuser)
+@require_POST
+def crear_direccion_ajax(request):
+    cliente_id = request.POST.get('cliente_id')
+    cliente = get_object_or_404(Cliente, user_id=cliente_id)
+
+    etiqueta = capitalizar_texto(request.POST.get('etiqueta', ''))
+    calle = capitalizar_texto(request.POST.get('calle', ''))
+    numero = request.POST.get('numero', '').strip()
+    ciudad = capitalizar_texto(request.POST.get('ciudad', ''))
+    provincia = capitalizar_texto(request.POST.get('provincia', ''))
+    codigo_postal = request.POST.get('codigo_postal', '').strip()
+    referencia = capitalizar_texto(request.POST.get('referencia', ''))
+
+    if not all([etiqueta, calle, numero, ciudad, provincia, codigo_postal]):
+        return JsonResponse({'success': False, 'error': 'Completá los datos obligatorios de la dirección.'}, status=400)
+
+    clave = Direccion.clave_unica(etiqueta, calle, numero, ciudad, provincia, codigo_postal, referencia)
+    for direccion_existente in cliente.direcciones.all():
+        if direccion_existente.clave_normalizada == clave:
+            return JsonResponse({'success': False, 'error': 'Esa dirección ya está cargada para la clienta.'}, status=400)
+
+    direccion = Direccion.objects.create(
+        cliente=cliente,
+        etiqueta=etiqueta,
+        calle=calle,
+        numero=numero,
+        ciudad=ciudad,
+        provincia=provincia,
+        codigo_postal=codigo_postal,
+        referencia=referencia,
+    )
+
+    return JsonResponse({
+        'success': True,
+        'direccion': {
+            'id': direccion.id,
+            'texto': f'{direccion.etiqueta}: {direccion.calle} {direccion.numero}, {direccion.ciudad}, {direccion.provincia} - CP {direccion.codigo_postal}',
+        },
+    })
+
+
+@login_required
+@require_POST
+def crear_direccion_cliente_ajax(request):
+    cliente, _ = Cliente.objects.get_or_create(user=request.user)
+
+    etiqueta = capitalizar_texto(request.POST.get('etiqueta', ''))
+    calle = capitalizar_texto(request.POST.get('calle', ''))
+    numero = request.POST.get('numero', '').strip()
+    ciudad = capitalizar_texto(request.POST.get('ciudad', ''))
+    provincia = capitalizar_texto(request.POST.get('provincia', ''))
+    codigo_postal = request.POST.get('codigo_postal', '').strip()
+    referencia = capitalizar_texto(request.POST.get('referencia', ''))
+
+    if not all([etiqueta, calle, numero, ciudad, provincia, codigo_postal]):
+        return JsonResponse({'success': False, 'error': 'Completa los datos obligatorios de la direccion.'}, status=400)
+
+    clave = Direccion.clave_unica(etiqueta, calle, numero, ciudad, provincia, codigo_postal, referencia)
+    for direccion_existente in cliente.direcciones.all():
+        if direccion_existente.clave_normalizada == clave:
+            return JsonResponse({'success': False, 'error': 'Esa direccion ya esta cargada en tu cuenta.'}, status=400)
+
+    direccion = Direccion.objects.create(
+        cliente=cliente,
+        etiqueta=etiqueta,
+        calle=calle,
+        numero=numero,
+        ciudad=ciudad,
+        provincia=provincia,
+        codigo_postal=codigo_postal,
+        referencia=referencia,
+    )
+
+    return JsonResponse({
+        'success': True,
+        'direccion': {
+            'id': direccion.id,
+            'etiqueta': direccion.etiqueta,
+            'calle': direccion.calle,
+            'numero': direccion.numero,
+            'ciudad': direccion.ciudad,
+            'provincia': direccion.provincia,
+            'codigo_postal': direccion.codigo_postal,
+            'referencia': direccion.referencia,
+        },
+    })

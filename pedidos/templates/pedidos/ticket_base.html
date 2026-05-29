@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <title>{% block title %}Ticket{% endblock %}</title>
+    <style>
+        @page {
+            size: 58mm auto;
+            margin: 0;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            background: #fff;
+            color: #000;
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 13px;
+            line-height: 1.28;
+        }
+
+        .ticket {
+            width: 58mm;
+            padding: 22mm 5mm 8mm;
+        }
+
+        .brand {
+            text-align: center;
+            font-weight: 800;
+            font-size: 15px;
+            letter-spacing: .02em;
+            margin-bottom: 7mm;
+        }
+
+        .ticket-title {
+            text-align: center;
+            font-weight: 800;
+            font-size: 19px;
+            margin-bottom: 7mm;
+        }
+
+        .line {
+            margin: 1.5mm 0;
+        }
+
+        .spacer {
+            height: 6mm;
+        }
+
+        .strong {
+            font-weight: 800;
+        }
+
+        .product {
+            margin: 4mm 0;
+        }
+
+        .price-gift {
+            text-decoration: line-through;
+            text-decoration-thickness: 3px;
+            text-decoration-color: #000;
+            text-decoration-skip-ink: none;
+            font-weight: 800;
+        }
+
+        @media print {
+            body {
+                width: 58mm;
+            }
+
+            .ticket {
+                padding-top: 22mm;
+            }
+        }
+    </style>
+</head>
+<body>
+    <main class="ticket">
+        {% block ticket %}{% endblock %}
+    </main>
+    <script>
+        window.addEventListener('load', function(){
+            window.print()
+        })
+    </script>
+</body>
+</html>

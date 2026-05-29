@@ -5,7 +5,7 @@ from django.db import transaction
 from django.contrib import messages
 from django.db.models import Sum, Count, Avg, Q, F
 from datetime import datetime, timedelta
-from decimal import Decimal
+from decimal import Decimal, ROUND_HALF_UP
 from .models import Pedido, PedidoItem, VentaLocal, PagoVentaLocal, ConfiguracionEnvio
 from carritos.models import Carrito, CarritoItem
 from carritos.utils import get_or_create_cart, vincular_carrito_con_usuario
@@ -17,7 +17,7 @@ from .models import Gasto, Pedido, PedidoItem
 from carritos.models import Carrito, CarritoItem
 from carritos.utils import clear_cart_session, get_or_create_cart, vincular_carrito_con_usuario
 from users.models import Cliente, Direccion, direcciones_sin_duplicados
-from productos.models import Variante
+from productos.models import Variante, Oferta
 import mercadopago
 from django.conf import settings
 from django.views.decorators.http import require_POST
@@ -26,16 +26,65 @@ from django.conf import settings
 from django.db.models import Q
 from django.core.paginator import Paginator
 import json
+import unicodedata
 
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.db import transaction
 from django.utils.html import escape
+from django.utils import timezone
 print("===== PEDIDOS VIEWS CARGADO =====")
 print("TOKEN MP:", settings.MERCADO_PAGO_ACCESS_TOKEN)
 # Decorador para verificar que es administrador
 def admin_required(view_func):
     return login_required(login_url="/users/login/")(user_passes_test(lambda u: u.is_superuser, login_url="/users/login/")(view_func))
+
+
+def formato_pesos(valor):
+    return f"${int(valor):,}".replace(",", ".")
+
+
+def monto_decimal(valor):
+    return Decimal(valor).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+
+
+def obtener_cupon_activo(codigo):
+    codigo_normalizado = (codigo or '').strip().upper()
+    if not codigo_normalizado:
+        return None
+    return Oferta.objects.filter(
+        codigo__iexact=codigo_normalizado,
+        es_cupon=True,
+        activa=True
+    ).first()
+
+
+def calcular_descuento_cupon(subtotal, codigo):
+    cupon = obtener_cupon_activo(codigo)
+    if not cupon:
+        return None, Decimal('0.00')
+    descuento = monto_decimal(Decimal(subtotal) * Decimal(cupon.descuento) / Decimal(100))
+    return cupon, min(descuento, Decimal(subtotal))
+
+
+def normalizar_zona(valor):
+    texto = unicodedata.normalize('NFKD', str(valor or ''))
+    texto = ''.join(caracter for caracter in texto if not unicodedata.combining(caracter))
+    return ' '.join(texto.casefold().split())
+
+
+def direccion_en_zona_flex(direccion, zonas_flex):
+    if not direccion or not zonas_flex:
+        return False
+
+    ubicacion = normalizar_zona(
+        f'{direccion.ciudad} {direccion.provincia} {direccion.codigo_postal}'
+    )
+
+    return any(
+        normalizar_zona(zona) in ubicacion
+        for zona in zonas_flex
+    )
 
 
 @admin_required
@@ -306,19 +355,36 @@ def checkout_view(request):
     configuracion_envio = ConfiguracionEnvio.actual()
     cliente, _ = Cliente.objects.get_or_create(user=request.user)
     direcciones = direcciones_sin_duplicados(cliente.direcciones.all().order_by('etiqueta', 'calle', 'numero'))
+    zonas_flex = configuracion_envio.zonas_flex_lista
+    direcciones_flex = [
+        direccion
+        for direccion in direcciones
+        if direccion_en_zona_flex(direccion, zonas_flex)
+    ]
+    etiquetas_direcciones = sorted({direccion.etiqueta for direccion in direcciones}, key=str.casefold)
+    etiquetas_flex = sorted({direccion.etiqueta for direccion in direcciones_flex}, key=str.casefold)
     
     subtotal = sum(
         item.subtotal for item in items
     )
+    codigo_descuento = request.session.get('codigo_descuento', '')
+    cupon, descuento_monto = calcular_descuento_cupon(subtotal, codigo_descuento)
+    subtotal_con_descuento = subtotal - descuento_monto
     return render(request, 'pedidos/checkout.html', {
         'items': items,
         'subtotal': subtotal,
-        'total': subtotal,
+        'total': subtotal_con_descuento,
         'carrito': carrito,
         'configuracion_envio': configuracion_envio,
         'precio_flex': configuracion_envio.costo_flex,
-        'zonas_flex': configuracion_envio.zonas_flex_lista,
+        'zonas_flex': zonas_flex,
         'direcciones': direcciones,
+        'direcciones_flex': direcciones_flex,
+        'etiquetas_direcciones': etiquetas_direcciones,
+        'etiquetas_flex': etiquetas_flex,
+        'codigo_descuento': cupon.codigo if cupon else '',
+        'descuento_porcentaje': cupon.descuento if cupon else 0,
+        'descuento_monto': descuento_monto,
     })
 # pedidos/views.py
 
@@ -338,6 +404,7 @@ def confirmar_pedido(request):
 
     if request.method == 'POST':
         metodo = request.POST.get('metodo_entrega')
+        es_regalo = request.POST.get('es_regalo') == '1'
         configuracion_envio = ConfiguracionEnvio.actual()
         costo_envio = (
             Decimal(configuracion_envio.costo_flex)
@@ -347,6 +414,9 @@ def confirmar_pedido(request):
 
         cliente, _ = Cliente.objects.get_or_create(user=request.user)
         subtotal_productos = sum(item.precio_total for item in items_del_carrito)
+        codigo_descuento = request.POST.get('codigo_descuento') or request.session.get('codigo_descuento')
+        cupon, descuento_monto = calcular_descuento_cupon(subtotal_productos, codigo_descuento)
+        total_productos_con_descuento = subtotal_productos - descuento_monto
         direccion = None
 
         if metodo == 'flex':
@@ -354,6 +424,9 @@ def confirmar_pedido(request):
                 id=request.POST.get('direccion_id'),
                 cliente=cliente
             ).first()
+            if not direccion_en_zona_flex(direccion, configuracion_envio.zonas_flex_lista):
+                messages.error(request, 'La dirección seleccionada no está dentro de las zonas de Envío Flex.')
+                return redirect("pedidos:checkout")
         elif metodo == 'correo':
             direccion = Direccion.objects.filter(
                 id=request.POST.get('direccion_correo_id'),
@@ -372,8 +445,11 @@ def confirmar_pedido(request):
         # Creamos el pedido oficial
         pedido = Pedido.objects.create(
             cliente=cliente,
-            total=subtotal_productos + costo_envio,
+            total=total_productos_con_descuento + costo_envio,
             costo_envio=costo_envio,
+            codigo_descuento=cupon.codigo if cupon else None,
+            descuento_porcentaje=cupon.descuento if cupon else 0,
+            descuento_monto=descuento_monto,
             metodo_entrega=metodo,
             direccion=direccion,
             codigo_postal=direccion.codigo_postal if direccion else request.POST.get('codigo_postal'),
@@ -384,6 +460,7 @@ def confirmar_pedido(request):
             sucursal_correo=request.POST.get('sucursal_correo'),
             tipo_venta='online',
             estado='pendiente',
+            es_regalo=es_regalo,
         )
 
         # 3. Movemos los productos al pedido y bajamos el stock
@@ -403,6 +480,9 @@ def confirmar_pedido(request):
         carrito.activo = False # Cerramos el carrito actual
         carrito.save()
         clear_cart_session(request.session)
+        request.session.pop('codigo_descuento', None)
+        request.session.pop('descuento_monto', None)
+        request.session.modified = True
 
         messages.success(request, f"¡Pedido #{pedido.id} realizado con éxito!")
         return redirect("pedidos:detalle_pedido", pedido_id=pedido.id)
@@ -438,6 +518,63 @@ def eliminar_item_carrito(request, variante_id):
         messages.info(request, "No quedan productos en tu carrito.")
         return redirect('pedidos:checkout')
 sdk = mercadopago.SDK(settings.MERCADO_PAGO_ACCESS_TOKEN)
+
+
+@login_required
+@require_POST
+def validar_codigo_descuento(request):
+    carrito = get_or_create_cart(request)
+    items = carrito.items.all()
+    subtotal = sum(item.subtotal for item in items)
+
+    if subtotal <= 0:
+        return JsonResponse({'success': False, 'error': 'El carrito esta vacio.'}, status=400)
+
+    codigo = request.POST.get('codigo_descuento', '')
+    cupon, descuento_monto = calcular_descuento_cupon(subtotal, codigo)
+
+    if not cupon:
+        request.session.pop('codigo_descuento', None)
+        request.session.modified = True
+        return JsonResponse({'success': False, 'error': 'El codigo no existe o no esta activo.'}, status=404)
+
+    request.session['codigo_descuento'] = cupon.codigo
+    request.session.modified = True
+
+    return JsonResponse({
+        'success': True,
+        'codigo': cupon.codigo,
+        'nombre': cupon.nombre,
+        'porcentaje': cupon.descuento,
+        'descuento': float(descuento_monto),
+        'subtotal_con_descuento': float(subtotal - descuento_monto),
+    })
+
+
+@login_required
+@require_POST
+def quitar_codigo_descuento(request):
+    """Quita el codigo de descuento almacenado en sesión y devuelve totales actualizados."""
+    try:
+        carrito = get_or_create_cart(request)
+        items = carrito.items.all()
+        subtotal = sum(item.subtotal for item in items)
+
+        # Remover datos de descuento de sesión
+        request.session.pop('codigo_descuento', None)
+        request.session.pop('descuento_monto', None)
+        request.session.modified = True
+
+        return JsonResponse({
+            'success': True,
+            'codigo': '',
+            'descuento': 0,
+            'subtotal': float(subtotal),
+            'subtotal_con_descuento': float(subtotal),
+        })
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': f'Error al quitar descuento: {str(e)}'}, status=400)
+
 
 @login_required
 def crear_pago(request):
@@ -485,16 +622,30 @@ def crear_pago(request):
 
         return redirect('pedidos:checkout')
 
+    subtotal_productos = sum(item.precio_total for item in items)
+    codigo_descuento = request.POST.get('codigo_descuento') or request.session.get('codigo_descuento')
+    cupon, descuento_monto = calcular_descuento_cupon(subtotal_productos, codigo_descuento)
+    factor_descuento = (
+        max(Decimal('0'), Decimal('1') - (Decimal(cupon.descuento) / Decimal(100)))
+        if cupon
+        else Decimal('1')
+    )
+
+    request.session['codigo_descuento'] = cupon.codigo if cupon else ''
+    request.session['descuento_monto'] = str(descuento_monto)
+    request.session.modified = True
+
     # ARMAR PRODUCTOS PARA MP
     productos = []
 
     for item in items:
+        precio_mp = monto_decimal(Decimal(item.precio_unitario) * factor_descuento)
 
         productos.append({
             "title": item.variante.producto.nombre,
             "quantity": item.cantidad,
             "currency_id": "ARS",
-            "unit_price": float(item.precio_unitario)
+            "unit_price": float(precio_mp)
         })
     request.session['metodo_entrega'] = request.POST.get(
         'metodo_entrega',
@@ -517,6 +668,7 @@ def crear_pago(request):
     request.session['correo'] = request.POST.get('correo')
     request.session['tipo_correo'] = request.POST.get('tipo_correo')
     request.session['sucursal_correo'] = request.POST.get('sucursal_correo')
+    request.session['es_regalo'] = request.POST.get('es_regalo') == '1'
 
     configuracion_envio = ConfiguracionEnvio.actual()
     cliente, _ = Cliente.objects.get_or_create(user=request.user)
@@ -526,12 +678,15 @@ def crear_pago(request):
         return redirect('pedidos:checkout')
 
     if request.session['metodo_entrega'] == 'flex':
-        direccion_valida = Direccion.objects.filter(
+        direccion_flex = Direccion.objects.filter(
             id=request.session.get('direccion_id'),
             cliente=cliente
-        ).exists()
-        if not direccion_valida:
+        ).first()
+        if not direccion_flex:
             messages.error(request, 'Selecciona una direccion para Envio Flex.')
+            return redirect('pedidos:checkout')
+        if not direccion_en_zona_flex(direccion_flex, configuracion_envio.zonas_flex_lista):
+            messages.error(request, 'La dirección seleccionada no está dentro de las zonas de Envío Flex.')
             return redirect('pedidos:checkout')
 
     if request.session['metodo_entrega'] == 'correo':
@@ -620,6 +775,11 @@ def pago_exitoso(request):
     subtotal = sum(
         item.precio_total for item in items
     )
+    cupon, descuento_monto = calcular_descuento_cupon(
+        subtotal,
+        request.session.get('codigo_descuento')
+    )
+    total_productos_con_descuento = subtotal - descuento_monto
 
     metodo_entrega = request.session.get(
         'metodo_entrega',
@@ -647,8 +807,11 @@ def pago_exitoso(request):
 
     pedido = Pedido.objects.create(
         cliente=cliente,
-        total=subtotal + costo_envio,
+        total=total_productos_con_descuento + costo_envio,
         costo_envio=costo_envio,
+        codigo_descuento=cupon.codigo if cupon else None,
+        descuento_porcentaje=cupon.descuento if cupon else 0,
+        descuento_monto=descuento_monto,
         metodo_entrega=metodo_entrega,
         direccion=direccion,
         codigo_postal=direccion.codigo_postal if direccion else request.session.get('codigo_postal'),
@@ -659,6 +822,7 @@ def pago_exitoso(request):
         sucursal_correo=request.session.get('sucursal_correo'),
         tipo_venta='online',
         estado='aceptado',
+        es_regalo=bool(request.session.get('es_regalo')),
     )
 
     # CREAR ITEMS Y DESCONTAR STOCK
@@ -926,6 +1090,9 @@ def pago_exitoso(request):
 
     # VACIAR CARRITO
     carrito.items.all().delete()
+    request.session.pop('codigo_descuento', None)
+    request.session.pop('descuento_monto', None)
+    request.session.modified = True
 
     messages.success(
         request,
@@ -1512,7 +1679,8 @@ def ventas_presenciales(request):
 
     ventas = VentaLocal.objects.select_related(
         'cliente',
-        'cliente__user'
+        'cliente__user',
+        'direccion'
     ).prefetch_related('items').order_by('-created_at')
 
     # FILTROS
@@ -1586,117 +1754,201 @@ def ventas_presenciales(request):
 @transaction.atomic
 def registrar_venta_local(request):
 
-    data = json.loads(request.body)
+    try:
+        data = json.loads(request.body)
 
-    cliente_id = data.get('cliente_id')
+        cliente_id = data.get('cliente_id')
 
-    productos = data.get('productos')
+        productos = data.get('productos')
+        
+        metodo_pago = data.get('metodo_pago', 'efectivo')
+        metodo_entrega = data.get('metodo_entrega', 'local')
+        direccion_id = data.get('direccion_id')
+        es_regalo = bool(data.get('es_regalo'))
+        
+        nueva_deuda = Decimal(str(data.get('nueva_deuda', 0)))
 
-    if not cliente_id or not productos:
+        if not cliente_id or not productos:
+
+            return JsonResponse({
+
+                'success': False,
+                'error': 'Faltan cliente o productos'
+
+            })
+        
+        if metodo_pago not in ['efectivo', 'mercado_pago', 'tarjeta']:
+            return JsonResponse({
+                'success': False,
+                'error': 'Método de pago inválido'
+            })
+
+        if metodo_entrega not in ['local', 'envio']:
+            return JsonResponse({
+                'success': False,
+                'error': 'Método de entrega inválido'
+            }, status=400)
+
+        cliente = Cliente.objects.get(
+            user_id=cliente_id
+        )
+
+        direccion = None
+        if metodo_entrega == 'envio':
+            direccion = Direccion.objects.filter(
+                id=direccion_id,
+                cliente=cliente
+            ).first()
+            if not direccion:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Seleccioná una dirección de envío'
+                }, status=400)
+
+        total = 0
+
+        venta = VentaLocal.objects.create(
+
+            cliente=cliente,
+
+            total=0,
+
+            monto_pagado=0,
+
+            saldo_pendiente=0,
+
+            estado_pago='PAGADO',
+            
+            metodo_pago=metodo_pago,
+            metodo_entrega=metodo_entrega,
+            direccion=direccion,
+            es_regalo=es_regalo
+        )
+
+        for item in productos:
+
+            variante = Variante.objects.get(
+                id=item['variante_id']
+            )
+
+            cantidad = int(item['cantidad'])
+
+            if cantidad < 1:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'La cantidad debe ser mayor a cero'
+                }, status=400)
+
+            if variante.stock < cantidad:
+                return JsonResponse({
+                    'success': False,
+                    'error': f'No hay stock suficiente para {variante.producto.nombre}'
+                }, status=400)
+
+            subtotal = (
+                variante.precio * cantidad
+            )
+
+            VentaLocalItem.objects.create(
+
+                venta=venta,
+
+                producto=variante.producto,
+
+                variante=variante,
+
+                color=item['color'],
+
+                cantidad=cantidad,
+
+                precio_unitario=variante.precio,
+
+                subtotal=subtotal
+
+            )
+
+            # DESCONTAR STOCK VARIANTE
+
+            variante.stock -= cantidad
+
+            variante.save()
+
+            # DESCONTAR STOCK PRODUCTO
+
+            producto = variante.producto
+
+            producto.stock -= cantidad
+
+            producto.save()
+
+            total += subtotal
+
+        venta.total = total
+        if nueva_deuda < 0:
+            return JsonResponse({
+                'success': False,
+                'error': 'La deuda no puede ser negativa'
+            }, status=400)
+        if nueva_deuda > total:
+            return JsonResponse({
+                'success': False,
+                'error': 'La deuda no puede ser mayor al total de la venta'
+            }, status=400)
+
+        monto_pagado = total - nueva_deuda
+        saldo_pendiente = nueva_deuda
+
+        if saldo_pendiente > 0:
+            estado_pago = 'PARCIAL'
+        else:
+            estado_pago = 'PAGADO'
+
+        venta.total = total
+        venta.monto_pagado = monto_pagado
+        venta.saldo_pendiente = saldo_pendiente
+        venta.estado_pago = estado_pago
+
+        venta.save()
+        if saldo_pendiente > 0:
+            cliente.deuda_total += saldo_pendiente
+            cliente.save(update_fields=['deuda_total'])
+        if monto_pagado > 0:
+
+            PagoVentaLocal.objects.create(
+
+                venta=venta,
+
+                monto=monto_pagado
+            )
 
         return JsonResponse({
 
-            'success': False
+            'success': True,
+            'venta_id': venta.id,
+            'mensaje': f'Venta registrada. Deuda: ${saldo_pendiente}' if saldo_pendiente > 0 else 'Venta completada'
 
         })
-
-    cliente = Cliente.objects.get(
-        user_id=cliente_id
-    )
-
-    total = 0
-
-    monto_pagado = Decimal(
-        str(data.get('monto_pagado', 0))
-    )
-
-    venta = VentaLocal.objects.create(
-
-        cliente=cliente,
-
-        total=0,
-
-        monto_pagado=0,
-
-        saldo_pendiente=0,
-
-        estado_pago='PAGADO'
-    )
-
-    for item in productos:
-
-        variante = Variante.objects.get(
-            id=item['variante_id']
-        )
-
-        cantidad = int(item['cantidad'])
-
-        subtotal = (
-            variante.precio * cantidad
-        )
-
-        VentaLocalItem.objects.create(
-
-            venta=venta,
-
-            producto=variante.producto,
-
-            variante=variante,
-
-            color=item['color'],
-
-            cantidad=cantidad,
-
-            precio_unitario=variante.precio,
-
-            subtotal=subtotal
-
-        )
-
-        # DESCONTAR STOCK VARIANTE
-
-        variante.stock -= cantidad
-
-        variante.save()
-
-        # DESCONTAR STOCK PRODUCTO
-
-        producto = variante.producto
-
-        producto.stock -= cantidad
-
-        producto.save()
-
-        total += subtotal
-
-    venta.total = total
-    saldo_pendiente = total - monto_pagado
-
-    if saldo_pendiente > 0:
-        estado_pago = 'PARCIAL'
-    else:
-        estado_pago = 'PAGADO'
-
-    venta.total = total
-    venta.monto_pagado = monto_pagado
-    venta.saldo_pendiente = saldo_pendiente
-    venta.estado_pago = estado_pago
-
-    venta.save()
-    if monto_pagado > 0:
-
-        PagoVentaLocal.objects.create(
-
-            venta=venta,
-
-            monto=monto_pagado
-        )
-
-    return JsonResponse({
-
-        'success': True
-
-    })
+    
+    except Cliente.DoesNotExist:
+        return JsonResponse({
+            'success': False,
+            'error': 'Cliente no encontrado'
+        }, status=404)
+    except Variante.DoesNotExist:
+        return JsonResponse({
+            'success': False,
+            'error': 'Producto no encontrado'
+        }, status=404)
+    except json.JSONDecodeError:
+        return JsonResponse({
+            'success': False,
+            'error': 'Formato de datos inválido'
+        }, status=400)
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': f'Error al registrar venta: {str(e)}'
+        }, status=400)
 def detalle_venta_local(request, venta_id):
 
     venta = get_object_or_404(
@@ -1713,7 +1965,7 @@ def detalle_venta_local(request, venta_id):
             f'{venta.cliente.user.last_name}'
         ),
 
-        'fecha': venta.created_at.strftime(
+        'fecha': timezone.localtime(venta.created_at).strftime(
             '%d/%m/%Y %H:%M'
         ),
 
@@ -1723,6 +1975,25 @@ def detalle_venta_local(request, venta_id):
         'pendiente': float(venta.saldo_pendiente),
 
         'estado': venta.estado_pago,
+        
+        'metodo_pago': venta.get_metodo_pago_display() if hasattr(venta, 'get_metodo_pago_display') else venta.metodo_pago,
+
+        'metodo_entrega': venta.get_metodo_entrega_display() if hasattr(venta, 'get_metodo_entrega_display') else venta.metodo_entrega,
+
+        'es_regalo': venta.es_regalo,
+
+        'ticket_cambio_url': f'/pedidos/venta-local/{venta.id}/ticket-cambio/',
+
+        'ticket_envio_url': f'/pedidos/venta-local/{venta.id}/ticket-envio/',
+
+        'tiene_envio': True,
+
+        'direccion': (
+            f'{venta.direccion.etiqueta}: {venta.direccion.calle} {venta.direccion.numero}, '
+            f'{venta.direccion.ciudad}, {venta.direccion.provincia} - CP {venta.direccion.codigo_postal}'
+            if venta.direccion else ''
+        ),
+        
         'productos': []
 
     }
@@ -1744,6 +2015,164 @@ def detalle_venta_local(request, venta_id):
         })
 
     return JsonResponse(data)
+
+
+def contexto_ticket_venta(venta):
+    items = venta.items.select_related(
+        'producto',
+        'variante',
+        'variante__talle'
+    )
+    fecha = timezone.localtime(venta.created_at)
+    items_ticket = [
+        {
+            'producto': item.producto.nombre,
+            'color': item.color,
+            'talle': item.variante.talle.nombre,
+            'precio': formato_pesos(item.precio_unitario),
+            'cantidad': item.cantidad,
+            'subtotal': formato_pesos(item.subtotal),
+        }
+        for item in items
+    ]
+    configuracion_envio = ConfiguracionEnvio.actual()
+    costo_envio = (
+        Decimal(configuracion_envio.costo_flex)
+        if venta.metodo_entrega == 'envio'
+        else Decimal('0')
+    )
+
+    return {
+        'venta': venta,
+        'items': items_ticket,
+        'fecha_ticket': fecha.strftime('%d/%m/%Y - %H:%M'),
+        'orden': str(venta.id).zfill(5),
+        'cliente_nombre': f'{venta.cliente.user.first_name} {venta.cliente.user.last_name}'.strip(),
+        'telefono': venta.cliente.telefono,
+        'subtotal': formato_pesos(venta.total),
+        'descuento': formato_pesos(0),
+        'total': formato_pesos(venta.total),
+        'costo_envio': formato_pesos(costo_envio),
+        'metodo_pago': venta.get_metodo_pago_display(),
+        'es_regalo': venta.es_regalo,
+        'direccion': venta.direccion,
+    }
+
+
+def contexto_ticket_pedido(pedido):
+    items = pedido.items.select_related(
+        'variante',
+        'variante__producto',
+        'variante__talle',
+    ).prefetch_related('variante__colores')
+    fecha = timezone.localtime(pedido.created_at)
+    items_ticket = []
+
+    for item in items:
+        colores = ', '.join(
+            color.nombre for color in item.variante.colores.all()
+        )
+        items_ticket.append({
+            'producto': item.variante.producto.nombre,
+            'color': colores,
+            'talle': item.variante.talle.nombre if item.variante.talle else 'Sin talle',
+            'precio': formato_pesos(item.precio_unitario),
+            'cantidad': item.cantidad,
+            'subtotal': formato_pesos(item.precio_total),
+        })
+
+    pago = getattr(pedido, 'pago', None)
+
+    return {
+        'pedido': pedido,
+        'items': items_ticket,
+        'fecha_ticket': fecha.strftime('%d/%m/%Y - %H:%M'),
+        'orden': str(pedido.id).zfill(5),
+        'cliente_nombre': f'{pedido.cliente.user.first_name} {pedido.cliente.user.last_name}'.strip() or pedido.cliente.user.username,
+        'telefono': pedido.cliente.telefono,
+        'subtotal': formato_pesos(pedido.total - pedido.costo_envio + pedido.descuento_monto),
+        'descuento': formato_pesos(pedido.descuento_monto),
+        'total': formato_pesos(pedido.total),
+        'costo_envio': formato_pesos(pedido.costo_envio),
+        'metodo_pago': pago.metodo if pago else (pedido.get_metodo_pago_display() if pedido.metodo_pago else 'Mercado Pago'),
+        'es_regalo': pedido.es_regalo,
+        'direccion': pedido.direccion,
+        'pedido_direccion_texto': pedido.direccion_info or pedido.calle_numero or '',
+    }
+
+
+@admin_required
+def ticket_cambio_venta_local(request, venta_id):
+    venta = get_object_or_404(
+        VentaLocal.objects.select_related(
+            'cliente',
+            'cliente__user',
+            'direccion'
+        ).prefetch_related('items'),
+        id=venta_id
+    )
+
+    return render(
+        request,
+        'pedidos/ticket_cambio_venta.html',
+        contexto_ticket_venta(venta)
+    )
+
+
+@admin_required
+def ticket_envio_venta_local(request, venta_id):
+    venta = get_object_or_404(
+        VentaLocal.objects.select_related(
+            'cliente',
+            'cliente__user',
+            'direccion'
+        ).prefetch_related('items'),
+        id=venta_id
+    )
+
+    return render(
+        request,
+        'pedidos/ticket_envio_venta.html',
+        contexto_ticket_venta(venta)
+    )
+
+
+@admin_required
+def ticket_cambio_pedido(request, pedido_id):
+    pedido = get_object_or_404(
+        Pedido.objects.select_related(
+            'cliente',
+            'cliente__user',
+            'direccion',
+        ).prefetch_related('items'),
+        id=pedido_id
+    )
+
+    return render(
+        request,
+        'pedidos/ticket_cambio_venta.html',
+        contexto_ticket_pedido(pedido)
+    )
+
+
+@admin_required
+def ticket_envio_pedido(request, pedido_id):
+    pedido = get_object_or_404(
+        Pedido.objects.select_related(
+            'cliente',
+            'cliente__user',
+            'direccion',
+        ).prefetch_related('items'),
+        id=pedido_id
+    )
+
+    return render(
+        request,
+        'pedidos/ticket_envio_venta.html',
+        contexto_ticket_pedido(pedido)
+    )
+
+
 @require_POST
 @admin_required
 def registrar_pago_venta(request, venta_id):

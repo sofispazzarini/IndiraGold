@@ -76,18 +76,34 @@ class Producto(models.Model):
 
     def obtener_oferta_activa(self):
 
+        oferta_producto = Oferta.objects.filter(
+            activa=True,
+            es_cupon=False,
+            productos=self
+        ).first()
+
+        if oferta_producto:
+            return oferta_producto
+
+        oferta_categoria = Oferta.objects.filter(
+            activa=True,
+            es_cupon=False,
+            categoria=self.categoria
+        ).first()
+
+        if oferta_categoria:
+            return oferta_categoria
+
         oferta_global = Oferta.objects.filter(
             activa=True,
+            es_cupon=False,
             aplicar_a_todos=True
         ).first()
 
         if oferta_global:
             return oferta_global
 
-        return Oferta.objects.filter(
-            activa=True,
-            productos=self
-        ).first()
+        return None
 
 
     @property
@@ -220,12 +236,22 @@ class VarianteColor(models.Model):
         return f"{self.variante.producto.nombre} - {self.variante.talle} - {self.color.nombre}"
 class Oferta(models.Model):
     nombre = models.CharField(max_length=100)
+    codigo = models.CharField(max_length=40, unique=True, null=True, blank=True)
+    es_cupon = models.BooleanField(default=False)
 
     descuento = models.PositiveIntegerField(
         help_text='Porcentaje de descuento'
     )
 
     aplicar_a_todos = models.BooleanField(default=False)
+
+    categoria = models.ForeignKey(
+        Categoria,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='ofertas'
+    )
 
     productos = models.ManyToManyField(
         Producto,
@@ -239,6 +265,10 @@ class Oferta(models.Model):
     fecha_fin = models.DateTimeField(null=True, blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
+
+    def save(self, *args, **kwargs):
+        self.codigo = self.codigo.strip().upper() if self.codigo else None
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.nombre} - {self.descuento}%"
