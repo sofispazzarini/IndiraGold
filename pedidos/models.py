@@ -286,6 +286,10 @@ class ConfiguracionEnvio(models.Model):
         default=True,
         help_text='Mostrar Envio Flex como opcion en el checkout'
     )
+    correo_activo = models.BooleanField(
+        default=False,
+        help_text='Mostrar Andreani/Correo Argentino como opcion en el checkout'
+    )
 
     precio_flex = models.DecimalField(
         max_digits=10,
@@ -296,10 +300,18 @@ class ConfiguracionEnvio(models.Model):
     flex_gratis = models.BooleanField(
         default=False
     )
+    correo_gratis = models.BooleanField(
+        default=False
+    )
 
     zonas_flex = models.TextField(
         blank=True,
         help_text='Separar zonas con coma. Ej: CABA, La Plata, Quilmes'
+    )
+    precio_correo = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=0
     )
 
     def __str__(self):
@@ -317,12 +329,58 @@ class ConfiguracionEnvio(models.Model):
         return self.precio_flex
 
     @property
+    def costo_correo(self):
+        if self.correo_gratis:
+            return 0
+        return self.precio_correo
+
+    @property
     def zonas_flex_lista(self):
         return [
             zona.strip()
             for zona in self.zonas_flex.split(',')
             if zona.strip()
         ]
+
+
+class EnvioPedido(models.Model):
+    PROVEEDORES = (
+        ('andreani', 'Andreani'),
+        ('correo_argentino', 'Correo Argentino'),
+        ('flex', 'Envio Flex'),
+    )
+    TIPOS_ENTREGA = (
+        ('domicilio', 'A domicilio'),
+        ('sucursal', 'Retiro en sucursal'),
+    )
+    ESTADOS = (
+        ('pendiente', 'Pendiente de generar etiqueta'),
+        ('etiqueta_generada', 'Etiqueta generada'),
+        ('despachado', 'Despachado'),
+        ('en_transito', 'En transito'),
+        ('entregado', 'Entregado'),
+        ('error', 'Error al generar envio'),
+    )
+
+    pedido = models.OneToOneField(
+        Pedido,
+        on_delete=models.CASCADE,
+        related_name='envio'
+    )
+    proveedor = models.CharField(max_length=30, choices=PROVEEDORES)
+    tipo_entrega = models.CharField(max_length=20, choices=TIPOS_ENTREGA, default='domicilio')
+    estado = models.CharField(max_length=30, choices=ESTADOS, default='pendiente')
+    costo = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    tracking = models.CharField(max_length=120, blank=True, null=True)
+    sucursal = models.CharField(max_length=255, blank=True, null=True)
+    etiqueta = models.FileField(upload_to='etiquetas_envio/', blank=True, null=True)
+    respuesta_api = models.JSONField(default=dict, blank=True)
+    error = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Envio Pedido {self.pedido_id} - {self.get_proveedor_display()}"
 
 
 class ConfiguracionPago(models.Model):

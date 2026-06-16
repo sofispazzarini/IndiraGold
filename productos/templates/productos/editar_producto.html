@@ -77,6 +77,11 @@
                                 <input type="number" name="stock" id="stockGlobalEdit" class="form-control" value="{{ producto.stock_total }}" readonly>
                                 <small class="text-muted">Se calcula sumando los stocks de variantes.</small>
                             </div>
+                            <div class="col-12">
+                                <label class="small fw-bold">Tamaño para envío</label>
+                                {{ form.tamano_paquete }}
+                                <small class="text-muted">Se usa para cotizar Correo Argentino.</small>
+                            </div>
                             <div class="col-12 pt-2">
                                 <div class="form-check form-switch">
                                     {{ form.activo }} 

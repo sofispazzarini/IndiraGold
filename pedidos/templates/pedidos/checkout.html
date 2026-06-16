@@ -495,11 +495,6 @@
     white-space: nowrap;
   }
 
-  .entrega-option:has(#correo),
-  #campos-correo {
-    display: none !important;
-  }
-
   .alert-warning {
     background: rgba(184, 146, 42, 0.08);
     border: 1px solid rgba(184, 146, 42, 0.2);
@@ -834,6 +829,7 @@
                 {% endif %}
 
                 <!-- CORREO -->
+                {% if configuracion_envio.correo_activo %}
                 <div class="entrega-option">
                 <input
                     type="radio"
@@ -850,10 +846,15 @@
                     </span>
 
                     <span class="label-sub">
-                    Andreani o Correo Argentino
+                    {% if configuracion_envio.correo_gratis %}
+                    Gratis
+                    {% else %}
+                    ${{ precio_correo }}
+                    {% endif %}
                     </span>
                 </label>
                 </div>
+                {% endif %}
 
             </div>
 
@@ -996,15 +997,12 @@
                 <label>Correo</label>
 
                 <select name="correo" class="form-select">
-
                     <option value="andreani">
                     Andreani
                     </option>
-
                     <option value="correo_argentino">
                     Correo Argentino
                     </option>
-
                 </select>
 
                 </div>
@@ -1046,7 +1044,7 @@
                 </div>
 
                 <!-- SUCURSAL -->
-                <div class="form-group">
+                <div class="form-group" id="correo-sucursal-box">
 
                 <label>Sucursal</label>
 
@@ -1057,10 +1055,21 @@
                     placeholder="Ej: Sucursal La Plata Centro"
                 >
 
+                <label style="margin-top:.75rem;">Codigo postal</label>
+
+                <input
+                    type="text"
+                    name="codigo_postal_sucursal"
+                    class="form-control"
+                    placeholder="Ej: 1900"
+                >
+
                 </div>
 
+                <div class="alert-warning" id="correo-cotizacion-box" style="margin-top:1rem; display:none;"></div>
+
                 <!-- DIRECCIONES -->
-                <div style="margin-top:1rem;">
+                <div style="margin-top:1rem;" id="correo-direcciones-box">
 
                 <p style="font-size: 0.82rem; color: var(--muted); margin-bottom: 1rem;">
                     Seleccioná la dirección donde querés recibir tu pedido.
@@ -1358,6 +1367,8 @@
 <script>
 const subtotalBase = parseFloat("{{ subtotal|floatformat:'2' }}".replace(',', '.'));
 const costoFlex = parseFloat("{{ precio_flex|floatformat:'2' }}".replace(',', '.'));
+const costoCorreoBase = parseFloat("{{ precio_correo|floatformat:'2' }}".replace(',', '.'));
+let costoCorreo = costoCorreoBase;
 let descuentoAplicado = parseFloat("{{ descuento_monto|floatformat:'2' }}".replace(',', '.')) || 0;
 
 function formatearPesos(valor) {
@@ -1382,6 +1393,15 @@ const pagoEfectivoCard = document.getElementById('pago-efectivo-card');
 const botonPagar = document.getElementById('checkout-submit-btn');
 const extraMercadoPago = document.getElementById('extra-mercado-pago');
 const extraTransferencia = document.getElementById('extra-transferencia');
+const correoSucursalBox = document.getElementById('correo-sucursal-box');
+const correoDireccionesBox = document.getElementById('correo-direcciones-box');
+const correoCotizacionBox = document.getElementById('correo-cotizacion-box');
+
+function actualizarTipoCorreo() {
+  const tipoCorreo = valorSeleccionado('tipo_correo') || 'domicilio';
+  if (correoSucursalBox) correoSucursalBox.style.display = tipoCorreo === 'sucursal' ? 'block' : 'none';
+  if (correoDireccionesBox) correoDireccionesBox.style.display = tipoCorreo === 'domicilio' ? 'block' : 'none';
+}
 
 function asegurarMetodoPagoSeleccionado() {
   const seleccionado = document.querySelector('input[name="metodo_pago"]:checked');
@@ -1409,6 +1429,10 @@ function actualizarEntrega() {
 
   if (metodo === 'correo' && camposCorreo) {
     camposCorreo.style.display = 'block';
+    const proveedor = valorCampo('select[name="correo"]');
+    if (proveedor !== 'correo_argentino') costoCorreo = costoCorreoBase;
+    costoEnvio = costoCorreo;
+    actualizarTipoCorreo();
   }
 
   if (pagoEfectivoCard && pagoEfectivo) {
@@ -1449,14 +1473,53 @@ function actualizarBotonPago() {
 }
 
 radiosEntrega.forEach(radio => {
-  radio.addEventListener('change', actualizarEntrega);
+  radio.addEventListener('change', () => {
+    actualizarEntrega();
+    cotizarCorreo();
+  });
 });
 
 document.querySelectorAll('input[name="metodo_pago"]').forEach(radio => {
   radio.addEventListener('change', actualizarBotonPago);
 });
 
+document.querySelectorAll('input[name="tipo_correo"]').forEach(radio => {
+  radio.addEventListener('change', () => {
+    actualizarTipoCorreo();
+    cotizarCorreo();
+  });
+});
+
+document.querySelectorAll('input[name="direccion_correo_id"]').forEach(radio => {
+  radio.addEventListener('change', cotizarCorreo);
+});
+
+document.querySelector('select[name="correo"]')?.addEventListener('change', () => {
+  const proveedor = valorCampo('select[name="correo"]');
+  if (proveedor !== 'correo_argentino') {
+    costoCorreo = costoCorreoBase;
+    if (correoCotizacionBox) {
+      correoCotizacionBox.style.display = 'block';
+      correoCotizacionBox.textContent = costoCorreo > 0
+        ? `Andreani: ${formatearPesos(costoCorreo)}`
+        : 'Andreani: gratis';
+    }
+    actualizarEntrega();
+    return;
+  }
+  costoCorreo = 0;
+  cotizarCorreo();
+});
+
+document.querySelector('input[name="codigo_postal_sucursal"]')?.addEventListener('input', () => {
+  if (valorCampo('select[name="correo"]') !== 'correo_argentino') return;
+  costoCorreo = 0;
+  clearTimeout(window.cotizarCorreoTimer);
+  window.cotizarCorreoTimer = setTimeout(cotizarCorreo, 500);
+});
+
 actualizarEntrega();
+actualizarTipoCorreo();
 
 function valorSeleccionado(nombre) {
   const item = document.querySelector(`input[name="${nombre}"]:checked`);
@@ -1476,6 +1539,76 @@ function agregarCampo(form, nombre, valor) {
   form.appendChild(input);
 }
 
+async function cotizarCorreo() {
+  const metodoEntrega = valorSeleccionado('metodo_entrega') || 'local';
+  const proveedor = valorCampo('select[name="correo"]');
+  if (metodoEntrega !== 'correo') return;
+  if (proveedor !== 'correo_argentino') {
+    costoCorreo = costoCorreoBase;
+    if (correoCotizacionBox) {
+      correoCotizacionBox.style.display = 'block';
+      correoCotizacionBox.textContent = costoCorreo > 0
+        ? `Andreani: ${formatearPesos(costoCorreo)}`
+        : 'Andreani: gratis';
+    }
+    actualizarEntrega();
+    return;
+  }
+
+  const tipoCorreo = valorSeleccionado('tipo_correo') || 'domicilio';
+  const direccionId = valorSeleccionado('direccion_correo_id');
+  const cpSucursal = valorCampo('input[name="codigo_postal_sucursal"]').trim();
+
+  if (tipoCorreo === 'domicilio' && !direccionId) {
+    if (correoCotizacionBox) {
+      correoCotizacionBox.style.display = 'block';
+      correoCotizacionBox.textContent = 'Selecciona una direccion para cotizar Correo Argentino.';
+    }
+    return;
+  }
+
+  if (tipoCorreo === 'sucursal' && !cpSucursal) {
+    if (correoCotizacionBox) {
+      correoCotizacionBox.style.display = 'block';
+      correoCotizacionBox.textContent = 'Ingresa el codigo postal para cotizar Correo Argentino.';
+    }
+    return;
+  }
+
+  if (correoCotizacionBox) {
+    correoCotizacionBox.style.display = 'block';
+    correoCotizacionBox.textContent = 'Cotizando Correo Argentino...';
+  }
+
+  const data = new FormData();
+  data.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+  data.append('tipo_correo', tipoCorreo);
+  data.append('direccion_correo_id', direccionId);
+  data.append('codigo_postal', cpSucursal);
+
+  try {
+    const response = await fetch("{% url 'pedidos:cotizar_correo_argentino' %}", {
+      method: 'POST',
+      body: data,
+      headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    });
+    const result = await response.json();
+    if (!response.ok || !result.success) throw new Error(result.error || 'No se pudo cotizar.');
+
+    costoCorreo = parseFloat(result.importe) || 0;
+    if (correoCotizacionBox) {
+      correoCotizacionBox.textContent = `Correo Argentino: ${formatearPesos(costoCorreo)}`;
+    }
+    actualizarEntrega();
+  } catch (error) {
+    costoCorreo = 0;
+    if (correoCotizacionBox) {
+      correoCotizacionBox.textContent = error.message;
+    }
+    actualizarEntrega();
+  }
+}
+
 function enviarCheckout() {
   const metodoEntrega = valorSeleccionado('metodo_entrega') || 'local';
   const metodoPago = valorSeleccionado('metodo_pago') || 'mercado_pago';
@@ -1483,6 +1616,27 @@ function enviarCheckout() {
   if (metodoEntrega === 'flex' && !valorSeleccionado('direccion_id')) {
     alert('Selecciona una direccion para Envio Flex.');
     return;
+  }
+
+  if (metodoEntrega === 'correo') {
+    const proveedor = valorCampo('select[name="correo"]');
+    const tipoCorreo = valorSeleccionado('tipo_correo') || 'domicilio';
+    if (tipoCorreo === 'domicilio' && !valorSeleccionado('direccion_correo_id')) {
+      alert('Selecciona una direccion para el envio por correo.');
+      return;
+    }
+    if (tipoCorreo === 'sucursal' && !valorCampo('input[name="sucursal_correo"]').trim()) {
+      alert('Indica la sucursal para retirar el envio.');
+      return;
+    }
+    if (proveedor === 'correo_argentino' && tipoCorreo === 'sucursal' && !valorCampo('input[name="codigo_postal_sucursal"]').trim()) {
+      alert('Indica el codigo postal para cotizar Correo Argentino.');
+      return;
+    }
+    if (proveedor === 'correo_argentino' && costoCorreo <= 0) {
+      alert('Primero necesitamos cotizar Correo Argentino.');
+      return;
+    }
   }
 
   botonPagar.disabled = true;
@@ -1500,6 +1654,7 @@ function enviarCheckout() {
   agregarCampo(form, 'correo', valorCampo('select[name="correo"]'));
   agregarCampo(form, 'tipo_correo', valorSeleccionado('tipo_correo'));
   agregarCampo(form, 'sucursal_correo', valorCampo('input[name="sucursal_correo"]'));
+  agregarCampo(form, 'codigo_postal_sucursal', valorCampo('input[name="codigo_postal_sucursal"]'));
   agregarCampo(form, 'codigo_descuento', couponHidden ? couponHidden.value : '');
   if (document.getElementById('es-regalo-check')?.checked) {
     agregarCampo(form, 'es_regalo', '1');

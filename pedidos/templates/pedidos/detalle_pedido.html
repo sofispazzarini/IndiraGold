@@ -385,6 +385,91 @@
 
         <div class="side-card">
             <div class="card-head">
+                <i class="bi bi-truck"></i>
+                <span class="card-head-title">Envio</span>
+            </div>
+            <div class="payment-info">
+                <div class="payment-row">
+                    <span class="detail-lbl">Metodo</span>
+                    <span class="detail-val">{{ pedido.get_metodo_entrega_display }}</span>
+                </div>
+                {% if pedido.envio %}
+                <div class="payment-row">
+                    <span class="detail-lbl">Proveedor</span>
+                    <span class="detail-val">{{ pedido.envio.get_proveedor_display }}</span>
+                </div>
+                <div class="payment-row">
+                    <span class="detail-lbl">Tipo</span>
+                    <span class="detail-val">{{ pedido.envio.get_tipo_entrega_display }}</span>
+                </div>
+                <div class="payment-row">
+                    <span class="detail-lbl">Estado</span>
+                    <span class="detail-val">{{ pedido.envio.get_estado_display }}</span>
+                </div>
+                {% if pedido.envio.sucursal %}
+                <div class="payment-row">
+                    <span class="detail-lbl">Sucursal</span>
+                    <span class="detail-val">{{ pedido.envio.sucursal }}</span>
+                </div>
+                {% endif %}
+                {% if pedido.envio.tracking %}
+                <div class="payment-row">
+                    <span class="detail-lbl">Tracking</span>
+                    <span class="detail-val">{{ pedido.envio.tracking }}</span>
+                </div>
+                {% endif %}
+                {% if pedido.envio.proveedor == 'correo_argentino' or pedido.envio.proveedor == 'andreani' %}
+                <form method="post" action="{% url 'pedidos:actualizar_tracking_envio' pedido.id %}" style="margin-top:1rem;">
+                    {% csrf_token %}
+                    <label class="detail-lbl" style="display:block;margin-bottom:.45rem;">Codigo de seguimiento</label>
+                    <input
+                        type="text"
+                        name="tracking"
+                        value="{{ pedido.envio.tracking|default:'' }}"
+                        placeholder="Ej: tracking del correo"
+                        style="width:100%;border:1px solid #e8dfd4;border-radius:12px;padding:.7rem .85rem;font-size:.84rem;"
+                    >
+                    <button type="submit" class="btn-act btn-hist" style="width:100%;justify-content:center;margin-top:.65rem;">
+                        <i class="bi bi-save"></i> Guardar seguimiento
+                    </button>
+                </form>
+                {% endif %}
+                {% if pedido.envio.etiqueta %}
+                <div class="payment-row">
+                    <span class="detail-lbl">Etiqueta</span>
+                    <span class="detail-val"><a href="{{ pedido.envio.etiqueta.url }}" target="_blank">Imprimir</a></span>
+                </div>
+                {% elif pedido.envio.proveedor == 'andreani' %}
+                <form method="post" action="{% url 'pedidos:generar_etiqueta_pedido' pedido.id %}" style="margin-top:1rem;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn-act btn-hist" style="width:100%; justify-content:center;">
+                        <i class="bi bi-printer"></i> Generar etiqueta
+                    </button>
+                </form>
+                {% if pedido.envio.error %}
+                <div class="payment-row">
+                    <span class="detail-lbl">Error</span>
+                    <span class="detail-val" style="color:#6E0E2E;">{{ pedido.envio.error }}</span>
+                </div>
+                {% endif %}
+                {% elif pedido.envio.proveedor == 'correo_argentino' %}
+                <div class="payment-row">
+                    <span class="detail-lbl">Etiqueta</span>
+                    <span class="detail-val" style="color:#9c8c7c;">Se emite desde MiCorreo</span>
+                </div>
+                {% endif %}
+                {% endif %}
+                {% if pedido.direccion %}
+                <div class="payment-row">
+                    <span class="detail-lbl">Direccion</span>
+                    <span class="detail-val">{{ pedido.direccion.calle }} {{ pedido.direccion.numero }}, {{ pedido.direccion.ciudad }} ({{ pedido.direccion.codigo_postal }})</span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="side-card">
+            <div class="card-head">
                 <i class="bi bi-credit-card"></i>
                 <span class="card-head-title">Pago</span>
             </div>

@@ -42,6 +42,12 @@ class Proveedor(models.Model):
 
 
 class Producto(models.Model):
+    TAMANOS_PAQUETE = (
+        ('chico', 'Chico'),
+        ('mediano', 'Mediano'),
+        ('grande', 'Grande'),
+    )
+
     codigo = models.CharField(max_length=50, unique=True)
     nombre = models.CharField(max_length=150)
     tipo = models.CharField(max_length=150)
@@ -59,6 +65,7 @@ class Producto(models.Model):
     activo = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     imagen_tecnica = models.ImageField(upload_to='productos/fichas/', blank=True, null=True)
+    tamano_paquete = models.CharField(max_length=20, choices=TAMANOS_PAQUETE, default='mediano')
 
     @property
     def stock_total(self):

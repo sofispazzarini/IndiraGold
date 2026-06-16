@@ -175,6 +175,56 @@
     margin-right: 0.5rem;
   }
 
+  .tracking-card {
+    margin-top: 2.5rem;
+    padding: 1.35rem 1.6rem;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+  }
+
+  .tracking-eyebrow {
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--burgundy);
+    margin-bottom: 0.65rem;
+  }
+
+  .tracking-code {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--dark);
+    word-break: break-word;
+    margin: 0.35rem 0 1rem;
+  }
+
+  .tracking-meta {
+    font-size: 0.86rem;
+    color: var(--muted);
+    margin: 0;
+  }
+
+  .tracking-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.7rem 1rem;
+    border-radius: 999px;
+    background: var(--dark);
+    color: #fff;
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  .tracking-link:hover {
+    color: #fff;
+    background: var(--burgundy);
+  }
+
   @media (max-width: 768px) {
     .estado-main {
       padding: 2rem 1.5rem;
@@ -222,6 +272,19 @@
     </div>
     {% endfor %}
   </div>
+
+  {% if envio and envio.tracking %}
+  <div class="tracking-card">
+    <div class="tracking-eyebrow">Seguimiento del envio</div>
+    <p class="tracking-meta">Transportista: {{ envio.get_proveedor_display }}</p>
+    <div class="tracking-code">{{ envio.tracking }}</div>
+    {% if seguimiento_url %}
+      <a href="{{ seguimiento_url }}" class="tracking-link" target="_blank" rel="noopener">
+        Ver seguimiento <i class="bi bi-box-arrow-up-right"></i>
+      </a>
+    {% endif %}
+  </div>
+  {% endif %}
 
   <div class="info-card">
     <p>

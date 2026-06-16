@@ -10,6 +10,7 @@ from .models import (
     Pedido,
     PedidoItem,
     Pago,
+    EnvioPedido,
     VentaLocal,
     PagoVentaLocal,
     ConfiguracionEnvio,
@@ -47,6 +48,7 @@ from django.views.decorators.http import require_POST
 from django.db import transaction
 from django.utils.html import escape
 from django.utils import timezone
+from .servicios_envio import ErrorEnvio, calcular_paquete_envio, cotizar_correo_argentino, generar_etiqueta
 print("===== PEDIDOS VIEWS CARGADO =====")
 print("TOKEN MP:", settings.MERCADO_PAGO_ACCESS_TOKEN)
 # Decorador para verificar que es administrador
@@ -161,6 +163,75 @@ def direccion_en_zona_flex(direccion, zonas_flex):
         normalizar_zona(zona) in ubicacion
         for zona in zonas_flex
     )
+
+
+def costo_envio_checkout(metodo_entrega, configuracion_envio):
+    if metodo_entrega == 'flex' and configuracion_envio.flex_activo:
+        return Decimal(configuracion_envio.costo_flex)
+    if metodo_entrega == 'correo' and configuracion_envio.correo_activo:
+        return Decimal(configuracion_envio.costo_correo)
+    return Decimal('0')
+
+
+def costo_correo_argentino_desde_sesion(request, codigo_postal, tipo_entrega, items=None):
+    cotizacion = request.session.get('correo_cotizacion') or {}
+    paquete = calcular_paquete_envio(items or [])
+    if (
+        cotizacion.get('codigo_postal') == codigo_postal
+        and cotizacion.get('tipo_entrega') == tipo_entrega
+        and cotizacion.get('paquete') == paquete
+        and cotizacion.get('importe')
+    ):
+        return monto_decimal(Decimal(str(cotizacion['importe'])))
+
+    importe, detalle = cotizar_correo_argentino(codigo_postal, tipo_entrega, items)
+    request.session['correo_cotizacion'] = {
+        'importe': str(importe),
+        'codigo_postal': codigo_postal,
+        'tipo_entrega': tipo_entrega,
+        'paquete': paquete,
+        'detalle': detalle,
+    }
+    request.session.modified = True
+    return importe
+
+
+def crear_envio_pedido(pedido):
+    if pedido.metodo_entrega == 'local':
+        return None
+
+    if pedido.metodo_entrega == 'flex':
+        return EnvioPedido.objects.get_or_create(
+            pedido=pedido,
+            defaults={
+                'proveedor': 'flex',
+                'tipo_entrega': 'domicilio',
+                'costo': pedido.costo_envio,
+            }
+        )[0]
+
+    if pedido.metodo_entrega == 'correo':
+        return EnvioPedido.objects.get_or_create(
+            pedido=pedido,
+            defaults={
+                'proveedor': pedido.correo or 'andreani',
+                'tipo_entrega': pedido.tipo_correo or 'domicilio',
+                'sucursal': pedido.sucursal_correo,
+                'costo': pedido.costo_envio,
+            }
+        )[0]
+
+    return None
+
+
+def url_seguimiento_envio(envio):
+    if not envio or not envio.tracking:
+        return ''
+    if envio.proveedor == 'correo_argentino':
+        return 'https://www.correoargentino.com.ar/formularios/e-commerce'
+    if envio.proveedor == 'andreani':
+        return 'https://www.andreani.com/#!/personas'
+    return ''
 
 
 def descontar_stock_pedido(pedido):
@@ -320,7 +391,7 @@ def detalle_pedido(request, pedido_id):
     Muestra el detalle completo de un pedido.
     """
     pedido = get_object_or_404(
-        Pedido.objects.select_related('cliente', 'cliente__user').prefetch_related(
+        Pedido.objects.select_related('cliente', 'cliente__user', 'envio').prefetch_related(
             'items__variante__producto',
             'items__variante__talle',
             'items__variante__colores',
@@ -477,6 +548,7 @@ def checkout_view(request):
         'configuracion_pago': configuracion_pago,
         'planes_cuotas': planes_cuotas,
         'precio_flex': configuracion_envio.costo_flex,
+        'precio_correo': configuracion_envio.costo_correo,
         'zonas_flex': zonas_flex,
         'direcciones': direcciones,
         'direcciones_flex': direcciones_flex,
@@ -504,16 +576,9 @@ def confirmar_pedido(request):
 
     if request.method == 'POST':
         metodo = request.POST.get('metodo_entrega')
-        if metodo == 'correo':
-            messages.error(request, 'El envio por correo no esta disponible por ahora.')
-            return redirect("pedidos:checkout")
         es_regalo = request.POST.get('es_regalo') == '1'
         configuracion_envio = ConfiguracionEnvio.actual()
-        costo_envio = (
-            Decimal(configuracion_envio.costo_flex)
-            if metodo == 'flex' and configuracion_envio.flex_activo
-            else Decimal('0.00')
-        )
+        costo_envio = costo_envio_checkout(metodo, configuracion_envio)
 
         cliente, _ = Cliente.objects.get_or_create(user=request.user)
         subtotal_productos = sum(item.precio_total for item in items_del_carrito)
@@ -531,10 +596,35 @@ def confirmar_pedido(request):
                 messages.error(request, 'La dirección seleccionada no está dentro de las zonas de Envío Flex.')
                 return redirect("pedidos:checkout")
         elif metodo == 'correo':
-            direccion = Direccion.objects.filter(
-                id=request.POST.get('direccion_correo_id'),
-                cliente=cliente
-            ).first()
+            if not configuracion_envio.correo_activo:
+                messages.error(request, 'El envio por correo no esta disponible en este momento.')
+                return redirect("pedidos:checkout")
+            if request.POST.get('tipo_correo') == 'domicilio':
+                direccion = Direccion.objects.filter(
+                    id=request.POST.get('direccion_correo_id'),
+                    cliente=cliente
+                ).first()
+            if request.POST.get('tipo_correo') == 'domicilio' and not direccion:
+                messages.error(request, 'Selecciona una direccion para el envio por correo.')
+                return redirect("pedidos:checkout")
+            if request.POST.get('tipo_correo') == 'sucursal' and not request.POST.get('sucursal_correo'):
+                messages.error(request, 'Indica la sucursal para retirar el envio.')
+                return redirect("pedidos:checkout")
+            if request.POST.get('correo') == 'correo_argentino':
+                codigo_postal_cotizacion = direccion.codigo_postal if direccion else request.POST.get('codigo_postal_sucursal')
+                if not codigo_postal_cotizacion:
+                    messages.error(request, 'Indica el codigo postal para cotizar Correo Argentino.')
+                    return redirect("pedidos:checkout")
+                try:
+                    costo_envio = costo_correo_argentino_desde_sesion(
+                        request,
+                        codigo_postal_cotizacion,
+                        request.POST.get('tipo_correo') or 'domicilio',
+                        items_del_carrito,
+                    )
+                except ErrorEnvio as error:
+                    messages.error(request, str(error))
+                    return redirect("pedidos:checkout")
 
         # VALIDACIÓN DE STOCK
         variantes_sin_stock = []
@@ -565,6 +655,7 @@ def confirmar_pedido(request):
             estado='pendiente',
             es_regalo=es_regalo,
         )
+        crear_envio_pedido(pedido)
 
         # 3. Movemos los productos al pedido y bajamos el stock
         for item in items_del_carrito:
@@ -753,6 +844,51 @@ def quitar_codigo_descuento(request):
 
 
 @login_required
+@require_POST
+def cotizar_correo_argentino_checkout(request):
+    cliente, _ = Cliente.objects.get_or_create(user=request.user)
+    carrito = get_or_create_cart(request)
+    items = carrito.items.all().select_related('variante__producto')
+    tipo_entrega = request.POST.get('tipo_correo') or 'domicilio'
+    codigo_postal = request.POST.get('codigo_postal', '').strip()
+
+    if tipo_entrega == 'domicilio':
+        direccion = Direccion.objects.filter(
+            id=request.POST.get('direccion_correo_id'),
+            cliente=cliente
+        ).first()
+        if not direccion:
+            return JsonResponse({'success': False, 'error': 'Selecciona una direccion.'}, status=400)
+        codigo_postal = direccion.codigo_postal
+
+    if not codigo_postal:
+        return JsonResponse({'success': False, 'error': 'Indica un codigo postal.'}, status=400)
+
+    paquete = calcular_paquete_envio(items)
+
+    try:
+        importe, detalle = cotizar_correo_argentino(codigo_postal, tipo_entrega, items)
+    except ErrorEnvio as error:
+        return JsonResponse({'success': False, 'error': str(error)}, status=400)
+
+    request.session['correo_cotizacion'] = {
+        'importe': str(importe),
+        'codigo_postal': codigo_postal,
+        'tipo_entrega': tipo_entrega,
+        'paquete': paquete,
+        'detalle': detalle,
+    }
+    request.session.modified = True
+
+    return JsonResponse({
+        'success': True,
+        'importe': float(importe),
+        'codigo_postal': codigo_postal,
+        'paquete': paquete,
+    })
+
+
+@login_required
 def crear_pago(request):
 
     carrito = get_or_create_cart(request)
@@ -830,10 +966,6 @@ def crear_pago(request):
     metodo_pago = request.POST.get('metodo_pago', 'mercado_pago')
     request.session['metodo_pago'] = metodo_pago
 
-    if request.session['metodo_entrega'] == 'correo':
-        messages.error(request, 'El envio por correo no esta disponible por ahora.')
-        return redirect('pedidos:checkout')
-
     configuracion_pago = ConfiguracionPago.actual()
 
     if metodo_pago not in ['mercado_pago', 'mercado_pago_qr', 'efectivo', 'transferencia']:
@@ -868,13 +1000,20 @@ def crear_pago(request):
     request.session['correo'] = request.POST.get('correo')
     request.session['tipo_correo'] = request.POST.get('tipo_correo')
     request.session['sucursal_correo'] = request.POST.get('sucursal_correo')
+    request.session['codigo_postal_sucursal'] = request.POST.get('codigo_postal_sucursal')
     request.session['es_regalo'] = request.POST.get('es_regalo') == '1'
 
     configuracion_envio = ConfiguracionEnvio.actual()
     cliente, _ = Cliente.objects.get_or_create(user=request.user)
+    direccion_flex = None
+    direccion_correo = None
 
     if request.session['metodo_entrega'] == 'flex' and not configuracion_envio.flex_activo:
         messages.error(request, 'El Envio Flex no esta disponible en este momento.')
+        return redirect('pedidos:checkout')
+
+    if request.session['metodo_entrega'] == 'correo' and not configuracion_envio.correo_activo:
+        messages.error(request, 'El envio por correo no esta disponible en este momento.')
         return redirect('pedidos:checkout')
 
     if request.session['metodo_entrega'] == 'flex':
@@ -890,23 +1029,52 @@ def crear_pago(request):
             return redirect('pedidos:checkout')
 
     if request.session['metodo_entrega'] == 'correo':
-        direccion_valida = Direccion.objects.filter(
-            id=request.session.get('direccion_correo_id'),
-            cliente=cliente
-        ).exists()
-        if not direccion_valida:
-            messages.error(request, 'Selecciona una direccion para el envio por correo.')
+        if request.session.get('correo') not in ['andreani', 'correo_argentino']:
+            messages.error(request, 'Selecciona Andreani o Correo Argentino.')
             return redirect('pedidos:checkout')
+        if request.session.get('tipo_correo') not in ['domicilio', 'sucursal']:
+            messages.error(request, 'Selecciona el tipo de entrega por correo.')
+            return redirect('pedidos:checkout')
+        if request.session.get('tipo_correo') == 'domicilio':
+            direccion_correo = Direccion.objects.filter(
+                id=request.session.get('direccion_correo_id'),
+                cliente=cliente
+            ).first()
+            if not direccion_correo:
+                messages.error(request, 'Selecciona una direccion para el envio por correo.')
+                return redirect('pedidos:checkout')
+        else:
+            if not request.session.get('sucursal_correo'):
+                messages.error(request, 'Indica la sucursal para retirar el envio.')
+                return redirect('pedidos:checkout')
+            if request.session.get('correo') == 'correo_argentino' and not request.session.get('codigo_postal_sucursal'):
+                messages.error(request, 'Indica el codigo postal para cotizar Correo Argentino.')
+                return redirect('pedidos:checkout')
 
-    costo_envio = (
-        Decimal(configuracion_envio.costo_flex)
-        if request.session['metodo_entrega'] == 'flex' and configuracion_envio.flex_activo
-        else Decimal('0')
-    )
+    costo_envio = costo_envio_checkout(request.session['metodo_entrega'], configuracion_envio)
+    if request.session['metodo_entrega'] == 'correo' and request.session.get('correo') == 'correo_argentino':
+        codigo_postal_cotizacion = (
+            direccion_correo.codigo_postal
+            if direccion_correo
+            else request.session.get('codigo_postal_sucursal')
+        )
+        try:
+            costo_envio = costo_correo_argentino_desde_sesion(
+                request,
+                codigo_postal_cotizacion,
+                request.session.get('tipo_correo') or 'domicilio',
+                items,
+            )
+        except ErrorEnvio as error:
+            messages.error(request, str(error))
+            return redirect('pedidos:checkout')
+        request.session['correo_costo_final'] = str(costo_envio)
+        request.session.modified = True
 
     if costo_envio > 0:
+        titulo_envio = 'Envio Flex' if request.session['metodo_entrega'] == 'flex' else 'Envio por correo'
         productos.append({
-            "title": "Envio Flex",
+            "title": titulo_envio,
             "quantity": 1,
             "currency_id": "ARS",
             "unit_price": float(costo_envio)
@@ -933,10 +1101,13 @@ def crear_pago(request):
             descuento_porcentaje=cupon.descuento if cupon else 0,
             descuento_monto=descuento_monto,
             metodo_entrega=request.session['metodo_entrega'],
-            direccion=direccion_flex if request.session['metodo_entrega'] == 'flex' else None,
-            codigo_postal=direccion_flex.codigo_postal if request.session['metodo_entrega'] == 'flex' else None,
-            localidad=direccion_flex.ciudad if request.session['metodo_entrega'] == 'flex' else None,
-            calle_numero=f'{direccion_flex.calle} {direccion_flex.numero}' if request.session['metodo_entrega'] == 'flex' else None,
+            direccion=direccion_flex or direccion_correo,
+            codigo_postal=(direccion_flex or direccion_correo).codigo_postal if (direccion_flex or direccion_correo) else None,
+            localidad=(direccion_flex or direccion_correo).ciudad if (direccion_flex or direccion_correo) else None,
+            calle_numero=f'{(direccion_flex or direccion_correo).calle} {(direccion_flex or direccion_correo).numero}' if (direccion_flex or direccion_correo) else None,
+            correo=request.session.get('correo'),
+            tipo_correo=request.session.get('tipo_correo'),
+            sucursal_correo=request.session.get('sucursal_correo'),
             metodo_pago=metodo_pago,
             monto_pagado=Decimal('0.00'),
             deuda=total_pedido,
@@ -944,6 +1115,7 @@ def crear_pago(request):
             estado='pendiente',
             es_regalo=request.session['es_regalo'],
         )
+        crear_envio_pedido(pedido)
 
         for item in items:
             PedidoItem.objects.create(
@@ -1059,11 +1231,9 @@ def pago_exitoso(request):
     )
 
     configuracion_envio = ConfiguracionEnvio.actual()
-    costo_envio = (
-        Decimal(configuracion_envio.costo_flex)
-        if metodo_entrega == 'flex' and configuracion_envio.flex_activo
-        else Decimal('0')
-    )
+    costo_envio = costo_envio_checkout(metodo_entrega, configuracion_envio)
+    if metodo_entrega == 'correo' and request.session.get('correo') == 'correo_argentino':
+        costo_envio = monto_decimal(Decimal(str(request.session.get('correo_costo_final') or '0')))
     direccion = None
 
     if metodo_entrega == 'flex':
@@ -1111,6 +1281,7 @@ def pago_exitoso(request):
         neto_recibido=mercado_pago['neto'] or (pedido.total - mercado_pago['retencion']),
         detalle_mercado_pago=mercado_pago['detalle'],
     )
+    crear_envio_pedido(pedido)
 
     # CREAR ITEMS Y DESCONTAR STOCK
     for item in items:
@@ -1566,10 +1737,11 @@ def estadisticas_ventas(request):
 def estado_pedido(request, pedido_id):
 
     pedido = get_object_or_404(
-        Pedido,
+        Pedido.objects.select_related('envio'),
         id=pedido_id,
         cliente__user=request.user
     )
+    envio = getattr(pedido, 'envio', None)
 
     if pedido.metodo_entrega == 'local':
 
@@ -1620,7 +1792,9 @@ def estado_pedido(request, pedido_id):
         'pedidos/estado_pedido.html',
         {
             'pedido': pedido,
-            'pasos': pasos
+            'pasos': pasos,
+            'envio': envio,
+            'seguimiento_url': url_seguimiento_envio(envio),
         }
     )
 @login_required
@@ -1969,6 +2143,52 @@ def actualizar_estado_pedido(request, pedido_id):
         return redirect('pedidos:gestion_pedidos')
 
     return redirect('pedidos:gestion_pedidos')
+
+
+@admin_required
+@require_POST
+def actualizar_tracking_envio(request, pedido_id):
+    pedido = get_object_or_404(Pedido.objects.select_related('envio'), id=pedido_id)
+    envio = getattr(pedido, 'envio', None) or crear_envio_pedido(pedido)
+
+    if not envio:
+        messages.error(request, 'Este pedido no tiene envio asociado.')
+        return redirect('pedidos:detalle_pedido', pedido_id=pedido.id)
+
+    tracking = (request.POST.get('tracking') or '').strip()
+    envio.tracking = tracking or None
+    envio.error = ''
+    envio.save(update_fields=['tracking', 'error', 'updated_at'])
+
+    if tracking:
+        messages.success(request, 'Codigo de seguimiento guardado.')
+    else:
+        messages.success(request, 'Codigo de seguimiento eliminado.')
+
+    return redirect('pedidos:detalle_pedido', pedido_id=pedido.id)
+
+
+@admin_required
+@require_POST
+def generar_etiqueta_pedido(request, pedido_id):
+    pedido = get_object_or_404(Pedido.objects.select_related('envio'), id=pedido_id)
+    envio = getattr(pedido, 'envio', None)
+
+    if not envio:
+        messages.error(request, 'Este pedido no tiene un envio asociado.')
+        return redirect('pedidos:detalle_pedido', pedido_id=pedido.id)
+
+    try:
+        generar_etiqueta(envio)
+    except ErrorEnvio as error:
+        envio.estado = 'error'
+        envio.error = str(error)
+        envio.save(update_fields=['estado', 'error', 'updated_at'])
+        messages.error(request, str(error))
+    else:
+        messages.success(request, 'Etiqueta generada correctamente.')
+
+    return redirect('pedidos:detalle_pedido', pedido_id=pedido.id)
 
 
 @admin_required
@@ -2547,9 +2767,7 @@ def configurar_envios(request):
     if request.method == 'POST':
         form = ConfiguracionEnvioForm(request.POST, instance=configuracion)
         if form.is_valid():
-            configuracion = form.save(commit=False)
-            configuracion.flex_activo = True
-            configuracion.save()
+            configuracion = form.save()
             messages.success(request, 'Configuración de envíos actualizada correctamente.')
             return redirect('pedidos:configurar_envios')
     else:
