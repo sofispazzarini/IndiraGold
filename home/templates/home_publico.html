@@ -524,15 +524,10 @@ function scrollCatOrden{{ cat_orden.id }}(dir) {
       <span>Total</span>
       <span id="cartTotal">${{ cart_total|default:"0" }}</span>
     </div>
-    <button class="cart-checkout" onclick="checkout()">Confirmar pedido</button>
+    <button class="cart-checkout" type="button" onclick="checkout()">Confirmar pedido</button>
   </div>
 </div>
 <div class="cart-overlay" id="cartOverlay" onclick="toggleCart()"></div>
-
-<form id="checkoutForm" method="post" action="/carritos/confirmar/" style="display:none;">
-  {% csrf_token %}
-  <input type="hidden" name="next" value="{{ request.get_full_path }}">
-</form>
 
 <!-- MODAL CANTIDAD -->
 <div id="modalCantidad" style="display:none; position:fixed; inset:0; z-index:1200; background:rgba(0,0,0,.55); align-items:center; justify-content:center; padding:1rem;">
@@ -1049,13 +1044,13 @@ function scrollCatOrden{{ cat_orden.id }}(dir) {
   function checkout() {
     const count = parseInt(document.getElementById('cartCount').textContent || '0');
     if (count <= 0) return;
+    const checkoutUrl = "{% url 'pedidos:checkout' %}";
     if (!isAuthenticated) {
-      window.location.href = `/users/login/?next=${encodeURIComponent(window.location.pathname + window.location.search)}`;
+      window.location.href = `/users/login/?next=${encodeURIComponent(checkoutUrl)}`;
       return;
     }
 
-    const form = document.getElementById('checkoutForm');
-    if (form) form.submit();
+    window.location.href = checkoutUrl;
   }
 
   function formatCountdown(seconds) {

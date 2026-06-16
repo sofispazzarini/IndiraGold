@@ -444,6 +444,62 @@
     color: var(--burgundy);
   }
 
+  .payment-extra {
+    display: none;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: #fffdf9;
+    padding: 1rem;
+    margin: 0.5rem 0 1rem;
+    color: var(--text);
+  }
+
+  .payment-extra.visible {
+    display: block;
+  }
+
+  .payment-extra-title {
+    font-weight: 800;
+    color: var(--burgundy);
+    margin-bottom: 0.65rem;
+  }
+
+  .installment-list,
+  .bank-list {
+    display: grid;
+    gap: 0.5rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .installment-list li,
+  .bank-list li {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    border-bottom: 1px solid rgba(232,223,212,0.7);
+    padding-bottom: 0.45rem;
+    font-size: 0.84rem;
+  }
+
+  .installment-list li:last-child,
+  .bank-list li:last-child {
+    border-bottom: 0;
+    padding-bottom: 0;
+  }
+
+  .retention-chip {
+    color: #8c7e70;
+    font-size: 0.78rem;
+    white-space: nowrap;
+  }
+
+  .entrega-option:has(#correo),
+  #campos-correo {
+    display: none !important;
+  }
+
   .alert-warning {
     background: rgba(184, 146, 42, 0.08);
     border: 1px solid rgba(184, 146, 42, 0.2);
@@ -649,7 +705,7 @@
     <h1 class="page-title">Finalizar compra</h1>
   </div>
 
-  <form action="{% url 'pedidos:crear_pago' %}" method="POST">
+  <form action="{% url 'pedidos:crear_pago' %}" method="POST" id="checkout-form">
     {% csrf_token %}
 
     <div class="checkout-grid">
@@ -671,6 +727,9 @@
               <div>
                 <div class="product-name">{{ item.variante.producto.nombre }}</div>
                 <div class="product-talle">Talle: {{ item.variante.talle.nombre }}</div>
+                {% if item.color_nombre %}
+                  <div class="product-talle">Color: {{ item.color_nombre|title }}</div>
+                {% endif %}
                 <div class="cantidad-wrap">
                   <form action="{% url 'pedidos:disminuir_cantidad' item.variante.id %}" method="POST" style="display:contents;">
                     {% csrf_token %}
@@ -794,6 +853,24 @@
                     Andreani o Correo Argentino
                     </span>
                 </label>
+                </div>
+
+            </div>
+
+            <!-- LOCAL -->
+            <div
+                class="direcciones-wrap"
+                id="campos-local"
+            >
+
+                <div class="direccion-info">
+                <i class="bi bi-shop"></i>
+
+                <div class="direccion-info-text">
+                    <h6>Retiro en local</h6>
+                    <small>423 bis e/ Belgrano y 22, numero 2150</small>
+                </div>
+
                 </div>
 
             </div>
@@ -1074,6 +1151,92 @@
               <i class="bi bi-gift"></i>
             </div>
           </label>
+
+          <div style="margin-top: 1.25rem;">
+            <div class="direccion-alias" style="margin-bottom: 0.75rem;">Metodo de pago</div>
+
+            {% if configuracion_pago.mercado_pago_activo %}
+            <label class="direccion-card regalo-card pago-card" for="pago-mercado">
+              <input
+                type="radio"
+                id="pago-mercado"
+                class="regalo-check"
+                name="metodo_pago"
+                value="mercado_pago"
+                checked
+              >
+              <div class="direccion-content">
+                <div>
+                  <div class="direccion-alias">Mercado Pago</div>
+                  <div class="direccion-detail">{{ configuracion_pago.texto_mercado_pago }}</div>
+                </div>
+                <i class="bi bi-credit-card"></i>
+              </div>
+            </label>
+
+            <div class="payment-extra" id="extra-mercado-pago">
+              <div class="payment-extra-title">Opciones disponibles</div>
+              {% if planes_cuotas %}
+              <ul class="installment-list">
+                {% for plan in planes_cuotas %}
+                <li>
+                  <span>Hasta {{ plan.cuotas }} cuota{% if plan.cuotas != 1 %}s{% endif %}{% if plan.sin_interes %} sin interes{% endif %}</span>
+                  <span class="retention-chip">Detalle actualizado en Mercado Pago</span>
+                </li>
+                {% endfor %}
+              </ul>
+              {% else %}
+              <div class="direccion-detail">La administradora todavia no cargo planes de cuotas.</div>
+              {% endif %}
+            </div>
+            {% endif %}
+
+            {% if configuracion_pago.transferencia_activa %}
+            <label class="direccion-card regalo-card pago-card" for="pago-transferencia">
+              <input
+                type="radio"
+                id="pago-transferencia"
+                class="regalo-check"
+                name="metodo_pago"
+                value="transferencia"
+              >
+              <div class="direccion-content">
+                <div>
+                  <div class="direccion-alias">Transferencia bancaria</div>
+                  <div class="direccion-detail">{{ configuracion_pago.texto_transferencia }}</div>
+                </div>
+                <i class="bi bi-bank"></i>
+              </div>
+            </label>
+
+            <div class="payment-extra" id="extra-transferencia">
+              <div class="payment-extra-title">Datos de la cuenta</div>
+              <ul class="bank-list">
+                <li><span>Titular</span><strong>{{ configuracion_pago.titular_cuenta }}</strong></li>
+                <li><span>CUIT/CUIL</span><strong>{{ configuracion_pago.cuit_cuil }}</strong></li>
+                <li><span>CVU</span><strong>{{ configuracion_pago.cvu }}</strong></li>
+                <li><span>Alias</span><strong>{{ configuracion_pago.alias }}</strong></li>
+              </ul>
+            </div>
+            {% endif %}
+
+            <label class="direccion-card regalo-card pago-card" id="pago-efectivo-card" for="pago-efectivo">
+              <input
+                type="radio"
+                id="pago-efectivo"
+                class="regalo-check"
+                name="metodo_pago"
+                value="efectivo"
+              >
+              <div class="direccion-content">
+                <div>
+                  <div class="direccion-alias">Efectivo en el local</div>
+                  <div class="direccion-detail">Disponible solo para retiro en local.</div>
+                </div>
+                <i class="bi bi-cash-coin"></i>
+              </div>
+            </label>
+          </div>
         </div>
 
       </div>
@@ -1107,7 +1270,7 @@
                 value="{{ codigo_descuento }}"
               >
                 <button type="button" id="aplicar-codigo-btn">Aplicar</button>
-                <button type="button" id="quitar-codigo-btn" style="display:none;margin-left:8px;">Quitar</button>
+                <button type="button" id="quitar-codigo-btn" style="{% if not codigo_descuento %}display:none;{% endif %}margin-left:8px;">Quitar</button>
             </div>
             <div class="coupon-message" id="coupon-message"></div>
           </div>
@@ -1126,7 +1289,7 @@
             <span class="value" id="total-final-display">${{ total }}</span>
           </div>
 
-          <button type="submit" class="btn-pagar">
+          <button type="button" class="btn-pagar" id="checkout-submit-btn">
             PAGAR AHORA <i class="bi bi-credit-card"></i>
           </button>
 
@@ -1209,8 +1372,24 @@ const radiosEntrega = document.querySelectorAll(
 
 const camposFlex = document.getElementById('campos-flex');
 const camposCorreo = document.getElementById('campos-correo');
+const camposLocal = document.getElementById('campos-local');
 const envioTexto = document.getElementById('envio-label');
 const totalDisplay = document.getElementById('total-final-display');
+const pagoMercado = document.getElementById('pago-mercado');
+const pagoTransferencia = document.getElementById('pago-transferencia');
+const pagoEfectivo = document.getElementById('pago-efectivo');
+const pagoEfectivoCard = document.getElementById('pago-efectivo-card');
+const botonPagar = document.getElementById('checkout-submit-btn');
+const extraMercadoPago = document.getElementById('extra-mercado-pago');
+const extraTransferencia = document.getElementById('extra-transferencia');
+
+function asegurarMetodoPagoSeleccionado() {
+  const seleccionado = document.querySelector('input[name="metodo_pago"]:checked');
+  if (seleccionado && seleccionado.closest('.pago-card')?.style.display !== 'none') return;
+  const primeroVisible = Array.from(document.querySelectorAll('input[name="metodo_pago"]'))
+    .find(input => input.closest('.pago-card')?.style.display !== 'none');
+  if (primeroVisible) primeroVisible.checked = true;
+}
 
 function actualizarEntrega() {
 
@@ -1218,8 +1397,9 @@ function actualizarEntrega() {
     'input[name="metodo_entrega"]:checked'
   ).value;
 
-  camposFlex.style.display = 'none';
-  camposCorreo.style.display = 'none';
+  if (camposLocal) camposLocal.style.display = metodo === 'local' ? 'block' : 'none';
+  if (camposFlex) camposFlex.style.display = 'none';
+  if (camposCorreo) camposCorreo.style.display = 'none';
   let costoEnvio = 0;
 
   if (metodo === 'flex') {
@@ -1227,9 +1407,20 @@ function actualizarEntrega() {
     costoEnvio = costoFlex;
   }
 
-  if (metodo === 'correo') {
+  if (metodo === 'correo' && camposCorreo) {
     camposCorreo.style.display = 'block';
   }
+
+  if (pagoEfectivoCard && pagoEfectivo) {
+    const permiteEfectivo = metodo === 'local';
+    pagoEfectivoCard.style.display = permiteEfectivo ? 'flex' : 'none';
+    if (!permiteEfectivo && pagoEfectivo.checked) {
+      const reemplazo = pagoMercado || pagoTransferencia;
+      if (reemplazo) reemplazo.checked = true;
+    }
+  }
+
+  asegurarMetodoPagoSeleccionado();
 
   if (costoEnvio > 0) {
     envioTexto.innerText = formatearPesos(costoEnvio);
@@ -1240,13 +1431,87 @@ function actualizarEntrega() {
   }
 
   totalDisplay.innerText = formatearPesos(Math.max(0, subtotalBase - descuentoAplicado) + costoEnvio);
+  actualizarBotonPago();
+}
+
+function actualizarBotonPago() {
+  if (!botonPagar) return;
+  if (extraMercadoPago) extraMercadoPago.classList.toggle('visible', Boolean(pagoMercado && pagoMercado.checked));
+  if (extraTransferencia) extraTransferencia.classList.toggle('visible', Boolean(pagoTransferencia && pagoTransferencia.checked));
+
+  if (pagoEfectivo && pagoEfectivo.checked) {
+    botonPagar.innerHTML = 'CONFIRMAR PEDIDO <i class="bi bi-bag-check"></i>';
+  } else if (pagoTransferencia && pagoTransferencia.checked) {
+    botonPagar.innerHTML = 'CONFIRMAR TRANSFERENCIA <i class="bi bi-bank"></i>';
+  } else {
+    botonPagar.innerHTML = 'PAGAR AHORA <i class="bi bi-credit-card"></i>';
+  }
 }
 
 radiosEntrega.forEach(radio => {
   radio.addEventListener('change', actualizarEntrega);
 });
 
+document.querySelectorAll('input[name="metodo_pago"]').forEach(radio => {
+  radio.addEventListener('change', actualizarBotonPago);
+});
+
 actualizarEntrega();
+
+function valorSeleccionado(nombre) {
+  const item = document.querySelector(`input[name="${nombre}"]:checked`);
+  return item ? item.value : '';
+}
+
+function valorCampo(selector) {
+  const item = document.querySelector(selector);
+  return item ? item.value : '';
+}
+
+function agregarCampo(form, nombre, valor) {
+  const input = document.createElement('input');
+  input.type = 'hidden';
+  input.name = nombre;
+  input.value = valor || '';
+  form.appendChild(input);
+}
+
+function enviarCheckout() {
+  const metodoEntrega = valorSeleccionado('metodo_entrega') || 'local';
+  const metodoPago = valorSeleccionado('metodo_pago') || 'mercado_pago';
+
+  if (metodoEntrega === 'flex' && !valorSeleccionado('direccion_id')) {
+    alert('Selecciona una direccion para Envio Flex.');
+    return;
+  }
+
+  botonPagar.disabled = true;
+
+  const form = document.createElement('form');
+  form.method = 'POST';
+  form.action = "{% url 'pedidos:crear_pago' %}";
+  form.style.display = 'none';
+
+  agregarCampo(form, 'csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+  agregarCampo(form, 'metodo_entrega', metodoEntrega);
+  agregarCampo(form, 'metodo_pago', metodoPago);
+  agregarCampo(form, 'direccion_id', valorSeleccionado('direccion_id'));
+  agregarCampo(form, 'direccion_correo_id', valorSeleccionado('direccion_correo_id'));
+  agregarCampo(form, 'correo', valorCampo('select[name="correo"]'));
+  agregarCampo(form, 'tipo_correo', valorSeleccionado('tipo_correo'));
+  agregarCampo(form, 'sucursal_correo', valorCampo('input[name="sucursal_correo"]'));
+  agregarCampo(form, 'codigo_descuento', couponHidden ? couponHidden.value : '');
+  if (document.getElementById('es-regalo-check')?.checked) {
+    agregarCampo(form, 'es_regalo', '1');
+  }
+
+  document.body.appendChild(form);
+  form.submit();
+}
+
+if (botonPagar) {
+  botonPagar.addEventListener('click', enviarCheckout);
+}
 
 document.querySelectorAll('.direccion-filter').forEach(input => {
   input.addEventListener('change', () => {

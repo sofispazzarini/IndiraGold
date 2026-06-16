@@ -1,6 +1,6 @@
 from django.contrib import admin
 from .models import Pedido, PedidoItem, Pago, Gasto
-from .models import VentaLocal, VentaLocalItem, ConfiguracionEnvio
+from .models import VentaLocal, VentaLocalItem, ConfiguracionEnvio, ConfiguracionPago, PlanCuotasMercadoPago
 
 admin.site.register(VentaLocal)
 admin.site.register(VentaLocalItem)
@@ -19,6 +19,22 @@ class ConfiguracionEnvioAdmin(admin.ModelAdmin):
 
     def has_add_permission(self, request):
         if ConfiguracionEnvio.objects.exists():
+            return False
+        return super().has_add_permission(request)
+
+
+class PlanCuotasMercadoPagoInline(admin.TabularInline):
+    model = PlanCuotasMercadoPago
+    extra = 1
+
+
+@admin.register(ConfiguracionPago)
+class ConfiguracionPagoAdmin(admin.ModelAdmin):
+    inlines = [PlanCuotasMercadoPagoInline]
+    list_display = ('id', 'mercado_pago_activo', 'transferencia_activa', 'alias', 'cvu')
+
+    def has_add_permission(self, request):
+        if ConfiguracionPago.objects.exists():
             return False
         return super().has_add_permission(request)
 @admin.register(Pedido)

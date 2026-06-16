@@ -21,6 +21,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 
 MERCADO_PAGO_ACCESS_TOKEN = os.getenv("MERCADO_PAGO_ACCESS_TOKEN")
+MERCADO_PAGO_QR_IMAGE_URL = os.getenv("MERCADO_PAGO_QR_IMAGE_URL", "")
+MERCADO_PAGO_QR_EXTERNAL_POS_ID = os.getenv("MERCADO_PAGO_QR_EXTERNAL_POS_ID", "")
+COMPROBANTE_WHATSAPP = os.getenv("COMPROBANTE_WHATSAPP", "5492216375660")
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 

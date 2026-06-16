@@ -290,14 +290,21 @@
                             </td>
                             <td>
                                 <span class="item-variant">Talle {{ item.variante.talle.nombre }}</span>
-                                {% with colores=item.variante.colores.all %}
-                                    {% if colores %}
+                                {% if item.color_nombre %}
                                     <div class="item-colors">
                                         <i class="bi bi-palette"></i>
-                                        {% for color in colores %}{{ color.nombre }}{% if not forloop.last %}, {% endif %}{% endfor %}
+                                        {{ item.color_nombre|title }}
                                     </div>
-                                    {% endif %}
-                                {% endwith %}
+                                {% else %}
+                                    {% with colores=item.variante.colores.all %}
+                                        {% if colores %}
+                                        <div class="item-colors">
+                                            <i class="bi bi-palette"></i>
+                                            {% for color in colores %}{{ color.nombre }}{% if not forloop.last %}, {% endif %}{% endfor %}
+                                        </div>
+                                        {% endif %}
+                                    {% endwith %}
+                                {% endif %}
                             </td>
                             <td>
                                 <input type="number" name="cantidad_{{ item.id }}" value="{{ item.cantidad }}" min="1" class="modern-input">

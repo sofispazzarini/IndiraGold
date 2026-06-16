@@ -12,6 +12,9 @@
       <div class="cart-item">
         <div class="cart-item__info">
           <div class="cart-item__name">{{ item.nombre }}</div>
+          {% if item.color_nombre %}
+            <div class="cart-item__meta">Color: {{ item.color_nombre|title }}</div>
+          {% endif %}
           <div class="cart-item__price">${{ item.subtotal }}</div>
         </div>
         <div class="cart-item__qty">

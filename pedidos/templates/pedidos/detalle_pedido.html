@@ -332,15 +332,21 @@
                 <div class="item-tags">
                     <span class="item-sku">{{ item.variante.producto.codigo }}</span>
                     <span class="item-variant">Talle {{ item.variante.talle.nombre }}</span>
-                    {% with colores=item.variante.colores.all %}
-                        {% if colores %}
-                            {% for color in colores %}
-                            <span class="item-color">
-                                <i class="bi bi-palette"></i> {{ color.nombre }}
-                            </span>
-                            {% endfor %}
-                        {% endif %}
-                    {% endwith %}
+                    {% if item.color_nombre %}
+                        <span class="item-color">
+                            <i class="bi bi-palette"></i> {{ item.color_nombre|title }}
+                        </span>
+                    {% else %}
+                        {% with colores=item.variante.colores.all %}
+                            {% if colores %}
+                                {% for color in colores %}
+                                <span class="item-color">
+                                    <i class="bi bi-palette"></i> {{ color.nombre }}
+                                </span>
+                                {% endfor %}
+                            {% endif %}
+                        {% endwith %}
+                    {% endif %}
                 </div>
             </div>
             <div class="item-amount">

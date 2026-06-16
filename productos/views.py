@@ -59,6 +59,17 @@ def detalle_producto(request, producto_id):
     context = {
         'producto': producto,
         'variantes': variantes,
+        'variantes_data': [
+            {
+                'id': variante.id,
+                'stock': variante.stock,
+                'colores': [
+                    {'id': color.id, 'nombre': color.nombre}
+                    for color in variante.colores.all()
+                ],
+            }
+            for variante in variantes
+        ],
         'productos_relacionados': productos_relacionados,
         'talles_disponibles': [v.talle for v in variantes],
     }

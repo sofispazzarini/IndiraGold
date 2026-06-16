@@ -1,0 +1,333 @@
+{% extends 'users/dashboard_admin.html' %}
+
+{% block extra_head %}
+{{ block.super }}
+<style>
+  .pagos-page {
+    min-height: calc(100vh - 60px);
+    width: 100%;
+    max-width: 980px;
+    margin-left: 20%;
+    margin-right: auto;
+    padding: 3rem 3rem 5rem;
+  }
+  .pagos-header {
+    margin-bottom: 2rem;
+    padding-bottom: 1.75rem;
+    border-bottom: 1px solid rgba(184,146,42,.16);
+  }
+  .pagos-eyebrow {
+    font-size: .65rem;
+    letter-spacing: .2em;
+    text-transform: uppercase;
+    color: #b8922a;
+    font-weight: 700;
+    margin-bottom: .55rem;
+  }
+  .pagos-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(2.5rem, 5vw, 4rem);
+    color: #1a1612;
+    font-weight: 700;
+    line-height: 1;
+    margin: 0;
+  }
+  .pagos-subtitle {
+    color: #8c7e70;
+    font-size: .92rem;
+    margin: .9rem 0 0;
+    max-width: 620px;
+    line-height: 1.65;
+  }
+  .pago-card {
+    background: #fff;
+    border: 1px solid #e8dfd4;
+    border-radius: 16px;
+    padding: 1.5rem;
+    box-shadow: 0 16px 42px rgba(26,22,18,.05);
+  }
+  .pago-section {
+    padding: 1.25rem 0;
+    border-bottom: 1px solid #f0e8de;
+  }
+  .pago-section:first-of-type { padding-top: 0; }
+  .pago-section:last-of-type { border-bottom: 0; padding-bottom: 0; }
+  .pago-section-title {
+    display: flex;
+    align-items: center;
+    gap: .65rem;
+    color: #6E0E2E;
+    font-weight: 800;
+    margin-bottom: .95rem;
+  }
+  .pago-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+  }
+  .pago-checkline {
+    display: flex;
+    align-items: flex-start;
+    gap: .7rem;
+    border: 1px solid #e8dfd4;
+    border-radius: 12px;
+    padding: 1rem;
+    background: #faf7f0;
+  }
+  .pago-checkline input { margin-top: .25rem; }
+  .pago-help {
+    color: #8c7e70;
+    font-size: .82rem;
+    line-height: 1.55;
+    margin: .35rem 0 0;
+  }
+  .envio-input {
+    width: 100%;
+    border: 1px solid #d9d0c4;
+    border-radius: 10px;
+    padding: .85rem 1rem;
+    color: #3d342a;
+    background: #fff;
+    outline: none;
+  }
+  .field-label {
+    display: block;
+    font-size: .7rem;
+    text-transform: uppercase;
+    letter-spacing: .12em;
+    color: #8c7e70;
+    font-weight: 800;
+    margin-bottom: .45rem;
+  }
+  .planes-table {
+    width: 100%;
+    border-collapse: collapse;
+    overflow: hidden;
+    border-radius: 12px;
+  }
+  .planes-table th,
+  .planes-table td {
+    border-bottom: 1px solid #efe7dc;
+    padding: .75rem;
+    text-align: left;
+    vertical-align: middle;
+  }
+  .planes-table th {
+    font-size: .68rem;
+    text-transform: uppercase;
+    letter-spacing: .12em;
+    color: #8c7e70;
+  }
+  .planes-table input[type="number"] {
+    width: 100%;
+    min-width: 84px;
+  }
+  .retencion-cell {
+    display: flex;
+    align-items: center;
+    gap: .45rem;
+  }
+  .retencion-cell .envio-input {
+    min-width: 96px;
+  }
+  .retencion-symbol {
+    color: #8c7e70;
+    font-weight: 800;
+  }
+  .btn-add-plan,
+  .btn-remove-plan,
+  .pago-save {
+    border: none;
+    border-radius: 999px;
+    font-weight: 800;
+    cursor: pointer;
+  }
+  .btn-add-plan {
+    background: #faf7f0;
+    color: #6E0E2E;
+    border: 1px solid #e8dfd4;
+    padding: .7rem 1rem;
+  }
+  .btn-remove-plan {
+    background: #fff2f4;
+    color: #6E0E2E;
+    padding: .45rem .8rem;
+  }
+  .pago-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 1.5rem;
+  }
+  .pago-save {
+    background: #1a1612;
+    color: #fff;
+    padding: .85rem 1.4rem;
+  }
+  @media (max-width: 1000px) {
+    .pagos-page { margin-left: 0; padding: 2rem 1rem 4rem; }
+    .pago-grid { grid-template-columns: 1fr; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pagos-page">
+  <section class="pagos-header">
+    <div class="pagos-eyebrow">Pagos</div>
+    <h1 class="pagos-title">Configurar medios de pago</h1>
+    <p class="pagos-subtitle">
+      Carga los datos que ve la clienta en checkout y los planes de cuotas que queres comunicar. Los costos y condiciones finales los calcula Mercado Pago al momento de pagar.
+    </p>
+  </section>
+
+  <form method="post" class="pago-card">
+    {% csrf_token %}
+
+    <section class="pago-section">
+      <div class="pago-section-title"><i class="bi bi-toggle2-on"></i> Medios disponibles</div>
+      <div class="pago-grid">
+        <label class="pago-checkline">
+          {{ form.mercado_pago_activo }}
+          <span>
+            <strong>Mercado Pago activo</strong>
+            <p class="pago-help">Permite pagar online con dinero en cuenta, debito o credito.</p>
+          </span>
+        </label>
+        <label class="pago-checkline">
+          {{ form.transferencia_activa }}
+          <span>
+            <strong>Transferencia bancaria activa</strong>
+            <p class="pago-help">Muestra CVU/Alias y deja el pedido pendiente hasta confirmar el comprobante.</p>
+          </span>
+        </label>
+      </div>
+    </section>
+
+    <section class="pago-section">
+      <div class="pago-section-title"><i class="bi bi-bank"></i> Cuenta para transferencia</div>
+      <div class="pago-grid">
+        <div><label class="field-label">Titular</label>{{ form.titular_cuenta }}</div>
+        <div><label class="field-label">CUIT/CUIL</label>{{ form.cuit_cuil }}</div>
+        <div><label class="field-label">CVU</label>{{ form.cvu }}</div>
+        <div><label class="field-label">Alias</label>{{ form.alias }}</div>
+      </div>
+      <div style="margin-top:1rem;">
+        <label class="field-label">Texto para transferencia</label>
+        {{ form.texto_transferencia }}
+      </div>
+    </section>
+
+    <section class="pago-section">
+      <div class="pago-section-title"><i class="bi bi-credit-card"></i> Mercado Pago y cuotas</div>
+      <label class="field-label">Texto para Mercado Pago</label>
+      {{ form.texto_mercado_pago }}
+
+      <div style="margin-top:1.25rem; display:flex; justify-content:space-between; align-items:center; gap:1rem;">
+        <div>
+          <strong>Planes de cuotas</strong>
+          <p class="pago-help">Carga la retencion estimada que Mercado Pago le cobra al comercio por ofrecer cada plan.</p>
+        </div>
+        <button type="button" class="btn-add-plan" id="add-plan-btn"><i class="bi bi-plus-lg"></i> Agregar plan</button>
+      </div>
+
+      <table class="planes-table" style="margin-top:.75rem;">
+        <thead>
+          <tr>
+            <th>Cuotas</th>
+            <th>Retencion MP</th>
+            <th>Sin interes</th>
+            <th>Activo</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="planes-body">
+          {% for plan in planes_cuotas %}
+          <tr>
+            <td><input class="envio-input" type="number" name="cuotas[]" value="{{ plan.cuotas }}" min="1"></td>
+            <td>
+              <div class="retencion-cell">
+                <input class="envio-input" type="number" name="retencion_porcentaje[]" value="{{ plan.retencion_porcentaje }}" min="0" max="100" step="0.01">
+                <span class="retencion-symbol">%</span>
+              </div>
+            </td>
+            <td><input type="checkbox" name="sin_interes[]" value="{{ forloop.counter0 }}" {% if plan.sin_interes %}checked{% endif %}></td>
+            <td><input type="checkbox" name="activo[]" value="{{ forloop.counter0 }}" {% if plan.activo %}checked{% endif %}></td>
+            <td><button type="button" class="btn-remove-plan">Quitar</button></td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td><input class="envio-input" type="number" name="cuotas[]" value="3" min="1"></td>
+            <td>
+              <div class="retencion-cell">
+                <input class="envio-input" type="number" name="retencion_porcentaje[]" value="12.19" min="0" max="100" step="0.01">
+                <span class="retencion-symbol">%</span>
+              </div>
+            </td>
+            <td><input type="checkbox" name="sin_interes[]" value="0" checked></td>
+            <td><input type="checkbox" name="activo[]" value="0" checked></td>
+            <td><button type="button" class="btn-remove-plan">Quitar</button></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </section>
+
+    {% if form.errors %}
+      <div class="alert alert-danger mt-3">Revisa los datos ingresados.</div>
+    {% endif %}
+
+    <div class="pago-actions">
+      <button type="submit" class="pago-save">
+        <i class="bi bi-check-lg me-1"></i> Guardar configuracion
+      </button>
+    </div>
+  </form>
+</div>
+
+<script>
+  const body = document.getElementById('planes-body');
+  const addBtn = document.getElementById('add-plan-btn');
+
+  function renumerarPlanes() {
+    body.querySelectorAll('tr').forEach((row, index) => {
+      row.querySelectorAll('input[type="checkbox"]').forEach(input => {
+        input.value = String(index);
+      });
+    });
+  }
+
+  function bindRemoveButtons() {
+    body.querySelectorAll('.btn-remove-plan').forEach(button => {
+      button.onclick = () => {
+        if (body.querySelectorAll('tr').length > 1) {
+          button.closest('tr').remove();
+          renumerarPlanes();
+        }
+      };
+    });
+  }
+
+  addBtn.addEventListener('click', () => {
+    const index = body.querySelectorAll('tr').length;
+    const row = document.createElement('tr');
+    row.innerHTML = `
+      <td><input class="envio-input" type="number" name="cuotas[]" value="" min="1"></td>
+      <td>
+        <div class="retencion-cell">
+          <input class="envio-input" type="number" name="retencion_porcentaje[]" value="0" min="0" max="100" step="0.01">
+          <span class="retencion-symbol">%</span>
+        </div>
+      </td>
+      <td><input type="checkbox" name="sin_interes[]" value="${index}" checked></td>
+      <td><input type="checkbox" name="activo[]" value="${index}" checked></td>
+      <td><button type="button" class="btn-remove-plan">Quitar</button></td>
+    `;
+    body.appendChild(row);
+    bindRemoveButtons();
+    renumerarPlanes();
+  });
+
+  bindRemoveButtons();
+  renumerarPlanes();
+</script>
+{% endblock %}

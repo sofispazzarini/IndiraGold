@@ -14,6 +14,9 @@
     <a href="{% url 'pedidos:configurar_envios' %}" class="nav-link{% if request.resolver_match.url_name == 'configurar_envios' %} active{% endif %}">
         <i class="bi bi-truck me-2"></i> Configurar envíos
     </a>
+    <a href="{% url 'pedidos:configurar_pagos' %}" class="nav-link{% if request.resolver_match.url_name == 'configurar_pagos' %} active{% endif %}">
+        <i class="bi bi-credit-card me-2"></i> Configurar pagos
+    </a>
     <a href="{% url 'pedidos:estadisticas_ventas' %}" class="nav-link{% if request.resolver_match.url_name == 'estadisticas_ventas' %} active{% endif %}">
         <i class="bi bi-graph-up me-2"></i> Estadísticas
     </a>

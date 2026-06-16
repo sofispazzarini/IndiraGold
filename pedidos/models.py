@@ -65,7 +65,9 @@ class Pedido(models.Model):
     METODOS_PAGO = (
         ('efectivo', 'Efectivo'),
         ('mercado_pago', 'Mercado Pago'),
+        ('mercado_pago_qr', 'Mercado Pago QR'),
         ('tarjeta', 'Tarjeta'),
+        ('transferencia', 'Transferencia bancaria'),
     )
     metodo_entrega = models.CharField(max_length=20, choices=METODOS_ENTREGA, default='local')
     costo_envio = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
@@ -125,6 +127,7 @@ class Pedido(models.Model):
 class PedidoItem(models.Model):
     pedido = models.ForeignKey(Pedido, on_delete=models.CASCADE, related_name='items')
     variante = models.ForeignKey(Variante, on_delete=models.CASCADE)
+    color_nombre = models.CharField(max_length=100, blank=True, null=True)
     cantidad = models.PositiveIntegerField()
     precio_unitario = models.DecimalField(max_digits=10, decimal_places=2)
     precio_total = models.DecimalField(max_digits=10, decimal_places=2)
@@ -136,6 +139,11 @@ class Pago(models.Model):
     pedido = models.OneToOneField(Pedido, on_delete=models.CASCADE)
     metodo = models.CharField(max_length=50)
     monto = models.DecimalField(max_digits=10, decimal_places=2)
+    mercado_pago_payment_id = models.CharField(max_length=80, blank=True, null=True)
+    cuotas = models.PositiveIntegerField(default=1)
+    retencion_mercado_pago = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    neto_recibido = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    detalle_mercado_pago = models.JSONField(default=dict, blank=True)
     fecha_pago = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -158,6 +166,7 @@ class VentaLocal(models.Model):
     METODOS_PAGO = (
         ('efectivo', 'Efectivo'),
         ('mercado_pago', 'Mercado Pago'),
+        ('mercado_pago_qr', 'Mercado Pago QR'),
         ('tarjeta', 'Tarjeta'),
     )
     METODOS_ENTREGA = (
@@ -314,3 +323,48 @@ class ConfiguracionEnvio(models.Model):
             for zona in self.zonas_flex.split(',')
             if zona.strip()
         ]
+
+
+class ConfiguracionPago(models.Model):
+    mercado_pago_activo = models.BooleanField(default=True)
+    transferencia_activa = models.BooleanField(default=True)
+    titular_cuenta = models.CharField(max_length=150, default='Yazmin Miranda Capitanio')
+    cuit_cuil = models.CharField(max_length=30, default='27-39554727-0')
+    cvu = models.CharField(max_length=60, default='0000003100042870767609')
+    alias = models.CharField(max_length=80, default='indiragold.')
+    texto_mercado_pago = models.CharField(
+        max_length=255,
+        default='Podes pagar con dinero en cuenta, tarjeta de debito o credito desde Mercado Pago.'
+    )
+    texto_transferencia = models.CharField(
+        max_length=255,
+        default='Transferi el monto exacto y envianos el comprobante por WhatsApp.'
+    )
+
+    def __str__(self):
+        return "Configuracion de Pagos"
+
+    @classmethod
+    def actual(cls):
+        configuracion, _ = cls.objects.get_or_create(pk=1)
+        return configuracion
+
+
+class PlanCuotasMercadoPago(models.Model):
+    configuracion = models.ForeignKey(
+        ConfiguracionPago,
+        on_delete=models.CASCADE,
+        related_name='planes_cuotas'
+    )
+    cuotas = models.PositiveIntegerField()
+    sin_interes = models.BooleanField(default=True)
+    retencion_porcentaje = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    activo = models.BooleanField(default=True)
+    orden = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ['orden', 'cuotas']
+
+    def __str__(self):
+        tipo = "sin interes" if self.sin_interes else "con interes"
+        return f"Hasta {self.cuotas} cuotas {tipo}"

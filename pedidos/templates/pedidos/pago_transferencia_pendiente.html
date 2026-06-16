@@ -1,0 +1,154 @@
+{% extends 'users/dashboard_cliente.html' %}
+
+{% block extra_head %}
+{{ block.super }}
+<style>
+  .transfer-page {
+    min-height: calc(100vh - 60px);
+    padding: 3rem;
+    margin-left: 15%;
+    max-width: 920px;
+  }
+  .transfer-card {
+    background: #fff;
+    border: 1px solid #e8dfd4;
+    border-radius: 18px;
+    padding: 2rem;
+  }
+  .transfer-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 2.7rem;
+    color: #1a1612;
+    margin: 0 0 .5rem;
+  }
+  .transfer-sub {
+    color: #8c7a69;
+    margin-bottom: 1.5rem;
+    line-height: 1.6;
+  }
+  .bank-box {
+    border: 1px solid #e8dfd4;
+    border-radius: 14px;
+    background: #fffdf9;
+    overflow: hidden;
+    margin-bottom: 1.25rem;
+  }
+  .bank-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid #efe7dc;
+  }
+  .bank-row:last-child { border-bottom: 0; }
+  .bank-label {
+    color: #8c7a69;
+    font-size: .82rem;
+    text-transform: uppercase;
+    letter-spacing: .12em;
+    font-weight: 800;
+  }
+  .bank-value {
+    color: #1a1612;
+    font-weight: 800;
+    text-align: right;
+    word-break: break-word;
+  }
+  .total-line {
+    display: flex;
+    justify-content: space-between;
+    border-top: 1px solid #e8dfd4;
+    border-bottom: 1px solid #e8dfd4;
+    padding: 1rem 0;
+    margin: 1.25rem 0;
+    font-weight: 700;
+  }
+  .total-line strong {
+    color: #6e0e2e;
+    font-size: 1.6rem;
+    font-family: 'Cormorant Garamond', serif;
+  }
+  .action-row {
+    display: flex;
+    gap: .75rem;
+    flex-wrap: wrap;
+  }
+  .btn-whatsapp,
+  .btn-volver {
+    border-radius: 999px;
+    padding: .9rem 1.2rem;
+    text-decoration: none;
+    font-weight: 700;
+  }
+  .btn-whatsapp {
+    background: #1f8f4d;
+    color: #fff;
+  }
+  .btn-volver {
+    border: 1px solid #e8dfd4;
+    color: #6e0e2e;
+    background: #fff;
+  }
+  @media (max-width: 900px) {
+    .transfer-page {
+      margin-left: 0;
+      padding: 2rem 1rem;
+    }
+    .bank-row {
+      display: block;
+    }
+    .bank-value {
+      text-align: left;
+      margin-top: .25rem;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="transfer-page">
+  <div class="transfer-card">
+    <p style="letter-spacing:.18em;text-transform:uppercase;color:#6e0e2e;font-size:.75rem;font-weight:700;">Pedido #{{ pedido.id }}</p>
+    <h1 class="transfer-title">Transferencia bancaria</h1>
+    <p class="transfer-sub">
+      {{ configuracion_pago.texto_transferencia }}
+      El pedido queda pendiente hasta que la administradora confirme el comprobante.
+    </p>
+
+    <div class="bank-box">
+      <div class="bank-row">
+        <span class="bank-label">Titular</span>
+        <span class="bank-value">{{ configuracion_pago.titular_cuenta }}</span>
+      </div>
+      <div class="bank-row">
+        <span class="bank-label">CUIT/CUIL</span>
+        <span class="bank-value">{{ configuracion_pago.cuit_cuil }}</span>
+      </div>
+      <div class="bank-row">
+        <span class="bank-label">CVU</span>
+        <span class="bank-value">{{ configuracion_pago.cvu }}</span>
+      </div>
+      <div class="bank-row">
+        <span class="bank-label">Alias</span>
+        <span class="bank-value">{{ configuracion_pago.alias }}</span>
+      </div>
+    </div>
+
+    <div class="total-line">
+      <span>Total a transferir</span>
+      <strong>${{ pedido.total }}</strong>
+    </div>
+
+    <p class="transfer-sub">Mandanos el comprobante a {{ whatsapp_numero }}. El boton abre el chat con el pedido preparado.</p>
+
+    <div class="action-row">
+      <a class="btn-whatsapp" href="{{ whatsapp_url }}" target="_blank" rel="noopener">
+        Enviar comprobante por WhatsApp
+      </a>
+      <a class="btn-volver" href="{% url 'pedidos:detalle_pedido' pedido.id %}">
+        Ver mi pedido
+      </a>
+    </div>
+  </div>
+</div>
+{% endblock %}

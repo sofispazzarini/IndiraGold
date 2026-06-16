@@ -6,13 +6,22 @@ from django.contrib import messages
 from django.db.models import Sum, Count, Avg, Q, F
 from datetime import datetime, timedelta
 from decimal import Decimal, ROUND_HALF_UP
-from .models import Pedido, PedidoItem, VentaLocal, PagoVentaLocal, ConfiguracionEnvio
+from .models import (
+    Pedido,
+    PedidoItem,
+    Pago,
+    VentaLocal,
+    PagoVentaLocal,
+    ConfiguracionEnvio,
+    ConfiguracionPago,
+    PlanCuotasMercadoPago,
+)
 from carritos.models import Carrito, CarritoItem
 from carritos.utils import get_or_create_cart, vincular_carrito_con_usuario
 from .models import Pedido, PedidoItem, Gasto, VentaLocal, VentaLocalItem
-from .forms import GastoForm, ConfiguracionEnvioForm
+from .forms import GastoForm, ConfiguracionEnvioForm, ConfiguracionPagoForm
 
-from pedidos.forms import GastoForm, ConfiguracionEnvioForm
+from pedidos.forms import GastoForm, ConfiguracionEnvioForm, ConfiguracionPagoForm
 from .models import Gasto, Pedido, PedidoItem
 from carritos.models import Carrito, CarritoItem
 from carritos.utils import clear_cart_session, get_or_create_cart, vincular_carrito_con_usuario
@@ -27,6 +36,11 @@ from django.db.models import Q
 from django.core.paginator import Paginator
 import json
 import unicodedata
+from urllib.parse import quote
+import uuid
+import base64
+import io
+import qrcode
 
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
@@ -67,6 +81,68 @@ def calcular_descuento_cupon(subtotal, codigo):
     return cupon, min(descuento, Decimal(subtotal))
 
 
+def whatsapp_comprobante_url(pedido):
+    numero = getattr(settings, 'COMPROBANTE_WHATSAPP', '5492216375660')
+    mensaje = (
+        f'Hola IndiraGold, te envio el comprobante del pedido #{pedido.id}. '
+        f'Total: ${pedido.total}.'
+    )
+    return f'https://wa.me/{numero}?text={quote(mensaje)}'
+
+
+def whatsapp_transferencia_url(pedido):
+    numero = getattr(settings, 'COMPROBANTE_WHATSAPP', '5492216375660')
+    mensaje = (
+        f'Hola IndiraGold, te envio el comprobante de transferencia del pedido #{pedido.id}. '
+        f'Total: ${pedido.total}.'
+    )
+    return f'https://wa.me/{numero}?text={quote(mensaje)}'
+
+
+def qr_manual_image_url():
+    url = (getattr(settings, 'MERCADO_PAGO_QR_IMAGE_URL', '') or '').strip()
+    if not url or 'url-del-qr' in url:
+        return ''
+    return url
+
+
+def qr_data_a_imagen_base64(qr_data):
+    qr = qrcode.QRCode(version=1, box_size=10, border=4)
+    qr.add_data(qr_data)
+    qr.make(fit=True)
+    img = qr.make_image(fill_color="black", back_color="white")
+    buffer = io.BytesIO()
+    img.save(buffer, format='PNG')
+    return f"data:image/png;base64,{base64.b64encode(buffer.getvalue()).decode('ascii')}"
+
+
+def crear_qr_link_pago_mercado_pago(productos, external_reference):
+    preference_response = sdk.preference().create({
+        "items": productos,
+        "external_reference": external_reference,
+        "back_urls": {
+            "success": "http://127.0.0.1:8000/pedidos/mis-pedidos/",
+            "failure": "http://127.0.0.1:8000/pedidos/checkout/",
+            "pending": "http://127.0.0.1:8000/pedidos/mis-pedidos/"
+        }
+    })
+
+    if preference_response.get("status") not in [200, 201]:
+        mp_error = preference_response.get("response", {})
+        detalle = mp_error.get("message") or mp_error.get("error") or str(mp_error)
+        raise ValueError(f"Mercado Pago respondio: {detalle}")
+
+    preference = preference_response.get("response", {})
+    init_point = preference.get("init_point")
+    if not init_point:
+        raise ValueError("Mercado Pago no devolvio el link para generar el QR.")
+
+    return {
+        'payment_url': init_point,
+        'qr_image': qr_data_a_imagen_base64(init_point),
+    }
+
+
 def normalizar_zona(valor):
     texto = unicodedata.normalize('NFKD', str(valor or ''))
     texto = ''.join(caracter for caracter in texto if not unicodedata.combining(caracter))
@@ -85,6 +161,26 @@ def direccion_en_zona_flex(direccion, zonas_flex):
         normalizar_zona(zona) in ubicacion
         for zona in zonas_flex
     )
+
+
+def descontar_stock_pedido(pedido):
+    for item in pedido.items.select_related('variante'):
+        if item.variante.stock < item.cantidad:
+            raise ValueError(
+                f'No hay stock suficiente para {item.variante.producto.nombre}. '
+                f'Disponible: {item.variante.stock}, pedido: {item.cantidad}'
+            )
+
+    for item in pedido.items.select_related('variante'):
+        descontar_stock_variante(item.variante, item.cantidad)
+
+
+def descontar_stock_variante(variante, cantidad):
+    variante.stock -= cantidad
+    variante.save(update_fields=['stock'])
+    producto = variante.producto
+    producto.stock = producto.stock_total
+    producto.save(update_fields=['stock'])
 
 
 @admin_required
@@ -353,6 +449,8 @@ def checkout_view(request):
     # Traemos los items con sus variantes y fotos
     items = carrito.items.all().select_related('variante__producto', 'variante__talle')
     configuracion_envio = ConfiguracionEnvio.actual()
+    configuracion_pago = ConfiguracionPago.actual()
+    planes_cuotas = configuracion_pago.planes_cuotas.filter(activo=True)
     cliente, _ = Cliente.objects.get_or_create(user=request.user)
     direcciones = direcciones_sin_duplicados(cliente.direcciones.all().order_by('etiqueta', 'calle', 'numero'))
     zonas_flex = configuracion_envio.zonas_flex_lista
@@ -376,6 +474,8 @@ def checkout_view(request):
         'total': subtotal_con_descuento,
         'carrito': carrito,
         'configuracion_envio': configuracion_envio,
+        'configuracion_pago': configuracion_pago,
+        'planes_cuotas': planes_cuotas,
         'precio_flex': configuracion_envio.costo_flex,
         'zonas_flex': zonas_flex,
         'direcciones': direcciones,
@@ -404,6 +504,9 @@ def confirmar_pedido(request):
 
     if request.method == 'POST':
         metodo = request.POST.get('metodo_entrega')
+        if metodo == 'correo':
+            messages.error(request, 'El envio por correo no esta disponible por ahora.')
+            return redirect("pedidos:checkout")
         es_regalo = request.POST.get('es_regalo') == '1'
         configuracion_envio = ConfiguracionEnvio.actual()
         costo_envio = (
@@ -468,13 +571,13 @@ def confirmar_pedido(request):
             PedidoItem.objects.create(
                 pedido=pedido,
                 variante=item.variante,
+                color_nombre=item.color_nombre,
                 cantidad=item.cantidad,
                 precio_unitario=item.variante.precio,
                 precio_total=item.cantidad * item.variante.precio
             )
             # Bajamos el stock del talle elegido
-            item.variante.stock -= item.cantidad
-            item.variante.save()
+            descontar_stock_variante(item.variante, item.cantidad)
 
         # 4. Limpieza final
         carrito.activo = False # Cerramos el carrito actual
@@ -518,6 +621,79 @@ def eliminar_item_carrito(request, variante_id):
         messages.info(request, "No quedan productos en tu carrito.")
         return redirect('pedidos:checkout')
 sdk = mercadopago.SDK(settings.MERCADO_PAGO_ACCESS_TOKEN)
+
+
+def decimal_mp(valor, defecto='0.00'):
+    if valor is None or valor == '':
+        return Decimal(defecto)
+    return monto_decimal(Decimal(str(valor)))
+
+
+def obtener_id_pago_mercado_pago(request):
+    return (
+        request.GET.get('payment_id')
+        or request.GET.get('collection_id')
+        or request.GET.get('id')
+    )
+
+
+def obtener_detalle_pago_mercado_pago(payment_id):
+    if not payment_id:
+        return {}
+
+    try:
+        respuesta = sdk.payment().get(payment_id)
+    except Exception:
+        return {}
+
+    if respuesta.get('status') != 200:
+        return {}
+
+    return respuesta.get('response') or {}
+
+
+def total_retenciones_mercado_pago(detalle_pago):
+    fee_details = detalle_pago.get('fee_details') or []
+    cargos = detalle_pago.get('charges_details') or []
+    total = Decimal('0.00')
+
+    for fee in fee_details:
+        total += decimal_mp(fee.get('amount'))
+
+    if total:
+        return total
+
+    for cargo in cargos:
+        amounts = cargo.get('amounts') or {}
+        total += decimal_mp(amounts.get('original') or amounts.get('paid'))
+
+    return total
+
+
+def resumen_pago_mercado_pago(request):
+    payment_id = obtener_id_pago_mercado_pago(request)
+    detalle_pago = obtener_detalle_pago_mercado_pago(payment_id)
+    cuotas = int(detalle_pago.get('installments') or 1) if detalle_pago else 1
+    tipo_pago = detalle_pago.get('payment_type_id') if detalle_pago else ''
+    es_tarjeta_en_cuotas = tipo_pago == 'credit_card' and cuotas > 1
+    retencion = (
+        total_retenciones_mercado_pago(detalle_pago)
+        if es_tarjeta_en_cuotas
+        else Decimal('0.00')
+    )
+    monto = decimal_mp(detalle_pago.get('transaction_amount')) if detalle_pago else Decimal('0.00')
+    neto = decimal_mp(detalle_pago.get('net_received_amount')) if detalle_pago else Decimal('0.00')
+
+    if detalle_pago and not neto:
+        neto = monto - retencion
+
+    return {
+        'payment_id': str(payment_id or ''),
+        'cuotas': cuotas,
+        'retencion': retencion,
+        'neto': neto,
+        'detalle': detalle_pago,
+    }
 
 
 @login_required
@@ -651,6 +827,30 @@ def crear_pago(request):
         'metodo_entrega',
         'local'
     )
+    metodo_pago = request.POST.get('metodo_pago', 'mercado_pago')
+    request.session['metodo_pago'] = metodo_pago
+
+    if request.session['metodo_entrega'] == 'correo':
+        messages.error(request, 'El envio por correo no esta disponible por ahora.')
+        return redirect('pedidos:checkout')
+
+    configuracion_pago = ConfiguracionPago.actual()
+
+    if metodo_pago not in ['mercado_pago', 'mercado_pago_qr', 'efectivo', 'transferencia']:
+        messages.error(request, 'Selecciona un metodo de pago valido.')
+        return redirect('pedidos:checkout')
+
+    if metodo_pago == 'efectivo' and request.session['metodo_entrega'] != 'local':
+        messages.error(request, 'El pago en efectivo solo esta disponible para retiro en el local.')
+        return redirect('pedidos:checkout')
+
+    if metodo_pago == 'mercado_pago' and not configuracion_pago.mercado_pago_activo:
+        messages.error(request, 'Mercado Pago no esta disponible en este momento.')
+        return redirect('pedidos:checkout')
+
+    if metodo_pago == 'transferencia' and not configuracion_pago.transferencia_activa:
+        messages.error(request, 'La transferencia bancaria no esta disponible en este momento.')
+        return redirect('pedidos:checkout')
 
     request.session['codigo_postal'] = request.POST.get(
         'codigo_postal'
@@ -711,26 +911,98 @@ def crear_pago(request):
             "currency_id": "ARS",
             "unit_price": float(costo_envio)
         })
+
+    if metodo_pago in ['efectivo', 'mercado_pago_qr', 'transferencia']:
+        total_pedido = (subtotal_productos - descuento_monto) + costo_envio
+        qr_pago = None
+        if metodo_pago == 'mercado_pago_qr':
+            try:
+                qr_pago = crear_qr_link_pago_mercado_pago(
+                    productos,
+                    f"pedido_qr_{uuid.uuid4().hex[:16]}"
+                )
+            except ValueError as error:
+                messages.error(request, f"No pudimos generar el QR de Mercado Pago. {error}")
+                return redirect('pedidos:checkout')
+
+        pedido = Pedido.objects.create(
+            cliente=cliente,
+            total=total_pedido,
+            costo_envio=costo_envio,
+            codigo_descuento=cupon.codigo if cupon else None,
+            descuento_porcentaje=cupon.descuento if cupon else 0,
+            descuento_monto=descuento_monto,
+            metodo_entrega=request.session['metodo_entrega'],
+            direccion=direccion_flex if request.session['metodo_entrega'] == 'flex' else None,
+            codigo_postal=direccion_flex.codigo_postal if request.session['metodo_entrega'] == 'flex' else None,
+            localidad=direccion_flex.ciudad if request.session['metodo_entrega'] == 'flex' else None,
+            calle_numero=f'{direccion_flex.calle} {direccion_flex.numero}' if request.session['metodo_entrega'] == 'flex' else None,
+            metodo_pago=metodo_pago,
+            monto_pagado=Decimal('0.00'),
+            deuda=total_pedido,
+            tipo_venta='online',
+            estado='pendiente',
+            es_regalo=request.session['es_regalo'],
+        )
+
+        for item in items:
+            PedidoItem.objects.create(
+                pedido=pedido,
+                variante=item.variante,
+                color_nombre=item.color_nombre,
+                cantidad=item.cantidad,
+                precio_unitario=item.precio_unitario,
+                precio_total=item.precio_total
+            )
+
+        if metodo_pago == 'mercado_pago_qr':
+            return render(request, 'pedidos/pago_qr_pendiente.html', {
+                'pedido': pedido,
+                'qr_image_url': qr_pago['qr_image'],
+                'payment_url': qr_pago['payment_url'],
+                'whatsapp_url': whatsapp_comprobante_url(pedido),
+                'whatsapp_numero': '+54 9 221 637 5660',
+            })
+
+        if metodo_pago == 'transferencia':
+            return render(request, 'pedidos/pago_transferencia_pendiente.html', {
+                'pedido': pedido,
+                'configuracion_pago': configuracion_pago,
+                'whatsapp_url': whatsapp_transferencia_url(pedido),
+                'whatsapp_numero': '+54 9 221 637 5660',
+            })
+
+        messages.success(request, f'Pedido #{pedido.id} creado para pagar en efectivo al retirar.')
+        return redirect('pedidos:detalle_pedido', pedido_id=pedido.id)
+
+    cuotas_activas = list(
+        configuracion_pago.planes_cuotas.filter(activo=True).values_list('cuotas', flat=True)
+    )
+    max_cuotas = max(cuotas_activas) if cuotas_activas else 1
+
     # CREAR PREFERENCIA
-    preference_response = sdk.preference().create({
+    preference_data = {
         "items": productos,
         "back_urls": {
             "success": "http://127.0.0.1:8000/pedidos/pago-exitoso/",
             "failure": "http://127.0.0.1:8000/",
             "pending": "http://127.0.0.1:8000/"
         },
-        "auto_return": "approved"
-    })
+        "auto_return": "approved",
+        "payment_methods": {
+            "installments": max_cuotas
+        }
+    }
+    preference_response = sdk.preference().create(preference_data)
 
     print(preference_response)
 
     # VALIDAR RESPUESTA
     if preference_response.get("status") != 201:
 
-        messages.error(
-            request,
-            "No pudimos iniciar el pago online."
-        )
+        mp_error = preference_response.get("response", {})
+        detalle = mp_error.get("message") or mp_error.get("error") or str(mp_error)
+        messages.error(request, f"No pudimos iniciar el pago online. Mercado Pago respondio: {detalle}")
 
         return redirect('pedidos:checkout')
 
@@ -805,6 +1077,8 @@ def pago_exitoso(request):
             cliente=cliente
         ).first()
 
+    mercado_pago = resumen_pago_mercado_pago(request)
+
     pedido = Pedido.objects.create(
         cliente=cliente,
         total=total_productos_con_descuento + costo_envio,
@@ -813,6 +1087,8 @@ def pago_exitoso(request):
         descuento_porcentaje=cupon.descuento if cupon else 0,
         descuento_monto=descuento_monto,
         metodo_entrega=metodo_entrega,
+        metodo_pago='mercado_pago',
+        monto_pagado=total_productos_con_descuento + costo_envio,
         direccion=direccion,
         codigo_postal=direccion.codigo_postal if direccion else request.session.get('codigo_postal'),
         localidad=direccion.ciudad if direccion else request.session.get('localidad'),
@@ -825,19 +1101,30 @@ def pago_exitoso(request):
         es_regalo=bool(request.session.get('es_regalo')),
     )
 
+    Pago.objects.create(
+        pedido=pedido,
+        metodo='Mercado Pago',
+        monto=pedido.total,
+        mercado_pago_payment_id=mercado_pago['payment_id'],
+        cuotas=mercado_pago['cuotas'],
+        retencion_mercado_pago=mercado_pago['retencion'],
+        neto_recibido=mercado_pago['neto'] or (pedido.total - mercado_pago['retencion']),
+        detalle_mercado_pago=mercado_pago['detalle'],
+    )
+
     # CREAR ITEMS Y DESCONTAR STOCK
     for item in items:
 
         PedidoItem.objects.create(
             pedido=pedido,
             variante=item.variante,
+            color_nombre=item.color_nombre,
             cantidad=item.cantidad,
             precio_unitario=item.precio_unitario,
             precio_total=item.precio_total
         )
 
-        item.variante.stock -= item.cantidad
-        item.variante.save()
+        descontar_stock_variante(item.variante, item.cantidad)
 
     items_pedido = pedido.items.select_related(
         'variante__producto',
@@ -850,7 +1137,7 @@ def pago_exitoso(request):
     productos_html = []
 
     for item in items_pedido:
-        colores = ', '.join(
+        colores = item.color_nombre or ', '.join(
             color.nombre
             for color in item.variante.colores.all()
         )
@@ -1526,6 +1813,16 @@ def actualizar_estado_pedido(request, pedido_id):
     ]
 
     if nuevo_estado in estados_validos:
+        if (
+            estado_anterior == 'pendiente'
+            and nuevo_estado == 'aceptado'
+            and pedido.metodo_pago in ['mercado_pago_qr', 'efectivo', 'transferencia']
+        ):
+            try:
+                descontar_stock_pedido(pedido)
+            except ValueError as error:
+                messages.error(request, str(error))
+                return redirect('pedidos:gestion_pedidos')
 
         pedido.estado = nuevo_estado
         pedido.save()
@@ -1536,7 +1833,7 @@ def actualizar_estado_pedido(request, pedido_id):
             productos_html = []
 
             for item in pedido.items.all():
-                colores = ', '.join(
+                colores = item.color_nombre or ', '.join(
                     color.nombre
                     for color in item.variante.colores.all()
                 )
@@ -1867,19 +2164,7 @@ def registrar_venta_local(request):
 
             )
 
-            # DESCONTAR STOCK VARIANTE
-
-            variante.stock -= cantidad
-
-            variante.save()
-
-            # DESCONTAR STOCK PRODUCTO
-
-            producto = variante.producto
-
-            producto.stock -= cantidad
-
-            producto.save()
+            descontar_stock_variante(variante, cantidad)
 
             total += subtotal
 
@@ -2069,7 +2354,7 @@ def contexto_ticket_pedido(pedido):
     items_ticket = []
 
     for item in items:
-        colores = ', '.join(
+        colores = item.color_nombre or ', '.join(
             color.nombre for color in item.variante.colores.all()
         )
         items_ticket.append({
@@ -2274,4 +2559,58 @@ def configurar_envios(request):
         'form': form,
         'configuracion': configuracion,
         'zonas_flex': configuracion.zonas_flex_lista,
+    })
+
+
+@admin_required
+def configurar_pagos(request):
+    configuracion = ConfiguracionPago.actual()
+
+    if request.method == 'POST':
+        form = ConfiguracionPagoForm(request.POST, instance=configuracion)
+        if form.is_valid():
+            configuracion = form.save()
+            configuracion.planes_cuotas.all().delete()
+
+            cuotas = request.POST.getlist('cuotas[]')
+            retenciones = request.POST.getlist('retencion_porcentaje[]')
+            sin_interes_values = request.POST.getlist('sin_interes[]')
+            activos = request.POST.getlist('activo[]')
+
+            for index, cuotas_value in enumerate(cuotas):
+                try:
+                    cuotas_int = int(cuotas_value)
+                except ValueError:
+                    continue
+
+                if cuotas_int <= 0:
+                    continue
+
+                retencion_value = retenciones[index] if index < len(retenciones) else '0'
+                try:
+                    retencion_porcentaje = Decimal(str(retencion_value).replace(',', '.'))
+                except Exception:
+                    retencion_porcentaje = Decimal('0')
+
+                if retencion_porcentaje < 0:
+                    retencion_porcentaje = Decimal('0')
+
+                PlanCuotasMercadoPago.objects.create(
+                    configuracion=configuracion,
+                    cuotas=cuotas_int,
+                    retencion_porcentaje=retencion_porcentaje,
+                    sin_interes=str(index) in sin_interes_values,
+                    activo=str(index) in activos,
+                    orden=index,
+                )
+
+            messages.success(request, 'Configuracion de pagos actualizada.')
+            return redirect('pedidos:configurar_pagos')
+    else:
+        form = ConfiguracionPagoForm(instance=configuracion)
+
+    return render(request, 'pedidos/configurar_pagos.html', {
+        'form': form,
+        'configuracion': configuracion,
+        'planes_cuotas': configuracion.planes_cuotas.all(),
     })

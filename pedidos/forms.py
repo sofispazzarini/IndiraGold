@@ -1,5 +1,5 @@
 from django import forms
-from .models import Gasto, ConfiguracionEnvio
+from .models import Gasto, ConfiguracionEnvio, ConfiguracionPago
 
 
 class GastoForm(forms.ModelForm):
@@ -31,4 +31,29 @@ class ConfiguracionEnvioForm(forms.ModelForm):
                 'rows': 7,
                 'placeholder': 'Ej: CABA, La Plata, Quilmes, Berazategui',
             }),
+        }
+
+
+class ConfiguracionPagoForm(forms.ModelForm):
+    class Meta:
+        model = ConfiguracionPago
+        fields = [
+            'mercado_pago_activo',
+            'transferencia_activa',
+            'titular_cuenta',
+            'cuit_cuil',
+            'cvu',
+            'alias',
+            'texto_mercado_pago',
+            'texto_transferencia',
+        ]
+        widgets = {
+            'mercado_pago_activo': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'transferencia_activa': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'titular_cuenta': forms.TextInput(attrs={'class': 'envio-input'}),
+            'cuit_cuil': forms.TextInput(attrs={'class': 'envio-input'}),
+            'cvu': forms.TextInput(attrs={'class': 'envio-input'}),
+            'alias': forms.TextInput(attrs={'class': 'envio-input'}),
+            'texto_mercado_pago': forms.TextInput(attrs={'class': 'envio-input'}),
+            'texto_transferencia': forms.TextInput(attrs={'class': 'envio-input'}),
         }
