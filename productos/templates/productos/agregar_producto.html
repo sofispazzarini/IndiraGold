@@ -85,7 +85,7 @@
                         <img id="viewTecnica" class="d-none w-100 h-100" style="object-fit: contain;">
                     </div>
                     <div class="col-3 p-2 d-flex flex-column">
-                        <label class="d-block small fw-bold text-muted">DETALLE DE ETIQUETA (AUTO)</label>
+                        <label class="d-block small fw-bold text-muted">TALLES / MEDIDAS / STOCK</label>
                         <div id="autoEtiquetaDiv" class="form-control border-0 bg-transparent p-0 flex-grow-1 text-muted" style="overflow-y: auto; font-size: 0.9rem;">
                             </div>
                         <input type="hidden" name="etiquetas" id="autoEtiquetaInput">
@@ -106,12 +106,32 @@
                     <div class="card p-3 border-0 shadow-sm">
                         <div class="row g-3">
                             <div class="col-6"><label class="small fw-bold">Precio ($)</label><input type="number" step="0.01" name="precio" class="form-control" required></div>
-                            <div class="col-6"><label class="small fw-bold">Stock Inicial</label><input type="number" name="stock" class="form-control" required></div>
+                            <div class="col-6">
+                                <label class="small fw-bold">Stock total</label>
+                                <input type="number" name="stock" id="stockGlobalInput" class="form-control" value="0" readonly>
+                                <small class="text-muted">Se calcula sumando el stock de las variantes.</small>
+                            </div>
                             <div class="col-12">
-                                <label class="small fw-bold">Proveedor</label>
-                                <select name="proveedor" class="form-select">
-                                    {% for p in proveedores %}<option value="{{ p.id }}">{{ p.nombre }}</option>{% endfor %}
-                                </select>
+                                <label class="small fw-bold">Tamaño para envío</label>
+                                {{ form.tamano_paquete }}
+                                <small class="text-muted">Se usa para cotizar Correo Argentino. Para ropa, elegí el bulto estimado.</small>
+                            </div>
+                            <div class="col-12">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <label class="small fw-bold mb-0">Proveedor</label>
+                                    <button type="button" class="btn btn-sm btn-outline-dark" data-bs-toggle="modal" data-bs-target="#modalNuevoProveedor" style="border-radius: 999px;">
+                                        + Agregar proveedor
+                                    </button>
+                                </div>
+                                <div class="position-relative">
+                                    <input type="hidden" name="proveedor" id="proveedorIdInput" value="{% if proveedores %}{{ proveedores.0.id }}{% endif %}">
+                                    <input type="text" id="proveedorSearchInput" class="form-control" autocomplete="off"
+                                           value="{% if proveedores %}{{ proveedores.0.nombre }}{% endif %}"
+                                           placeholder="Buscar proveedor por nombre">
+                                    <div id="proveedorResults" class="bg-white border shadow-sm position-absolute w-100 d-none proveedor-results-scroll"
+                                         style="z-index: 20; max-height: 220px; overflow-y: auto; border-radius: 0 0 10px 10px;"></div>
+                                </div>
+                                <small class="text-muted">Escribí para ver coincidencias y seleccioná una opción.</small>
                             </div>
                         </div>
                     </div>
@@ -154,11 +174,53 @@
 
 {% include 'productos/_modal_variante.html' %}
 
+<div class="modal fade" id="modalNuevoProveedor" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content" style="border-radius: 15px; border: none;">
+      <div class="modal-header" style="background: #1a1612; color: #b8922a; border-radius: 15px 15px 0 0;">
+        <h5 class="modal-title">Nuevo proveedor</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <form id="formNuevoProveedor">
+        {% csrf_token %}
+        <div class="modal-body p-4">
+          <div id="nuevoProveedorError" class="alert alert-danger d-none small"></div>
+          <div class="mb-3">
+            <label class="form-label small fw-bold">Nombre</label>
+            <input type="text" name="nombre" class="form-control" placeholder="Nombre del proveedor" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label small fw-bold">Teléfono</label>
+            <input type="text" name="telefono" class="form-control" placeholder="Teléfono de contacto" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label small fw-bold">Notas adicionales</label>
+            <input type="text" name="informacion_adicional" class="form-control" placeholder="Opcional">
+          </div>
+        </div>
+        <div class="modal-footer border-0 px-4 pb-4">
+          <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-dark" style="background:#b8922a; border:none;">Guardar proveedor</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<style>
+    .proveedor-results-scroll::-webkit-scrollbar { width: 6px; }
+    .proveedor-results-scroll::-webkit-scrollbar-thumb { background: #d7c6aa; border-radius: 999px; }
+</style>
 <script>
     let variantes = [];
     let tempColores = [];
     let tempMedidas = [];
+    const proveedoresData = [
+        {% for p in proveedores %}
+        { id: "{{ p.id }}", nombre: "{{ p.nombre|escapejs }}" }{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    ];
 
     const dicColors = { 'azul': '#0000ff', 'rojo': '#ff0000', 'verde': '#00ff00', 'negro': '#000000', 'blanco': '#ffffff', 'rosa': '#ffc0cb', 'amarillo': '#ffff00', 'celeste': '#87ceeb' };
 
@@ -186,6 +248,9 @@
                 r.readAsDataURL(f);
             });
         };
+
+        initProveedorSearch();
+        initNuevoProveedorModal();
 
         // --- 2. LÓGICA DEL MODAL ---
 
@@ -222,31 +287,125 @@
             e.preventDefault();
             console.log('Guardando variante...');
             try {
-                let talle = document.getElementById('inputTalleLibre').value;
-                if(talle) {
-                    variantes.push({ talle, colores: [...tempColores], medidas: [...tempMedidas], stock: 0, precio: 0 });
-                    console.log('Variante agregada:', variantes);
-                    actualizarUI();
-                    console.log('UI actualizada');
-                    let modalEl = document.getElementById('modalVariante');
-                    let modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
-                    modal.hide();
-                    // Forzar cierre del backdrop
-                    document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
-                    document.body.classList.remove('modal-open');
-                    document.body.style.overflow = '';
-                    console.log('Modal cerrado');
-                    // Reset
-                    tempColores = []; tempMedidas = [];
-                    e.target.reset();
-                    renderTempColores(); renderTempMedidas();
+                let talle = document.getElementById('inputTalleLibre').value.trim();
+                let stock = parseInt(document.getElementById('inputStockVariante').value || '0', 10);
+                if (Number.isNaN(stock) || stock < 0) {
+                    alert('Ingresá un stock válido para esta variante.');
+                    return;
                 }
+                variantes.push({ talle, colores: [...tempColores], medidas: [...tempMedidas], stock, precio: 0 });
+                console.log('Variante agregada:', variantes);
+                actualizarUI();
+                console.log('UI actualizada');
+                let modalEl = document.getElementById('modalVariante');
+                let modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+                modal.hide();
+                // Forzar cierre del backdrop
+                document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+                document.body.classList.remove('modal-open');
+                document.body.style.overflow = '';
+                console.log('Modal cerrado');
+                // Reset
+                tempColores = []; tempMedidas = [];
+                e.target.reset();
+                renderTempColores(); renderTempMedidas();
             } catch(err) {
                 console.error('Error al guardar variante:', err);
                 alert('Error: ' + err.message);
             }
         };
     });
+
+    function initProveedorSearch() {
+        const input = document.getElementById('proveedorSearchInput');
+        const hidden = document.getElementById('proveedorIdInput');
+        const results = document.getElementById('proveedorResults');
+        if (!input || !hidden || !results) return;
+
+        const renderResults = () => {
+            const query = input.value.trim().toLowerCase();
+            const matches = proveedoresData
+                .filter(p => p.nombre.toLowerCase().includes(query))
+                .slice(0, 8);
+
+            if (!matches.length) {
+                results.innerHTML = '<div class="px-3 py-2 text-muted small">Sin resultados</div>';
+                results.classList.remove('d-none');
+                hidden.value = '';
+                return;
+            }
+
+            results.innerHTML = matches.map(p => `
+                <button type="button" class="dropdown-item text-start px-3 py-2 proveedor-option" data-id="${p.id}" data-nombre="${p.nombre}">
+                    ${p.nombre}
+                </button>
+            `).join('');
+            results.classList.remove('d-none');
+        };
+
+        input.addEventListener('input', renderResults);
+        input.addEventListener('focus', renderResults);
+
+        results.addEventListener('click', (event) => {
+            const option = event.target.closest('.proveedor-option');
+            if (!option) return;
+            hidden.value = option.dataset.id;
+            input.value = option.dataset.nombre;
+            results.classList.add('d-none');
+        });
+
+        document.addEventListener('click', (event) => {
+            if (!event.target.closest('#proveedorSearchInput') && !event.target.closest('#proveedorResults')) {
+                results.classList.add('d-none');
+            }
+        });
+
+        document.getElementById('formProductoFinal').addEventListener('submit', (event) => {
+            if (!hidden.value) {
+                event.preventDefault();
+                alert('Seleccioná un proveedor de la lista.');
+                input.focus();
+            }
+        });
+    }
+
+    function initNuevoProveedorModal() {
+        const form = document.getElementById('formNuevoProveedor');
+        const errorBox = document.getElementById('nuevoProveedorError');
+        const input = document.getElementById('proveedorSearchInput');
+        const hidden = document.getElementById('proveedorIdInput');
+        const modalEl = document.getElementById('modalNuevoProveedor');
+        if (!form || !errorBox || !input || !hidden || !modalEl) return;
+
+        form.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            errorBox.classList.add('d-none');
+            errorBox.textContent = '';
+
+            try {
+                const response = await fetch("{% url 'productos:crear_proveedor_ajax' %}", {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': form.querySelector('[name=csrfmiddlewaretoken]').value },
+                    body: new FormData(form)
+                });
+                const data = await response.json();
+                if (!response.ok || !data.success) {
+                    const errors = data.errors || {};
+                    const messages = Object.values(errors).flat();
+                    throw new Error(messages.join(' ') || 'No se pudo guardar el proveedor.');
+                }
+
+                proveedoresData.push(data.proveedor);
+                hidden.value = data.proveedor.id;
+                input.value = data.proveedor.nombre;
+                form.reset();
+                bootstrap.Modal.getInstance(modalEl).hide();
+            } catch (error) {
+                errorBox.textContent = error.message;
+                errorBox.classList.remove('d-none');
+            }
+        });
+    }
 
     function renderTempColores() {
         const contenedor = document.getElementById('displayColoresTemp');
@@ -302,9 +461,10 @@
             return `
             <div class="bg-white border p-2 mb-2 d-flex flex-column align-items-start shadow-sm" style="border-radius:10px; min-width: 250px;">
                 <div class="d-flex w-100 justify-content-between align-items-center mb-1">
-                    <span class="fw-bold" style="font-size: 1.1rem; color: #1a1612;">Talle: ${v.talle}</span>
+                    <span class="fw-bold" style="font-size: 1.1rem; color: #1a1612;">${v.talle ? `Talle: ${v.talle}` : 'Sin talle'}</span>
                     <button type="button" class="btn-close" style="font-size:0.7rem" onclick="variantes.splice(${i},1); actualizarUI();"></button>
                 </div>
+                <div class="mt-1" style="font-size: 0.85rem;"><span class="text-muted fw-bold">Stock:</span> ${v.stock}</div>
                 ${coloresHtml ? `<div class="mt-1" style="font-size: 0.85rem;"><span class="text-muted fw-bold">Colores:</span> ${coloresHtml}</div>` : ''}
                 ${medidasHtml ? `<div class="mt-1" style="font-size: 0.85rem;"><span class="text-muted fw-bold">Medidas:</span> ${medidasHtml}</div>` : ''}
             </div>
@@ -312,14 +472,14 @@
         }).join('');
 
         // ----------------------------------------------------
-        // LÓGICA PARA EL DETALLE DE ETIQUETA (AGRUPADO POR TALLE)
+        // LÓGICA PARA TALLES / MEDIDAS / STOCK
         // ----------------------------------------------------
         let htmlEtiqueta = '';
         let textoEtiqueta = '';
 
         // Recorremos cada variante guardada
         variantes.forEach(v => {
-            let talleName = v.talle.toUpperCase();
+            let talleName = v.talle ? v.talle.toUpperCase() : 'SIN TALLE';
             
             // Filtramos los colores (ignorando "Sin color") y armamos HTML y Texto
             let colHtml = v.colores.filter(c => !c.colorNinguno).map(c => 
@@ -334,9 +494,11 @@
             // Empezamos a armar el bloque visual para este Talle
             htmlEtiqueta += `<div class="mb-2 pb-2" style="border-bottom: 1px dashed #e8dfd4;">`;
             htmlEtiqueta += `<div style="color: #1a1612; font-weight: 700; font-size: 0.95rem;">TALLE: ${talleName}</div>`;
+            htmlEtiqueta += `<div class="mt-1" style="font-size: 0.85rem;"><strong style="color: #8c7e70;">Stock:</strong> ${v.stock}</div>`;
             
             // Empezamos a armar el texto oculto
             textoEtiqueta += `TALLE: ${talleName}\n`;
+            textoEtiqueta += `Stock: ${v.stock}\n`;
             
             if (colHtml) {
                 htmlEtiqueta += `<div class="mt-1" style="font-size: 0.85rem;"><strong style="color: #8c7e70;">Colores:</strong> <br>${colHtml}</div>`;
@@ -355,6 +517,7 @@
         document.getElementById('autoEtiquetaDiv').innerHTML = htmlEtiqueta || '<span class="text-muted">Se generará al cargar variantes...</span>';
         document.getElementById('autoEtiquetaInput').value = textoEtiqueta;
         document.getElementById('variantes_json_input').value = JSON.stringify(variantes);
+        document.getElementById('stockGlobalInput').value = variantes.reduce((total, v) => total + (parseInt(v.stock, 10) || 0), 0);
     }
     </script>
 {% endblock %}

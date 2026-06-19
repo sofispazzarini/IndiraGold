@@ -21,6 +21,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 
 MERCADO_PAGO_ACCESS_TOKEN = os.getenv("MERCADO_PAGO_ACCESS_TOKEN")
+MERCADO_PAGO_QR_IMAGE_URL = os.getenv("MERCADO_PAGO_QR_IMAGE_URL", "")
+MERCADO_PAGO_QR_EXTERNAL_POS_ID = os.getenv("MERCADO_PAGO_QR_EXTERNAL_POS_ID", "")
+COMPROBANTE_WHATSAPP = os.getenv("COMPROBANTE_WHATSAPP", "5492216375660")
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
@@ -30,7 +33,29 @@ SECRET_KEY = 'django-insecure-rm6jga7-aoj+xaek*-b!6328_$yk#tfhu=)h#rm*e*t+@s-zi2
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    host.strip()
+    for host in os.getenv("ALLOWED_HOSTS", "").split(",")
+    if host.strip()
+]
+
+if DEBUG:
+    ALLOWED_HOSTS += [
+        "localhost",
+        "127.0.0.1",
+        ".ngrok-free.app",
+    ]
+
+CSRF_TRUSTED_ORIGINS = [
+    origin.strip()
+    for origin in os.getenv("CSRF_TRUSTED_ORIGINS", "").split(",")
+    if origin.strip()
+]
+
+if DEBUG:
+    CSRF_TRUSTED_ORIGINS += [
+        "https://*.ngrok-free.app",
+    ]
 
 
 # Application definition
@@ -121,7 +146,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'America/Argentina/Buenos_Aires'
 
 USE_I18N = True
 

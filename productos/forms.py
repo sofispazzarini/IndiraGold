@@ -70,7 +70,8 @@ class ProductoForm(forms.ModelForm):
         fields = [
             'codigo', 'nombre', 'tipo', 'tela', 'temporada', 
             'descripcion', 'avios', 'etiquetas', 'precio', 
-            'stock', 'categoria', 'subcategoria', 'proveedor', 'activo','imagen_tecnica'
+            'stock', 'categoria', 'subcategoria', 'proveedor',
+            'tamano_paquete', 'activo', 'imagen_tecnica'
         ]
         error_messages = {
             'codigo': {
@@ -88,6 +89,7 @@ class ProductoForm(forms.ModelForm):
             'categoria': forms.Select(attrs={'class': 'form-control'}),
             'subcategoria': forms.Select(attrs={'class': 'form-control'}),
             'proveedor': forms.Select(attrs={'class': 'form-control'}),
+            'tamano_paquete': forms.Select(attrs={'class': 'form-control'}),
             'activo': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'temporada': forms.TextInput(attrs={'class': 'form-control'}),
             'avios': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),

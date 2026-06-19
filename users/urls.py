@@ -20,4 +20,8 @@ urlpatterns = [
     path('admin/clientes/<int:cliente_id>/agregar-direccion/', views.agregar_direccion, name='agregar_direccion'),
     path('logout/', logout_view, name='logout'),
     path('buscar-clientes/',views.buscar_clientes,name='buscar_clientes'),
+    path('ajax/crear-cliente/', views.crear_cliente_ajax, name='crear_cliente_ajax'),
+    path('ajax/clientes/<int:cliente_id>/direcciones/', views.direcciones_cliente_ajax, name='direcciones_cliente_ajax'),
+    path('ajax/crear-direccion/', views.crear_direccion_ajax, name='crear_direccion_ajax'),
+    path('ajax/cliente/crear-direccion/', views.crear_direccion_cliente_ajax, name='crear_direccion_cliente_ajax'),
 ]

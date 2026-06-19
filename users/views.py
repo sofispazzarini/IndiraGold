@@ -7,14 +7,16 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 import random
 from django.core.mail import send_mail
 from django.conf import settings
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login as auth_login
-from .forms import RegistroUsuarioForm
-from .models import Cliente, Direccion
+from .forms import RegistroUsuarioForm, capitalizar_texto
+from .models import Cliente, Direccion, direcciones_sin_duplicados
 from django.db.models import Q
+from django.db import IntegrityError
 from django.contrib.auth.models import User
 from .forms_manual import RegistroManualClienteForm, EditarClienteForm, NuevaDireccionForm
 from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
 from django.http import JsonResponse
 from django.contrib.auth.decorators import user_passes_test
 from carritos.utils import vincular_carrito_con_usuario
@@ -47,37 +49,71 @@ def perfil(request):
     mensaje_tipo = None
 
     if request.method == 'POST':
-        nombre = request.POST.get('nombre', '').strip()
-        apellido = request.POST.get('apellido', '').strip()
-        email = request.POST.get('email', '').strip()
-        telefono = request.POST.get('telefono', '').strip()
+        if 'eliminar_direccion_cliente' in request.POST:
+            direccion = get_object_or_404(Direccion, pk=request.POST.get('eliminar_direccion_cliente'), cliente=cliente)
+            direccion.delete()
+            mensaje = 'Direccion eliminada correctamente.'
+            mensaje_tipo = 'success'
+            direccion_form = NuevaDireccionForm(initial={'cliente': cliente})
+        elif 'editar_direccion_cliente' in request.POST:
+            direccion = get_object_or_404(Direccion, pk=request.POST.get('editar_direccion_cliente'), cliente=cliente)
+            direccion_form = NuevaDireccionForm(request.POST, instance=direccion, initial={'cliente': cliente})
+            if direccion_form.is_valid():
+                direccion_form.save()
+                mensaje = 'Direccion actualizada correctamente.'
+                mensaje_tipo = 'success'
+                direccion_form = NuevaDireccionForm(initial={'cliente': cliente})
+            else:
+                mensaje = 'Por favor revisa los datos de la direccion.'
+                mensaje_tipo = 'danger'
+        elif 'agregar_direccion_cliente' in request.POST:
+            direccion_form = NuevaDireccionForm(request.POST, initial={'cliente': cliente})
+            if direccion_form.is_valid():
+                direccion = direccion_form.save(commit=False)
+                direccion.cliente = cliente
+                direccion.save()
+                mensaje = 'Direccion agregada correctamente.'
+                mensaje_tipo = 'success'
+                direccion_form = NuevaDireccionForm(initial={'cliente': cliente})
+            else:
+                mensaje = 'Por favor revisa los datos de la direccion.'
+                mensaje_tipo = 'danger'
+        else:
+            nombre = request.POST.get('nombre', '').strip()
+            apellido = request.POST.get('apellido', '').strip()
+            email = request.POST.get('email', '').strip()
+            telefono = request.POST.get('telefono', '').strip()
 
-        if nombre:
-            request.user.first_name = nombre
-        if apellido:
-            request.user.last_name = apellido
-        if email:
-            request.user.email = email
-        if telefono:
-            cliente.telefono = telefono
+            if nombre:
+                request.user.first_name = capitalizar_texto(nombre)
+            if apellido:
+                request.user.last_name = capitalizar_texto(apellido)
+            if email:
+                request.user.email = email
+            if telefono:
+                cliente.telefono = telefono
 
-        if 'foto_perfil' in request.FILES:
-            cliente.foto_perfil = request.FILES['foto_perfil']
+            if 'foto_perfil' in request.FILES:
+                cliente.foto_perfil = request.FILES['foto_perfil']
 
-        if 'eliminar_foto' in request.POST:
-            cliente.foto_perfil.delete(save=False)
-            cliente.foto_perfil = None
+            if 'eliminar_foto' in request.POST:
+                cliente.foto_perfil.delete(save=False)
+                cliente.foto_perfil = None
 
-        request.user.save()
-        cliente.save()
-        mensaje = 'Perfil actualizado correctamente.'
-        mensaje_tipo = 'success'
+            request.user.save()
+            cliente.save()
+            mensaje = 'Perfil actualizado correctamente.'
+            mensaje_tipo = 'success'
+            direccion_form = NuevaDireccionForm(initial={'cliente': cliente})
+    else:
+        direccion_form = NuevaDireccionForm(initial={'cliente': cliente})
 
-    direcciones = cliente.direcciones.all()
+    direcciones = cliente.direcciones.all().order_by('etiqueta', 'calle', 'numero')
 
     return render(request, 'users/perfil.html', {
         'cliente': cliente,
         'direcciones': direcciones,
+        'direccion_form': direccion_form,
         'mensaje': mensaje,
         'mensaje_tipo': mensaje_tipo,
     })
@@ -128,7 +164,7 @@ def listado_clientes(request):
 @user_passes_test(lambda u: u.is_superuser)
 def agregar_direccion(request, cliente_id):
     cliente = Cliente.objects.get(pk=cliente_id)
-    direcciones = cliente.direcciones.all()
+    direcciones = direcciones_sin_duplicados(cliente.direcciones.all().order_by('etiqueta', 'calle', 'numero'))
     mensaje = None
     if request.method == 'POST':
         form = NuevaDireccionForm(request.POST, initial={'cliente': cliente})
@@ -137,8 +173,8 @@ def agregar_direccion(request, cliente_id):
             direccion.cliente = cliente
             direccion.save()
             mensaje = 'Dirección agregada correctamente.'
-            form = NuevaDireccionForm()  # Limpiar formulario
-            direcciones = cliente.direcciones.all()  # Actualizar lista
+            form = NuevaDireccionForm(initial={'cliente': cliente})  # Limpiar formulario
+            direcciones = direcciones_sin_duplicados(cliente.direcciones.all().order_by('etiqueta', 'calle', 'numero'))  # Actualizar lista
         else:
             mensaje = 'Por favor revisa los datos ingresados.'
     else:
@@ -168,6 +204,31 @@ def editar_cliente(request, cliente_id):
     return render(request, 'users/editar_cliente.html', {'form': form, 'cliente': cliente, 'mensaje': mensaje})
 
 
+def _html_codigo_verificacion(codigo):
+    return f"""
+    <div style="margin:0;padding:32px 0;background:#f7f1e8;font-family:Arial,Helvetica,sans-serif;color:#1f1915;">
+      <div style="max-width:560px;margin:0 auto;background:#fffdf9;border:1px solid #eadcc6;border-radius:18px;overflow:hidden;">
+        <div style="padding:28px 30px 20px;text-align:center;border-bottom:1px solid #eadcc6;">
+          <div style="font-family:Georgia,serif;font-size:30px;color:#b88a18;letter-spacing:.5px;">IndiraGold</div>
+          <div style="margin-top:6px;font-size:11px;letter-spacing:4px;text-transform:uppercase;color:#8b7769;">Verificacion de cuenta</div>
+        </div>
+        <div style="padding:30px;">
+          <h1 style="margin:0 0 12px;font-family:Georgia,serif;font-size:28px;line-height:1.2;color:#111;">Tu codigo de verificacion</h1>
+          <p style="margin:0 0 22px;font-size:15px;line-height:1.6;color:#6f6259;">
+            Usalo para confirmar tu correo y terminar el registro de tu cuenta.
+          </p>
+          <div style="margin:24px 0;padding:20px;text-align:center;background:#fff7dc;border:1px solid #e6c766;border-radius:14px;">
+            <div style="font-size:36px;line-height:1;font-weight:700;letter-spacing:10px;color:#7a0030;">{codigo}</div>
+          </div>
+          <p style="margin:22px 0 0;font-size:13px;line-height:1.5;color:#8b7769;">
+            Si no solicitaste este registro, podes ignorar este mensaje.
+          </p>
+        </div>
+      </div>
+    </div>
+    """
+
+
 def registro(request):
     error = None
     show_verification_modal = False
@@ -178,7 +239,12 @@ def registro(request):
         if form.is_valid():
             dni = form.cleaned_data.get('dni')
             email = form.cleaned_data.get('email')
-            if Cliente.objects.filter(dni=dni).exists() or Cliente.objects.filter(user__email=email).exists():
+            if (
+                User.objects.filter(username=dni).exists()
+                or Cliente.objects.filter(dni=dni).exists()
+                or User.objects.filter(email=email).exists()
+                or Cliente.objects.filter(user__email=email).exists()
+            ):
                 error = 'Ya existe una cuenta registrada con estos datos (DNI o correo electrónico).'
             else:
                 # Generar código de verificación
@@ -194,6 +260,7 @@ def registro(request):
                     settings.EMAIL_HOST_USER,
                     [email],
                     fail_silently=False,
+                    html_message=_html_codigo_verificacion(codigo),
                 )
                 show_verification_modal = True
         else:
@@ -230,12 +297,14 @@ def confirmar_direccion(request):
         return redirect("users:registro")
 
     # Si POST con campos de dirección: actualizar sesión y devolver JSON
-    if request.method == "POST" and all(k in request.POST for k in ["calle", "numero", "ciudad", "provincia", "codigo_postal"]):
-        data['calle'] = request.POST.get('calle', data.get('calle'))
+    if request.method == "POST" and all(k in request.POST for k in ["etiqueta", "calle", "numero", "ciudad", "provincia", "codigo_postal"]):
+        data['etiqueta'] = capitalizar_texto(request.POST.get('etiqueta', data.get('etiqueta')))
+        data['calle'] = capitalizar_texto(request.POST.get('calle', data.get('calle')))
         data['numero'] = request.POST.get('numero', data.get('numero'))
-        data['ciudad'] = request.POST.get('ciudad', data.get('ciudad'))
-        data['provincia'] = request.POST.get('provincia', data.get('provincia'))
+        data['ciudad'] = capitalizar_texto(request.POST.get('ciudad', data.get('ciudad')))
+        data['provincia'] = capitalizar_texto(request.POST.get('provincia', data.get('provincia')))
         data['codigo_postal'] = request.POST.get('codigo_postal', data.get('codigo_postal'))
+        data['referencia'] = capitalizar_texto(request.POST.get('referencia', data.get('referencia', '')))
         request.session['registro_data'] = data
         return JsonResponse({'success': True})
 
@@ -243,9 +312,17 @@ def confirmar_direccion(request):
     elif request.method == "POST":
         form = RegistroUsuarioForm(data)
         if form.is_valid():
-            form.save()
-            del request.session["registro_data"]
+            try:
+                form.save()
+            except IntegrityError:
+                return render(request, "users/confirmar_direccion.html", {
+                    "data": data,
+                    "form": form,
+                    "error": "Ya existe una cuenta con ese DNI o correo. Inicia sesion con tu DNI o volve al registro con otros datos.",
+                })
+            request.session.pop("registro_data", None)
             return redirect("users:login")
+        return render(request, "users/confirmar_direccion.html", {"data": data, "form": form, "error": "No pudimos confirmar la direcciÃ³n. RevisÃ¡ los datos e intentÃ¡ de nuevo."})
 
     # Render normal
     form = RegistroUsuarioForm(initial=data)
@@ -303,8 +380,11 @@ def registro_manual_cliente(request):
         if form.is_valid():
             dni = form.cleaned_data['dni']
             nombre = form.cleaned_data['nombre']
+            apellido = form.cleaned_data['apellido']
             email = form.cleaned_data['email']
             telefono = form.cleaned_data['telefono']
+            etiqueta = form.cleaned_data['etiqueta']
+            referencia = form.cleaned_data.get('referencia', '')
             calle = form.cleaned_data['calle']
             numero = form.cleaned_data['numero']
             ciudad = form.cleaned_data['ciudad']
@@ -312,9 +392,9 @@ def registro_manual_cliente(request):
             codigo_postal = form.cleaned_data['codigo_postal']
             password = dni  # La contraseña será el mismo DNI
 
-            user = User.objects.create_user(username=dni, email=email, password=password, first_name=nombre)
+            user = User.objects.create_user(username=dni, email=email, password=password, first_name=nombre, last_name=apellido)
             cliente = Cliente.objects.create(user=user, dni=dni, telefono=telefono)
-            Direccion.objects.create(cliente=cliente, calle=calle, numero=numero, ciudad=ciudad, provincia=provincia, codigo_postal=codigo_postal)
+            Direccion.objects.create(cliente=cliente, etiqueta=etiqueta, referencia=referencia, calle=calle, numero=numero, ciudad=ciudad, provincia=provincia, codigo_postal=codigo_postal)
 
             # Enviar email con usuario y contraseña
             from django.core.mail import send_mail
@@ -339,9 +419,11 @@ def buscar_clientes(request):
 
     q = request.GET.get('q', '')
 
-    clientes = User.objects.filter(
-        is_staff=False,
-        first_name__icontains=q
+    clientes = User.objects.filter(is_staff=False).filter(
+        Q(first_name__icontains=q)
+        | Q(last_name__icontains=q)
+        | Q(email__icontains=q)
+        | Q(username__icontains=q)
     )[:5]
 
     data = []
@@ -359,3 +441,158 @@ def buscar_clientes(request):
         })
 
     return JsonResponse(data, safe=False)
+
+
+@user_passes_test(lambda u: u.is_superuser)
+def direcciones_cliente_ajax(request, cliente_id):
+    cliente = get_object_or_404(Cliente, user_id=cliente_id)
+    direcciones = direcciones_sin_duplicados(
+        cliente.direcciones.all().order_by('etiqueta', 'calle', 'numero')
+    )
+
+    return JsonResponse({
+        'success': True,
+        'direcciones': [
+            {
+                'id': direccion.id,
+                'etiqueta': direccion.etiqueta,
+                'calle': direccion.calle,
+                'numero': direccion.numero,
+                'ciudad': direccion.ciudad,
+                'provincia': direccion.provincia,
+                'codigo_postal': direccion.codigo_postal,
+                'referencia': direccion.referencia,
+                'texto': (
+                    f'{direccion.etiqueta}: {direccion.calle} {direccion.numero}, '
+                    f'{direccion.ciudad}, {direccion.provincia} - CP {direccion.codigo_postal}'
+                ),
+            }
+            for direccion in direcciones
+        ],
+    })
+
+
+@user_passes_test(lambda u: u.is_superuser)
+@require_POST
+def crear_cliente_ajax(request):
+    nombre = capitalizar_texto(request.POST.get('nombre', ''))
+    apellido = capitalizar_texto(request.POST.get('apellido', ''))
+    dni = request.POST.get('dni', '').strip()
+    email = request.POST.get('email', '').strip()
+    telefono = request.POST.get('telefono', '').strip()
+
+    if not all([nombre, apellido, dni, email, telefono]):
+        return JsonResponse({'success': False, 'error': 'Completá todos los campos del cliente.'}, status=400)
+    if not dni.isdigit() or len(dni) not in [7, 8]:
+        return JsonResponse({'success': False, 'error': 'El DNI debe tener 7 u 8 números.'}, status=400)
+    if User.objects.filter(username=dni).exists() or Cliente.objects.filter(dni=dni).exists():
+        return JsonResponse({'success': False, 'error': 'Ya existe un cliente con ese DNI.'}, status=400)
+    if User.objects.filter(email=email).exists():
+        return JsonResponse({'success': False, 'error': 'Ya existe un usuario con ese email.'}, status=400)
+
+    user = User.objects.create_user(
+        username=dni,
+        email=email,
+        password=dni,
+        first_name=nombre,
+        last_name=apellido,
+    )
+    Cliente.objects.create(user=user, dni=dni, telefono=telefono)
+
+    return JsonResponse({
+        'success': True,
+        'cliente': {
+            'id': user.id,
+            'nombre': f'{nombre} {apellido}',
+            'email': email,
+        }
+    })
+
+
+@user_passes_test(lambda u: u.is_superuser)
+@require_POST
+def crear_direccion_ajax(request):
+    cliente_id = request.POST.get('cliente_id')
+    cliente = get_object_or_404(Cliente, user_id=cliente_id)
+
+    etiqueta = capitalizar_texto(request.POST.get('etiqueta', ''))
+    calle = capitalizar_texto(request.POST.get('calle', ''))
+    numero = request.POST.get('numero', '').strip()
+    ciudad = capitalizar_texto(request.POST.get('ciudad', ''))
+    provincia = capitalizar_texto(request.POST.get('provincia', ''))
+    codigo_postal = request.POST.get('codigo_postal', '').strip()
+    referencia = capitalizar_texto(request.POST.get('referencia', ''))
+
+    if not all([etiqueta, calle, numero, ciudad, provincia, codigo_postal]):
+        return JsonResponse({'success': False, 'error': 'Completá los datos obligatorios de la dirección.'}, status=400)
+
+    clave = Direccion.clave_unica(etiqueta, calle, numero, ciudad, provincia, codigo_postal, referencia)
+    for direccion_existente in cliente.direcciones.all():
+        if direccion_existente.clave_normalizada == clave:
+            return JsonResponse({'success': False, 'error': 'Esa dirección ya está cargada para la clienta.'}, status=400)
+
+    direccion = Direccion.objects.create(
+        cliente=cliente,
+        etiqueta=etiqueta,
+        calle=calle,
+        numero=numero,
+        ciudad=ciudad,
+        provincia=provincia,
+        codigo_postal=codigo_postal,
+        referencia=referencia,
+    )
+
+    return JsonResponse({
+        'success': True,
+        'direccion': {
+            'id': direccion.id,
+            'texto': f'{direccion.etiqueta}: {direccion.calle} {direccion.numero}, {direccion.ciudad}, {direccion.provincia} - CP {direccion.codigo_postal}',
+        },
+    })
+
+
+@login_required
+@require_POST
+def crear_direccion_cliente_ajax(request):
+    cliente, _ = Cliente.objects.get_or_create(user=request.user)
+
+    etiqueta = capitalizar_texto(request.POST.get('etiqueta', ''))
+    calle = capitalizar_texto(request.POST.get('calle', ''))
+    numero = request.POST.get('numero', '').strip()
+    ciudad = capitalizar_texto(request.POST.get('ciudad', ''))
+    provincia = capitalizar_texto(request.POST.get('provincia', ''))
+    codigo_postal = request.POST.get('codigo_postal', '').strip()
+    referencia = capitalizar_texto(request.POST.get('referencia', ''))
+
+    if not all([etiqueta, calle, numero, ciudad, provincia, codigo_postal]):
+        return JsonResponse({'success': False, 'error': 'Completa los datos obligatorios de la direccion.'}, status=400)
+
+    clave = Direccion.clave_unica(etiqueta, calle, numero, ciudad, provincia, codigo_postal, referencia)
+    for direccion_existente in cliente.direcciones.all():
+        if direccion_existente.clave_normalizada == clave:
+            return JsonResponse({'success': False, 'error': 'Esa direccion ya esta cargada en tu cuenta.'}, status=400)
+
+    direccion = Direccion.objects.create(
+        cliente=cliente,
+        etiqueta=etiqueta,
+        calle=calle,
+        numero=numero,
+        ciudad=ciudad,
+        provincia=provincia,
+        codigo_postal=codigo_postal,
+        referencia=referencia,
+    )
+
+    return JsonResponse({
+        'success': True,
+        'direccion': {
+            'id': direccion.id,
+            'etiqueta': direccion.etiqueta,
+            'calle': direccion.calle,
+            'numero': direccion.numero,
+            'ciudad': direccion.ciudad,
+            'provincia': direccion.provincia,
+            'codigo_postal': direccion.codigo_postal,
+            'referencia': direccion.referencia,
+        },
+    })

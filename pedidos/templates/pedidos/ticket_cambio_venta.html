@@ -1,0 +1,34 @@
+{% extends 'pedidos/ticket_base.html' %}
+
+{% block title %}Ticket de cambio #{{ orden }}{% endblock %}
+
+{% block ticket %}
+<div class="brand">INDIRA GOLD</div>
+<div class="ticket-title">Ticket de cambio</div>
+
+<div class="line">Fecha: {{ fecha_ticket }}</div>
+<div class="line">*Tenés hasta 15 días para realizar el cambio</div>
+
+<div class="spacer"></div>
+
+<div class="line strong">N° de orden: {{ orden }}</div>
+<div class="line">Cliente: {{ cliente_nombre }}</div>
+<div class="line">Modo de pago:</div>
+<div class="line">{{ metodo_pago }}</div>
+<div class="line">Subtotal: <span class="{% if es_regalo %}price-gift{% endif %}">{{ subtotal }}</span></div>
+<div class="line">Descuento: 0% (- <span class="{% if es_regalo %}price-gift{% endif %}">{{ descuento }}</span>)</div>
+<div class="line strong">TOTAL: <span class="{% if es_regalo %}price-gift{% endif %}">{{ total }}</span></div>
+
+<div class="spacer"></div>
+
+<div class="line strong">Productos:</div>
+
+{% for item in items %}
+<div class="product">
+    <div>• {{ item.producto }}</div>
+    <div>Color: {{ item.color|default:"-" }}</div>
+    <div>Talle: {{ item.talle }}</div>
+    <div>Precio: <span class="{% if es_regalo %}price-gift{% endif %}">{{ item.precio }}</span></div>
+</div>
+{% endfor %}
+{% endblock %}

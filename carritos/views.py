@@ -15,7 +15,13 @@ from productos.models import Producto
 from productos.models import Talle, Color
 from pedidos.models import Pedido, PedidoItem
 from users.models import Cliente
-from .utils import clear_cart_session, expire_cart_if_needed, get_cart_seconds_left, set_cart_started_at_if_missing
+from .utils import (
+	clear_cart_session,
+	expire_cart_if_needed,
+	get_cart_seconds_left,
+	set_cart_started_at_if_missing,
+	SESSION_CART_COLORS_KEY,
+)
 
 
 def _get_session_cart(session) -> dict[str, int]:
@@ -45,6 +51,7 @@ def _render_cart_fragment(request: HttpRequest):
 def agregar_producto(request):
 	variante_id = request.POST.get("variante_id") or request.POST.get("id")
 	cantidad = request.POST.get("cantidad", "1")
+	color_nombre = (request.POST.get("color_nombre") or "").strip()
 	next_url = request.POST.get("next") or request.GET.get("next")
 
 	if not next_url:
@@ -77,6 +84,12 @@ def agregar_producto(request):
 			pk=variante_id_int,
 			activa=True
 		)
+		colores_variante = list(variante.colores.all())
+		colores_validos = {color.nombre.lower(): color.nombre for color in colores_variante}
+		if color_nombre:
+			color_nombre = colores_validos.get(color_nombre.lower(), '')
+		elif len(colores_variante) == 1:
+			color_nombre = colores_variante[0].nombre
 
 		producto = variante.producto
 
@@ -141,6 +154,7 @@ def agregar_producto(request):
 			item.cantidad = new_qty
 			item.precio_unitario = variante.precio or producto.precio
 			item.precio_total = item.cantidad * item.precio_unitario
+			item.color_nombre = color_nombre or item.color_nombre
 			item.save()
 
 			# Sincronizar sesión con BD
@@ -150,6 +164,11 @@ def agregar_producto(request):
 				carrito_final[str(item_db.variante.id)] = item_db.cantidad
 
 			request.session['carrito'] = carrito_final
+			colores_final = {}
+			for item_db in carrito.items.all():
+				if item_db.color_nombre:
+					colores_final[str(item_db.variante.id)] = item_db.color_nombre
+			request.session[SESSION_CART_COLORS_KEY] = colores_final
 			request.session.modified = True
 
 		except Exception as e:
@@ -165,10 +184,16 @@ def agregar_producto(request):
 	# =========================
 	else:
 		cart[key] = new_qty
+		cart_colors = request.session.get(SESSION_CART_COLORS_KEY)
+		if not isinstance(cart_colors, dict):
+			cart_colors = {}
+		if color_nombre:
+			cart_colors[key] = color_nombre
 
 		set_cart_started_at_if_missing(request.session)
 
 		request.session["carrito"] = cart
+		request.session[SESSION_CART_COLORS_KEY] = cart_colors
 		request.session.modified = True
 
 	messages.success(
@@ -215,6 +240,11 @@ def eliminar_producto(request):
 					pid = str(item_db.variante.producto.id)
 					carrito_final[pid] = carrito_final.get(pid, 0) + item_db.cantidad
 				request.session['carrito'] = carrito_final
+				request.session[SESSION_CART_COLORS_KEY] = {
+					str(item_db.variante.id): item_db.color_nombre
+					for item_db in carrito.items.all()
+					if item_db.color_nombre
+				}
 				request.session.modified = True
 				messages.success(request, "Producto eliminado del carrito.")
 			else:
@@ -228,6 +258,10 @@ def eliminar_producto(request):
 
 		if key in cart:
 			del cart[key]
+			cart_colors = request.session.get(SESSION_CART_COLORS_KEY)
+			if isinstance(cart_colors, dict):
+				cart_colors.pop(key, None)
+				request.session[SESSION_CART_COLORS_KEY] = cart_colors
 			if cart:
 				request.session["carrito"] = cart
 				request.session.modified = True
@@ -277,6 +311,9 @@ def confirmar_compra(request):
 
 	items_a_crear = []
 	total = 0
+	cart_colors = request.session.get(SESSION_CART_COLORS_KEY)
+	if not isinstance(cart_colors, dict):
+		cart_colors = {}
 
 	for producto_id, cantidad in cart.items():
 		producto = productos_by_id.get(int(producto_id))
@@ -300,7 +337,7 @@ def confirmar_compra(request):
 
 		precio_unitario = variante.precio or producto.precio
 		precio_total = precio_unitario * cantidad
-		items_a_crear.append((variante, cantidad, precio_unitario, precio_total, producto))
+		items_a_crear.append((variante, cantidad, precio_unitario, precio_total, producto, cart_colors.get(str(variante.id))))
 		total += precio_total
 
 	with transaction.atomic():
@@ -311,10 +348,11 @@ def confirmar_compra(request):
 			estado='pendiente',
 		)
 
-		for variante, cantidad, precio_unitario, precio_total, producto in items_a_crear:
+		for variante, cantidad, precio_unitario, precio_total, producto, color_nombre in items_a_crear:
 			PedidoItem.objects.create(
 				pedido=pedido,
 				variante=variante,
+				color_nombre=color_nombre,
 				cantidad=cantidad,
 				precio_unitario=precio_unitario,
 				precio_total=precio_total,
@@ -438,15 +476,20 @@ def _build_home_context(request):
 					"precio": item_db.precio_unitario,
 					"cantidad": item_db.cantidad,
 					"subtotal": item_db.precio_total,
+					"color_nombre": item_db.color_nombre,
 				})
 				total_qty += item_db.cantidad
 				total_price += item_db.precio_total
 			
 			# Sincronizar sesión con BD para consistencia
 			carrito_sincronizado = {}
+			colores_sincronizados = {}
 			for item_db in carrito.items.all():
 				carrito_sincronizado[str(item_db.variante.id)] = item_db.cantidad
+				if item_db.color_nombre:
+					colores_sincronizados[str(item_db.variante.id)] = item_db.color_nombre
 			request.session['carrito'] = carrito_sincronizado
+			request.session[SESSION_CART_COLORS_KEY] = colores_sincronizados
 			request.session.modified = True
 		except Exception as e:
 			# Si hay error, continuar sin items
@@ -456,8 +499,11 @@ def _build_home_context(request):
 		from productos.models import Variante
 
 		cart = request.session.get("carrito")
+		cart_colors = request.session.get(SESSION_CART_COLORS_KEY)
 		if not isinstance(cart, dict):
 			cart = {}
+		if not isinstance(cart_colors, dict):
+			cart_colors = {}
 
 		quantities: dict[int, int] = {}
 
@@ -497,6 +543,7 @@ def _build_home_context(request):
 				"precio": precio,
 				"cantidad": qty,
 				"subtotal": subtotal,
+				"color_nombre": cart_colors.get(str(variante.id)),
 			})
 
 			total_qty += qty

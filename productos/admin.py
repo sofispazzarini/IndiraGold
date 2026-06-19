@@ -57,5 +57,6 @@ from .models import Oferta
 
 @admin.register(Oferta)
 class OfertaAdmin(admin.ModelAdmin):
-    list_display = ('nombre', 'descuento', 'aplicar_a_todos', 'activa')
+    list_display = ('nombre', 'codigo', 'descuento', 'es_cupon', 'aplicar_a_todos', 'categoria', 'activa')
+    list_filter = ('activa', 'es_cupon', 'aplicar_a_todos', 'categoria')
     filter_horizontal = ('productos',)

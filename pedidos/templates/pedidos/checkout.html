@@ -335,7 +335,9 @@
   }
 
   .direccion-card {
-    display: block;
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
     padding: 1rem 1.25rem;
     border: 1px solid var(--border);
     border-radius: 12px;
@@ -348,23 +350,29 @@
     border-color: rgba(110, 14, 46, 0.3);
   }
 
-  .direccion-card input {
-    display: none;
+  .direccion-card input[type="radio"] {
+    display: block;
+    width: 19px;
+    height: 19px;
+    flex: 0 0 auto;
+    accent-color: var(--burgundy);
+    cursor: pointer;
   }
 
   .direccion-card input:checked + .direccion-content {
     color: var(--burgundy);
   }
 
-  .direccion-card input:checked ~ .direccion-card {
+  .direccion-card:has(input[type="radio"]:checked) {
     border-color: var(--burgundy);
-    background: rgba(110, 14, 46, 0.02);
+    background: rgba(110, 14, 46, 0.03);
   }
 
   .direccion-content {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    flex: 1;
   }
 
   .direccion-alias {
@@ -382,6 +390,109 @@
   .direccion-content i {
     color: var(--muted);
     font-size: 1.2rem;
+  }
+
+  .direccion-card:has(input[type="radio"]:checked) .direccion-alias,
+  .direccion-card:has(input[type="radio"]:checked) .direccion-content i {
+    color: var(--burgundy);
+  }
+
+  .btn-checkout-add-address {
+    border: 1px solid rgba(110, 14, 46, 0.28);
+    background: #fff;
+    color: var(--burgundy);
+    border-radius: 999px;
+    padding: 0.75rem 1rem;
+    font-weight: 700;
+    font-size: 0.86rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    margin-bottom: 1rem;
+  }
+
+  .btn-checkout-add-address:hover {
+    background: rgba(110, 14, 46, 0.04);
+  }
+
+  .regalo-card {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .direccion-card input.regalo-check {
+    display: block;
+    width: 20px;
+    height: 20px;
+    flex: 0 0 auto;
+    accent-color: var(--burgundy);
+    cursor: pointer;
+  }
+
+  .regalo-card .direccion-content {
+    flex: 1;
+  }
+
+  .regalo-card:has(.regalo-check:checked) {
+    border-color: var(--burgundy);
+    background: rgba(110, 14, 46, 0.03);
+  }
+
+  .regalo-card:has(.regalo-check:checked) .direccion-alias,
+  .regalo-card:has(.regalo-check:checked) .direccion-content i {
+    color: var(--burgundy);
+  }
+
+  .payment-extra {
+    display: none;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: #fffdf9;
+    padding: 1rem;
+    margin: 0.5rem 0 1rem;
+    color: var(--text);
+  }
+
+  .payment-extra.visible {
+    display: block;
+  }
+
+  .payment-extra-title {
+    font-weight: 800;
+    color: var(--burgundy);
+    margin-bottom: 0.65rem;
+  }
+
+  .installment-list,
+  .bank-list {
+    display: grid;
+    gap: 0.5rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .installment-list li,
+  .bank-list li {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    border-bottom: 1px solid rgba(232,223,212,0.7);
+    padding-bottom: 0.45rem;
+    font-size: 0.84rem;
+  }
+
+  .installment-list li:last-child,
+  .bank-list li:last-child {
+    border-bottom: 0;
+    padding-bottom: 0;
+  }
+
+  .retention-chip {
+    color: #8c7e70;
+    font-size: 0.78rem;
+    white-space: nowrap;
   }
 
   .alert-warning {
@@ -430,6 +541,71 @@
 
   .resumen-row .value.green {
     color: #3d6e2a;
+  }
+
+  .resumen-row .value.discount {
+    color: var(--burgundy);
+  }
+
+  .coupon-box {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 0.9rem;
+    margin: 1rem 0;
+    background: #fffdf9;
+  }
+
+  .coupon-toggle {
+    width: 100%;
+    border: 0;
+    background: transparent;
+    color: var(--burgundy);
+    font-weight: 700;
+    text-align: left;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .coupon-form {
+    display: none;
+    gap: 0.5rem;
+    margin-top: 0.85rem;
+  }
+
+  .coupon-form.active {
+    display: flex;
+  }
+
+  .coupon-form input {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .coupon-form button {
+    border: none;
+    border-radius: 999px;
+    background: var(--burgundy);
+    color: #fff;
+    padding: 0 1rem;
+    font-weight: 700;
+  }
+
+  .coupon-message {
+    display: none;
+    margin-top: 0.65rem;
+    font-size: 0.78rem;
+  }
+
+  .coupon-message.success {
+    display: block;
+    color: #2f6f3f;
+  }
+
+  .coupon-message.error {
+    display: block;
+    color: var(--burgundy);
   }
 
   .resumen-divider {
@@ -524,7 +700,7 @@
     <h1 class="page-title">Finalizar compra</h1>
   </div>
 
-  <form action="{% url 'pedidos:crear_pago' %}" method="POST">
+  <form action="{% url 'pedidos:crear_pago' %}" method="POST" id="checkout-form">
     {% csrf_token %}
 
     <div class="checkout-grid">
@@ -546,6 +722,9 @@
               <div>
                 <div class="product-name">{{ item.variante.producto.nombre }}</div>
                 <div class="product-talle">Talle: {{ item.variante.talle.nombre }}</div>
+                {% if item.color_nombre %}
+                  <div class="product-talle">Color: {{ item.color_nombre|title }}</div>
+                {% endif %}
                 <div class="cantidad-wrap">
                   <form action="{% url 'pedidos:disminuir_cantidad' item.variante.id %}" method="POST" style="display:contents;">
                     {% csrf_token %}
@@ -650,6 +829,7 @@
                 {% endif %}
 
                 <!-- CORREO -->
+                {% if configuracion_envio.correo_activo %}
                 <div class="entrega-option">
                 <input
                     type="radio"
@@ -666,9 +846,32 @@
                     </span>
 
                     <span class="label-sub">
-                    Andreani o Correo Argentino
+                    {% if configuracion_envio.correo_gratis %}
+                    Gratis
+                    {% else %}
+                    ${{ precio_correo }}
+                    {% endif %}
                     </span>
                 </label>
+                </div>
+                {% endif %}
+
+            </div>
+
+            <!-- LOCAL -->
+            <div
+                class="direcciones-wrap"
+                id="campos-local"
+            >
+
+                <div class="direccion-info">
+                <i class="bi bi-shop"></i>
+
+                <div class="direccion-info-text">
+                    <h6>Retiro en local</h6>
+                    <small>423 bis e/ Belgrano y 22, numero 2150</small>
+                </div>
+
                 </div>
 
             </div>
@@ -712,8 +915,23 @@
                 Seleccioná la dirección donde querés recibir tu pedido.
                 </p>
 
-                {% for direccion in direcciones %}
-                <label class="direccion-card">
+                <select
+                    class="form-select direccion-filter"
+                    data-target="flex"
+                    style="margin-bottom:1rem;"
+                >
+                    <option value="">Todas las etiquetas</option>
+                    {% for etiqueta in etiquetas_flex %}
+                    <option value="{{ etiqueta|lower }}">{{ etiqueta|title }}</option>
+                    {% endfor %}
+                </select>
+
+                <button type="button" class="btn-checkout-add-address" data-bs-toggle="modal" data-bs-target="#modalNuevaDireccionCheckout">
+                    <i class="bi bi-plus-circle"></i> Agregar direccion
+                </button>
+
+                {% for direccion in direcciones_flex %}
+                <label class="direccion-card" data-address-group="flex" data-etiqueta="{{ direccion.etiqueta|lower }}">
 
                 <input
                     type="radio"
@@ -725,12 +943,14 @@
 
                     <div>
                     <div class="direccion-alias">
-                        {{ direccion.calle }} {{ direccion.numero }}
+                        {{ direccion.etiqueta|title }}
                     </div>
 
                     <div class="direccion-detail">
-                        {{ direccion.ciudad }}, {{ direccion.provincia }}
+                        {{ direccion.calle|title }} {{ direccion.numero }}<br>
+                        {{ direccion.ciudad|title }}, {{ direccion.provincia|title }}
                         ({{ direccion.codigo_postal }})
+                        {% if direccion.referencia %}<br>Ref: {{ direccion.referencia|title }}{% endif %}
                     </div>
                     </div>
 
@@ -743,7 +963,7 @@
 
                 <div class="alert-warning">
                 <i class="bi bi-exclamation-triangle"></i>
-                No tenés direcciones registradas.
+                No tenés direcciones registradas para esta zona. Usá el botón Agregar direccion para cargar una nueva.
                 </div>
 
                 {% endfor %}
@@ -777,15 +997,12 @@
                 <label>Correo</label>
 
                 <select name="correo" class="form-select">
-
                     <option value="andreani">
                     Andreani
                     </option>
-
                     <option value="correo_argentino">
                     Correo Argentino
                     </option>
-
                 </select>
 
                 </div>
@@ -827,7 +1044,7 @@
                 </div>
 
                 <!-- SUCURSAL -->
-                <div class="form-group">
+                <div class="form-group" id="correo-sucursal-box">
 
                 <label>Sucursal</label>
 
@@ -838,17 +1055,43 @@
                     placeholder="Ej: Sucursal La Plata Centro"
                 >
 
+                <label style="margin-top:.75rem;">Codigo postal</label>
+
+                <input
+                    type="text"
+                    name="codigo_postal_sucursal"
+                    class="form-control"
+                    placeholder="Ej: 1900"
+                >
+
                 </div>
 
+                <div class="alert-warning" id="correo-cotizacion-box" style="margin-top:1rem; display:none;"></div>
+
                 <!-- DIRECCIONES -->
-                <div style="margin-top:1rem;">
+                <div style="margin-top:1rem;" id="correo-direcciones-box">
 
                 <p style="font-size: 0.82rem; color: var(--muted); margin-bottom: 1rem;">
                     Seleccioná la dirección donde querés recibir tu pedido.
                 </p>
 
+                <select
+                    class="form-select direccion-filter"
+                    data-target="correo"
+                    style="margin-bottom:1rem;"
+                >
+                    <option value="">Todas las etiquetas</option>
+                    {% for etiqueta in etiquetas_direcciones %}
+                    <option value="{{ etiqueta|lower }}">{{ etiqueta|title }}</option>
+                    {% endfor %}
+                </select>
+
+                <button type="button" class="btn-checkout-add-address" data-bs-toggle="modal" data-bs-target="#modalNuevaDireccionCheckout">
+                    <i class="bi bi-plus-circle"></i> Agregar direccion
+                </button>
+
                 {% for direccion in direcciones %}
-                <label class="direccion-card">
+                <label class="direccion-card" data-address-group="correo" data-etiqueta="{{ direccion.etiqueta|lower }}">
 
                     <input
                     type="radio"
@@ -861,12 +1104,14 @@
                     <div>
 
                         <div class="direccion-alias">
-                        {{ direccion.calle }} {{ direccion.numero }}
+                        {{ direccion.etiqueta|title }}
                         </div>
 
                         <div class="direccion-detail">
-                        {{ direccion.ciudad }}, {{ direccion.provincia }}
+                        {{ direccion.calle|title }} {{ direccion.numero }}<br>
+                        {{ direccion.ciudad|title }}, {{ direccion.provincia|title }}
                         ({{ direccion.codigo_postal }})
+                        {% if direccion.referencia %}<br>Ref: {{ direccion.referencia|title }}{% endif %}
                         </div>
 
                     </div>
@@ -880,7 +1125,7 @@
 
                 <div class="alert-warning">
                     <i class="bi bi-exclamation-triangle"></i>
-                    No tenés direcciones registradas.
+                    No tenés direcciones registradas. Usá el botón Agregar direccion para cargar una nueva.
                 </div>
 
                 {% endfor %}
@@ -890,6 +1135,117 @@
             </div>
 
             </div>
+        </div>
+
+        <div class="checkout-card">
+          <h3 class="card-title">
+            <span>3</span> Opciones del pedido
+          </h3>
+
+          <label class="direccion-card regalo-card" for="es-regalo-check">
+            <input
+              type="checkbox"
+              id="es-regalo-check"
+              class="regalo-check"
+              name="es_regalo"
+              value="1"
+            >
+            <div class="direccion-content">
+              <div>
+                <div class="direccion-alias">Es para regalo</div>
+                <div class="direccion-detail">
+                  El ticket de cambio se imprime con los precios tachados.
+                </div>
+              </div>
+              <i class="bi bi-gift"></i>
+            </div>
+          </label>
+
+          <div style="margin-top: 1.25rem;">
+            <div class="direccion-alias" style="margin-bottom: 0.75rem;">Metodo de pago</div>
+
+            {% if configuracion_pago.mercado_pago_activo %}
+            <label class="direccion-card regalo-card pago-card" for="pago-mercado">
+              <input
+                type="radio"
+                id="pago-mercado"
+                class="regalo-check"
+                name="metodo_pago"
+                value="mercado_pago"
+                checked
+              >
+              <div class="direccion-content">
+                <div>
+                  <div class="direccion-alias">Mercado Pago</div>
+                  <div class="direccion-detail">{{ configuracion_pago.texto_mercado_pago }}</div>
+                </div>
+                <i class="bi bi-credit-card"></i>
+              </div>
+            </label>
+
+            <div class="payment-extra" id="extra-mercado-pago">
+              <div class="payment-extra-title">Opciones disponibles</div>
+              {% if planes_cuotas %}
+              <ul class="installment-list">
+                {% for plan in planes_cuotas %}
+                <li>
+                  <span>Hasta {{ plan.cuotas }} cuota{% if plan.cuotas != 1 %}s{% endif %}{% if plan.sin_interes %} sin interes{% endif %}</span>
+                  <span class="retention-chip">Detalle actualizado en Mercado Pago</span>
+                </li>
+                {% endfor %}
+              </ul>
+              {% else %}
+              <div class="direccion-detail">La administradora todavia no cargo planes de cuotas.</div>
+              {% endif %}
+            </div>
+            {% endif %}
+
+            {% if configuracion_pago.transferencia_activa %}
+            <label class="direccion-card regalo-card pago-card" for="pago-transferencia">
+              <input
+                type="radio"
+                id="pago-transferencia"
+                class="regalo-check"
+                name="metodo_pago"
+                value="transferencia"
+              >
+              <div class="direccion-content">
+                <div>
+                  <div class="direccion-alias">Transferencia bancaria</div>
+                  <div class="direccion-detail">{{ configuracion_pago.texto_transferencia }}</div>
+                </div>
+                <i class="bi bi-bank"></i>
+              </div>
+            </label>
+
+            <div class="payment-extra" id="extra-transferencia">
+              <div class="payment-extra-title">Datos de la cuenta</div>
+              <ul class="bank-list">
+                <li><span>Titular</span><strong>{{ configuracion_pago.titular_cuenta }}</strong></li>
+                <li><span>CUIT/CUIL</span><strong>{{ configuracion_pago.cuit_cuil }}</strong></li>
+                <li><span>CVU</span><strong>{{ configuracion_pago.cvu }}</strong></li>
+                <li><span>Alias</span><strong>{{ configuracion_pago.alias }}</strong></li>
+              </ul>
+            </div>
+            {% endif %}
+
+            <label class="direccion-card regalo-card pago-card" id="pago-efectivo-card" for="pago-efectivo">
+              <input
+                type="radio"
+                id="pago-efectivo"
+                class="regalo-check"
+                name="metodo_pago"
+                value="efectivo"
+              >
+              <div class="direccion-content">
+                <div>
+                  <div class="direccion-alias">Efectivo en el local</div>
+                  <div class="direccion-detail">Disponible solo para retiro en local.</div>
+                </div>
+                <i class="bi bi-cash-coin"></i>
+              </div>
+            </label>
+          </div>
         </div>
 
       </div>
@@ -909,6 +1265,32 @@
             <span class="value green" id="envio-label">Gratis</span>
           </div>
 
+          <div class="coupon-box">
+            <button type="button" class="coupon-toggle" id="coupon-toggle">
+              Agregar codigo de descuento
+              <i class="bi bi-chevron-down"></i>
+            </button>
+            <div class="coupon-form" id="coupon-form">
+              <input
+                type="text"
+                class="form-control"
+                id="codigo-descuento-input"
+                placeholder="Ej: INDIRA15"
+                value="{{ codigo_descuento }}"
+              >
+                <button type="button" id="aplicar-codigo-btn">Aplicar</button>
+                <button type="button" id="quitar-codigo-btn" style="{% if not codigo_descuento %}display:none;{% endif %}margin-left:8px;">Quitar</button>
+            </div>
+            <div class="coupon-message" id="coupon-message"></div>
+          </div>
+
+          <input type="hidden" name="codigo_descuento" id="codigo-descuento-hidden" value="{{ codigo_descuento }}">
+
+          <div class="resumen-row" id="descuento-row" {% if not descuento_monto %}style="display:none;"{% endif %}>
+            <span class="label">Descuento <span id="descuento-codigo-label">{% if codigo_descuento %}({{ codigo_descuento }}){% endif %}</span></span>
+            <span class="value discount" id="descuento-label">- ${{ descuento_monto }}</span>
+          </div>
+
           <div class="resumen-divider"></div>
 
           <div class="resumen-total">
@@ -916,7 +1298,7 @@
             <span class="value" id="total-final-display">${{ total }}</span>
           </div>
 
-          <button type="submit" class="btn-pagar">
+          <button type="button" class="btn-pagar" id="checkout-submit-btn">
             PAGAR AHORA <i class="bi bi-credit-card"></i>
           </button>
 
@@ -931,9 +1313,63 @@
 
 </div>
 
+<div class="modal fade" id="modalNuevaDireccionCheckout" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="border-radius: 16px; border: 1px solid var(--border);">
+      <div class="modal-header" style="border-bottom: 1px solid var(--border);">
+        <h5 class="modal-title" style="color: var(--burgundy); font-weight: 700;">Agregar direccion</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <form id="formNuevaDireccionCheckout">
+        {% csrf_token %}
+        <div class="modal-body">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">Etiqueta</label>
+              <input type="text" name="etiqueta" class="form-control" placeholder="Casa" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Calle</label>
+              <input type="text" name="calle" class="form-control" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Numero</label>
+              <input type="text" name="numero" class="form-control" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Ciudad</label>
+              <input type="text" name="ciudad" class="form-control" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Provincia</label>
+              <input type="text" name="provincia" class="form-control" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Codigo postal</label>
+              <input type="text" name="codigo_postal" class="form-control" required>
+            </div>
+            <div class="col-12">
+              <label class="form-label">Referencia opcional</label>
+              <input type="text" name="referencia" class="form-control" placeholder="Ej: Porton verde, timbre roto">
+            </div>
+          </div>
+          <div class="alert-warning" id="direccion-checkout-error" style="display:none; margin-top:1rem;"></div>
+        </div>
+        <div class="modal-footer" style="border-top: 1px solid var(--border);">
+          <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn-pagar" style="width:auto; padding:0.8rem 1.5rem;">Guardar direccion</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
 <script>
 const subtotalBase = parseFloat("{{ subtotal|floatformat:'2' }}".replace(',', '.'));
 const costoFlex = parseFloat("{{ precio_flex|floatformat:'2' }}".replace(',', '.'));
+const costoCorreoBase = parseFloat("{{ precio_correo|floatformat:'2' }}".replace(',', '.'));
+let costoCorreo = costoCorreoBase;
+let descuentoAplicado = parseFloat("{{ descuento_monto|floatformat:'2' }}".replace(',', '.')) || 0;
 
 function formatearPesos(valor) {
   return '$' + valor.toLocaleString('es-AR');
@@ -947,8 +1383,33 @@ const radiosEntrega = document.querySelectorAll(
 
 const camposFlex = document.getElementById('campos-flex');
 const camposCorreo = document.getElementById('campos-correo');
+const camposLocal = document.getElementById('campos-local');
 const envioTexto = document.getElementById('envio-label');
 const totalDisplay = document.getElementById('total-final-display');
+const pagoMercado = document.getElementById('pago-mercado');
+const pagoTransferencia = document.getElementById('pago-transferencia');
+const pagoEfectivo = document.getElementById('pago-efectivo');
+const pagoEfectivoCard = document.getElementById('pago-efectivo-card');
+const botonPagar = document.getElementById('checkout-submit-btn');
+const extraMercadoPago = document.getElementById('extra-mercado-pago');
+const extraTransferencia = document.getElementById('extra-transferencia');
+const correoSucursalBox = document.getElementById('correo-sucursal-box');
+const correoDireccionesBox = document.getElementById('correo-direcciones-box');
+const correoCotizacionBox = document.getElementById('correo-cotizacion-box');
+
+function actualizarTipoCorreo() {
+  const tipoCorreo = valorSeleccionado('tipo_correo') || 'domicilio';
+  if (correoSucursalBox) correoSucursalBox.style.display = tipoCorreo === 'sucursal' ? 'block' : 'none';
+  if (correoDireccionesBox) correoDireccionesBox.style.display = tipoCorreo === 'domicilio' ? 'block' : 'none';
+}
+
+function asegurarMetodoPagoSeleccionado() {
+  const seleccionado = document.querySelector('input[name="metodo_pago"]:checked');
+  if (seleccionado && seleccionado.closest('.pago-card')?.style.display !== 'none') return;
+  const primeroVisible = Array.from(document.querySelectorAll('input[name="metodo_pago"]'))
+    .find(input => input.closest('.pago-card')?.style.display !== 'none');
+  if (primeroVisible) primeroVisible.checked = true;
+}
 
 function actualizarEntrega() {
 
@@ -956,8 +1417,9 @@ function actualizarEntrega() {
     'input[name="metodo_entrega"]:checked'
   ).value;
 
-  camposFlex.style.display = 'none';
-  camposCorreo.style.display = 'none';
+  if (camposLocal) camposLocal.style.display = metodo === 'local' ? 'block' : 'none';
+  if (camposFlex) camposFlex.style.display = 'none';
+  if (camposCorreo) camposCorreo.style.display = 'none';
   let costoEnvio = 0;
 
   if (metodo === 'flex') {
@@ -965,9 +1427,24 @@ function actualizarEntrega() {
     costoEnvio = costoFlex;
   }
 
-  if (metodo === 'correo') {
+  if (metodo === 'correo' && camposCorreo) {
     camposCorreo.style.display = 'block';
+    const proveedor = valorCampo('select[name="correo"]');
+    if (proveedor !== 'correo_argentino') costoCorreo = costoCorreoBase;
+    costoEnvio = costoCorreo;
+    actualizarTipoCorreo();
   }
+
+  if (pagoEfectivoCard && pagoEfectivo) {
+    const permiteEfectivo = metodo === 'local';
+    pagoEfectivoCard.style.display = permiteEfectivo ? 'flex' : 'none';
+    if (!permiteEfectivo && pagoEfectivo.checked) {
+      const reemplazo = pagoMercado || pagoTransferencia;
+      if (reemplazo) reemplazo.checked = true;
+    }
+  }
+
+  asegurarMetodoPagoSeleccionado();
 
   if (costoEnvio > 0) {
     envioTexto.innerText = formatearPesos(costoEnvio);
@@ -977,14 +1454,363 @@ function actualizarEntrega() {
     envioTexto.classList.add('green');
   }
 
-  totalDisplay.innerText = formatearPesos(subtotalBase + costoEnvio);
+  totalDisplay.innerText = formatearPesos(Math.max(0, subtotalBase - descuentoAplicado) + costoEnvio);
+  actualizarBotonPago();
+}
+
+function actualizarBotonPago() {
+  if (!botonPagar) return;
+  if (extraMercadoPago) extraMercadoPago.classList.toggle('visible', Boolean(pagoMercado && pagoMercado.checked));
+  if (extraTransferencia) extraTransferencia.classList.toggle('visible', Boolean(pagoTransferencia && pagoTransferencia.checked));
+
+  if (pagoEfectivo && pagoEfectivo.checked) {
+    botonPagar.innerHTML = 'CONFIRMAR PEDIDO <i class="bi bi-bag-check"></i>';
+  } else if (pagoTransferencia && pagoTransferencia.checked) {
+    botonPagar.innerHTML = 'CONFIRMAR TRANSFERENCIA <i class="bi bi-bank"></i>';
+  } else {
+    botonPagar.innerHTML = 'PAGAR AHORA <i class="bi bi-credit-card"></i>';
+  }
 }
 
 radiosEntrega.forEach(radio => {
-  radio.addEventListener('change', actualizarEntrega);
+  radio.addEventListener('change', () => {
+    actualizarEntrega();
+    cotizarCorreo();
+  });
+});
+
+document.querySelectorAll('input[name="metodo_pago"]').forEach(radio => {
+  radio.addEventListener('change', actualizarBotonPago);
+});
+
+document.querySelectorAll('input[name="tipo_correo"]').forEach(radio => {
+  radio.addEventListener('change', () => {
+    actualizarTipoCorreo();
+    cotizarCorreo();
+  });
+});
+
+document.querySelectorAll('input[name="direccion_correo_id"]').forEach(radio => {
+  radio.addEventListener('change', cotizarCorreo);
+});
+
+document.querySelector('select[name="correo"]')?.addEventListener('change', () => {
+  const proveedor = valorCampo('select[name="correo"]');
+  if (proveedor !== 'correo_argentino') {
+    costoCorreo = costoCorreoBase;
+    if (correoCotizacionBox) {
+      correoCotizacionBox.style.display = 'block';
+      correoCotizacionBox.textContent = costoCorreo > 0
+        ? `Andreani: ${formatearPesos(costoCorreo)}`
+        : 'Andreani: gratis';
+    }
+    actualizarEntrega();
+    return;
+  }
+  costoCorreo = 0;
+  cotizarCorreo();
+});
+
+document.querySelector('input[name="codigo_postal_sucursal"]')?.addEventListener('input', () => {
+  if (valorCampo('select[name="correo"]') !== 'correo_argentino') return;
+  costoCorreo = 0;
+  clearTimeout(window.cotizarCorreoTimer);
+  window.cotizarCorreoTimer = setTimeout(cotizarCorreo, 500);
 });
 
 actualizarEntrega();
+actualizarTipoCorreo();
+
+function valorSeleccionado(nombre) {
+  const item = document.querySelector(`input[name="${nombre}"]:checked`);
+  return item ? item.value : '';
+}
+
+function valorCampo(selector) {
+  const item = document.querySelector(selector);
+  return item ? item.value : '';
+}
+
+function agregarCampo(form, nombre, valor) {
+  const input = document.createElement('input');
+  input.type = 'hidden';
+  input.name = nombre;
+  input.value = valor || '';
+  form.appendChild(input);
+}
+
+async function cotizarCorreo() {
+  const metodoEntrega = valorSeleccionado('metodo_entrega') || 'local';
+  const proveedor = valorCampo('select[name="correo"]');
+  if (metodoEntrega !== 'correo') return;
+  if (proveedor !== 'correo_argentino') {
+    costoCorreo = costoCorreoBase;
+    if (correoCotizacionBox) {
+      correoCotizacionBox.style.display = 'block';
+      correoCotizacionBox.textContent = costoCorreo > 0
+        ? `Andreani: ${formatearPesos(costoCorreo)}`
+        : 'Andreani: gratis';
+    }
+    actualizarEntrega();
+    return;
+  }
+
+  const tipoCorreo = valorSeleccionado('tipo_correo') || 'domicilio';
+  const direccionId = valorSeleccionado('direccion_correo_id');
+  const cpSucursal = valorCampo('input[name="codigo_postal_sucursal"]').trim();
+
+  if (tipoCorreo === 'domicilio' && !direccionId) {
+    if (correoCotizacionBox) {
+      correoCotizacionBox.style.display = 'block';
+      correoCotizacionBox.textContent = 'Selecciona una direccion para cotizar Correo Argentino.';
+    }
+    return;
+  }
+
+  if (tipoCorreo === 'sucursal' && !cpSucursal) {
+    if (correoCotizacionBox) {
+      correoCotizacionBox.style.display = 'block';
+      correoCotizacionBox.textContent = 'Ingresa el codigo postal para cotizar Correo Argentino.';
+    }
+    return;
+  }
+
+  if (correoCotizacionBox) {
+    correoCotizacionBox.style.display = 'block';
+    correoCotizacionBox.textContent = 'Cotizando Correo Argentino...';
+  }
+
+  const data = new FormData();
+  data.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+  data.append('tipo_correo', tipoCorreo);
+  data.append('direccion_correo_id', direccionId);
+  data.append('codigo_postal', cpSucursal);
+
+  try {
+    const response = await fetch("{% url 'pedidos:cotizar_correo_argentino' %}", {
+      method: 'POST',
+      body: data,
+      headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    });
+    const result = await response.json();
+    if (!response.ok || !result.success) throw new Error(result.error || 'No se pudo cotizar.');
+
+    costoCorreo = parseFloat(result.importe) || 0;
+    if (correoCotizacionBox) {
+      correoCotizacionBox.textContent = `Correo Argentino: ${formatearPesos(costoCorreo)}`;
+    }
+    actualizarEntrega();
+  } catch (error) {
+    costoCorreo = 0;
+    if (correoCotizacionBox) {
+      correoCotizacionBox.textContent = error.message;
+    }
+    actualizarEntrega();
+  }
+}
+
+function enviarCheckout() {
+  const metodoEntrega = valorSeleccionado('metodo_entrega') || 'local';
+  const metodoPago = valorSeleccionado('metodo_pago') || 'mercado_pago';
+
+  if (metodoEntrega === 'flex' && !valorSeleccionado('direccion_id')) {
+    alert('Selecciona una direccion para Envio Flex.');
+    return;
+  }
+
+  if (metodoEntrega === 'correo') {
+    const proveedor = valorCampo('select[name="correo"]');
+    const tipoCorreo = valorSeleccionado('tipo_correo') || 'domicilio';
+    if (tipoCorreo === 'domicilio' && !valorSeleccionado('direccion_correo_id')) {
+      alert('Selecciona una direccion para el envio por correo.');
+      return;
+    }
+    if (tipoCorreo === 'sucursal' && !valorCampo('input[name="sucursal_correo"]').trim()) {
+      alert('Indica la sucursal para retirar el envio.');
+      return;
+    }
+    if (proveedor === 'correo_argentino' && tipoCorreo === 'sucursal' && !valorCampo('input[name="codigo_postal_sucursal"]').trim()) {
+      alert('Indica el codigo postal para cotizar Correo Argentino.');
+      return;
+    }
+    if (proveedor === 'correo_argentino' && costoCorreo <= 0) {
+      alert('Primero necesitamos cotizar Correo Argentino.');
+      return;
+    }
+  }
+
+  botonPagar.disabled = true;
+
+  const form = document.createElement('form');
+  form.method = 'POST';
+  form.action = "{% url 'pedidos:crear_pago' %}";
+  form.style.display = 'none';
+
+  agregarCampo(form, 'csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+  agregarCampo(form, 'metodo_entrega', metodoEntrega);
+  agregarCampo(form, 'metodo_pago', metodoPago);
+  agregarCampo(form, 'direccion_id', valorSeleccionado('direccion_id'));
+  agregarCampo(form, 'direccion_correo_id', valorSeleccionado('direccion_correo_id'));
+  agregarCampo(form, 'correo', valorCampo('select[name="correo"]'));
+  agregarCampo(form, 'tipo_correo', valorSeleccionado('tipo_correo'));
+  agregarCampo(form, 'sucursal_correo', valorCampo('input[name="sucursal_correo"]'));
+  agregarCampo(form, 'codigo_postal_sucursal', valorCampo('input[name="codigo_postal_sucursal"]'));
+  agregarCampo(form, 'codigo_descuento', couponHidden ? couponHidden.value : '');
+  if (document.getElementById('es-regalo-check')?.checked) {
+    agregarCampo(form, 'es_regalo', '1');
+  }
+
+  document.body.appendChild(form);
+  form.submit();
+}
+
+if (botonPagar) {
+  botonPagar.addEventListener('click', enviarCheckout);
+}
+
+document.querySelectorAll('.direccion-filter').forEach(input => {
+  input.addEventListener('change', () => {
+    const target = input.dataset.target;
+    const value = input.value.toLowerCase().trim();
+    document.querySelectorAll(`[data-address-group="${target}"]`).forEach(card => {
+      const etiqueta = card.dataset.etiqueta || '';
+      card.style.display = !value || etiqueta === value ? '' : 'none';
+    });
+  });
+});
+
+const formNuevaDireccionCheckout = document.getElementById('formNuevaDireccionCheckout');
+if (formNuevaDireccionCheckout) {
+  formNuevaDireccionCheckout.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const errorBox = document.getElementById('direccion-checkout-error');
+    errorBox.style.display = 'none';
+    errorBox.textContent = '';
+
+    try {
+      const response = await fetch("{% url 'users:crear_direccion_cliente_ajax' %}", {
+        method: 'POST',
+        body: new FormData(formNuevaDireccionCheckout),
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest',
+        },
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'No pudimos guardar la direccion.');
+      }
+      window.location.reload();
+    } catch (error) {
+      errorBox.textContent = error.message;
+      errorBox.style.display = 'block';
+    }
+  });
+}
+
+const couponToggle = document.getElementById('coupon-toggle');
+const couponForm = document.getElementById('coupon-form');
+const couponInput = document.getElementById('codigo-descuento-input');
+const couponHidden = document.getElementById('codigo-descuento-hidden');
+const couponButton = document.getElementById('aplicar-codigo-btn');
+const couponMessage = document.getElementById('coupon-message');
+const descuentoRow = document.getElementById('descuento-row');
+const descuentoLabel = document.getElementById('descuento-label');
+const descuentoCodigoLabel = document.getElementById('descuento-codigo-label');
+
+if (couponToggle && couponForm) {
+  couponToggle.addEventListener('click', () => {
+    couponForm.classList.toggle('active');
+    couponInput?.focus();
+  });
+}
+
+if (couponButton) {
+  couponButton.addEventListener('click', async () => {
+    const codigo = (couponInput.value || '').trim().toUpperCase();
+    couponMessage.className = 'coupon-message';
+    couponMessage.textContent = '';
+
+    if (!codigo) {
+      couponMessage.textContent = 'Escribi un codigo para aplicarlo.';
+      couponMessage.classList.add('error');
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('codigo_descuento', codigo);
+    formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+
+    try {
+      const response = await fetch("{% url 'pedidos:validar_codigo_descuento' %}", {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest',
+        },
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'No pudimos aplicar ese codigo.');
+      }
+
+      descuentoAplicado = Number(data.descuento) || 0;
+      couponHidden.value = data.codigo;
+      couponInput.value = data.codigo;
+      descuentoCodigoLabel.textContent = `(${data.codigo})`;
+      descuentoLabel.textContent = `- ${formatearPesos(descuentoAplicado)}`;
+      descuentoRow.style.display = '';
+      // Mostrar boton quitar
+      const quitarBtn = document.getElementById('quitar-codigo-btn');
+      if (quitarBtn) quitarBtn.style.display = '';
+      couponMessage.textContent = `${data.nombre}: ${data.porcentaje}% de descuento aplicado.`;
+      couponMessage.classList.add('success');
+      actualizarEntrega();
+    } catch (error) {
+      descuentoAplicado = 0;
+      couponHidden.value = '';
+      descuentoRow.style.display = 'none';
+      couponMessage.textContent = error.message;
+      couponMessage.classList.add('error');
+      actualizarEntrega();
+    }
+  });
+}
+
+// Quitar codigo
+const quitarCodigoBtn = document.getElementById('quitar-codigo-btn');
+if (quitarCodigoBtn) {
+  quitarCodigoBtn.addEventListener('click', async () => {
+    try {
+      const formData = new FormData();
+      formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+
+      const response = await fetch("{% url 'pedidos:quitar_codigo_descuento' %}", {
+        method: 'POST',
+        body: formData,
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+      });
+
+      const data = await response.json();
+      if (!response.ok || !data.success) throw new Error(data.error || 'No se pudo quitar el descuento');
+
+      // Actualizar UI
+      descuentoAplicado = 0;
+      couponHidden.value = '';
+      couponInput.value = '';
+      descuentoCodigoLabel.textContent = '';
+      descuentoLabel.textContent = '';
+      descuentoRow.style.display = 'none';
+      couponMessage.textContent = 'Descuento quitado.';
+      couponMessage.className = 'coupon-message success';
+      // ocultar boton quitar
+      quitarCodigoBtn.style.display = 'none';
+      actualizarEntrega();
+    } catch (err) {
+      couponMessage.textContent = err.message;
+      couponMessage.className = 'coupon-message error';
+    }
+  });
+}
 
 </script>
 {% endblock %}

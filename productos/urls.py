@@ -35,6 +35,7 @@ urlpatterns = [
 
     # --- PROVEEDORES Y MEDIDAS ---
     path('proveedores/agregar/', views.agregar_proveedor, name='agregar_proveedor'),
+    path('proveedores/ajax/crear/', views.crear_proveedor_ajax, name='crear_proveedor_ajax'),
     path('proveedores/editar/<int:proveedor_id>/', views.editar_proveedor, name='editar_proveedor'),
     path('medidas/', views.gestion_medidas, name='gestion_medidas'),
     path('ajax/actualizar-variante/', views.actualizar_variante_ajax, name='actualizar_variante_ajax'),

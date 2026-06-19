@@ -1,0 +1,138 @@
+{% extends 'users/dashboard_cliente.html' %}
+
+{% block extra_head %}
+{{ block.super }}
+<style>
+  .qr-page {
+    min-height: calc(100vh - 60px);
+    padding: 3rem;
+    margin-left: 15%;
+    max-width: 920px;
+  }
+
+  .qr-card {
+    background: #fff;
+    border: 1px solid #e8dfd4;
+    border-radius: 18px;
+    padding: 2rem;
+  }
+
+  .qr-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 2.7rem;
+    color: #1a1612;
+    margin: 0 0 0.5rem;
+  }
+
+  .qr-sub {
+    color: #8c7a69;
+    margin-bottom: 1.5rem;
+  }
+
+  .qr-box {
+    border: 1px solid #e8dfd4;
+    border-radius: 14px;
+    padding: 1.25rem;
+    text-align: center;
+    background: #fffdf9;
+    margin-bottom: 1.25rem;
+  }
+
+  .qr-box img {
+    width: min(280px, 100%);
+    height: auto;
+  }
+
+  .qr-placeholder {
+    min-height: 220px;
+    display: grid;
+    place-items: center;
+    color: #6e0e2e;
+    font-weight: 700;
+  }
+
+  .total-line {
+    display: flex;
+    justify-content: space-between;
+    border-top: 1px solid #e8dfd4;
+    border-bottom: 1px solid #e8dfd4;
+    padding: 1rem 0;
+    margin: 1.25rem 0;
+    font-weight: 700;
+  }
+
+  .total-line strong {
+    color: #6e0e2e;
+    font-size: 1.6rem;
+    font-family: 'Cormorant Garamond', serif;
+  }
+
+  .action-row {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  .btn-whatsapp,
+  .btn-volver {
+    border-radius: 999px;
+    padding: 0.9rem 1.2rem;
+    text-decoration: none;
+    font-weight: 700;
+  }
+
+  .btn-whatsapp {
+    background: #1f8f4d;
+    color: #fff;
+  }
+
+  .btn-volver {
+    border: 1px solid #e8dfd4;
+    color: #6e0e2e;
+    background: #fff;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="qr-page">
+  <div class="qr-card">
+    <p style="letter-spacing:.18em;text-transform:uppercase;color:#6e0e2e;font-size:.75rem;font-weight:700;">Pedido #{{ pedido.id }}</p>
+    <h1 class="qr-title">Pago con Mercado Pago QR</h1>
+    <p class="qr-sub">Escanea el QR, realiza la transferencia y envia el comprobante por WhatsApp para que podamos confirmar tu compra.</p>
+
+    <div class="qr-box">
+      {% if qr_image_url %}
+        <img src="{{ qr_image_url }}" alt="QR Mercado Pago">
+      {% else %}
+        <div class="qr-placeholder">
+          QR de Mercado Pago pendiente de cargar.
+          <br>
+          Configura MERCADO_PAGO_QR_IMAGE_URL con la imagen real del QR.
+        </div>
+      {% endif %}
+    </div>
+
+    <div class="total-line">
+      <span>Total a transferir</span>
+      <strong>${{ pedido.total }}</strong>
+    </div>
+
+    <p class="qr-sub">Mandanos el comprobante a {{ whatsapp_numero }}. El boton ya abre el chat con el pedido preparado.</p>
+
+    <div class="action-row">
+      {% if payment_url %}
+      <a class="btn-volver" href="{{ payment_url }}" target="_blank" rel="noopener">
+        Abrir link de pago
+      </a>
+      {% endif %}
+      <a class="btn-whatsapp" href="{{ whatsapp_url }}" target="_blank" rel="noopener">
+        Enviar comprobante por WhatsApp
+      </a>
+      <a class="btn-volver" href="{% url 'pedidos:detalle_pedido' pedido.id %}">
+        Ver mi pedido
+      </a>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -2,7 +2,27 @@
 <a href="{% url 'users:dashboard_admin' %}" class="nav-link{% if request.resolver_match.url_name == 'dashboard_admin' %} active{% endif %}">
     <i class="bi bi-house-door"></i> Inicio
 </a>
-
+ <div class="nav-section">Pedidos</div>
+    <a href="{% url 'pedidos:ventas_presenciales' %}" class="nav-link {% if request.resolver_match.url_name == 'ventas_presenciales' %}active{% endif %}">
+        <i class="bi bi-shop me-2"></i>
+        Ventas local
+    </a>
+    <a href="{% url 'pedidos:gestion_pedidos' %}" class="nav-link{% if request.resolver_match.url_name == 'gestion_pedidos' %} active{% endif %}">
+        <i class="bi bi-bag-check me-2"></i> Gestión de Pedidos
+    </a>
+    
+    <a href="{% url 'pedidos:configurar_envios' %}" class="nav-link{% if request.resolver_match.url_name == 'configurar_envios' %} active{% endif %}">
+        <i class="bi bi-truck me-2"></i> Configurar envíos
+    </a>
+    <a href="{% url 'pedidos:configurar_pagos' %}" class="nav-link{% if request.resolver_match.url_name == 'configurar_pagos' %} active{% endif %}">
+        <i class="bi bi-credit-card me-2"></i> Configurar pagos
+    </a>
+    <a href="{% url 'pedidos:estadisticas_ventas' %}" class="nav-link{% if request.resolver_match.url_name == 'estadisticas_ventas' %} active{% endif %}">
+        <i class="bi bi-graph-up me-2"></i> Estadísticas
+    </a>
+    <a href="{% url 'pedidos:listado_gastos' %}" class="nav-link{% if request.resolver_match.url_name == 'listado_gastos' or request.resolver_match.url_name == 'crear_gasto' %} active{% endif %}">
+        <i class="bi bi-receipt me-2"></i> Gastos
+    </a>
 <div class="nav-section">Clientes</div>
 <a href="{% url 'users:registro_manual_cliente' %}" class="nav-link{% if request.resolver_match.url_name == 'registro_manual_cliente' %} active{% endif %}">
     <i class="bi bi-person-plus"></i> Registrar Cliente
@@ -21,23 +41,7 @@
     <a href="{% url 'productos:admin_ofertas' %}" class="nav-link{% if 'admin_ofertas' in request.resolver_match.url_name %} active{% endif %}">
         <i class="bi bi-collection me-2"></i> Ofertas
     </a>
-    <div class="nav-section">Pedidos</div>
-    <a href="{% url 'pedidos:gestion_pedidos' %}" class="nav-link{% if request.resolver_match.url_name == 'gestion_pedidos' %} active{% endif %}">
-        <i class="bi bi-bag-check me-2"></i> Gestión de Pedidos
-    </a>
-    <a href="{% url 'pedidos:ventas_presenciales' %}" class="nav-link {% if request.resolver_match.url_name == 'ventas_presenciales' %}active{% endif %}">
-        <i class="bi bi-shop me-2"></i>
-        Ventas local
-    </a>
-    <a href="{% url 'pedidos:configurar_envios' %}" class="nav-link{% if request.resolver_match.url_name == 'configurar_envios' %} active{% endif %}">
-        <i class="bi bi-truck me-2"></i> Configurar envíos
-    </a>
-    <a href="{% url 'pedidos:estadisticas_ventas' %}" class="nav-link{% if request.resolver_match.url_name == 'estadisticas_ventas' %} active{% endif %}">
-        <i class="bi bi-graph-up me-2"></i> Estadísticas
-    </a>
-    <a href="{% url 'pedidos:listado_gastos' %}" class="nav-link{% if request.resolver_match.url_name == 'listado_gastos' or request.resolver_match.url_name == 'crear_gasto' %} active{% endif %}">
-        <i class="bi bi-receipt me-2"></i> Gastos
-    </a>
+   
 
     <div class="nav-section">Consultas</div>
     <a href="{% url 'consultas:gestion_temas' %}" class="nav-link{% if request.resolver_match.url_name == 'gestion_temas' or request.resolver_match.url_name == 'crear_tema' or request.resolver_match.url_name == 'editar_tema' %} active{% endif %}">

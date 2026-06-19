@@ -4,6 +4,7 @@ from users.models import Cliente
 from django.utils import timezone
 from productos.models import Variante
 SESSION_CART_KEY = "carrito"
+SESSION_CART_COLORS_KEY = "carrito_colores"
 SESSION_CART_STARTED_AT_KEY = "carrito_started_at"
 CART_EXPIRATION_SECONDS = 60 * 60
 
@@ -27,6 +28,7 @@ def set_cart_started_at_if_missing(session) -> None:
 
 def clear_cart_session(session) -> None:
     session.pop(SESSION_CART_KEY, None)
+    session.pop(SESSION_CART_COLORS_KEY, None)
     session.pop(SESSION_CART_STARTED_AT_KEY, None)
     session.modified = True
 
@@ -141,6 +143,10 @@ def vincular_carrito_con_usuario(request, session_id_previo=None, carrito_sesion
 
     # 3. Procesar lo que traía de la sesión temporal (carrito_sesion)
     items_invitado = carrito_sesion or {}
+    colores_invitado = request.session.get(SESSION_CART_COLORS_KEY)
+    if not isinstance(colores_invitado, dict):
+        colores_invitado = {}
+
     for vid_str, qty in items_invitado.items():
         try:
             qty_int = int(qty)
@@ -154,12 +160,15 @@ def vincular_carrito_con_usuario(request, session_id_previo=None, carrito_sesion
             item_existente = carrito_user.items.filter(variante=variante).first()
             if item_existente:
                 item_existente.cantidad += qty_int
+                if colores_invitado.get(str(id_int)):
+                    item_existente.color_nombre = colores_invitado.get(str(id_int))
                 item_existente.precio_total = item_existente.cantidad * item_existente.precio_unitario
                 item_existente.save()
             else:
                 CarritoItem.objects.create(
                     carrito=carrito_user,
                     variante=variante,
+                    color_nombre=colores_invitado.get(str(id_int)),
                     cantidad=qty_int,
                     precio_unitario=variante.precio,
                     precio_total=qty_int * variante.precio
@@ -173,9 +182,13 @@ def vincular_carrito_con_usuario(request, session_id_previo=None, carrito_sesion
     # 4. SINCRONIZACIÓN CRÍTICA: Actualizar sesión con TODO lo que hay en BD
     # Usar variante_id como key para mantener todas las variantes
     carrito_final = {}
+    colores_final = {}
     for item_db in carrito_user.items.all():
         carrito_final[str(item_db.variante.id)] = item_db.cantidad
+        if item_db.color_nombre:
+            colores_final[str(item_db.variante.id)] = item_db.color_nombre
     request.session['carrito'] = carrito_final
+    request.session[SESSION_CART_COLORS_KEY] = colores_final
     request.session.modified = True
 
 

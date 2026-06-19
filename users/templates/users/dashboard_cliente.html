@@ -13,6 +13,9 @@
 <a href="{% url 'users:perfil' %}" class="nav-link{% if request.resolver_match.view_name == 'users:perfil' %} active{% endif %}">
     <i class="bi bi-person"></i> Mi perfil
 </a>
+<a href="{% url 'users:perfil' %}#direcciones" class="nav-link">
+    <i class="bi bi-geo-alt"></i> Direcciones
+</a>
 <a href="{% url 'users:password_change' %}" class="nav-link{% if request.resolver_match.view_name == 'users:password_change' %} active{% endif %}">
     <i class="bi bi-shield-lock"></i> Seguridad
 </a>
@@ -273,7 +276,7 @@
     <div class="hero-bg-word">Bienvenido</div>
 
     <p class="hero-eyebrow">Mi cuenta</p>
-    <h1 class="hero-title">Hola, <span>{{ request.user.first_name|default:request.user.username }}</span></h1>
+    <h1 class="hero-title">Hola, <span>{{ request.user.first_name|default:request.user.username|title }}</span></h1>
     <p class="hero-subtitle">
       Desde acá podés gestionar tu cuenta, ver tus pedidos y mantener tu información actualizada.
     </p>
@@ -291,6 +294,19 @@
       </p>
       <a href="{% url 'users:password_change' %}" class="card-btn primary">
         Cambiar clave <i class="bi bi-chevron-right"></i>
+      </a>
+    </div>
+
+    <div class="feature-card">
+      <div class="card-icon">
+        <i class="bi bi-geo-alt"></i>
+      </div>
+      <h3 class="card-title">Direcciones</h3>
+      <p class="card-desc">
+        Guardá tus domicilios con etiqueta y referencia para comprar más rápido.
+      </p>
+      <a href="{% url 'users:perfil' %}#direcciones" class="card-btn primary">
+        Agregar dirección <i class="bi bi-chevron-right"></i>
       </a>
     </div>
 

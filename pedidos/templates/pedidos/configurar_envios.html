@@ -113,6 +113,10 @@
     margin-top: .25rem;
   }
 
+  .envio-choice > .envio-option:not(.envio-checkline) {
+    display: none;
+  }
+
   .envio-input,
   .envio-textarea {
     width: 100%;
@@ -208,7 +212,7 @@
 <div class="envios-page">
   <section class="envios-header">
     <div class="envios-eyebrow">Envios</div>
-    <h1 class="envios-title">Configurar Envio Flex</h1>
+    <h1 class="envios-title">Configurar envios</h1>
     <p class="envios-subtitle">
       Flex siempre aparece como opción en el checkout. Desde acá definís si se cobra o es gratis, y cargás las zonas donde llega.
     </p>
@@ -222,10 +226,18 @@
     <section class="envio-section">
       <div class="envio-section-title">
         <i class="bi bi-cash-coin"></i>
-        Costo del envio
+        Envio Flex
       </div>
 
       <div class="envio-choice">
+        <label class="envio-option envio-checkline">
+          {{ form.flex_activo }}
+          <span>
+            <strong>Mostrar Envio Flex</strong>
+            <span>Permite que la clienta elija Envio Flex en el checkout.</span>
+          </span>
+        </label>
+
         <label class="envio-option envio-checkline">
           {{ form.flex_gratis }}
           <span>
@@ -238,6 +250,47 @@
           <strong>Envio Flex con costo</strong>
           <span>Si no marcás gratis, se usará el precio que cargues abajo.</span>
         </div>
+      </div>
+    </section>
+
+    <section class="envio-section">
+      <div class="envio-section-title">
+        <i class="bi bi-box-seam"></i>
+        Andreani / Correo Argentino
+      </div>
+
+      <div class="envio-choice">
+        <label class="envio-option envio-checkline">
+          {{ form.correo_activo }}
+          <span>
+            <strong>Mostrar envio por correo</strong>
+            <span>Permite que la clienta elija Andreani o Correo Argentino en el checkout.</span>
+          </span>
+        </label>
+
+        <label class="envio-option envio-checkline">
+          {{ form.correo_gratis }}
+          <span>
+            <strong>Correo gratis</strong>
+            <span>Si esta marcado, no se suma costo de correo al pedido.</span>
+          </span>
+        </label>
+      </div>
+    </section>
+
+    <section class="envio-section" id="precio-correo-section">
+      <div class="envio-section-title">
+        <i class="bi bi-tag"></i>
+        Precio de correo
+      </div>
+
+      <div class="envio-price-row">
+        <div>
+          {{ form.precio_correo }}
+        </div>
+        <p class="envio-help">
+          Este costo se suma cuando la clienta elige Andreani o Correo Argentino. Cuando conectemos la API, este valor puede reemplazarse por cotizacion automatica.
+        </p>
       </div>
     </section>
 
@@ -296,16 +349,27 @@
 
 <script>
   const gratisCheckbox = document.getElementById('id_flex_gratis');
+  const correoGratisCheckbox = document.getElementById('id_correo_gratis');
   const precioSection = document.getElementById('precio-flex-section');
+  const precioCorreoSection = document.getElementById('precio-correo-section');
 
   function actualizarPrecioFlex() {
     if (!gratisCheckbox || !precioSection) return;
     precioSection.style.opacity = gratisCheckbox.checked ? '.45' : '1';
   }
 
+  function actualizarPrecioCorreo() {
+    if (!correoGratisCheckbox || !precioCorreoSection) return;
+    precioCorreoSection.style.opacity = correoGratisCheckbox.checked ? '.45' : '1';
+  }
+
   if (gratisCheckbox) {
     gratisCheckbox.addEventListener('change', actualizarPrecioFlex);
     actualizarPrecioFlex();
+  }
+  if (correoGratisCheckbox) {
+    correoGratisCheckbox.addEventListener('change', actualizarPrecioCorreo);
+    actualizarPrecioCorreo();
   }
 </script>
 {% endblock %}

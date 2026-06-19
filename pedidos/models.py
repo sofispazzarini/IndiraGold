@@ -62,6 +62,13 @@ class Pedido(models.Model):
         ('flex', 'Envio Flex'),
         ('correo', 'Envio por Correo'),
     )
+    METODOS_PAGO = (
+        ('efectivo', 'Efectivo'),
+        ('mercado_pago', 'Mercado Pago'),
+        ('mercado_pago_qr', 'Mercado Pago QR'),
+        ('tarjeta', 'Tarjeta'),
+        ('transferencia', 'Transferencia bancaria'),
+    )
     metodo_entrega = models.CharField(max_length=20, choices=METODOS_ENTREGA, default='local')
     costo_envio = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     codigo_postal = models.CharField(max_length=10, blank=True, null=True)
@@ -69,6 +76,9 @@ class Pedido(models.Model):
     calle_numero = models.CharField(max_length=255, blank=True, null=True)
     cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE)
     total = models.DecimalField(max_digits=10, decimal_places=2)
+    codigo_descuento = models.CharField(max_length=40, blank=True, null=True)
+    descuento_porcentaje = models.PositiveIntegerField(default=0)
+    descuento_monto = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     tipo_venta = models.CharField(
         max_length=30,
         choices=TIPOS_VENTA
@@ -78,6 +88,12 @@ class Pedido(models.Model):
         choices=ESTADOS,
         default='pendiente'
     )
+    metodo_pago = models.CharField(max_length=20, choices=METODOS_PAGO, null=True, blank=True)
+    monto_pagado = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    deuda = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    es_presencial = models.BooleanField(default=False)
+    es_regalo = models.BooleanField(default=False)
+    fecha_creacion = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     direccion_info = models.TextField(blank=True, null=True, help_text="Información de dirección del envío")
     correo = models.CharField(
@@ -111,6 +127,7 @@ class Pedido(models.Model):
 class PedidoItem(models.Model):
     pedido = models.ForeignKey(Pedido, on_delete=models.CASCADE, related_name='items')
     variante = models.ForeignKey(Variante, on_delete=models.CASCADE)
+    color_nombre = models.CharField(max_length=100, blank=True, null=True)
     cantidad = models.PositiveIntegerField()
     precio_unitario = models.DecimalField(max_digits=10, decimal_places=2)
     precio_total = models.DecimalField(max_digits=10, decimal_places=2)
@@ -122,6 +139,11 @@ class Pago(models.Model):
     pedido = models.OneToOneField(Pedido, on_delete=models.CASCADE)
     metodo = models.CharField(max_length=50)
     monto = models.DecimalField(max_digits=10, decimal_places=2)
+    mercado_pago_payment_id = models.CharField(max_length=80, blank=True, null=True)
+    cuotas = models.PositiveIntegerField(default=1)
+    retencion_mercado_pago = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    neto_recibido = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    detalle_mercado_pago = models.JSONField(default=dict, blank=True)
     fecha_pago = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -141,6 +163,16 @@ ESTADOS_PAGO = [
     ("PARCIAL", "Parcial"),
 ]
 class VentaLocal(models.Model):
+    METODOS_PAGO = (
+        ('efectivo', 'Efectivo'),
+        ('mercado_pago', 'Mercado Pago'),
+        ('mercado_pago_qr', 'Mercado Pago QR'),
+        ('tarjeta', 'Tarjeta'),
+    )
+    METODOS_ENTREGA = (
+        ('local', 'Retiro en local'),
+        ('envio', 'Con envio'),
+    )
 
     cliente = models.ForeignKey(
         Cliente,
@@ -156,7 +188,6 @@ class VentaLocal(models.Model):
     created_at = models.DateTimeField(
         auto_now_add=True
     )
-    total = models.DecimalField(max_digits=10, decimal_places=2)
 
     monto_pagado = models.DecimalField(
         max_digits=10,
@@ -175,6 +206,28 @@ class VentaLocal(models.Model):
         choices=ESTADOS_PAGO,
         default="PAGADO"
     )
+    
+    metodo_pago = models.CharField(
+        max_length=20,
+        choices=METODOS_PAGO,
+        default='efectivo'
+    )
+
+    metodo_entrega = models.CharField(
+        max_length=20,
+        choices=METODOS_ENTREGA,
+        default='local'
+    )
+
+    direccion = models.ForeignKey(
+        'users.Direccion',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True
+    )
+
+    es_regalo = models.BooleanField(default=False)
+    
     def __str__(self):
 
         return f"Venta #{self.id}"
@@ -233,6 +286,10 @@ class ConfiguracionEnvio(models.Model):
         default=True,
         help_text='Mostrar Envio Flex como opcion en el checkout'
     )
+    correo_activo = models.BooleanField(
+        default=False,
+        help_text='Mostrar Andreani/Correo Argentino como opcion en el checkout'
+    )
 
     precio_flex = models.DecimalField(
         max_digits=10,
@@ -243,10 +300,18 @@ class ConfiguracionEnvio(models.Model):
     flex_gratis = models.BooleanField(
         default=False
     )
+    correo_gratis = models.BooleanField(
+        default=False
+    )
 
     zonas_flex = models.TextField(
         blank=True,
         help_text='Separar zonas con coma. Ej: CABA, La Plata, Quilmes'
+    )
+    precio_correo = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=0
     )
 
     def __str__(self):
@@ -264,9 +329,100 @@ class ConfiguracionEnvio(models.Model):
         return self.precio_flex
 
     @property
+    def costo_correo(self):
+        if self.correo_gratis:
+            return 0
+        return self.precio_correo
+
+    @property
     def zonas_flex_lista(self):
         return [
             zona.strip()
             for zona in self.zonas_flex.split(',')
             if zona.strip()
         ]
+
+
+class EnvioPedido(models.Model):
+    PROVEEDORES = (
+        ('andreani', 'Andreani'),
+        ('correo_argentino', 'Correo Argentino'),
+        ('flex', 'Envio Flex'),
+    )
+    TIPOS_ENTREGA = (
+        ('domicilio', 'A domicilio'),
+        ('sucursal', 'Retiro en sucursal'),
+    )
+    ESTADOS = (
+        ('pendiente', 'Pendiente de generar etiqueta'),
+        ('etiqueta_generada', 'Etiqueta generada'),
+        ('despachado', 'Despachado'),
+        ('en_transito', 'En transito'),
+        ('entregado', 'Entregado'),
+        ('error', 'Error al generar envio'),
+    )
+
+    pedido = models.OneToOneField(
+        Pedido,
+        on_delete=models.CASCADE,
+        related_name='envio'
+    )
+    proveedor = models.CharField(max_length=30, choices=PROVEEDORES)
+    tipo_entrega = models.CharField(max_length=20, choices=TIPOS_ENTREGA, default='domicilio')
+    estado = models.CharField(max_length=30, choices=ESTADOS, default='pendiente')
+    costo = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    tracking = models.CharField(max_length=120, blank=True, null=True)
+    sucursal = models.CharField(max_length=255, blank=True, null=True)
+    etiqueta = models.FileField(upload_to='etiquetas_envio/', blank=True, null=True)
+    respuesta_api = models.JSONField(default=dict, blank=True)
+    error = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Envio Pedido {self.pedido_id} - {self.get_proveedor_display()}"
+
+
+class ConfiguracionPago(models.Model):
+    mercado_pago_activo = models.BooleanField(default=True)
+    transferencia_activa = models.BooleanField(default=True)
+    titular_cuenta = models.CharField(max_length=150, default='Yazmin Miranda Capitanio')
+    cuit_cuil = models.CharField(max_length=30, default='27-39554727-0')
+    cvu = models.CharField(max_length=60, default='0000003100042870767609')
+    alias = models.CharField(max_length=80, default='indiragold.')
+    texto_mercado_pago = models.CharField(
+        max_length=255,
+        default='Podes pagar con dinero en cuenta, tarjeta de debito o credito desde Mercado Pago.'
+    )
+    texto_transferencia = models.CharField(
+        max_length=255,
+        default='Transferi el monto exacto y envianos el comprobante por WhatsApp.'
+    )
+
+    def __str__(self):
+        return "Configuracion de Pagos"
+
+    @classmethod
+    def actual(cls):
+        configuracion, _ = cls.objects.get_or_create(pk=1)
+        return configuracion
+
+
+class PlanCuotasMercadoPago(models.Model):
+    configuracion = models.ForeignKey(
+        ConfiguracionPago,
+        on_delete=models.CASCADE,
+        related_name='planes_cuotas'
+    )
+    cuotas = models.PositiveIntegerField()
+    sin_interes = models.BooleanField(default=True)
+    retencion_porcentaje = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    activo = models.BooleanField(default=True)
+    orden = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ['orden', 'cuotas']
+
+    def __str__(self):
+        tipo = "sin interes" if self.sin_interes else "con interes"
+        return f"Hasta {self.cuotas} cuotas {tipo}"

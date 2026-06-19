@@ -1,6 +1,6 @@
 from django.contrib import admin
 from .models import Pedido, PedidoItem, Pago, Gasto
-from .models import VentaLocal, VentaLocalItem, ConfiguracionEnvio
+from .models import VentaLocal, VentaLocalItem, ConfiguracionEnvio, ConfiguracionPago, PlanCuotasMercadoPago, EnvioPedido
 
 admin.site.register(VentaLocal)
 admin.site.register(VentaLocalItem)
@@ -8,8 +8,8 @@ admin.site.register(VentaLocalItem)
 
 @admin.register(ConfiguracionEnvio)
 class ConfiguracionEnvioAdmin(admin.ModelAdmin):
-    list_display = ('id', 'flex_activo', 'flex_gratis', 'precio_flex', 'zonas_disponibles')
-    fields = ('flex_activo', 'flex_gratis', 'precio_flex', 'zonas_flex')
+    list_display = ('id', 'flex_activo', 'flex_gratis', 'precio_flex', 'correo_activo', 'correo_gratis', 'precio_correo', 'zonas_disponibles')
+    fields = ('flex_activo', 'flex_gratis', 'precio_flex', 'zonas_flex', 'correo_activo', 'correo_gratis', 'precio_correo')
 
     def zonas_disponibles(self, obj):
         zonas = obj.zonas_flex_lista
@@ -19,6 +19,22 @@ class ConfiguracionEnvioAdmin(admin.ModelAdmin):
 
     def has_add_permission(self, request):
         if ConfiguracionEnvio.objects.exists():
+            return False
+        return super().has_add_permission(request)
+
+
+class PlanCuotasMercadoPagoInline(admin.TabularInline):
+    model = PlanCuotasMercadoPago
+    extra = 1
+
+
+@admin.register(ConfiguracionPago)
+class ConfiguracionPagoAdmin(admin.ModelAdmin):
+    inlines = [PlanCuotasMercadoPagoInline]
+    list_display = ('id', 'mercado_pago_activo', 'transferencia_activa', 'alias', 'cvu')
+
+    def has_add_permission(self, request):
+        if ConfiguracionPago.objects.exists():
             return False
         return super().has_add_permission(request)
 @admin.register(Pedido)
@@ -43,6 +59,14 @@ class PagoAdmin(admin.ModelAdmin):
     list_filter = ('metodo', 'fecha_pago')
     search_fields = ('pedido__id',)
     readonly_fields = ('fecha_pago',)
+
+
+@admin.register(EnvioPedido)
+class EnvioPedidoAdmin(admin.ModelAdmin):
+    list_display = ('id', 'pedido', 'proveedor', 'tipo_entrega', 'estado', 'tracking', 'costo', 'updated_at')
+    list_filter = ('proveedor', 'tipo_entrega', 'estado', 'created_at')
+    search_fields = ('pedido__id', 'tracking', 'pedido__cliente__dni', 'pedido__cliente__user__email')
+    readonly_fields = ('created_at', 'updated_at')
 
 
 @admin.register(Gasto)

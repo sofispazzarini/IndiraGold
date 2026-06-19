@@ -4,13 +4,16 @@ from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 
 
-from .forms import PROVINCIAS
+from .forms import PROVINCIAS, capitalizar_texto
 
 class RegistroManualClienteForm(forms.ModelForm):
     dni = forms.CharField(label='DNI', max_length=8, required=True)
     email = forms.EmailField(label='Correo electrónico')
-    nombre = forms.CharField(label='Nombre completo', max_length=150)
+    nombre = forms.CharField(label='Nombre', max_length=150)
+    apellido = forms.CharField(label='Apellido', max_length=150)
     telefono = forms.CharField(label='Teléfono', max_length=20)
+    etiqueta = forms.CharField(label='Etiqueta', max_length=50)
+    referencia = forms.CharField(label='Referencia', max_length=255, required=False)
     calle = forms.CharField(label='Calle', max_length=100)
     numero = forms.CharField(label='Número', max_length=10)
     ciudad = forms.CharField(label='Ciudad', max_length=50)
@@ -28,7 +31,7 @@ class RegistroManualClienteForm(forms.ModelForm):
             raise forms.ValidationError("El DNI debe contener solo números.")
         if len(dni) not in [7, 8]:
             raise forms.ValidationError("El DNI debe tener 7 u 8 dígitos.")
-        if Cliente.objects.filter(dni=dni).exists():
+        if User.objects.filter(username=dni).exists() or Cliente.objects.filter(dni=dni).exists():
             raise forms.ValidationError("Ya existe un cliente con este DNI.")
         return dni
 
@@ -37,6 +40,24 @@ class RegistroManualClienteForm(forms.ModelForm):
         if User.objects.filter(email=email).exists():
             raise ValidationError("Ya existe un usuario con este correo.")
         return email
+
+    def clean_nombre(self):
+        return capitalizar_texto(self.cleaned_data['nombre'])
+
+    def clean_apellido(self):
+        return capitalizar_texto(self.cleaned_data['apellido'])
+
+    def clean_etiqueta(self):
+        return capitalizar_texto(self.cleaned_data['etiqueta'])
+
+    def clean_calle(self):
+        return capitalizar_texto(self.cleaned_data['calle'])
+
+    def clean_ciudad(self):
+        return capitalizar_texto(self.cleaned_data['ciudad'])
+
+    def clean_referencia(self):
+        return capitalizar_texto(self.cleaned_data.get('referencia', ''))
 
 
 class EditarClienteForm(forms.ModelForm):
@@ -71,25 +92,44 @@ class EditarClienteForm(forms.ModelForm):
 class NuevaDireccionForm(forms.ModelForm):
     class Meta:
         model = Direccion
-        fields = ['calle', 'numero', 'ciudad', 'provincia', 'codigo_postal']
+        fields = ['etiqueta', 'calle', 'numero', 'ciudad', 'provincia', 'codigo_postal', 'referencia']
         widgets = {
+            'etiqueta': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: Casa, Trabajo'}),
             'calle': forms.TextInput(attrs={'class': 'form-control'}),
             'numero': forms.TextInput(attrs={'class': 'form-control'}),
             'ciudad': forms.TextInput(attrs={'class': 'form-control'}),
             'provincia': forms.TextInput(attrs={'class': 'form-control'}),
             'codigo_postal': forms.TextInput(attrs={'class': 'form-control'}),
+            'referencia': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: Porton verde, timbre roto'}),
         }
 
     def clean(self):
         cleaned_data = super().clean()
+        etiqueta = cleaned_data.get('etiqueta')
         calle = cleaned_data.get('calle')
         numero = cleaned_data.get('numero')
         ciudad = cleaned_data.get('ciudad')
         provincia = cleaned_data.get('provincia')
         codigo_postal = cleaned_data.get('codigo_postal')
         cliente = self.initial.get('cliente')
-        if cliente and Direccion.objects.filter(
+        if cliente:
+            nueva_clave = Direccion.clave_unica(
+                etiqueta,
+                calle,
+                numero,
+                ciudad,
+                provincia,
+                codigo_postal,
+                cleaned_data.get('referencia', ''),
+            )
+            for direccion in cliente.direcciones.all():
+                if self.instance and self.instance.pk == direccion.pk:
+                    continue
+                if direccion.clave_normalizada == nueva_clave:
+                    raise forms.ValidationError('Esta dirección ya está registrada para este cliente.')
+        if False and Direccion.objects.filter(
             cliente=cliente,
+            etiqueta=etiqueta,
             calle=calle,
             numero=numero,
             ciudad=ciudad,
@@ -98,3 +138,18 @@ class NuevaDireccionForm(forms.ModelForm):
         ).exists():
             raise forms.ValidationError('Esta dirección ya está registrada para este cliente.')
         return cleaned_data
+
+    def clean_etiqueta(self):
+        return capitalizar_texto(self.cleaned_data['etiqueta'])
+
+    def clean_calle(self):
+        return capitalizar_texto(self.cleaned_data['calle'])
+
+    def clean_ciudad(self):
+        return capitalizar_texto(self.cleaned_data['ciudad'])
+
+    def clean_provincia(self):
+        return capitalizar_texto(self.cleaned_data['provincia'])
+
+    def clean_referencia(self):
+        return capitalizar_texto(self.cleaned_data.get('referencia', ''))

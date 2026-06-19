@@ -9,8 +9,14 @@
         <form id="formVarianteInternal">
           
           <div class="mb-4">
-            <label class="form-label fw-bold" style="color: #8c7e70; font-size: 0.8rem;">TALLE (Escribí lo que necesites)</label>
-            <input type="text" class="form-control" id="inputTalleLibre" placeholder="Ej: S, M, XL, 42, Único..." required 
+            <label class="form-label fw-bold" style="color: #8c7e70; font-size: 0.8rem;">TALLE (opcional)</label>
+            <input type="text" class="form-control" id="inputTalleLibre" placeholder="Ej: S, M, XL, 42, Unico... o dejalo vacio"
+                   style="border-radius: 8px; border: 1.5px solid #e8dfd4;">
+          </div>
+
+          <div class="mb-4">
+            <label class="form-label fw-bold" style="color: #8c7e70; font-size: 0.8rem;">STOCK DE ESTA VARIANTE</label>
+            <input type="number" min="0" step="1" class="form-control" id="inputStockVariante" placeholder="Ej: 12" required
                    style="border-radius: 8px; border: 1.5px solid #e8dfd4;">
           </div>
           

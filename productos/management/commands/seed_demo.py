@@ -496,19 +496,23 @@ class Command(BaseCommand):
             clientes.append(cliente)
             Direccion.objects.create(
                 cliente=cliente,
+                etiqueta="Casa",
                 calle="Calle 50",
                 numero="1234",
                 ciudad="La Plata",
                 provincia="Buenos Aires",
                 codigo_postal="1900",
+                referencia="Porton verde",
             )
             Direccion.objects.create(
                 cliente=cliente,
+                etiqueta="Trabajo",
                 calle="Diagonal 74",
                 numero="555",
                 ciudad="La Plata",
                 provincia="Buenos Aires",
                 codigo_postal="1900",
+                referencia="Entrada por recepcion",
             )
 
         estados_demo = ["pendiente", "aceptado", "en_preparacion", "preparando_envio", "enviado", "entregado"]

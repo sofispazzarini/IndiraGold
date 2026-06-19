@@ -5,7 +5,7 @@
         <a href="{% url 'users:listado_clientes' %}" class="btn btn-light mb-3" style="font-size: 1.5rem; border: none; padding: 4px 16px 4px 10px;">&#8592;</a>
         <h2>Agregar dirección</h2>
         <div class="mb-2 d-flex align-items-center">
-            <span><b>Cliente:</b> {{ cliente.user.first_name }} (DNI: {{ cliente.dni }})</span>
+            <span><b>Cliente:</b> {{ cliente.user.first_name|title }} {{ cliente.user.last_name|title }} (DNI: {{ cliente.dni }})</span>
             {% if direcciones %}
                 <button type="button" class="btn btn-outline-info btn-sm ms-2" onclick="mostrarDireccionesModal()">Ver direcciones</button>
             {% endif %}
@@ -18,7 +18,7 @@
                 <h5 class="mb-3">Direcciones registradas</h5>
                 <ul style="margin-bottom:0;">
                 {% for d in direcciones %}
-                    <li>{{ d.calle }} {{ d.numero }}, {{ d.ciudad }}, {{ d.provincia }} (CP: {{ d.codigo_postal }})</li>
+                    <li><strong>{{ d.etiqueta }}</strong>: {{ d.calle }} {{ d.numero }}, {{ d.ciudad }}, {{ d.provincia }} (CP: {{ d.codigo_postal }}){% if d.referencia %} - Ref: {{ d.referencia }}{% endif %}</li>
                 {% endfor %}
                 </ul>
             </div>
@@ -49,6 +49,10 @@
         <form method="post" id="direccionForm" autocomplete="off">
             {% csrf_token %}
             <div class="mb-3">
+                <label for="id_etiqueta" class="form-label">Etiqueta</label>
+                {{ form.etiqueta }}
+            </div>
+            <div class="mb-3">
                 <label for="id_calle" class="form-label">Calle</label>
                 {{ form.calle }}
             </div>
@@ -67,6 +71,10 @@
             <div class="mb-3">
                 <label for="id_codigo_postal" class="form-label">Código Postal</label>
                 {{ form.codigo_postal }}
+            </div>
+            <div class="mb-3">
+                <label for="id_referencia" class="form-label">Referencia opcional</label>
+                {{ form.referencia }}
             </div>
             <!-- Mapa eliminado -->
             <button type="submit" class="btn btn-primary">Agregar dirección</button>

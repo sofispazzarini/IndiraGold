@@ -46,9 +46,32 @@
         </div>
 
         <div class="ficha-col-ig col-3 d-flex flex-column">
-            <label>DETALLE DE ETIQUETA (AUTO)</label>
-            <div class="val area flex-grow-1 text-muted" style="font-size: 0.85rem;">
-                {{ producto.etiquetas|default:"-"|linebreaks }}
+            <label>TALLES / MEDIDAS / STOCK</label>
+            <div class="val area flex-grow-1 text-muted ficha-scroll-block" style="font-size: 0.85rem;">
+                {% if producto.etiquetas %}
+                    {{ producto.etiquetas|linebreaks }}
+                {% elif producto.variantes.all %}
+                    {% for variante in producto.variantes.all %}
+                        <div class="mb-2 pb-2" style="border-bottom: 1px dashed #e8dfd4;">
+                            <strong style="color:#1a1612;">{% if variante.talle %}{{ variante.talle.nombre|upper }}{% else %}SIN TALLE{% endif %}</strong><br>
+                            Stock: {{ variante.stock }}<br>
+                            {% if variante.colores.all %}
+                                Colores:
+                                {% for color in variante.colores.all %}
+                                    {{ color.nombre }}{% if not forloop.last %}, {% endif %}
+                                {% endfor %}<br>
+                            {% endif %}
+                            {% if variante.medidas.all %}
+                                Medidas:
+                                {% for medida in variante.medidas.all %}
+                                    A:{{ medida.alto|default:"-" }} An:{{ medida.ancho|default:"-" }} L:{{ medida.largo|default:"-" }} T:{{ medida.tiro|default:"-" }}{% if not forloop.last %} | {% endif %}
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    -
+                {% endif %}
             </div>
         </div>
     </div>
@@ -65,6 +88,9 @@
     .ficha-col-ig label { display: block; font-size: 0.6rem; font-weight: 800; color: #8c7e70; text-transform: uppercase; margin-bottom: 3px; }
     .ficha-col-ig .val { font-size: 0.9rem; color: #1a1612; }
     .ficha-col-ig .val.area { min-height: 50px; }
+    .ficha-scroll-block { max-height: 360px; overflow-y: auto; padding-right: 6px; }
+    .ficha-scroll-block::-webkit-scrollbar { width: 6px; }
+    .ficha-scroll-block::-webkit-scrollbar-thumb { background: #d7c6aa; border-radius: 999px; }
     .h-500-ig { min-height: 400px; }
     .bg-ficha-soft { background: #fdfdfd; }
     .img-ficha-fluid-ig { max-width: 100%; max-height: 380px; object-fit: contain; }
