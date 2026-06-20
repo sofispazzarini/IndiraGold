@@ -351,6 +351,36 @@ def listado_gastos(request):
 
 
 @admin_required
+def listado_deudas(request):
+    """
+    Listado de pedidos con deuda pendiente.
+    """
+    pedidos_con_deuda = Pedido.objects.filter(
+        deuda__gt=0
+    ).select_related('cliente__user').order_by('-deuda')
+
+    # Búsqueda por cliente o pedido
+    q = request.GET.get('q', '').strip()
+    if q:
+        pedidos_con_deuda = pedidos_con_deuda.filter(
+            Q(cliente__user__first_name__icontains=q) |
+            Q(cliente__user__last_name__icontains=q) |
+            Q(cliente__dni__icontains=q) |
+            Q(id__icontains=q)
+        )
+
+    total_deudas = pedidos_con_deuda.aggregate(total=Sum('deuda'))['total'] or 0
+
+    context = {
+        'pedidos': pedidos_con_deuda,
+        'total_deudas': total_deudas,
+        'cantidad': pedidos_con_deuda.count(),
+        'q': q,
+    }
+    return render(request, 'pedidos/listado_deudas.html', context)
+
+
+@admin_required
 def crear_gasto(request):
     """
     Permite al administrador registrar un gasto adicional.

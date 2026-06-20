@@ -23,6 +23,9 @@
     <a href="{% url 'pedidos:listado_gastos' %}" class="nav-link{% if request.resolver_match.url_name == 'listado_gastos' or request.resolver_match.url_name == 'crear_gasto' %} active{% endif %}">
         <i class="bi bi-receipt me-2"></i> Gastos
     </a>
+    <a href="{% url 'pedidos:listado_deudas' %}" class="nav-link{% if request.resolver_match.url_name == 'listado_deudas' %} active{% endif %}">
+        <i class="bi bi-exclamation-triangle me-2"></i> Deudas
+    </a>
 <div class="nav-section">Clientes</div>
 <a href="{% url 'users:registro_manual_cliente' %}" class="nav-link{% if request.resolver_match.url_name == 'registro_manual_cliente' %} active{% endif %}">
     <i class="bi bi-person-plus"></i> Registrar Cliente
