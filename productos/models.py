@@ -140,6 +140,12 @@ class Medida(models.Model):
     ancho = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
     largo = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
     tiro = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
+    detalle_etiqueta = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        help_text="Info adicional de etiqueta (ej: Prelavado, Tela premium)"
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

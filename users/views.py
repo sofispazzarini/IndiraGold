@@ -124,6 +124,7 @@ def perfil(request):
 def dashboard_admin(request):
     from productos.models import Categoria, Producto
     from pedidos.models import Pedido
+    from django.db.models import Sum
 
     total_clientes = Cliente.objects.count()
     total_categorias = Categoria.objects.count()
@@ -136,6 +137,11 @@ def dashboard_admin(request):
     pedidos_en_preparacion = Pedido.objects.filter(estado='en_preparacion').count()
     pedidos_enviados = Pedido.objects.filter(estado='enviado').count()
 
+    # Deudas activas
+    pedidos_con_deuda = Pedido.objects.filter(deuda__gt=0).select_related('cliente__user').order_by('-deuda')[:10]
+    total_deudas = Pedido.objects.filter(deuda__gt=0).aggregate(total=Sum('deuda'))['total'] or 0
+    cantidad_deudas = Pedido.objects.filter(deuda__gt=0).count()
+
     context = {
         'total_clientes': total_clientes,
         'total_categorias': total_categorias,
@@ -145,6 +151,9 @@ def dashboard_admin(request):
         'pedidos_aceptados': pedidos_aceptados,
         'pedidos_en_preparacion': pedidos_en_preparacion,
         'pedidos_enviados': pedidos_enviados,
+        'pedidos_con_deuda': pedidos_con_deuda,
+        'total_deudas': total_deudas,
+        'cantidad_deudas': cantidad_deudas,
     }
     return render(request, 'users/dashboard_admin.html', context)
 # Vista para listado y búsqueda de clientes (solo admin)

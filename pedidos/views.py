@@ -1597,9 +1597,29 @@ def estadisticas_ventas(request):
             fecha_inicio = hoy - timedelta(days=30)
             fecha_fin = hoy
 
+    elif tipo_periodo == 'hoy':
+
+        fecha_inicio = hoy
+        fecha_fin = hoy
+
     elif tipo_periodo == '7dias':
 
         fecha_inicio = hoy - timedelta(days=7)
+        fecha_fin = hoy
+
+    elif tipo_periodo == 'semana':
+        # Semana actual (lunes a hoy)
+        fecha_inicio = hoy - timedelta(days=hoy.weekday())
+        fecha_fin = hoy
+
+    elif tipo_periodo == 'mes':
+        # Mes actual
+        fecha_inicio = hoy.replace(day=1)
+        fecha_fin = hoy
+
+    elif tipo_periodo == 'ano':
+        # Año actual
+        fecha_inicio = hoy.replace(month=1, day=1)
         fecha_fin = hoy
 
     elif tipo_periodo == '90dias':
@@ -1713,6 +1733,46 @@ def estadisticas_ventas(request):
             'total': total_dia,
         })
 
+    # Gastos en el período
+    total_gastos = (
+        Gasto.objects.filter(
+            fecha__gte=fecha_inicio,
+            fecha__lte=fecha_fin
+        ).aggregate(total=Sum('monto'))['total']
+        or Decimal('0.00')
+    )
+
+    # Deudas en pedidos del período
+    total_deudas = (
+        pedidos.aggregate(total=Sum('deuda'))['total']
+        or Decimal('0.00')
+    )
+
+    # Retenciones de MercadoPago en el período
+    total_retenciones = (
+        Pago.objects.filter(
+            pedido__in=pedidos
+        ).aggregate(total=Sum('retencion_mercado_pago'))['total']
+        or Decimal('0.00')
+    )
+
+    # Neto recibido (lo que realmente entró en la billetera)
+    total_neto_recibido = (
+        Pago.objects.filter(
+            pedido__in=pedidos
+        ).aggregate(total=Sum('neto_recibido'))['total']
+        or Decimal('0.00')
+    )
+
+    # Total con deudas (ventas totales incluyendo lo que falta cobrar)
+    total_con_deudas = total_ventas
+
+    # Ingresos brutos = lo cobrado - gastos
+    ingresos_brutos = (total_ventas - total_deudas) - total_gastos
+
+    # Números del negocio = ventas - gastos (sin considerar deudas)
+    neto_negocio = total_ventas - total_gastos
+
     context = {
         'total_ventas': total_ventas,
         'cantidad_pedidos': cantidad_pedidos,
@@ -1726,6 +1786,14 @@ def estadisticas_ventas(request):
         'fecha_fin': fecha_fin,
         'fecha_inicio_str': fecha_inicio.strftime('%Y-%m-%d'),
         'fecha_fin_str': fecha_fin.strftime('%Y-%m-%d'),
+        # Nuevos campos
+        'total_gastos': total_gastos,
+        'total_deudas': total_deudas,
+        'total_retenciones': total_retenciones,
+        'total_neto_recibido': total_neto_recibido,
+        'total_con_deudas': total_con_deudas,
+        'ingresos_brutos': ingresos_brutos,
+        'neto_negocio': neto_negocio,
     }
 
     return render(

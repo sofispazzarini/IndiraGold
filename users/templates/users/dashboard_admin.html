@@ -349,17 +349,116 @@
     margin-top: 2px;
   }
 
+  /* ── DEUDAS CARD ── */
+  .deudas-section {
+    margin-bottom: 2.5rem;
+  }
+
+  .deudas-card {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+  }
+
+  .deudas-card-head {
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid rgba(232,223,212,0.6);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .deudas-card-head-left {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+
+  .deudas-card-head-left span {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--dark);
+  }
+
+  .deudas-total {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--burgundy);
+    background: rgba(110,14,46,0.08);
+    padding: 0.4rem 0.9rem;
+    border-radius: 50px;
+  }
+
+  .deudas-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .deudas-table th {
+    padding: 0.75rem 1rem;
+    text-align: left;
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    background: var(--gold-faint);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .deudas-table td {
+    padding: 0.85rem 1rem;
+    font-size: 0.85rem;
+    color: var(--text);
+    border-bottom: 1px solid rgba(232,223,212,0.5);
+  }
+
+  .deudas-table tr:last-child td {
+    border-bottom: none;
+  }
+
+  .deudas-table tr:hover {
+    background: var(--gold-faint);
+  }
+
+  .deuda-monto {
+    font-weight: 600;
+    color: var(--burgundy);
+  }
+
+  .deudas-empty {
+    padding: 2rem;
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
+
+  .deudas-ver-link {
+    font-size: 0.75rem;
+    color: var(--gold);
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.18s;
+  }
+
+  .deudas-ver-link:hover {
+    color: var(--gold-soft);
+  }
+
   /* Animación de entrada */
   @keyframes fadeUp {
     from { opacity: 0; transform: translateY(16px); }
     to   { opacity: 1; transform: translateY(0); }
   }
 
-  .hero-section  { animation: fadeUp 0.45s ease both; }
-  .metrics-label { animation: fadeUp 0.45s 0.1s ease both; }
-  .metrics-grid  { animation: fadeUp 0.45s 0.16s ease both; }
-  .bottom-label  { animation: fadeUp 0.45s 0.22s ease both; }
-  .bottom-grid   { animation: fadeUp 0.45s 0.28s ease both; }
+  .hero-section    { animation: fadeUp 0.45s ease both; }
+  .metrics-label   { animation: fadeUp 0.45s 0.1s ease both; }
+  .metrics-grid    { animation: fadeUp 0.45s 0.16s ease both; }
+  .deudas-section  { animation: fadeUp 0.45s 0.22s ease both; }
+  .bottom-label    { animation: fadeUp 0.45s 0.28s ease both; }
+  .bottom-grid     { animation: fadeUp 0.45s 0.34s ease both; }
 </style>
 {% endblock %}
 
@@ -407,6 +506,63 @@
       <div class="metric-name">Productos</div>
     </div>
   </div>
+
+  <!-- Deudas activas -->
+  {% if cantidad_deudas > 0 %}
+  <div class="deudas-section">
+    <p class="section-label">Deudas activas</p>
+    <div class="deudas-card">
+      <div class="deudas-card-head">
+        <div class="deudas-card-head-left">
+          <i class="bi bi-exclamation-triangle" style="color:var(--burgundy);font-size:0.95rem;"></i>
+          <span>Pedidos con deuda</span>
+        </div>
+        <span class="deudas-total">Total: ${{ total_deudas|floatformat:0 }}</span>
+      </div>
+
+      <table class="deudas-table">
+        <thead>
+          <tr>
+            <th>Pedido</th>
+            <th>Cliente</th>
+            <th>Total Pedido</th>
+            <th>Deuda</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for pedido in pedidos_con_deuda %}
+          <tr>
+            <td>#{{ pedido.id }}</td>
+            <td>
+              {% if pedido.cliente and pedido.cliente.user %}
+                {{ pedido.cliente.user.first_name }} {{ pedido.cliente.user.last_name }}
+              {% else %}
+                <em style="color: var(--muted);">Sin cliente</em>
+              {% endif %}
+            </td>
+            <td>${{ pedido.total|floatformat:0 }}</td>
+            <td class="deuda-monto">${{ pedido.deuda|floatformat:0 }}</td>
+            <td>
+              <a href="{% url 'pedidos:detalle_pedido' pedido.id %}" class="deudas-ver-link">
+                Ver <i class="bi bi-arrow-right"></i>
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+      {% if cantidad_deudas > 10 %}
+      <div style="padding: 0.75rem 1.5rem; text-align: center; border-top: 1px solid var(--border);">
+        <span style="font-size: 0.8rem; color: var(--muted);">
+          Mostrando 10 de {{ cantidad_deudas }} pedidos con deuda
+        </span>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
 
   <!-- Sección inferior -->
   <p class="section-label bottom-label">Estado actual</p>

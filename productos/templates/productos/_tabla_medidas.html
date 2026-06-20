@@ -118,6 +118,7 @@
                             <th>Ancho (cm)</th>
                             <th>Alto (cm)</th>
                             <th>Tiro (cm)</th>
+                            <th>Detalle Etiqueta</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -139,6 +140,9 @@
                                         </td>
                                         <td class="medida-valor">
                                             {% if medida.tiro %}{{ medida.tiro }}{% else %}<em style="color: #bbb;">-</em>{% endif %}
+                                        </td>
+                                        <td class="medida-valor">
+                                            {% if medida.detalle_etiqueta %}{{ medida.detalle_etiqueta }}{% else %}<em style="color: #bbb;">-</em>{% endif %}
                                         </td>
                                     </tr>
                                 {% endfor %}

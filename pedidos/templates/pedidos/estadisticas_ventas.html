@@ -146,7 +146,7 @@
   /* KPI Grid */
   .kpi-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     gap: 1px;
     background: var(--border);
     border: 1px solid var(--border);
@@ -333,9 +333,15 @@
       margin-left: 0;
     }
     .kpi-grid {
-      grid-template-columns: 1fr;
+      grid-template-columns: repeat(2, 1fr);
     }
     .data-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 500px) {
+    .kpi-grid {
       grid-template-columns: 1fr;
     }
   }
@@ -357,9 +363,13 @@
     <div class="filter-group">
       <span class="filter-label"><i class="bi bi-calendar3"></i> Período</span>
       <select name="tipo_periodo" class="filter-select" onchange="this.form.submit()">
+        <option value="hoy" {% if tipo_periodo == 'hoy' %}selected{% endif %}>Hoy</option>
         <option value="7dias" {% if tipo_periodo == '7dias' %}selected{% endif %}>Últimos 7 días</option>
+        <option value="semana" {% if tipo_periodo == 'semana' %}selected{% endif %}>Semana actual</option>
         <option value="30dias" {% if tipo_periodo == '30dias' %}selected{% endif %}>Últimos 30 días</option>
+        <option value="mes" {% if tipo_periodo == 'mes' %}selected{% endif %}>Mes actual</option>
         <option value="90dias" {% if tipo_periodo == '90dias' %}selected{% endif %}>Últimos 90 días</option>
+        <option value="ano" {% if tipo_periodo == 'ano' %}selected{% endif %}>Año actual</option>
         <option value="personalizado" {% if tipo_periodo == 'personalizado' %}selected{% endif %}>Personalizado</option>
       </select>
     </div>
@@ -384,19 +394,43 @@
     </div>
   </form>
 
-  <!-- KPIs -->
+  <!-- KPIs principales -->
   <div class="kpi-grid">
     <div class="kpi-card">
-      <div class="kpi-label"><i class="bi bi-cash-coin"></i> Total de ventas</div>
-      <div class="kpi-value"><span class="currency">$</span>{{ total_ventas|floatformat:2 }}</div>
+      <div class="kpi-label"><i class="bi bi-cash-coin"></i> Total Ventas</div>
+      <div class="kpi-value"><span class="currency">$</span>{{ total_con_deudas|floatformat:0 }}</div>
     </div>
+    <div class="kpi-card">
+      <div class="kpi-label"><i class="bi bi-wallet2"></i> Ingresos Brutos</div>
+      <div class="kpi-value"><span class="currency">$</span>{{ ingresos_brutos|floatformat:0 }}</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label"><i class="bi bi-graph-down-arrow"></i> Gastos</div>
+      <div class="kpi-value" style="color: var(--burgundy);"><span class="currency">$</span>{{ total_gastos|floatformat:0 }}</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label"><i class="bi bi-building"></i> Neto Negocio</div>
+      <div class="kpi-value"><span class="currency">$</span>{{ neto_negocio|floatformat:0 }}</div>
+    </div>
+  </div>
+
+  <!-- KPIs secundarios -->
+  <div class="kpi-grid" style="margin-top: 1px;">
     <div class="kpi-card">
       <div class="kpi-label"><i class="bi bi-bag-check"></i> Pedidos</div>
       <div class="kpi-value">{{ cantidad_pedidos }}</div>
     </div>
     <div class="kpi-card">
-      <div class="kpi-label"><i class="bi bi-calculator"></i> Promedio por pedido</div>
-      <div class="kpi-value"><span class="currency">$</span>{{ promedio_por_pedido|floatformat:2 }}</div>
+      <div class="kpi-label"><i class="bi bi-calculator"></i> Promedio/Pedido</div>
+      <div class="kpi-value"><span class="currency">$</span>{{ promedio_por_pedido|floatformat:0 }}</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label"><i class="bi bi-exclamation-triangle"></i> Deudas</div>
+      <div class="kpi-value" style="color: var(--burgundy);"><span class="currency">$</span>{{ total_deudas|floatformat:0 }}</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label"><i class="bi bi-credit-card"></i> Retenciones MP</div>
+      <div class="kpi-value" style="color: var(--muted);"><span class="currency">$</span>{{ total_retenciones|floatformat:0 }}</div>
     </div>
   </div>
 
