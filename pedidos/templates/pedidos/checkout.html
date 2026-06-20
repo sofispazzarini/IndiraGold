@@ -848,6 +848,8 @@
                     <span class="label-sub">
                     {% if configuracion_envio.correo_gratis %}
                     Gratis
+                    {% elif configuracion_envio.correo_a_coordinar %}
+                    A coordinar
                     {% else %}
                     ${{ precio_correo }}
                     {% endif %}

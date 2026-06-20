@@ -170,8 +170,9 @@
     }
 
     .badge-total{
-        background:linear-gradient(90deg,var(--gold-soft) 0%,var(--gold) 100%);
-        color:var(--burgundy);
+        background:var(--gold-faint);
+        color:var(--gold);
+        border:1px solid rgba(184,146,42,.2);
         padding:.5rem .75rem;
         border-radius:999px;
         font-weight:700;
@@ -197,19 +198,19 @@
     }
 
     .btn-gold{
-        background:linear-gradient(90deg,var(--gold-soft) 0%,var(--gold) 100%);
-        color:var(--burgundy);
+        background:var(--dark);
+        color:#fff;
         border:none;
         border-radius:999px;
         font-weight:700;
         min-height:42px;
         padding:.55rem 1.2rem;
-        box-shadow:0 8px 18px rgba(184,146,42,.18);
+        transition:all .2s ease;
     }
 
     .btn-gold:hover{
-        color:#fff;
-        background:var(--burgundy);
+        background:var(--gold);
+        color:var(--dark);
     }
 
     .btn-soft{

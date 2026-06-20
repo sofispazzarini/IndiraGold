@@ -1,0 +1,59 @@
+<div class="ficha-tecnica-papel-render ficha-accesorio">
+    <div class="ficha-head-ig">
+        <div class="ig-brand">INDIRA GOLD</div>
+        <div class="ig-doc-label">FICHA DE ACCESORIO</div>
+    </div>
+
+    <div class="ficha-row-ig">
+        <div class="ficha-col-ig col-4">
+            <label>TIPO</label>
+            <div class="val">{{ producto.tipo|default:"-" }}</div>
+        </div>
+        <div class="ficha-col-ig col-4">
+            <label>ARTÍCULO</label>
+            <div class="val">{{ producto.codigo|default:"-" }}</div>
+        </div>
+        <div class="ficha-col-ig col-4">
+            <label>MATERIAL</label>
+            <div class="val">{{ producto.tela|default:"-" }}</div>
+        </div>
+    </div>
+
+    <div class="ficha-row-ig border-bottom-0">
+        <div class="ficha-col-ig col-6 d-flex flex-column">
+            <label>DESCRIPCIÓN</label>
+            <div class="val area flex-grow-1">{{ producto.descripcion|default:"Sin descripción."|linebreaks }}</div>
+        </div>
+        <div class="ficha-col-ig col-6 d-flex flex-column align-items-center justify-content-center bg-ficha-soft">
+            <label class="mb-2">IMAGEN</label>
+            {% if producto.imagen_tecnica %}
+                <img src="{{ producto.imagen_tecnica.url }}" class="img-ficha-fluid-ig" style="max-height: 200px;">
+            {% elif producto.imagen %}
+                <img src="{{ producto.imagen.url }}" class="img-ficha-fluid-ig" style="max-height: 200px;">
+            {% else %}
+                <div class="text-muted small">Sin imagen</div>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if producto.variantes.all %}
+    <div class="ficha-row-ig border-bottom-0" style="border-top: 1px solid #1a1612;">
+        <div class="ficha-col-ig col-12">
+            <label>COLORES DISPONIBLES</label>
+            <div class="val d-flex flex-wrap gap-2 mt-2">
+                {% for variante in producto.variantes.all %}
+                    {% for color in variante.colores.all %}
+                    <span class="badge" style="background: #1a1612; color: #fff; padding: 4px 10px; border-radius: 3px; font-size: 0.8rem;">{{ color.nombre }}</span>
+                    {% endfor %}
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+    .ficha-accesorio .ficha-row-ig { min-height: auto; }
+    .ficha-accesorio .h-500-ig { min-height: auto; }
+    .ficha-accesorio .val.area { min-height: 100px; }
+</style>

@@ -35,6 +35,7 @@ urlpatterns = [
     path('venta-local/<int:venta_id>/ticket-cambio/', views.ticket_cambio_venta_local, name='ticket_cambio_venta_local'),
     path('venta-local/<int:venta_id>/ticket-envio/', views.ticket_envio_venta_local, name='ticket_envio_venta_local'),
     path('registrar-pago/<int:venta_id>/',views.registrar_pago_venta,name='registrar_pago_venta'),
+    path('registrar-pago-pedido/<int:pedido_id>/',views.registrar_pago_pedido,name='registrar_pago_pedido'),
     path('envios/configurar/', views.configurar_envios, name='configurar_envios'),
     path('pagos/configurar/', views.configurar_pagos, name='configurar_pagos'),
 ]

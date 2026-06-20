@@ -1,3 +1,6 @@
+{% if producto.categoria.nombre == "Accesorios" %}
+    {% include "productos/_snippet_ficha_tecnica_accesorio.html" %}
+{% else %}
 <div class="ficha-tecnica-papel-render">
     <div class="ficha-head-ig">
         <div class="ig-brand">INDIRA GOLD</div>
@@ -96,3 +99,4 @@
     .img-ficha-fluid-ig { max-width: 100%; max-height: 380px; object-fit: contain; }
     .border-bottom-0 { border-bottom: none !important; }
 </style>
+{% endif %}

@@ -10,6 +10,7 @@ from .models import (
     Pedido,
     PedidoItem,
     Pago,
+    PagoPedido,
     EnvioPedido,
     VentaLocal,
     PagoVentaLocal,
@@ -395,14 +396,19 @@ def detalle_pedido(request, pedido_id):
             'items__variante__producto',
             'items__variante__talle',
             'items__variante__colores',
+            'pagos_registrados',
         ),
         pk=pedido_id,
     )
     pago = getattr(pedido, 'pago', None)
+    pagos_registrados = pedido.pagos_registrados.all()
+    saldo_pendiente = pedido.total - pedido.monto_pagado
 
     context = {
         'pedido': pedido,
         'pago': pago,
+        'pagos_registrados': pagos_registrados,
+        'saldo_pendiente': saldo_pendiente,
         'items': pedido.items.all(),
     }
     return render(request, 'pedidos/detalle_pedido.html', context)
@@ -1756,7 +1762,7 @@ def estadisticas_ventas(request):
         or Decimal('0.00')
     )
 
-    # Neto recibido (lo que realmente entró en la billetera)
+    # Neto recibido (lo que realmente entró en la billetera por MP)
     total_neto_recibido = (
         Pago.objects.filter(
             pedido__in=pedidos
@@ -1764,14 +1770,32 @@ def estadisticas_ventas(request):
         or Decimal('0.00')
     )
 
+    # Ventas locales en el período
+    ventas_locales = VentaLocal.objects.filter(
+        created_at__date__gte=fecha_inicio,
+        created_at__date__lte=fecha_fin
+    )
+    total_ventas_locales = (
+        ventas_locales.aggregate(total=Sum('total'))['total']
+        or Decimal('0.00')
+    )
+    cobrado_ventas_locales = (
+        ventas_locales.aggregate(total=Sum('monto_pagado'))['total']
+        or Decimal('0.00')
+    )
+
     # Total con deudas (ventas totales incluyendo lo que falta cobrar)
-    total_con_deudas = total_ventas
+    total_con_deudas = total_ventas + total_ventas_locales
 
-    # Ingresos brutos = lo cobrado - gastos
-    ingresos_brutos = (total_ventas - total_deudas) - total_gastos
+    # Lo realmente cobrado = monto_pagado de pedidos + monto_pagado de ventas locales
+    cobrado_pedidos = (
+        pedidos.aggregate(total=Sum('monto_pagado'))['total']
+        or Decimal('0.00')
+    )
+    ingresos_brutos = cobrado_pedidos + cobrado_ventas_locales
 
-    # Números del negocio = ventas - gastos (sin considerar deudas)
-    neto_negocio = total_ventas - total_gastos
+    # Neto negocio = lo cobrado - gastos
+    neto_negocio = ingresos_brutos - total_gastos
 
     context = {
         'total_ventas': total_ventas,
@@ -1926,109 +1950,6 @@ def disminuir_cantidad(request, variante_id):
 
     return redirect('pedidos:checkout')
 
-@admin_required
-def estadisticas_ventas(request):
-    """
-    Muestra estadísticas de ventas con filtrado por período.
-    """
-    hoy = datetime.now().date()
-    
-    # Parámetros de filtro
-    tipo_periodo = request.GET.get('tipo_periodo', '30dias')
-    fecha_inicio_str = request.GET.get('fecha_inicio', '')
-    fecha_fin_str = request.GET.get('fecha_fin', '')
-    
-    # Determinar rango de fechas según el período seleccionado
-    if tipo_periodo == 'personalizado' and fecha_inicio_str and fecha_fin_str:
-        try:
-            fecha_inicio = datetime.strptime(fecha_inicio_str, '%Y-%m-%d').date()
-            fecha_fin = datetime.strptime(fecha_fin_str, '%Y-%m-%d').date()
-        except ValueError:
-            fecha_inicio = hoy - timedelta(days=30)
-            fecha_fin = hoy
-    elif tipo_periodo == '7dias':
-        fecha_inicio = hoy - timedelta(days=7)
-        fecha_fin = hoy
-    elif tipo_periodo == '90dias':
-        fecha_inicio = hoy - timedelta(days=90)
-        fecha_fin = hoy
-    else:  # 30dias por defecto
-        fecha_inicio = hoy - timedelta(days=30)
-        fecha_fin = hoy
-    
-    # Filtrar pedidos por rango de fechas
-    pedidos = Pedido.objects.filter(
-        created_at__date__gte=fecha_inicio,
-        created_at__date__lte=fecha_fin
-    )
-    
-    # ESTADÍSTICAS GENERALES
-    total_ventas = pedidos.aggregate(Sum('total'))['total__sum'] or Decimal('0.00')
-    cantidad_pedidos = pedidos.count()
-    promedio_por_pedido = total_ventas / cantidad_pedidos if cantidad_pedidos > 0 else Decimal('0.00')
-    
-    # ESTADÍSTICAS POR ESTADO
-    pedidos_por_estado = pedidos.values('estado').annotate(
-        cantidad=Count('id'),
-        total=Sum('total')
-    ).order_by('-cantidad')
-    
-    # Mapear estados a sus labels
-    estados_dict = {valor: label for valor, label in Pedido.ESTADOS}
-    for item in pedidos_por_estado:
-        item['estado_label'] = estados_dict.get(item['estado'], item['estado'])
-    
-    # PRODUCTOS MÁS VENDIDOS
-    productos_top = (
-        PedidoItem.objects
-        .filter(pedido__in=pedidos)
-        .values('variante__producto__nombre')
-        .annotate(
-            cantidad_total=Sum('cantidad'),
-            ingresos=Sum('precio_total'),
-            precio_promedio=Avg('precio_unitario')
-        )
-        .order_by('-cantidad_total')[:6]
-    )
-    
-    # TIPOS DE VENTA
-    ventas_por_tipo = pedidos.values('tipo_venta').annotate(
-        cantidad=Count('id'),
-        total=Sum('total')
-    ).order_by('-cantidad')
-    
-    tipos_venta_dict = {valor: label for valor, label in Pedido.TIPOS_VENTA}
-    for item in ventas_por_tipo:
-        item['tipo_label'] = tipos_venta_dict.get(item['tipo_venta'], item['tipo_venta'])
-    
-    # EVOLUCIÓN DIARIA DE VENTAS (últimos 30 días)
-    evolucion_diaria = []
-    for i in range(31):
-        fecha = hoy - timedelta(days=30 - i)
-        pedidos_dia = Pedido.objects.filter(created_at__date=fecha)
-        total_dia = pedidos_dia.aggregate(Sum('total'))['total__sum'] or Decimal('0.00')
-        cantidad_dia = pedidos_dia.count()
-        evolucion_diaria.append({
-            'fecha': fecha.strftime('%d/%m/%Y'),
-            'cantidad': cantidad_dia,
-            'total': total_dia,
-        })
-    
-    context = {
-        'total_ventas': total_ventas,
-        'cantidad_pedidos': cantidad_pedidos,
-        'promedio_por_pedido': promedio_por_pedido,
-        'pedidos_por_estado': pedidos_por_estado,
-        'productos_top': productos_top,
-        'ventas_por_tipo': ventas_por_tipo,
-        'evolucion_diaria': evolucion_diaria,
-        'tipo_periodo': tipo_periodo,
-        'fecha_inicio': fecha_inicio,
-        'fecha_fin': fecha_fin,
-        'fecha_inicio_str': fecha_inicio.strftime('%Y-%m-%d'),
-        'fecha_fin_str': fecha_fin.strftime('%Y-%m-%d'),
-    }
-    return render(request, 'pedidos/estadisticas_ventas.html', context)
 
 @admin_required
 @require_POST
@@ -2828,6 +2749,62 @@ def registrar_pago_venta(request, venta_id):
 
         'estado': venta.estado_pago
     })
+
+
+@require_POST
+@admin_required
+def registrar_pago_pedido(request, pedido_id):
+    pedido = get_object_or_404(Pedido, id=pedido_id)
+    data = json.loads(request.body)
+
+    monto = Decimal(str(data.get('monto', 0)))
+    metodo_pago = data.get('metodo_pago', 'efectivo')
+    observaciones = data.get('observaciones', '')
+
+    if monto <= 0:
+        return JsonResponse({'success': False, 'error': 'El monto debe ser mayor a 0'})
+
+    saldo_pendiente = pedido.total - pedido.monto_pagado
+    if monto > saldo_pendiente:
+        monto = saldo_pendiente
+
+    pedido.monto_pagado += monto
+    pedido.deuda = pedido.total - pedido.monto_pagado
+
+    if pedido.deuda <= 0:
+        pedido.deuda = 0
+        pedido.metodo_pago = metodo_pago
+
+    pedido.estado = 'entregado'
+    pedido.save()
+
+    PagoPedido.objects.create(
+        pedido=pedido,
+        monto=monto,
+        metodo_pago=metodo_pago,
+        observaciones=observaciones
+    )
+
+    pagos = pedido.pagos_registrados.all()
+    pagos_html = ""
+    for p in pagos:
+        pagos_html += f"""
+        <div class="pago-item">
+            <div class="pago-fecha">{p.fecha.strftime('%d/%m/%Y %H:%M')}</div>
+            <div class="pago-metodo">{p.get_metodo_pago_display()}</div>
+            <div class="pago-monto">${p.monto}</div>
+        </div>
+        """
+
+    return JsonResponse({
+        'success': True,
+        'monto_pagado': float(pedido.monto_pagado),
+        'deuda': float(pedido.deuda),
+        'pagado_completo': pedido.deuda == 0,
+        'pagos_html': pagos_html
+    })
+
+
 @admin_required
 def configurar_envios(request):
     configuracion = ConfiguracionEnvio.actual()

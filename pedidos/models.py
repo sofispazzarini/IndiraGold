@@ -149,6 +149,35 @@ class Pago(models.Model):
     def __str__(self):
         return f"Pago Pedido {self.pedido.id}"
 
+
+class PagoPedido(models.Model):
+    METODOS_PAGO = (
+        ('efectivo', 'Efectivo'),
+        ('mercado_pago', 'Mercado Pago'),
+        ('tarjeta', 'Tarjeta/Posnet'),
+        ('transferencia', 'Transferencia'),
+    )
+    pedido = models.ForeignKey(
+        Pedido,
+        on_delete=models.CASCADE,
+        related_name='pagos_registrados'
+    )
+    monto = models.DecimalField(max_digits=10, decimal_places=2)
+    metodo_pago = models.CharField(
+        max_length=20,
+        choices=METODOS_PAGO,
+        default='efectivo'
+    )
+    observaciones = models.CharField(max_length=255, blank=True)
+    fecha = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-fecha']
+
+    def __str__(self):
+        return f"Pago ${self.monto} - Pedido #{self.pedido.id}"
+
+
 class Gasto(models.Model):
     descripcion = models.CharField(max_length=200)
     monto = models.DecimalField(max_digits=10, decimal_places=2)
@@ -303,6 +332,10 @@ class ConfiguracionEnvio(models.Model):
     correo_gratis = models.BooleanField(
         default=False
     )
+    correo_a_coordinar = models.BooleanField(
+        default=False,
+        help_text='Mostrar "A coordinar" en lugar de precio fijo para envío por correo'
+    )
 
     zonas_flex = models.TextField(
         blank=True,
@@ -332,7 +365,17 @@ class ConfiguracionEnvio(models.Model):
     def costo_correo(self):
         if self.correo_gratis:
             return 0
+        if self.correo_a_coordinar:
+            return None
         return self.precio_correo
+
+    @property
+    def texto_costo_correo(self):
+        if self.correo_gratis:
+            return 'Gratis'
+        if self.correo_a_coordinar:
+            return 'A coordinar'
+        return f'${self.precio_correo}'
 
     @property
     def zonas_flex_lista(self):

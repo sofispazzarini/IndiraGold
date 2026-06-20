@@ -24,6 +24,7 @@ class ConfiguracionEnvioForm(forms.ModelForm):
             'zonas_flex',
             'correo_activo',
             'correo_gratis',
+            'correo_a_coordinar',
             'precio_correo',
         ]
         widgets = {
@@ -31,6 +32,7 @@ class ConfiguracionEnvioForm(forms.ModelForm):
             'flex_gratis': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'correo_activo': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'correo_gratis': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'correo_a_coordinar': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'precio_flex': forms.NumberInput(attrs={
                 'class': 'envio-input',
                 'step': '0.01',

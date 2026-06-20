@@ -471,31 +471,136 @@
         <div class="side-card">
             <div class="card-head">
                 <i class="bi bi-credit-card"></i>
-                <span class="card-head-title">Pago</span>
+                <span class="card-head-title">Pagos</span>
             </div>
-            {% if pago %}
+
             <div class="payment-info">
                 <div class="payment-row">
-                    <span class="detail-lbl">Metodo</span>
+                    <span class="detail-lbl">Total pedido</span>
+                    <span class="detail-val">${{ pedido.total }}</span>
+                </div>
+                <div class="payment-row">
+                    <span class="detail-lbl">Pagado</span>
+                    <span class="detail-val" id="monto-pagado" style="color:#2f6b38;">${{ pedido.monto_pagado }}</span>
+                </div>
+                <div class="payment-row">
+                    <span class="detail-lbl">Pendiente</span>
+                    <span class="detail-val" id="saldo-pendiente" style="color:{% if saldo_pendiente > 0 %}#6E0E2E{% else %}#2f6b38{% endif %};">${{ saldo_pendiente }}</span>
+                </div>
+            </div>
+
+            {% if pago %}
+            <div class="payment-info" style="margin-top:1rem; padding-top:1rem; border-top:1px solid #e8dfd4;">
+                <div class="payment-row">
+                    <span class="detail-lbl">Pago online</span>
                     <span class="detail-val">{{ pago.metodo }}</span>
                 </div>
                 <div class="payment-row">
                     <span class="detail-lbl">Monto</span>
-                    <span class="detail-val" style="color:#6E0E2E;">${{ pago.monto }}</span>
+                    <span class="detail-val">${{ pago.monto }}</span>
                 </div>
                 <div class="payment-row">
                     <span class="detail-lbl">Fecha</span>
                     <span class="detail-val">{{ pago.fecha_pago|date:"d/m/Y H:i" }}</span>
                 </div>
             </div>
+            {% endif %}
+
+            {% if pagos_registrados %}
+            <div class="pagos-lista" style="margin-top:1rem; padding-top:1rem; border-top:1px solid #e8dfd4;">
+                <div class="detail-lbl" style="margin-bottom:0.75rem;">Pagos registrados</div>
+                <div id="lista-pagos">
+                {% for p in pagos_registrados %}
+                <div class="pago-item" style="display:flex; justify-content:space-between; align-items:center; padding:0.5rem 0; border-bottom:1px dashed #e8dfd4;">
+                    <div>
+                        <div style="font-size:0.8rem; color:#3d342a; font-weight:600;">{{ p.get_metodo_pago_display }}</div>
+                        <div style="font-size:0.7rem; color:#9c8c7c;">{{ p.fecha|date:"d/m/Y H:i" }}</div>
+                        {% if p.observaciones %}<div style="font-size:0.7rem; color:#9c8c7c; font-style:italic;">{{ p.observaciones }}</div>{% endif %}
+                    </div>
+                    <div style="font-weight:700; color:#2f6b38;">${{ p.monto }}</div>
+                </div>
+                {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            {% if saldo_pendiente > 0 %}
+            <div class="registrar-pago" style="margin-top:1.25rem; padding-top:1.25rem; border-top:1px solid #e8dfd4;">
+                <div class="detail-lbl" style="margin-bottom:0.75rem;">Registrar pago</div>
+                <div style="display:flex; flex-direction:column; gap:0.75rem;">
+                    <select id="metodo-pago-pedido" class="form-select" style="border-radius:8px; font-size:0.85rem;">
+                        <option value="efectivo">Efectivo</option>
+                        <option value="tarjeta">Tarjeta/Posnet</option>
+                        <option value="transferencia">Transferencia</option>
+                        <option value="mercado_pago">Mercado Pago</option>
+                    </select>
+                    <input type="number" id="monto-pago-pedido" class="form-control" placeholder="Monto" step="0.01" min="0" max="{{ saldo_pendiente }}" style="border-radius:8px; font-size:0.85rem;">
+                    <input type="text" id="obs-pago-pedido" class="form-control" placeholder="Observaciones (opcional)" style="border-radius:8px; font-size:0.85rem;">
+                    <button type="button" id="btn-registrar-pago" class="btn-act btn-edit" style="width:100%; justify-content:center;">
+                        <i class="bi bi-check-circle"></i> Registrar pago
+                    </button>
+                </div>
+                <div id="pago-mensaje" style="margin-top:0.75rem;"></div>
+            </div>
             {% else %}
-            <div class="payment-empty">
-                <div class="payment-icon"><i class="bi bi-hourglass-split"></i></div>
-                <div class="payment-title">Sin pago registrado</div>
-                <div class="payment-desc">Este pedido todavia no tiene un pago asociado.</div>
+            <div style="margin-top:1rem; padding:0.75rem; background:#e8f5e9; border-radius:8px; text-align:center;">
+                <i class="bi bi-check-circle" style="color:#2f6b38;"></i>
+                <span style="color:#2f6b38; font-weight:600; font-size:0.85rem;">Pedido pagado</span>
             </div>
             {% endif %}
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const btnRegistrarPago = document.getElementById('btn-registrar-pago');
+    if (btnRegistrarPago) {
+        btnRegistrarPago.addEventListener('click', async function() {
+            const monto = document.getElementById('monto-pago-pedido').value;
+            const metodoPago = document.getElementById('metodo-pago-pedido').value;
+            const observaciones = document.getElementById('obs-pago-pedido').value;
+            const mensajeDiv = document.getElementById('pago-mensaje');
+
+            if (!monto || parseFloat(monto) <= 0) {
+                mensajeDiv.innerHTML = '<div class="alert alert-danger" style="font-size:0.8rem; padding:0.5rem; border-radius:8px;">Ingresá un monto válido</div>';
+                return;
+            }
+
+            btnRegistrarPago.disabled = true;
+            btnRegistrarPago.innerHTML = '<i class="bi bi-hourglass-split"></i> Registrando...';
+
+            try {
+                const response = await fetch('{% url "pedidos:registrar_pago_pedido" pedido.id %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify({
+                        monto: monto,
+                        metodo_pago: metodoPago,
+                        observaciones: observaciones
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    mensajeDiv.innerHTML = '<div class="alert alert-success" style="font-size:0.8rem; padding:0.5rem; border-radius:8px;">Pago registrado correctamente</div>';
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    mensajeDiv.innerHTML = '<div class="alert alert-danger" style="font-size:0.8rem; padding:0.5rem; border-radius:8px;">' + (data.error || 'Error al registrar') + '</div>';
+                    btnRegistrarPago.disabled = false;
+                    btnRegistrarPago.innerHTML = '<i class="bi bi-check-circle"></i> Registrar pago';
+                }
+            } catch (error) {
+                mensajeDiv.innerHTML = '<div class="alert alert-danger" style="font-size:0.8rem; padding:0.5rem; border-radius:8px;">Error de conexión</div>';
+                btnRegistrarPago.disabled = false;
+                btnRegistrarPago.innerHTML = '<i class="bi bi-check-circle"></i> Registrar pago';
+            }
+        });
+    }
+});
+</script>
 {% endblock %}

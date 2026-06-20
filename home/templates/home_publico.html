@@ -7,29 +7,31 @@
 <div id="toastContainer" aria-live="polite" aria-atomic="true"></div>
 
 <!-- HERO -->
-<section class="hero">
+{% if hero.activo %}
+<section class="hero" style="--hero-bg: {{ hero.color_fondo }}; --hero-text: {{ hero.color_texto }}; --hero-accent: {{ hero.color_acento }}; --hero-font: '{{ hero.fuente_titulo }}', serif;">
   <div class="hero__bg"></div>
   <div class="hero__content">
-    <span class="hero__eyebrow">Nueva colección</span>
-    <h1 class="hero__title">Elegancia<br><em>que se siente</em></h1>
-    <p class="hero__sub">Descubrí prendas únicas, pensadas para vos.</p>
-    <a href="#catalogo" class="hero__cta">Ver colección</a>
+    <span class="hero__eyebrow">{{ hero.eyebrow }}</span>
+    <h1 class="hero__title">{{ hero.titulo_linea1 }}<br><em>{{ hero.titulo_linea2 }}</em></h1>
+    <p class="hero__sub">{{ hero.subtitulo }}</p>
+    <a href="{{ hero.link_cta }}" class="hero__cta">{{ hero.texto_cta }}</a>
   </div>
   <div class="hero__ornament">
     <svg viewBox="0 0 300 300" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="150" cy="150" r="120" stroke="#b8922a" stroke-width="0.5" stroke-dasharray="5 8"/>
-      <circle cx="150" cy="150" r="85"  stroke="#b8922a" stroke-width="0.4" stroke-dasharray="2 10"/>
-      <circle cx="150" cy="150" r="45"  stroke="#b8922a" stroke-width="0.7"/>
-      <path d="M150 30 L150 270 M30 150 L270 150" stroke="#b8922a" stroke-width="0.3" opacity=".5"/>
-      <path d="M150 30 L270 150 L150 270 L30 150 Z" stroke="#b8922a" stroke-width="0.5" opacity=".3"/>
-      <circle cx="150" cy="150" r="8" fill="#b8922a" opacity=".4"/>
-      <circle cx="150" cy="30"  r="4" fill="#b8922a" opacity=".4"/>
-      <circle cx="150" cy="270" r="4" fill="#b8922a" opacity=".4"/>
-      <circle cx="30"  cy="150" r="4" fill="#b8922a" opacity=".4"/>
-      <circle cx="270" cy="150" r="4" fill="#b8922a" opacity=".4"/>
+      <circle cx="150" cy="150" r="120" stroke="{{ hero.color_acento }}" stroke-width="0.5" stroke-dasharray="5 8"/>
+      <circle cx="150" cy="150" r="85"  stroke="{{ hero.color_acento }}" stroke-width="0.4" stroke-dasharray="2 10"/>
+      <circle cx="150" cy="150" r="45"  stroke="{{ hero.color_acento }}" stroke-width="0.7"/>
+      <path d="M150 30 L150 270 M30 150 L270 150" stroke="{{ hero.color_acento }}" stroke-width="0.3" opacity=".5"/>
+      <path d="M150 30 L270 150 L150 270 L30 150 Z" stroke="{{ hero.color_acento }}" stroke-width="0.5" opacity=".3"/>
+      <circle cx="150" cy="150" r="8" fill="{{ hero.color_acento }}" opacity=".4"/>
+      <circle cx="150" cy="30"  r="4" fill="{{ hero.color_acento }}" opacity=".4"/>
+      <circle cx="150" cy="270" r="4" fill="{{ hero.color_acento }}" opacity=".4"/>
+      <circle cx="30"  cy="150" r="4" fill="{{ hero.color_acento }}" opacity=".4"/>
+      <circle cx="270" cy="150" r="4" fill="{{ hero.color_acento }}" opacity=".4"/>
     </svg>
   </div>
 </section>
+{% endif %}
 
 <!-- CARROUSEL PRINCIPAL -->
 {% if slides_carrousel %}

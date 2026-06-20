@@ -12,7 +12,7 @@ from carritos.utils import clear_cart_session, expire_cart_if_needed, get_cart_s
 from productos.models import Producto, Categoria, Talle, Color, CategoriaOrden, Variante
 from carritos.utils import clear_cart_session, expire_cart_if_needed, get_cart_seconds_left, get_or_create_cart
 from consultas.models import TemaConsulta
-from .models import SlideCarrousel
+from .models import SlideCarrousel, ConfiguracionHero
 from .forms import SlideCarrouselForm
 
 class HomePublicaView(TemplateView):
@@ -168,6 +168,7 @@ class HomePublicaView(TemplateView):
         ctx['temas_consulta'] = temas_con_faqs
 
         ctx['slides_carrousel'] = SlideCarrousel.objects.filter(activo=True)
+        ctx['hero'] = ConfiguracionHero.actual()
 
         categorias_orden = CategoriaOrden.objects.filter(activo=True).prefetch_related(
             'categoriaordenproducto_set__producto__imagenes'
