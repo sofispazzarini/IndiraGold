@@ -450,6 +450,7 @@
       document.getElementById('containerFichaTecnicaInject').innerHTML = data.ficha_tecnica_html;
       document.getElementById('btnVerPublico').href = data.url_publico;
       document.getElementById('btnEditarAdmin').href = data.url_editar;
+      document.getElementById('btnVerQRs').href = `/productos/producto/${productoId}/qrs/`;
       document.getElementById('formEliminarAdmin').action = data.url_eliminar;
 
       myModal.show();

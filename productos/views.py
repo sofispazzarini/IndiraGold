@@ -616,10 +616,21 @@ def variante_color_qr(request, vc_id):
 def producto_qrs_impresion(request, producto_id):
     """Vista de impresión masiva de todos los QRs de un producto."""
     producto = get_object_or_404(Producto, id=producto_id)
+
+    # Generar VarianteColor automáticamente si no existen
+    variantes = producto.variantes.filter(activa=True).prefetch_related('colores')
+    for variante in variantes:
+        for color in variante.colores.all():
+            VarianteColor.objects.get_or_create(
+                variante=variante,
+                color=color,
+                defaults={'activo': True}
+            )
+
     variantes_color = VarianteColor.objects.filter(
         variante__producto=producto,
         activo=True
-    ).select_related('variante__talle', 'color')
+    ).select_related('variante__talle', 'color').order_by('variante__talle__nombre', 'color__nombre')
 
     return render(request, 'productos/qrs_impresion.html', {
         'producto': producto,

@@ -77,6 +77,13 @@ class ConfiguracionHero(models.Model):
         default='Cormorant Garamond'
     )
 
+    imagen_fondo = models.ImageField(
+        upload_to='hero/',
+        blank=True,
+        null=True,
+        help_text='Imagen de fondo opcional (reemplaza el color)'
+    )
+
     activo = models.BooleanField(default=True)
     updated_at = models.DateTimeField(auto_now=True)
 

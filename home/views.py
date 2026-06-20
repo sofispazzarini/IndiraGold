@@ -249,6 +249,16 @@ def configurar_hero(request):
         hero.color_acento = request.POST.get('color_acento', hero.color_acento)
         hero.fuente_titulo = request.POST.get('fuente_titulo', hero.fuente_titulo)
         hero.activo = 'activo' in request.POST
+
+        # Manejar imagen de fondo
+        if 'eliminar_imagen' in request.POST and hero.imagen_fondo:
+            hero.imagen_fondo.delete(save=False)
+            hero.imagen_fondo = None
+        elif 'imagen_fondo' in request.FILES:
+            if hero.imagen_fondo:
+                hero.imagen_fondo.delete(save=False)
+            hero.imagen_fondo = request.FILES['imagen_fondo']
+
         hero.save()
         messages.success(request, 'Configuración del Hero actualizada.')
         return redirect('home:configurar_hero')

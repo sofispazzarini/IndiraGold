@@ -1,104 +1,250 @@
-{% extends 'basico.html' %}
+{% extends 'users/dashboard_admin.html' %}
 {% load static %}
 
 {% block title %}QRs - {{ producto.nombre }}{% endblock %}
 
-{% block extra_css %}
+{% block extra_head %}
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Montserrat:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
 <style>
-    @media print {
-        .no-print { display: none !important; }
-        .qr-grid { break-inside: avoid; }
-    }
+:root {
+    --gold: #b8922a;
+    --gold-faint: #faf7f0;
+    --dark: #1a1612;
+    --text: #3d342a;
+    --muted: #9c8c7c;
+    --border: #e8dfd4;
+}
 
-    .qr-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-        gap: 20px;
-        padding: 20px;
-    }
+@media print {
+    .no-print { display: none !important; }
+    .qr-page { margin: 0; padding: 1rem; max-width: 100%; }
+    .qr-card { break-inside: avoid; page-break-inside: avoid; }
+    body { background: #fff !important; }
+}
 
-    .qr-card {
-        border: 1px solid #ddd;
-        border-radius: 8px;
-        padding: 15px;
-        text-align: center;
-        background: white;
-    }
+.qr-page {
+    max-width: 1000px;
+    padding: 2rem 3rem 4rem;
+    margin-left: 20%;
+    margin-right: auto;
+}
 
-    .qr-card img {
-        width: 150px;
-        height: 150px;
-    }
+.back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--muted);
+    text-decoration: none;
+    margin-bottom: 1.5rem;
+    transition: color 0.2s;
+}
+.back-link:hover { color: var(--gold); }
 
-    .qr-info {
-        margin-top: 10px;
-        font-size: 12px;
-        color: #333;
-    }
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 2rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+}
+.page-header::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    width: 64px;
+    height: 2px;
+    background: var(--gold);
+}
 
-    .qr-info strong {
-        display: block;
-        font-size: 14px;
-        margin-bottom: 5px;
-    }
+.header-eyebrow {
+    font-size: 0.6rem;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 0.5rem;
+}
 
-    .btn-print {
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        padding: 10px 20px;
-        background: #4CAF50;
-        color: white;
-        border: none;
-        border-radius: 5px;
-        cursor: pointer;
-        font-size: 16px;
-    }
+.page-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 2.2rem;
+    font-weight: 600;
+    color: var(--dark);
+    line-height: 1.1;
+    margin-bottom: 0.35rem;
+}
 
-    .btn-print:hover {
-        background: #45a049;
-    }
+.page-subtitle {
+    font-size: 0.8rem;
+    color: var(--muted);
+}
 
-    .header-info {
-        padding: 20px;
-        background: #f5f5f5;
-        margin-bottom: 20px;
-    }
+.header-right {
+    text-align: right;
+}
+.qr-count {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 2.8rem;
+    font-weight: 300;
+    color: var(--gold);
+    line-height: 1;
+}
+.qr-count-label {
+    font-size: 0.6rem;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+}
 
-    .empty-message {
-        text-align: center;
-        padding: 40px;
-        color: #666;
-    }
+.btn-print {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    background: var(--dark);
+    color: #fff;
+    border: none;
+    border-radius: 999px;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    transition: background 0.2s;
+    margin-bottom: 2rem;
+}
+.btn-print:hover { background: var(--gold); }
+
+.qr-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 1.25rem;
+}
+
+.qr-card {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.25rem;
+    text-align: center;
+    transition: all 0.2s;
+}
+.qr-card:hover {
+    border-color: var(--gold);
+    box-shadow: 0 8px 24px rgba(184,146,42,0.1);
+}
+
+.qr-card img {
+    width: 140px;
+    height: 140px;
+    margin-bottom: 1rem;
+}
+
+.qr-code-label {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    color: var(--gold);
+    background: var(--gold-faint);
+    padding: 0.3rem 0.6rem;
+    border-radius: 4px;
+    display: inline-block;
+    margin-bottom: 0.5rem;
+}
+
+.qr-talle {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.4rem;
+    font-weight: 600;
+    color: var(--dark);
+    margin-bottom: 0.15rem;
+}
+
+.qr-color {
+    font-size: 0.8rem;
+    color: var(--muted);
+}
+
+.empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    background: var(--gold-faint);
+    border-radius: 16px;
+    border: 1px solid var(--border);
+}
+.empty-state i {
+    font-size: 3rem;
+    color: var(--border);
+    margin-bottom: 1rem;
+}
+.empty-state h3 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.5rem;
+    color: var(--dark);
+    margin-bottom: 0.5rem;
+}
+.empty-state p {
+    font-size: 0.85rem;
+    color: var(--muted);
+}
+
+@media (max-width: 900px) {
+    .qr-page { margin-left: 0; padding: 1.5rem; }
+    .qr-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 500px) {
+    .qr-grid { grid-template-columns: 1fr; }
+}
 </style>
 {% endblock %}
 
 {% block content %}
-<button class="btn-print no-print" onclick="window.print()">Imprimir QRs</button>
+<div class="qr-page">
+    <a href="{% url 'productos:editar_producto' producto.id %}" class="back-link no-print">
+        <i class="bi bi-arrow-left"></i> Volver al producto
+    </a>
 
-<div class="header-info">
-    <h1>{{ producto.nombre }}</h1>
-    <p>Codigo: {{ producto.codigo }} | Total QRs: {{ variantes_color|length }}</p>
-</div>
-
-{% if variantes_color %}
-<div class="qr-grid">
-    {% for vc in variantes_color %}
-    <div class="qr-card">
-        <img src="{% url 'productos:variante_color_qr' vc.id %}" alt="QR {{ vc }}">
-        <div class="qr-info">
-            <strong>{{ producto.codigo }}</strong>
-            Talle: {{ vc.variante.talle.nombre }}<br>
-            Color: {{ vc.color.nombre }}
+    <div class="page-header">
+        <div>
+            <p class="header-eyebrow">Códigos QR</p>
+            <h1 class="page-title">{{ producto.nombre }}</h1>
+            <p class="page-subtitle">Código: {{ producto.codigo }}</p>
+        </div>
+        <div class="header-right no-print">
+            <div class="qr-count">{{ variantes_color|length|stringformat:"02d" }}</div>
+            <div class="qr-count-label">códigos</div>
         </div>
     </div>
-    {% endfor %}
+
+    {% if variantes_color %}
+    <button class="btn-print no-print" onclick="window.print()">
+        <i class="bi bi-printer"></i> Imprimir QRs
+    </button>
+
+    <div class="qr-grid">
+        {% for vc in variantes_color %}
+        <div class="qr-card">
+            <img src="{% url 'productos:variante_color_qr' vc.id %}" alt="QR {{ vc }}">
+            <div class="qr-code-label">{{ producto.codigo }}</div>
+            <div class="qr-talle">{{ vc.variante.talle.nombre }}</div>
+            <div class="qr-color">{{ vc.color.nombre }}</div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <i class="bi bi-qr-code"></i>
+        <h3>Sin variantes disponibles</h3>
+        <p>Este producto no tiene variantes con colores asignados.</p>
+    </div>
+    {% endif %}
 </div>
-{% else %}
-<div class="empty-message">
-    <h2>No hay variantes de color registradas</h2>
-    <p class="no-print">Ejecuta el comando de generacion para crear los registros VarianteColor:</p>
-    <code class="no-print">python manage.py generar_variantes_color</code>
-</div>
-{% endif %}
 {% endblock %}

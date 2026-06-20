@@ -8,7 +8,7 @@
 
 <!-- HERO -->
 {% if hero.activo %}
-<section class="hero" style="--hero-bg: {{ hero.color_fondo }}; --hero-text: {{ hero.color_texto }}; --hero-accent: {{ hero.color_acento }}; --hero-font: '{{ hero.fuente_titulo }}', serif;">
+<section class="hero" style="--hero-bg: {% if hero.imagen_fondo %}url('{{ hero.imagen_fondo.url }}'){% else %}{{ hero.color_fondo }}{% endif %}; --hero-text: {{ hero.color_texto }}; --hero-accent: {{ hero.color_acento }}; --hero-font: '{{ hero.fuente_titulo }}', serif;">
   <div class="hero__bg"></div>
   <div class="hero__content">
     <span class="hero__eyebrow">{{ hero.eyebrow }}</span>
@@ -681,7 +681,9 @@ function scrollCatOrden{{ cat_orden.id }}(dir) {
   /* HERO */
   .hero {
     min-height: 92vh;
-    background: #faf7f4;
+    background: var(--hero-bg, #faf7f4);
+    background-size: cover;
+    background-position: center;
     display: flex;
     align-items: center;
     justify-content: space-between;
