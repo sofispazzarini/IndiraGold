@@ -18,9 +18,13 @@
 
 @media print {
     .no-print { display: none !important; }
-    .qr-page { margin: 0; padding: 1rem; max-width: 100%; }
+    .qr-page { margin: 0; padding: 1rem; max-width: 100%; margin-left: 0; }
     .qr-card { break-inside: avoid; page-break-inside: avoid; }
     body { background: #fff !important; }
+    /* Solo mostrar seleccionados si hay selección */
+    .qr-grid.has-selection .qr-card:not(.selected) { display: none !important; }
+    .qr-card.selected { border-color: transparent; box-shadow: none; }
+    .qr-checkbox { display: none !important; }
 }
 
 .qr-page {
@@ -103,6 +107,15 @@
     color: var(--muted);
 }
 
+/* Controles de acción */
+.action-bar {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+}
+
 .btn-print {
     display: inline-flex;
     align-items: center;
@@ -118,9 +131,43 @@
     letter-spacing: 0.05em;
     cursor: pointer;
     transition: background 0.2s;
-    margin-bottom: 2rem;
 }
 .btn-print:hover { background: var(--gold); }
+
+.btn-select-all {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.65rem 1.25rem;
+    background: transparent;
+    color: var(--text);
+    border: 1.5px solid var(--border);
+    border-radius: 999px;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.btn-select-all:hover {
+    border-color: var(--gold);
+    color: var(--gold);
+}
+.btn-select-all.active {
+    background: var(--gold-faint);
+    border-color: var(--gold);
+    color: var(--gold);
+}
+
+.selection-info {
+    font-size: 0.8rem;
+    color: var(--muted);
+    margin-left: auto;
+}
+.selection-info strong {
+    color: var(--gold);
+    font-weight: 600;
+}
 
 .qr-grid {
     display: grid;
@@ -130,46 +177,65 @@
 
 .qr-card {
     background: #fff;
-    border: 1px solid var(--border);
+    border: 2px solid var(--border);
     border-radius: 12px;
     padding: 1.25rem;
     text-align: center;
     transition: all 0.2s;
+    position: relative;
+    cursor: pointer;
 }
 .qr-card:hover {
     border-color: var(--gold);
     box-shadow: 0 8px 24px rgba(184,146,42,0.1);
 }
+.qr-card.selected {
+    border-color: var(--gold);
+    background: var(--gold-faint);
+}
+
+.qr-checkbox {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    width: 22px;
+    height: 22px;
+    accent-color: var(--gold);
+    cursor: pointer;
+}
 
 .qr-card img {
-    width: 140px;
-    height: 140px;
-    margin-bottom: 1rem;
+    width: 130px;
+    height: 130px;
+    margin-bottom: 0.75rem;
 }
 
 .qr-code-label {
     font-family: 'Montserrat', sans-serif;
-    font-size: 0.7rem;
+    font-size: 0.65rem;
     font-weight: 600;
     letter-spacing: 0.1em;
     color: var(--gold);
     background: var(--gold-faint);
-    padding: 0.3rem 0.6rem;
+    padding: 0.25rem 0.5rem;
     border-radius: 4px;
     display: inline-block;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.4rem;
+}
+.qr-card.selected .qr-code-label {
+    background: #fff;
 }
 
 .qr-talle {
     font-family: 'Cormorant Garamond', serif;
-    font-size: 1.4rem;
+    font-size: 1.3rem;
     font-weight: 600;
     color: var(--dark);
-    margin-bottom: 0.15rem;
+    margin-bottom: 0.1rem;
 }
 
 .qr-color {
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     color: var(--muted);
 }
 
@@ -196,9 +262,21 @@
     color: var(--muted);
 }
 
+.print-hint {
+    font-size: 0.75rem;
+    color: var(--muted);
+    margin-top: 1.5rem;
+    text-align: center;
+}
+.print-hint i {
+    color: var(--gold);
+}
+
 @media (max-width: 900px) {
     .qr-page { margin-left: 0; padding: 1.5rem; }
     .qr-grid { grid-template-columns: repeat(2, 1fr); }
+    .action-bar { flex-direction: column; align-items: stretch; }
+    .selection-info { margin-left: 0; text-align: center; }
 }
 @media (max-width: 500px) {
     .qr-grid { grid-template-columns: 1fr; }
@@ -225,13 +303,22 @@
     </div>
 
     {% if variantes_color %}
-    <button class="btn-print no-print" onclick="window.print()">
-        <i class="bi bi-printer"></i> Imprimir QRs
-    </button>
+    <div class="action-bar no-print">
+        <button class="btn-print" onclick="imprimirQRs()">
+            <i class="bi bi-printer"></i> Imprimir seleccionados
+        </button>
+        <button class="btn-select-all" id="btnSelectAll" onclick="toggleSelectAll()">
+            <i class="bi bi-check2-square"></i> Seleccionar todos
+        </button>
+        <div class="selection-info">
+            <strong id="selectedCount">0</strong> de {{ variantes_color|length }} seleccionados
+        </div>
+    </div>
 
-    <div class="qr-grid">
+    <div class="qr-grid" id="qrGrid">
         {% for vc in variantes_color %}
-        <div class="qr-card">
+        <div class="qr-card" onclick="toggleCard(this)">
+            <input type="checkbox" class="qr-checkbox no-print" onclick="event.stopPropagation(); toggleCard(this.parentElement);">
             <img src="{% url 'productos:variante_color_qr' vc.id %}" alt="QR {{ vc }}">
             <div class="qr-code-label">{{ producto.codigo }}</div>
             <div class="qr-talle">{{ vc.variante.talle.nombre }}</div>
@@ -239,6 +326,10 @@
         </div>
         {% endfor %}
     </div>
+
+    <p class="print-hint no-print">
+        <i class="bi bi-info-circle"></i> Hacé clic en las tarjetas para seleccionar qué QRs imprimir. Si no seleccionás ninguno, se imprimirán todos.
+    </p>
     {% else %}
     <div class="empty-state">
         <i class="bi bi-qr-code"></i>
@@ -247,4 +338,58 @@
     </div>
     {% endif %}
 </div>
+
+<script>
+function updateSelectionCount() {
+    const cards = document.querySelectorAll('.qr-card');
+    const selected = document.querySelectorAll('.qr-card.selected');
+    const grid = document.getElementById('qrGrid');
+    const countEl = document.getElementById('selectedCount');
+    const btnSelectAll = document.getElementById('btnSelectAll');
+
+    countEl.textContent = selected.length;
+
+    if (selected.length > 0) {
+        grid.classList.add('has-selection');
+    } else {
+        grid.classList.remove('has-selection');
+    }
+
+    if (selected.length === cards.length) {
+        btnSelectAll.classList.add('active');
+        btnSelectAll.innerHTML = '<i class="bi bi-x-square"></i> Deseleccionar todos';
+    } else {
+        btnSelectAll.classList.remove('active');
+        btnSelectAll.innerHTML = '<i class="bi bi-check2-square"></i> Seleccionar todos';
+    }
+}
+
+function toggleCard(card) {
+    card.classList.toggle('selected');
+    const checkbox = card.querySelector('.qr-checkbox');
+    checkbox.checked = card.classList.contains('selected');
+    updateSelectionCount();
+}
+
+function toggleSelectAll() {
+    const cards = document.querySelectorAll('.qr-card');
+    const selected = document.querySelectorAll('.qr-card.selected');
+    const selectAll = selected.length !== cards.length;
+
+    cards.forEach(card => {
+        if (selectAll) {
+            card.classList.add('selected');
+        } else {
+            card.classList.remove('selected');
+        }
+        card.querySelector('.qr-checkbox').checked = selectAll;
+    });
+
+    updateSelectionCount();
+}
+
+function imprimirQRs() {
+    window.print();
+}
+</script>
 {% endblock %}
