@@ -52,6 +52,9 @@
     </a>
 
     <div class="nav-section">Sitio</div>
+    <a href="{% url 'home:configurar_hero' %}" class="nav-link{% if request.resolver_match.url_name == 'configurar_hero' %} active{% endif %}">
+        <i class="bi bi-card-heading me-2"></i> Hero Home
+    </a>
     <a href="{% url 'home:gestion_carrousel' %}" class="nav-link{% if request.resolver_match.url_name == 'gestion_carrousel' or request.resolver_match.url_name == 'crear_slide' or request.resolver_match.url_name == 'editar_slide' %} active{% endif %}">
         <i class="bi bi-images me-2"></i> Carrousel Home
     </a>

@@ -334,7 +334,7 @@ function scrollCatOrden{{ cat_orden.id }}(dir) {
 
     <div class="products-grid" id="productsGrid">
       {% for producto in productos %}
-          <div class="product-card" data-cat="{{ producto.categoria.id }}" data-name="{{ producto.nombre|lower }} {{ producto.tipo|lower }} {{ producto.tela|lower }}">
+          <div class="product-card" data-cat="{{ producto.categoria.id }}" data-name="{{ producto.nombre|lower }} {{ producto.tipo|lower }} {{ producto.tela|lower }}" data-talles="{% for v in producto.variantes.all %}{{ v.talle.id }}{% if not forloop.last %},{% endif %}{% endfor %}">
             <a href="{% url 'productos:detalle_producto' producto.id %}" class="product-card__img-wrap">
           {% if producto.imagen %}
             <img src="{{ producto.imagen.url }}" alt="{{ producto.nombre }}" class="product-card__img" />
@@ -976,6 +976,115 @@ function scrollCatOrden{{ cat_orden.id }}(dir) {
     .cart-panel { width: 100%; right: -100%; }
   }
   @media (max-width: 480px) { .products-grid { grid-template-columns: 1fr; } }
+
+  /* Welcome Modal */
+  .welcome-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(26, 22, 18, 0.85);
+    backdrop-filter: blur(8px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    padding: 1rem;
+  }
+  .welcome-modal-overlay.show { display: flex; }
+  .welcome-modal {
+    background: #fff;
+    border-radius: 24px;
+    max-width: 480px;
+    width: 100%;
+    padding: 3rem 2.5rem;
+    position: relative;
+    text-align: center;
+    box-shadow: 0 32px 80px rgba(0,0,0,0.35);
+    animation: welcomeIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  @keyframes welcomeIn {
+    from { opacity: 0; transform: scale(0.9) translateY(20px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+  }
+  .welcome-close {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    width: 36px;
+    height: 36px;
+    border: none;
+    background: #f5f2ed;
+    border-radius: 50%;
+    font-size: 1.4rem;
+    color: #8c7e70;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .welcome-close:hover { background: #1a1612; color: #fff; }
+  .welcome-eyebrow {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: #b8922a;
+    margin-bottom: 0.5rem;
+  }
+  .welcome-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 2.8rem;
+    font-weight: 600;
+    color: #1a1612;
+    margin-bottom: 1rem;
+    line-height: 1;
+  }
+  .welcome-text {
+    font-size: 0.95rem;
+    color: #6b5f54;
+    line-height: 1.6;
+    margin-bottom: 2rem;
+  }
+  .welcome-talles {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    justify-content: center;
+    margin-bottom: 1.5rem;
+  }
+  .talle-btn {
+    min-width: 52px;
+    padding: 0.7rem 1rem;
+    border: 1.5px solid #e8dfd4;
+    background: #fff;
+    border-radius: 10px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #1a1612;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .talle-btn:hover {
+    border-color: #b8922a;
+    background: #faf7f0;
+    color: #b8922a;
+  }
+  .welcome-skip {
+    background: none;
+    border: none;
+    color: #8c7e70;
+    font-size: 0.85rem;
+    cursor: pointer;
+    padding: 0.5rem 1rem;
+    transition: color 0.2s;
+  }
+  .welcome-skip:hover { color: #b8922a; }
+  @media (max-width: 480px) {
+    .welcome-modal { padding: 2rem 1.5rem; }
+    .welcome-title { font-size: 2.2rem; }
+    .talle-btn { min-width: 46px; padding: 0.6rem 0.8rem; font-size: 0.85rem; }
+  }
 </style>
 
 <script>
@@ -1312,6 +1421,53 @@ function scrollCatOrden{{ cat_orden.id }}(dir) {
       carouselContainer.addEventListener('mouseleave', carouselStartAutoPlay);
     }
   }
+
+  // Welcome Modal
+  function cerrarWelcome() {
+    document.getElementById('welcomeModal').classList.remove('show');
+    localStorage.setItem('welcomeClosed', 'true');
+  }
+
+  function seleccionarTalle(talleId) {
+    cerrarWelcome();
+    document.getElementById('talleFilter').value = talleId;
+    filterTalle(talleId);
+    setTimeout(() => {
+      document.getElementById('catalogo').scrollIntoView({ behavior: 'smooth' });
+    }, 300);
+  }
+
+  // Mostrar modal si no fue cerrado antes
+  document.addEventListener('DOMContentLoaded', function() {
+    if (!localStorage.getItem('welcomeClosed')) {
+      document.getElementById('welcomeModal').classList.add('show');
+    }
+  });
 </script>
+
+<!-- Modal Bienvenida -->
+<div class="welcome-modal-overlay" id="welcomeModal">
+  <div class="welcome-modal">
+    <button class="welcome-close" onclick="cerrarWelcome()">&times;</button>
+    <div class="welcome-content">
+      <p class="welcome-eyebrow">Bienvenida a</p>
+      <h2 class="welcome-title">Indira Gold</h2>
+      <p class="welcome-text">
+        Encontrá prendas únicas pensadas para vos.<br>
+        Seleccioná tu talle y te mostramos lo que tenemos disponible.
+      </p>
+      <div class="welcome-talles">
+        {% for talle in talles %}
+        <button class="talle-btn" onclick="seleccionarTalle('{{ talle.id }}')">
+          {{ talle.nombre }}
+        </button>
+        {% endfor %}
+      </div>
+      <button class="welcome-skip" onclick="cerrarWelcome()">
+        Ver todo el catálogo
+      </button>
+    </div>
+  </div>
+</div>
 
 {% endblock %}

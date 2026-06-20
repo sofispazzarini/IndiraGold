@@ -1,241 +1,242 @@
-{% extends 'base.html' %}
+{% extends 'users/dashboard_admin.html' %}
 {% load static %}
 
 {% block title %}{% if faq %}Editar FAQ{% else %}Nueva FAQ{% endif %}{% endblock %}
 
 {% block extra_head %}
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
 <style>
-    /* MAIN OVERRIDE - CENTRADO */
-    .main { max-width: 700px; padding: 3rem 3.5rem 5rem; margin: 0 auto; }
+:root {
+    --gold: #b8922a;
+    --gold-faint: #faf7f0;
+    --dark: #1a1612;
+    --text: #3d342a;
+    --muted: #9c8c7c;
+    --border: #e8dfd4;
+    --border-faint: rgba(184,146,42,0.12);
+}
 
-    /* BACK LINK */
-    .back-link {
-        display: inline-flex; align-items: center; gap: 0.5rem;
-        font-size: 0.7rem; font-weight: 600; letter-spacing: 0.14em;
-        text-transform: uppercase; color: #9c8c7c; text-decoration: none;
-        margin-bottom: 1.75rem; transition: all 0.2s;
-    }
-    .back-link:hover { color: #b8922a; transform: translateX(-3px); }
+.faq-form-page {
+    max-width: 700px;
+    padding: 3rem 3.5rem 5rem;
+    margin-left: 20%;
+    margin-right: auto;
+}
 
-    /* PAGE HEADER */
-    .page-header {
-        margin-bottom: 2rem; padding-bottom: 1.5rem;
-        border-bottom: 1px solid rgba(184,146,42,0.12);
-        position: relative;
-    }
-    .page-header::after {
-        content: ''; position: absolute; bottom: -1px; left: 0;
-        width: 64px; height: 2px; background: #b8922a;
-    }
-    .header-eyebrow {
-        font-size: 0.6rem; font-weight: 600; letter-spacing: 0.2em;
-        text-transform: uppercase; color: #b8922a; margin-bottom: 0.5rem;
-    }
-    .page-title {
-        font-family: 'Cormorant Garamond', serif;
-        font-size: 2.4rem; font-weight: 600;
-        color: #1a1612; letter-spacing: -0.015em; line-height: 1;
-    }
-    .page-subtitle {
-        font-size: 0.85rem; color: #9c8c7c; margin-top: 0.5rem;
-    }
+.back-link {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    font-size: 0.7rem; font-weight: 600; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--muted); text-decoration: none;
+    margin-bottom: 1.75rem; transition: all 0.2s;
+}
+.back-link:hover { color: var(--gold); transform: translateX(-3px); }
 
-    /* CARD */
-    .form-card {
-        background: #fff; border: 1px solid #e8dfd4;
-        border-radius: 14px; overflow: hidden;
-    }
-    .card-section {
-        padding: 1.5rem 1.6rem;
-        border-bottom: 1px solid rgba(184,146,42,0.12);
-    }
-    .card-section:last-child { border-bottom: none; }
-    .section-title {
-        font-size: 0.65rem; font-weight: 600; letter-spacing: 0.14em;
-        text-transform: uppercase; color: #b8922a; margin-bottom: 1.25rem;
-        display: flex; align-items: center; gap: 0.5rem;
-    }
-    .section-title i { font-size: 0.85rem; }
+.page-header {
+    margin-bottom: 2rem; padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border-faint);
+    position: relative;
+}
+.page-header::after {
+    content: ''; position: absolute; bottom: -1px; left: 0;
+    width: 64px; height: 2px; background: var(--gold);
+}
+.header-eyebrow {
+    font-size: 0.6rem; font-weight: 600; letter-spacing: 0.2em;
+    text-transform: uppercase; color: var(--gold); margin-bottom: 0.5rem;
+}
+.page-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 2.4rem; font-weight: 600;
+    color: var(--dark); letter-spacing: -0.015em; line-height: 1;
+}
+.page-subtitle {
+    font-size: 0.85rem; color: var(--muted); margin-top: 0.5rem;
+}
 
-    /* FORM */
-    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
-    .form-row.full { grid-template-columns: 1fr; }
-    .form-group { margin-bottom: 0; }
-    .form-label {
-        font-size: 0.65rem; font-weight: 600; letter-spacing: 0.1em;
-        text-transform: uppercase; color: #9c8c7c; margin-bottom: 0.5rem;
-        display: block;
-    }
-    .form-input, .form-select, .form-textarea {
-        width: 100%; border: 1.5px solid #e8dfd4; border-radius: 8px;
-        padding: 0.75rem 1rem; font-size: 0.9rem;
-        background: #faf7f4; transition: all 0.2s;
-        font-family: inherit; color: #3d342a;
-    }
-    .form-textarea { min-height: 120px; resize: vertical; }
-    .form-input:focus, .form-select:focus, .form-textarea:focus {
-        border-color: #b8922a; background: #fff;
-        box-shadow: 0 0 0 3px rgba(184,146,42,0.1); outline: none;
-    }
-    .form-hint {
-        font-size: 0.72rem; color: #9c8c7c; margin-top: 0.35rem;
-    }
+.form-card {
+    background: #fff; border: 1px solid var(--border);
+    border-radius: 14px; overflow: hidden;
+}
+.card-section {
+    padding: 1.5rem 1.6rem;
+    border-bottom: 1px solid var(--border-faint);
+}
+.card-section:last-child { border-bottom: none; }
+.section-title {
+    font-size: 0.65rem; font-weight: 600; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--gold); margin-bottom: 1.25rem;
+    display: flex; align-items: center; gap: 0.5rem;
+}
+.section-title i { font-size: 0.85rem; }
 
-    /* CHECKBOX */
-    .checkbox-wrapper {
-        display: flex; align-items: center; gap: 0.75rem;
-        padding: 0.85rem 1rem; background: #faf7f4;
-        border-radius: 8px; border: 1.5px solid #e8dfd4;
-        cursor: pointer; transition: all 0.2s;
-    }
-    .checkbox-wrapper:hover { border-color: #b8922a; background: #faf7f0; }
-    .checkbox-wrapper input[type="checkbox"] {
-        width: 18px; height: 18px; accent-color: #b8922a; cursor: pointer;
-    }
-    .checkbox-label { font-size: 0.88rem; color: #3d342a; font-weight: 500; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
+.form-row.full { grid-template-columns: 1fr; }
+.form-group { margin-bottom: 0; }
+.form-label {
+    font-size: 0.65rem; font-weight: 600; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--muted); margin-bottom: 0.5rem;
+    display: block;
+}
+.form-input, .form-select, .form-textarea {
+    width: 100%; border: 1.5px solid var(--border); border-radius: 8px;
+    padding: 0.75rem 1rem; font-size: 0.9rem;
+    background: var(--gold-faint); transition: all 0.2s;
+    font-family: inherit; color: var(--text);
+}
+.form-textarea { min-height: 120px; resize: vertical; }
+.form-input:focus, .form-select:focus, .form-textarea:focus {
+    border-color: var(--gold); background: #fff;
+    box-shadow: 0 0 0 3px rgba(184,146,42,0.1); outline: none;
+}
+.form-hint {
+    font-size: 0.72rem; color: var(--muted); margin-top: 0.35rem;
+}
 
-    /* ACTIONS */
-    .form-actions {
-        display: flex; gap: 1rem; justify-content: flex-end;
-        padding: 1.5rem 1.6rem; background: #faf7f4;
-    }
-    .btn-cancel {
-        display: inline-flex; align-items: center; gap: 0.5rem;
-        padding: 0.85rem 1.5rem; border-radius: 50px;
-        font-size: 0.76rem; font-weight: 600;
-        background: transparent; color: #3d342a;
-        border: 1.5px solid #e8dfd4; text-decoration: none;
-        transition: all 0.2s;
-    }
-    .btn-cancel:hover { border-color: #b8922a; color: #b8922a; }
-    .btn-submit {
-        display: inline-flex; align-items: center; gap: 0.5rem;
-        padding: 0.85rem 1.5rem; border-radius: 50px;
-        background: #1a1612; color: #fff; border: none;
-        font-family: 'Montserrat', sans-serif; font-size: 0.76rem; font-weight: 700;
-        letter-spacing: 0.1em; text-transform: uppercase;
-        cursor: pointer; transition: all 0.2s;
-    }
-    .btn-submit:hover { background: #b8922a; }
+.checkbox-wrapper {
+    display: flex; align-items: center; gap: 0.75rem;
+    padding: 0.85rem 1rem; background: var(--gold-faint);
+    border-radius: 8px; border: 1.5px solid var(--border);
+    cursor: pointer; transition: all 0.2s;
+}
+.checkbox-wrapper:hover { border-color: var(--gold); }
+.checkbox-wrapper input[type="checkbox"] {
+    width: 18px; height: 18px; accent-color: var(--gold); cursor: pointer;
+}
+.checkbox-label { font-size: 0.88rem; color: var(--text); font-weight: 500; }
 
-    /* ALERT */
-    .alert-custom {
-        padding: 1rem 1.25rem; border-radius: 10px; margin-bottom: 1.5rem;
-        font-size: 0.85rem; display: flex; align-items: center; gap: 0.75rem;
-    }
-    .alert-success { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
-    .alert-danger { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+.form-actions {
+    display: flex; gap: 1rem; justify-content: flex-end;
+    padding: 1.5rem 1.6rem; background: var(--gold-faint);
+}
+.btn-cancel {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    padding: 0.85rem 1.5rem; border-radius: 999px;
+    font-size: 0.76rem; font-weight: 600;
+    background: transparent; color: var(--text);
+    border: 1.5px solid var(--border); text-decoration: none;
+    transition: all 0.2s;
+}
+.btn-cancel:hover { border-color: var(--gold); color: var(--gold); }
+.btn-submit {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    padding: 0.85rem 1.5rem; border-radius: 999px;
+    background: var(--dark); color: #fff; border: none;
+    font-family: 'Montserrat', sans-serif; font-size: 0.76rem; font-weight: 700;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    cursor: pointer; transition: all 0.2s;
+}
+.btn-submit:hover { background: var(--gold); }
 
-    /* Animations */
-    @keyframes fadeUp { from { opacity:0; transform:translateY(14px); } to { opacity:1; transform:translateY(0); } }
-    .page-header { animation: fadeUp 0.38s ease both; }
-    .form-card { animation: fadeUp 0.38s 0.08s ease both; }
+.alert-custom {
+    padding: 1rem 1.25rem; border-radius: 10px; margin-bottom: 1.5rem;
+    font-size: 0.85rem; display: flex; align-items: center; gap: 0.75rem;
+}
+.alert-success { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
+.alert-danger { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
 
-    /* Responsive */
-    @media (max-width: 600px) {
-        .main { padding: 2rem 1.5rem; }
-        .form-row { grid-template-columns: 1fr; }
-        .form-actions { flex-direction: column; }
-        .btn-cancel, .btn-submit { width: 100%; justify-content: center; }
-    }
+@media (max-width: 900px) {
+    .faq-form-page { margin-left: 0; padding: 2rem 1.5rem; }
+    .form-row { grid-template-columns: 1fr; }
+    .form-actions { flex-direction: column; }
+    .btn-cancel, .btn-submit { width: 100%; justify-content: center; }
+}
 </style>
 {% endblock %}
 
-{% block sidebar_menu %}
-{% include 'users/_sidebar_admin.html' %}
-{% endblock %}
-
 {% block content %}
-<a href="{% url 'consultas:gestion_faqs' %}" class="back-link">
-    <i class="bi bi-arrow-left"></i> Volver a FAQs
-</a>
+<div class="faq-form-page">
+    <a href="{% url 'consultas:gestion_faqs' %}" class="back-link">
+        <i class="bi bi-arrow-left"></i> Volver a FAQs
+    </a>
 
-<div class="page-header">
-    <p class="header-eyebrow">Preguntas frecuentes</p>
-    <h1 class="page-title">{% if faq %}Editar Pregunta{% else %}Nueva Pregunta{% endif %}</h1>
-    <p class="page-subtitle">{% if faq %}Modificar FAQ existente{% else %}Agregar nueva FAQ{% endif %}</p>
-</div>
-
-{% if messages %}
-    {% for message in messages %}
-    <div class="alert-custom alert-success">
-        <i class="bi bi-check-circle"></i> {{ message }}
+    <div class="page-header">
+        <p class="header-eyebrow">Preguntas frecuentes</p>
+        <h1 class="page-title">{% if faq %}Editar Pregunta{% else %}Nueva Pregunta{% endif %}</h1>
+        <p class="page-subtitle">{% if faq %}Modificar FAQ existente{% else %}Agregar nueva FAQ{% endif %}</p>
     </div>
-    {% endfor %}
-{% endif %}
 
-<form method="post" autocomplete="off">
-    {% csrf_token %}
-    <div class="form-card">
-        <div class="card-section">
-            <div class="section-title">
-                <i class="bi bi-folder"></i> Clasificacion
+    {% if messages %}
+        {% for message in messages %}
+        <div class="alert-custom alert-success">
+            <i class="bi bi-check-circle"></i> {{ message }}
+        </div>
+        {% endfor %}
+    {% endif %}
+
+    <form method="post" autocomplete="off">
+        {% csrf_token %}
+        <div class="form-card">
+            <div class="card-section">
+                <div class="section-title">
+                    <i class="bi bi-folder"></i> Clasificación
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Tema</label>
+                        <select name="tema" class="form-select" required>
+                            {% for choice in form.tema.field.queryset %}
+                            <option value="{{ choice.pk }}" {% if form.tema.value|stringformat:"s" == choice.pk|stringformat:"s" %}selected{% endif %}>{{ choice }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Orden</label>
+                        <input type="number" name="orden" value="{{ form.orden.value|default:'0' }}" class="form-input" min="0">
+                        <p class="form-hint">Menor = aparece primero</p>
+                    </div>
+                </div>
             </div>
-            <div class="form-row">
-                <div class="form-group">
-                    <label class="form-label">Tema</label>
-                    <select name="tema" class="form-select">
-                        {% for choice in form.tema.field.queryset %}
-                        <option value="{{ choice.pk }}" {% if form.tema.value|stringformat:"s" == choice.pk|stringformat:"s" %}selected{% endif %}>{{ choice }}</option>
+
+            <div class="card-section">
+                <div class="section-title">
+                    <i class="bi bi-chat-left-text"></i> Contenido
+                </div>
+                <div class="form-row full">
+                    <div class="form-group">
+                        <label class="form-label">Pregunta</label>
+                        <input type="text" name="pregunta" value="{{ form.pregunta.value|default:'' }}" class="form-input" placeholder="Ej: ¿Cuáles son los métodos de pago?" required>
+                    </div>
+                </div>
+                <div class="form-row full">
+                    <div class="form-group">
+                        <label class="form-label">Respuesta</label>
+                        <textarea name="respuesta" class="form-textarea" placeholder="Escribí la respuesta detallada..." required>{{ form.respuesta.value|default:'' }}</textarea>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-section">
+                <div class="section-title">
+                    <i class="bi bi-toggle-on"></i> Estado
+                </div>
+                <label class="checkbox-wrapper">
+                    <input type="checkbox" name="activa" {% if form.activa.value %}checked{% endif %}>
+                    <span class="checkbox-label">Pregunta activa</span>
+                </label>
+                <p class="form-hint" style="margin-top: 0.5rem;">Las preguntas inactivas no se muestran a los usuarios</p>
+            </div>
+
+            {% if form.errors %}
+            <div class="card-section">
+                <div class="alert-custom alert-danger">
+                    <i class="bi bi-exclamation-circle"></i>
+                    <div>
+                        {% for field, errors in form.errors.items %}
+                            {% for error in errors %}<strong>{{ field|capfirst }}:</strong> {{ error }}<br>{% endfor %}
                         {% endfor %}
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Orden</label>
-                    <input type="number" name="orden" value="{{ form.orden.value|default:'0' }}" class="form-input" min="0">
-                    <p class="form-hint">Menor = aparece primero</p>
+                    </div>
                 </div>
             </div>
-        </div>
+            {% endif %}
 
-        <div class="card-section">
-            <div class="section-title">
-                <i class="bi bi-chat-left-text"></i> Contenido
-            </div>
-            <div class="form-row full">
-                <div class="form-group">
-                    <label class="form-label">Pregunta</label>
-                    <input type="text" name="pregunta" value="{{ form.pregunta.value|default:'' }}" class="form-input" placeholder="Ej: ¿Cuales son los metodos de pago?">
-                </div>
-            </div>
-            <div class="form-row full">
-                <div class="form-group">
-                    <label class="form-label">Respuesta</label>
-                    <textarea name="respuesta" class="form-textarea" placeholder="Escribe la respuesta detallada...">{{ form.respuesta.value|default:'' }}</textarea>
-                </div>
+            <div class="form-actions">
+                <a href="{% url 'consultas:gestion_faqs' %}" class="btn-cancel">Cancelar</a>
+                <button type="submit" class="btn-submit">
+                    <i class="bi bi-check-circle"></i> {% if faq %}Guardar{% else %}Crear{% endif %}
+                </button>
             </div>
         </div>
-
-        <div class="card-section">
-            <div class="section-title">
-                <i class="bi bi-toggle-on"></i> Estado
-            </div>
-            <label class="checkbox-wrapper">
-                <input type="checkbox" name="activa" {% if form.activa.value %}checked{% endif %}>
-                <span class="checkbox-label">Pregunta activa</span>
-            </label>
-            <p class="form-hint" style="margin-top: 0.5rem;">Las preguntas inactivas no se muestran a los usuarios</p>
-        </div>
-
-        {% if form.errors %}
-        <div class="card-section">
-            <div class="alert-custom alert-danger">
-                <i class="bi bi-exclamation-circle"></i>
-                <div>
-                    {% for field, errors in form.errors.items %}
-                        {% for error in errors %}<strong>{{ field|capfirst }}:</strong> {{ error }}<br>{% endfor %}
-                    {% endfor %}
-                </div>
-            </div>
-        </div>
-        {% endif %}
-
-        <div class="form-actions">
-            <a href="{% url 'consultas:gestion_faqs' %}" class="btn-cancel">Cancelar</a>
-            <button type="submit" class="btn-submit">
-                <i class="bi bi-check-circle"></i> {% if faq %}Guardar{% else %}Crear{% endif %}
-            </button>
-        </div>
-    </div>
-</form>
+    </form>
+</div>
 {% endblock %}

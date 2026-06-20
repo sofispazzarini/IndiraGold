@@ -506,7 +506,7 @@
       const nombre = this.dataset.nombre;
 
       document.getElementById('deleteTemaNombre').textContent = nombre;
-      document.getElementById('deleteForm').action = `/consultas/tema/${id}/eliminar/`;
+      document.getElementById('deleteForm').action = `/consultas/admin/temas/${id}/eliminar/`;
       document.getElementById('modalDelete').classList.add('open');
     });
   });

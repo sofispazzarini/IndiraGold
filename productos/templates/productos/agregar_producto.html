@@ -119,7 +119,7 @@
                             <div class="col-12">
                                 <div class="d-flex justify-content-between align-items-center mb-1">
                                     <label class="small fw-bold mb-0">Proveedor</label>
-                                    <button type="button" class="btn btn-sm btn-outline-dark" data-bs-toggle="modal" data-bs-target="#modalNuevoProveedor" style="border-radius: 999px;">
+                                    <button type="button" class="btn btn-sm" data-bs-toggle="modal" data-bs-target="#modalNuevoProveedor" style="border-radius: 999px; background: #1a1612; color: #fff; border: none;">
                                         + Agregar proveedor
                                     </button>
                                 </div>
@@ -155,8 +155,8 @@
             <div class="mt-5 border-top pt-4">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h4 style="font-family: 'Cormorant Garamond'; font-weight: 700;">Variantes de Stock</h4>
-                    <button type="button" class="btn btn-dark px-4" data-bs-toggle="modal" data-bs-target="#modalVariante" 
-                            style="background: #b8922a; border:none; border-radius: 20px;">+ Agregar Variante</button>
+                    <button type="button" class="btn px-4" data-bs-toggle="modal" data-bs-target="#modalVariante"
+                            style="background: #1a1612; color: #fff; border:none; border-radius: 999px; transition: background 0.2s;" onmouseover="this.style.background='#b8922a'" onmouseout="this.style.background='#1a1612'">+ Agregar Variante</button>
                 </div>
                 <div id="listadoVariantesGlobal" class="d-flex flex-wrap gap-2"></div>
             </div>
@@ -164,7 +164,7 @@
             <input type="hidden" name="variantes_json" id="variantes_json_input">
             
             <div class="mt-5 text-center">
-                <button type="submit" class="btn btn-dark py-3 px-5" style="background: linear-gradient(135deg, #6E0E2E, #b8922a); border:none; border-radius: 50px; font-weight: 700; letter-spacing: 2px;">
+                <button type="submit" class="btn py-3 px-5" style="background: #1a1612; color: #fff; border:none; border-radius: 999px; font-weight: 700; letter-spacing: 1px; transition: background 0.2s;" onmouseover="this.style.background='#b8922a'" onmouseout="this.style.background='#1a1612'">
                     GUARDAR PRODUCTO COMPLETO
                 </button>
             </div>
@@ -199,8 +199,8 @@
           </div>
         </div>
         <div class="modal-footer border-0 px-4 pb-4">
-          <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
-          <button type="submit" class="btn btn-dark" style="background:#b8922a; border:none;">Guardar proveedor</button>
+          <button type="button" class="btn btn-light" data-bs-dismiss="modal" style="border-radius: 999px;">Cancelar</button>
+          <button type="submit" class="btn" style="background:#1a1612; color:#fff; border:none; border-radius: 999px;">Guardar proveedor</button>
         </div>
       </form>
     </div>

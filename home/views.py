@@ -231,3 +231,26 @@ def toggle_slide(request, slide_id):
         estado = 'activado' if slide.activo else 'desactivado'
         messages.success(request, f'Slide {estado}.')
     return redirect('home:gestion_carrousel')
+
+
+@staff_member_required
+def configurar_hero(request):
+    hero = ConfiguracionHero.actual()
+
+    if request.method == 'POST':
+        hero.eyebrow = request.POST.get('eyebrow', hero.eyebrow)
+        hero.titulo_linea1 = request.POST.get('titulo_linea1', hero.titulo_linea1)
+        hero.titulo_linea2 = request.POST.get('titulo_linea2', hero.titulo_linea2)
+        hero.subtitulo = request.POST.get('subtitulo', hero.subtitulo)
+        hero.texto_cta = request.POST.get('texto_cta', hero.texto_cta)
+        hero.link_cta = request.POST.get('link_cta', hero.link_cta)
+        hero.color_fondo = request.POST.get('color_fondo', hero.color_fondo)
+        hero.color_texto = request.POST.get('color_texto', hero.color_texto)
+        hero.color_acento = request.POST.get('color_acento', hero.color_acento)
+        hero.fuente_titulo = request.POST.get('fuente_titulo', hero.fuente_titulo)
+        hero.activo = 'activo' in request.POST
+        hero.save()
+        messages.success(request, 'Configuración del Hero actualizada.')
+        return redirect('home:configurar_hero')
+
+    return render(request, 'home/configurar_hero.html', {'hero': hero})

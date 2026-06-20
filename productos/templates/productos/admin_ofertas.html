@@ -3,42 +3,85 @@
 {% block content %}
 
 <style>
+:root {
+    --gold: #b8922a;
+    --gold-soft: #c9a84c;
+    --gold-pale: #f7f0e0;
+    --gold-faint: #faf7f0;
+    --burgundy: #6E0E2E;
+    --dark: #1a1612;
+    --text: #3d342a;
+    --muted: #9c8c7c;
+    --border: #e8dfd4;
+    --border-faint: rgba(184,146,42,0.12);
+}
 
 .ofertas-page{
-    padding:2rem;
+    padding:3rem 3.5rem 5rem;
+    max-width:1000px;
+    margin-left:20%;
+    margin-right:auto;
 }
 
-.ofertas-header{
-    margin-bottom:2rem;
+.page-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    margin-bottom: 2.5rem;
+    padding-bottom: 1.75rem;
+    border-bottom: 1px solid var(--border-faint);
+    position: relative;
 }
 
-.ofertas-header h1{
-    font-size:3rem;
-    font-weight:700;
-    color:#1f2937;
-    margin:0;
+.page-header::after {
+    content: '';
+    position: absolute;
+    bottom: -1px; left: 0;
+    width: 64px; height: 2px;
+    background: var(--gold);
 }
 
-.ofertas-header p{
-    color:#6b7280;
-    margin-top:.5rem;
+.header-eyebrow {
+    font-size: 0.6rem;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 0.5rem;
+}
+
+.page-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(2.4rem, 4vw, 3.4rem);
+    font-weight: 600;
+    color: var(--dark);
+    letter-spacing: -0.015em;
+    line-height: 1;
+    margin: 0;
+}
+
+.page-subtitle {
+    font-size: 0.85rem;
+    color: var(--muted);
+    margin-top: 0.6rem;
 }
 
 .ofertas-card{
     background:#fff;
-    border-radius:24px;
+    border-radius:16px;
     padding:2rem;
-    width: 100%;
-    margin-left: 20%;
-    box-shadow:0 10px 30px rgba(0,0,0,.06);
-    border:1px solid #eee;
+    width:100%;
+    box-shadow:0 10px 30px rgba(0,0,0,.04);
+    border:1px solid var(--border);
     margin-bottom:2rem;
 }
 
 .ofertas-card h2{
-    font-size:1.5rem;
-    margin-bottom:2rem;
-    color:#b8922a;
+    font-family:'Cormorant Garamond', serif;
+    font-size:1.6rem;
+    font-weight:600;
+    margin-bottom:1.5rem;
+    color:var(--dark);
 }
 
 .form-grid{
@@ -56,25 +99,26 @@
 
 .form-group label{
     font-weight:600;
-    color:#374151;
-    font-size:.95rem;
+    color:var(--text);
+    font-size:.85rem;
 }
 
 .form-group input,
 .form-group select{
-    height:52px;
-    border:1px solid #ddd;
-    border-radius:14px;
+    height:48px;
+    border:1px solid var(--border);
+    border-radius:10px;
     padding:0 1rem;
-    font-size:1rem;
+    font-size:.95rem;
     outline:none;
     transition:.2s;
+    color:var(--text);
 }
 
 .form-group input:focus,
 .form-group select:focus{
-    border-color:#b8922a;
-    box-shadow:0 0 0 4px rgba(184,146,42,.15);
+    border-color:var(--gold);
+    box-shadow:0 0 0 3px rgba(184,146,42,.12);
 }
 
 .alcance-box{
@@ -85,27 +129,29 @@
 }
 
 .alcance-option{
-    border:1px solid #e5e7eb;
-    border-radius:16px;
+    border:1px solid var(--border);
+    border-radius:12px;
     padding:1rem;
     cursor:pointer;
     display:flex;
     align-items:center;
     gap:.75rem;
-    color:#374151;
+    color:var(--text);
     font-weight:600;
+    font-size:.9rem;
+    transition:.2s;
 }
 
 .alcance-option input{
     width:18px;
     height:18px;
-    accent-color:#b8922a;
+    accent-color:var(--gold);
 }
 
 .alcance-option:has(input:checked){
-    border-color:#b8922a;
-    background:#fff8e1;
-    color:#7a102f;
+    border-color:var(--gold);
+    background:var(--gold-faint);
+    color:var(--dark);
 }
 
 .categoria-box{
@@ -240,28 +286,34 @@
 }
 
 .btn-secondary{
-    border:none;
-    background:#f3f4f6;
-    color:#374151;
+    border:1px solid var(--border);
+    background:#fff;
+    color:var(--text);
     padding:.9rem 1.5rem;
-    border-radius:12px;
+    border-radius:999px;
     font-weight:600;
     cursor:pointer;
+    transition:.2s;
+}
+
+.btn-secondary:hover{
+    border-color:var(--gold);
+    color:var(--gold);
 }
 
 .btn-primary{
     border:none;
-    background:#b8922a;
+    background:var(--dark);
     color:white;
     padding:.9rem 1.8rem;
-    border-radius:12px;
+    border-radius:999px;
     font-weight:600;
     cursor:pointer;
     transition:.2s;
 }
 
 .btn-primary:hover{
-    background:#a27d1f;
+    background:var(--gold);
 }
 
 .ofertas-table{
@@ -272,14 +324,18 @@
 .ofertas-table th{
     text-align:left;
     padding:1rem;
-    color:#6b7280;
-    font-size:.85rem;
-    border-bottom:1px solid #eee;
+    color:var(--muted);
+    font-size:.75rem;
+    font-weight:600;
+    text-transform:uppercase;
+    letter-spacing:.08em;
+    border-bottom:1px solid var(--border);
 }
 
 .ofertas-table td{
     padding:1rem;
-    border-bottom:1px solid #f3f4f6;
+    border-bottom:1px solid var(--border-faint);
+    color:var(--text);
 }
 
 .badge{
@@ -348,9 +404,12 @@
 
 <div class="ofertas-page">
 
-    <div class="ofertas-header">
-        <h1>🏷 Ofertas</h1>
-        <p>Crea y gestiona las ofertas de tus productos.</p>
+    <div class="page-header">
+        <div>
+            <div class="header-eyebrow">Gestión</div>
+            <h1 class="page-title">Ofertas</h1>
+            <p class="page-subtitle">Creá y gestioná las ofertas de tus productos.</p>
+        </div>
     </div>
 
     <form method="POST" class="ofertas-card">

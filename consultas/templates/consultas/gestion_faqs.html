@@ -566,7 +566,7 @@
       const pregunta = this.dataset.pregunta;
 
       document.getElementById('deleteFaqPregunta').textContent = pregunta;
-      document.getElementById('deleteForm').action = `/consultas/faq/${id}/eliminar/`;
+      document.getElementById('deleteForm').action = `/consultas/admin/faqs/${id}/eliminar/`;
       document.getElementById('modalDelete').classList.add('open');
     });
   });
