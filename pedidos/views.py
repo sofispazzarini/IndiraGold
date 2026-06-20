@@ -723,13 +723,19 @@ def confirmar_pedido(request):
 @login_required
 def eliminar_item_carrito(request, variante_id):
     from carritos.models import CarritoItem
-    
-    # 1. Borramos de la Base de Datos
-    carrito = get_or_create_cart(request)
-    item = get_object_or_404(CarritoItem, carrito=carrito, variante_id=variante_id)
-    item.delete()
 
-    # 2. Sincronizamos la sesión solo para el numerito (no para lógica de productos)
+    carrito = get_or_create_cart(request)
+
+    # Intentar eliminar el item (sin 404 si no existe)
+    try:
+        item = CarritoItem.objects.get(carrito=carrito, variante_id=variante_id)
+        item.delete()
+        messages.success(request, "Producto quitado del carrito.")
+    except CarritoItem.DoesNotExist:
+        # El item ya no existe, simplemente continuamos
+        pass
+
+    # Sincronizar la sesión
     carrito_final = {}
     for item_db in carrito.items.all():
         vid = str(item_db.variante.id)
@@ -737,16 +743,10 @@ def eliminar_item_carrito(request, variante_id):
     request.session['carrito'] = carrito_final
     request.session.modified = True
 
-    # Si después de eliminar quedan items, mostrar mensaje de éxito
-    if carrito.items.exists():
-        messages.success(request, "Producto quitado del resumen.")
-        return redirect('pedidos:checkout')
-    else:
-        # Si no quedan productos, limpiar mensajes previos y mostrar solo el de vacío
-        storage = messages.get_messages(request)
-        storage.used = True
+    if not carrito.items.exists():
         messages.info(request, "No quedan productos en tu carrito.")
-        return redirect('pedidos:checkout')
+
+    return redirect('pedidos:checkout')
 sdk = mercadopago.SDK(settings.MERCADO_PAGO_ACCESS_TOKEN)
 
 
