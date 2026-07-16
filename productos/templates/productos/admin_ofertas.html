@@ -17,10 +17,16 @@
 }
 
 .ofertas-page{
-    padding:3rem 3.5rem 5rem;
-    max-width:1000px;
-    margin-left:20%;
+    padding:3rem 2rem 5rem;
+    max-width:900px;
+    margin-left:auto;
     margin-right:auto;
+}
+
+@media(min-width:1200px){
+    .ofertas-page{
+        margin-left:15%;
+    }
 }
 
 .page-header {
@@ -380,7 +386,12 @@
     opacity:.9;
 }
 
+/* Tablet grande / laptop pequeña */
 @media(max-width:1100px){
+    .ofertas-page{
+        margin-left:auto;
+        padding:2rem 1.5rem 4rem;
+    }
 
     .form-grid{
         grid-template-columns:1fr;
@@ -397,7 +408,116 @@
     .producto-item:nth-child(odd){
         border-right:none;
     }
+}
 
+/* Tablet */
+@media(max-width:768px){
+    .ofertas-page{
+        padding:1.5rem 1rem 3rem;
+    }
+
+    .ofertas-card{
+        padding:1.5rem;
+        border-radius:12px;
+    }
+
+    .ofertas-card h2{
+        font-size:1.4rem;
+    }
+
+    .page-title{
+        font-size:2rem;
+    }
+
+    .ofertas-table{
+        display:block;
+        overflow-x:auto;
+    }
+
+    .ofertas-table th,
+    .ofertas-table td{
+        padding:0.75rem 0.5rem;
+        font-size:0.8rem;
+        white-space:nowrap;
+    }
+
+    .btn-danger,
+    .btn-success{
+        padding:0.4rem 0.6rem;
+        font-size:0.75rem;
+    }
+
+    .ofertas-actions{
+        flex-direction:column;
+        gap:0.75rem;
+    }
+
+    .ofertas-actions button{
+        width:100%;
+    }
+}
+
+/* Móvil */
+@media(max-width:480px){
+    .ofertas-page{
+        padding:1rem 0.75rem 2rem;
+    }
+
+    .ofertas-card{
+        padding:1rem;
+    }
+
+    .ofertas-card h2{
+        font-size:1.2rem;
+        margin-bottom:1rem;
+    }
+
+    .page-header{
+        margin-bottom:1.5rem;
+        padding-bottom:1rem;
+    }
+
+    .page-title{
+        font-size:1.6rem;
+    }
+
+    .page-subtitle{
+        font-size:0.8rem;
+    }
+
+    .form-group input,
+    .form-group select{
+        height:44px;
+        font-size:0.9rem;
+    }
+
+    .alcance-option{
+        padding:0.75rem;
+        font-size:0.85rem;
+    }
+
+    .producto-item{
+        padding:0.75rem;
+    }
+
+    .producto-item img{
+        width:50px;
+        height:50px;
+    }
+
+    .ofertas-table th{
+        font-size:0.65rem;
+    }
+
+    .ofertas-table td{
+        font-size:0.75rem;
+        padding:0.6rem 0.4rem;
+    }
+
+    .badge{
+        padding:0.3rem 0.5rem;
+        font-size:0.7rem;
+    }
 }
 
 </style>
@@ -568,56 +688,40 @@
 
     </form>
 
-    <form method="POST" class="ofertas-card">
+    <div class="ofertas-card">
+        <h2>🎟️ Crear código de descuento</h2>
+        <p style="color: var(--muted); margin-bottom: 1.5rem; font-size: 0.9rem;">
+            Los códigos de descuento se aplican en el checkout cuando el cliente los ingresa.
+        </p>
 
-        {% csrf_token %}
-        <input type="hidden" name="tipo_oferta" value="cupon">
+        <form method="POST">
+            {% csrf_token %}
+            <input type="hidden" name="tipo_oferta" value="cupon">
 
-        <h2>Crear codigo de descuento</h2>
+            <div class="form-grid" style="grid-template-columns: 1fr 1fr 1fr;">
+                <div class="form-group">
+                    <label>Nombre</label>
+                    <input type="text" name="nombre" placeholder="Ej: Bienvenida" required>
+                </div>
 
-        <div class="form-grid">
+                <div class="form-group">
+                    <label>Código</label>
+                    <input type="text" name="codigo" placeholder="Ej: INDIRA15" required style="text-transform: uppercase;">
+                </div>
 
-            <div class="form-group">
-                <label>Nombre del codigo</label>
-                <input
-                    type="text"
-                    name="nombre"
-                    placeholder="Ej: Bienvenida"
-                    required
-                >
+                <div class="form-group">
+                    <label>Descuento %</label>
+                    <input type="number" name="descuento" min="1" max="100" placeholder="Ej: 15" required>
+                </div>
             </div>
 
-            <div class="form-group">
-                <label>Codigo</label>
-                <input
-                    type="text"
-                    name="codigo"
-                    placeholder="Ej: INDIRA15"
-                    required
-                >
+            <div class="ofertas-actions" style="margin-top: 1rem;">
+                <button type="submit" class="btn-primary">
+                    Crear código
+                </button>
             </div>
-
-            <div class="form-group">
-                <label>Porcentaje de descuento</label>
-                <input
-                    type="number"
-                    name="descuento"
-                    min="1"
-                    max="100"
-                    placeholder="Ej: 15"
-                    required
-                >
-            </div>
-
-        </div>
-
-        <div class="ofertas-actions">
-            <button type="submit" class="btn-primary">
-                Crear codigo
-            </button>
-        </div>
-
-    </form>
+        </form>
+    </div>
 
     <div class="ofertas-card">
 

@@ -39,4 +39,5 @@ urlpatterns = [
     path('registrar-pago-pedido/<int:pedido_id>/',views.registrar_pago_pedido,name='registrar_pago_pedido'),
     path('envios/configurar/', views.configurar_envios, name='configurar_envios'),
     path('pagos/configurar/', views.configurar_pagos, name='configurar_pagos'),
+    path('transferencia/<int:pedido_id>/enviar-comprobante/', views.enviar_comprobante_transferencia, name='enviar_comprobante_transferencia'),
 ]

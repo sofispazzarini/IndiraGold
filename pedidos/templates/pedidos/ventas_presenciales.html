@@ -291,6 +291,30 @@
         .ventas-card{
             padding:1rem;
         }
+        .ventas-title{
+            font-size:1.8rem;
+        }
+    }
+
+    @media (max-width: 480px){
+        .ventas-wrapper{
+            padding:1rem 0.5rem 3rem;
+        }
+        .ventas-card{
+            padding:0.75rem;
+            border-radius:12px;
+        }
+        .ventas-title{
+            font-size:1.5rem;
+        }
+        .ventas-subtitle{
+            font-size:0.8rem;
+        }
+        .ventas-table th,
+        .ventas-table td{
+            padding:10px 6px;
+            font-size:0.75rem;
+        }
     }
 
 </style>
@@ -2020,10 +2044,6 @@ document.addEventListener(
 async function seleccionarProducto(producto){
     inputProducto.value = producto.nombre
 
-    document.getElementById(
-        'configuracion-variante'
-    ).style.display = 'block'
-
     const responseVariantes = await fetch(
         `/productos/variantes/${producto.id}/`
     )
@@ -2032,31 +2052,15 @@ async function seleccionarProducto(producto){
     const variantes = variantesData.variantes || variantesData
 
     if(variantes.length === 0){
-
-        mostrarMensaje(
-            'Este producto no tiene stock disponible'
-        )
-
-        document.getElementById(
-            'configuracion-variante'
-        ).style.display = 'none'
-
+        mostrarMensaje('Este producto no tiene stock disponible')
         return
     }
 
-    const talleSelect = document.getElementById(
-        'talle-select'
-    )
+    const talleSelect = document.getElementById('talle-select')
+    const colorSelect = document.getElementById('color-select')
 
-    const colorSelect = document.getElementById(
-        'color-select'
-    )
-
-    talleSelect.innerHTML =
-        '<option value="">Seleccionar talle</option>'
-
-    colorSelect.innerHTML =
-        '<option value="">Seleccionar color</option>'
+    talleSelect.innerHTML = '<option value="">Seleccionar talle</option>'
+    colorSelect.innerHTML = '<option value="">Seleccionar color</option>'
 
     variantes.forEach(variante => {
         talleSelect.innerHTML += `
@@ -2067,24 +2071,30 @@ async function seleccionarProducto(producto){
     })
 
     window.variantesProducto = variantes
-    document.getElementById(
-        'stock-variante'
-    ).value = variantesData.stock_total ?? variantes.reduce(
+    document.getElementById('stock-variante').value = variantesData.stock_total ?? variantes.reduce(
         (total, variante) => total + (parseInt(variante.stock, 10) || 0),
         0
     )
 
-    if(producto.scanned_variante_id){
+    if(producto.scanned_variante_id && producto.scanned_color){
         talleSelect.value = producto.scanned_variante_id
         talleSelect.dispatchEvent(new Event('change'))
 
-        if(producto.scanned_color){
+        setTimeout(() => {
             colorSelect.value = producto.scanned_color
-        }
+            document.getElementById('cantidad-producto').value = 1
+            document.getElementById('btn-agregar-producto').click()
+            inputProducto.value = ''
+            document.getElementById('configuracion-variante').style.display = 'none'
+        }, 100)
+        return
+    }
 
-        document.getElementById('cantidad-producto').value = 1
-        document.getElementById('btn-agregar-producto').click()
-        inputProducto.value = ''
+    document.getElementById('configuracion-variante').style.display = 'block'
+
+    if(producto.scanned_variante_id){
+        talleSelect.value = producto.scanned_variante_id
+        talleSelect.dispatchEvent(new Event('change'))
     }
 }
 
@@ -2247,68 +2257,44 @@ document.getElementById(
     }
 )
 
+function eliminarProductoVenta(index){
+    productosVenta.splice(index, 1)
+    renderProductosVenta()
+    document.getElementById('cantidad-productos').innerText = productosVenta.length
+}
+
 function renderProductosVenta(){
 
-    const container = document.getElementById(
-        'lista-productos'
-    )
-
+    const container = document.getElementById('lista-productos')
     container.innerHTML = ''
-
     let total = 0
 
-    productosVenta.forEach(producto => {
+    productosVenta.forEach((producto, index) => {
 
         total += producto.subtotal
 
         container.innerHTML += `
-
-            <div
-                class="border rounded-4 p-3 mb-3"
-            >
-
-                <div
-                    class="d-flex justify-content-between"
+            <div class="border rounded-4 p-3 mb-3 position-relative">
+                <button
+                    type="button"
+                    class="btn btn-sm position-absolute"
+                    style="top: 8px; right: 8px; padding: 2px 8px; color: #999;"
+                    onclick="eliminarProductoVenta(${index})"
+                    title="Quitar producto"
                 >
-
+                    <i class="bi bi-x-lg"></i>
+                </button>
+                <div class="d-flex justify-content-between pe-4">
                     <div>
-
-                        <div class="fw-bold">
-
-                            ${producto.producto}
-
-                        </div>
-
-                        <small class="text-muted">
-
-                            ${producto.talle}
-                            ·
-                            ${producto.color}
-
-                        </small>
-
+                        <div class="fw-bold">${producto.producto}</div>
+                        <small class="text-muted">${producto.talle} · ${producto.color}</small>
                     </div>
-
                     <div class="text-end">
-
-                        <div class="fw-bold">
-
-                            x${producto.cantidad}
-
-                        </div>
-
-                        <small>
-
-                            $${producto.subtotal}
-
-                        </small>
-
+                        <div class="fw-bold">x${producto.cantidad}</div>
+                        <small>$${producto.subtotal}</small>
                     </div>
-
                 </div>
-
             </div>
-
         `
     })
 

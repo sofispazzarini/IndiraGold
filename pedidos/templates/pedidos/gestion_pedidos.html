@@ -493,38 +493,120 @@
         .table-responsive {
             font-size: 0.9rem;
         }
-    .pedidos-table thead th,
-    .pedidos-table tbody td {
-      padding: 0.75rem 0.5rem;
+        .pedidos-table thead th,
+        .pedidos-table tbody td {
+            padding: 0.75rem 0.5rem;
+        }
     }
+
+    /* Tablet */
+    @media (max-width: 768px) {
+        .gestion-main {
+            padding: 1.5rem 1rem;
+            margin-left: 0;
+        }
+        .page-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 1rem;
+        }
+        .page-title {
+            font-size: 1.8rem;
+        }
+        .filter-card {
+            padding: 1rem;
+        }
+        .filter-card .row {
+            gap: 0.5rem;
+        }
+        .listado-header {
+            margin-left: 0 !important;
+            width: 100%;
+        }
+        .ig-table-card {
+            margin-left: 0 !important;
+            border-radius: 12px;
+        }
+        .table th, .table td {
+            padding: 12px 8px;
+            font-size: 0.8rem;
+        }
+        .estado-badge {
+            padding: 0.3rem 0.6rem;
+            font-size: 0.75rem;
+        }
+        .btn-action {
+            padding: 0.3rem 0.6rem;
+            font-size: 0.8rem;
+        }
+    }
+
+    /* Móvil */
+    @media (max-width: 480px) {
+        .gestion-main {
+            padding: 1rem 0.5rem;
+        }
+        .page-title {
+            font-size: 1.5rem;
+        }
+        .page-header {
+            margin-bottom: 1rem;
+            padding-bottom: 0.75rem;
+        }
+        .filter-card {
+            padding: 0.75rem;
+            border-radius: 10px;
+        }
+        .ig-table-card {
+            border-radius: 10px;
+            overflow-x: auto;
+        }
+        .table th, .table td {
+            padding: 10px 6px;
+            font-size: 0.75rem;
+            white-space: nowrap;
+        }
+        .estado-badge {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.7rem;
+        }
+        .btn-action {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.75rem;
+        }
+        nav[aria-label="Paginación"] {
+            margin-left: 0 !important;
+            max-width: 100% !important;
+        }
+    }
+
     .table-responsive{
-    background:white;
-    border-radius:24px;
-    overflow:hidden;
-    box-shadow:0 10px 30px rgba(0,0,0,.04);
-}
+        background:white;
+        border-radius:24px;
+        overflow:hidden;
+        box-shadow:0 10px 30px rgba(0,0,0,.04);
+    }
 
-.table{
-    margin-bottom:0;
-}
+    .table{
+        margin-bottom:0;
+    }
 
-.table tbody tr{
-    transition:.2s;
-}
+    .table tbody tr{
+        transition:.2s;
+    }
 
-.table tbody tr:hover{
-    background:#faf7f2;
-}
+    .table tbody tr:hover{
+        background:#faf7f2;
+    }
 
-.table td{
-    vertical-align:middle;
-    padding:22px 14px;
-}
+    .table td{
+        vertical-align:middle;
+        padding:22px 14px;
+    }
 
-.table th{
-    padding:18px 14px;
-}
-  }
+    .table th{
+        padding:18px 14px;
+    }
 </style>
 {% endblock %}
 

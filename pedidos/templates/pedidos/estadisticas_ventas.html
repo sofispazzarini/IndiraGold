@@ -340,9 +340,45 @@
     }
   }
 
+  @media (max-width: 768px) {
+    .gestion-main {
+      padding: 1.5rem 1rem;
+    }
+    .page-title {
+      font-size: 1.8rem;
+    }
+    .filter-bar {
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+    .filter-group {
+      width: 100%;
+    }
+    .filter-select {
+      width: 100%;
+    }
+  }
+
   @media (max-width: 500px) {
+    .gestion-main {
+      padding: 1rem 0.5rem;
+    }
     .kpi-grid {
       grid-template-columns: 1fr;
+      gap: 0.75rem;
+    }
+    .page-title {
+      font-size: 1.5rem;
+    }
+    .kpi-card {
+      padding: 1rem;
+    }
+    .kpi-value {
+      font-size: 1.8rem;
+    }
+    .data-card {
+      padding: 1rem;
+      border-radius: 12px;
     }
   }
 </style>

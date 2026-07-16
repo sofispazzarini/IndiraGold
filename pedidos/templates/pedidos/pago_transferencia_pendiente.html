@@ -81,7 +81,18 @@
     font-weight: 700;
   }
   .btn-whatsapp {
-    background: #1f8f4d;
+    background: #25D366;
+    color: #fff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 50px;
+    height: 50px;
+    padding: 0;
+    font-size: 1.6rem;
+  }
+  .btn-whatsapp:hover {
+    background: #1da851;
     color: #fff;
   }
   .btn-volver {
@@ -142,11 +153,11 @@
     <p class="transfer-sub">Mandanos el comprobante a {{ whatsapp_numero }}. El boton abre el chat con el pedido preparado.</p>
 
     <div class="action-row">
-      <a class="btn-whatsapp" href="{{ whatsapp_url }}" target="_blank" rel="noopener">
-        Enviar comprobante por WhatsApp
+      <a class="btn-whatsapp" href="{% url 'pedidos:enviar_comprobante_transferencia' pedido.id %}" title="Enviar comprobante por WhatsApp">
+        <i class="bi bi-whatsapp"></i>
       </a>
-      <a class="btn-volver" href="{% url 'pedidos:detalle_pedido' pedido.id %}">
-        Ver mi pedido
+      <a class="btn-volver" href="{% url 'pedidos:checkout' %}">
+        Ver carrito
       </a>
     </div>
   </div>

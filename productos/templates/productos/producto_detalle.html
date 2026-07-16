@@ -436,6 +436,59 @@
         font-weight: 700;
         margin-top: auto;
     }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 480px) {
+        .detalle-hero {
+            padding: 1rem 0.5rem 2rem;
+        }
+        .detalle-container {
+            gap: 1.5rem;
+        }
+        .producto-nombre {
+            font-size: 1.6rem;
+        }
+        .producto-precio {
+            font-size: 1.8rem;
+        }
+        .producto-descripcion {
+            font-size: 0.9rem;
+        }
+        .btn-add-cart {
+            padding: 0.85rem;
+            font-size: 0.9rem;
+        }
+        .selector-label {
+            font-size: 0.75rem;
+        }
+        .selector-btn {
+            min-width: 38px;
+            height: 38px;
+            font-size: 0.8rem;
+        }
+        .miniaturas {
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0.5rem;
+        }
+        .miniatura-item {
+            height: 60px;
+        }
+        .ficha-table td,
+        .ficha-table th {
+            padding: 0.65rem;
+            font-size: 0.8rem;
+        }
+        .relacionados-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.75rem;
+        }
+        .relacionado-card {
+            padding: 0.75rem;
+        }
+        .relacionado-nombre {
+            font-size: 0.85rem;
+        }
+    }
 </style>
 
 <div class="detalle-hero">
