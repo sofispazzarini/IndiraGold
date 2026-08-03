@@ -681,12 +681,54 @@
     .resumen-card {
       position: static;
     }
-    @media (max-width: 768px) {
+  }
 
-        .entrega-options {
-            grid-template-columns: 1fr;
-        }
+  @media (max-width: 768px) {
+    .entrega-options {
+      grid-template-columns: 1fr;
+    }
+    .page-title {
+      font-size: 2rem;
+    }
+  }
 
+  @media (max-width: 480px) {
+    .checkout-main {
+      padding: 1rem 0.5rem 2rem;
+    }
+    .page-title {
+      font-size: 1.6rem;
+    }
+    .checkout-card,
+    .resumen-card {
+      padding: 1rem;
+      border-radius: 12px;
+    }
+    .card-title {
+      font-size: 1rem;
+    }
+    .product-item {
+      padding: 0.85rem 0;
+    }
+    .product-img {
+      width: 50px;
+      height: 65px;
+    }
+    .product-name {
+      font-size: 0.85rem;
+    }
+    .resumen-total {
+      font-size: 1.3rem;
+    }
+    .btn-pagar {
+      padding: 0.85rem;
+      font-size: 0.9rem;
+    }
+    .pago-option {
+      padding: 0.85rem;
+    }
+    .entrega-option {
+      padding: 0.85rem;
     }
   }
 </style>
@@ -726,26 +768,17 @@
                   <div class="product-talle">Color: {{ item.color_nombre|title }}</div>
                 {% endif %}
                 <div class="cantidad-wrap">
-                  <form action="{% url 'pedidos:disminuir_cantidad' item.variante.id %}" method="POST" style="display:contents;">
-                    {% csrf_token %}
-                    <button type="submit" class="cantidad-btn">-</button>
-                  </form>
+                  <button type="button" class="cantidad-btn btn-cantidad" data-action="disminuir" data-variante="{{ item.variante.id }}">-</button>
                   <span class="cantidad-num">{{ item.cantidad }}</span>
-                  <form action="{% url 'pedidos:aumentar_cantidad' item.variante.id %}" method="POST" style="display:contents;">
-                    {% csrf_token %}
-                    <button type="submit" class="cantidad-btn">+</button>
-                  </form>
+                  <button type="button" class="cantidad-btn btn-cantidad" data-action="aumentar" data-variante="{{ item.variante.id }}">+</button>
                 </div>
                 <div class="product-precio-unit">Precio unit: ${{ item.precio_unitario }}</div>
               </div>
               <div class="product-subtotal">
                 <div class="subtotal-price">${{ item.subtotal }}</div>
-                <form action="{% url 'pedidos:eliminar_item_carrito' item.variante.id %}" method="POST" style="display:contents;">
-                  {% csrf_token %}
-                  <button type="submit" class="btn-quitar">
-                    <i class="bi bi-x-circle"></i> Quitar
-                  </button>
-                </form>
+                <button type="button" class="btn-quitar btn-eliminar-item" data-variante="{{ item.variante.id }}">
+                  <i class="bi bi-x-circle"></i> Quitar
+                </button>
               </div>
             </div>
             {% endfor %}
@@ -1379,6 +1412,8 @@ function formatearPesos(valor) {
 </script>
 <script>
 
+const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
 const radiosEntrega = document.querySelectorAll(
   'input[name="metodo_entrega"]'
 );
@@ -1813,6 +1848,54 @@ if (quitarCodigoBtn) {
     }
   });
 }
+
+// Botones de cantidad y eliminar item
+document.querySelectorAll('.btn-cantidad').forEach(btn => {
+  btn.addEventListener('click', async function(e) {
+    e.preventDefault();
+    const action = this.dataset.action;
+    const varianteId = this.dataset.variante;
+    const url = action === 'aumentar'
+      ? `/pedidos/aumentar-cantidad/${varianteId}/`
+      : `/pedidos/disminuir-cantidad/${varianteId}/`;
+
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': csrfToken,
+        }
+      });
+      if (response.ok) {
+        location.reload();
+      }
+    } catch (err) {
+      console.error('Error:', err);
+    }
+  });
+});
+
+document.querySelectorAll('.btn-eliminar-item').forEach(btn => {
+  btn.addEventListener('click', async function(e) {
+    e.preventDefault();
+    const varianteId = this.dataset.variante;
+    const url = `/pedidos/checkout/eliminar/${varianteId}/`;
+
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': csrfToken,
+        }
+      });
+      if (response.ok) {
+        location.reload();
+      }
+    } catch (err) {
+      console.error('Error:', err);
+    }
+  });
+});
 
 </script>
 {% endblock %}

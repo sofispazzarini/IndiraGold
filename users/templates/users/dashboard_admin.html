@@ -459,6 +459,48 @@
   .deudas-section  { animation: fadeUp 0.45s 0.22s ease both; }
   .bottom-label    { animation: fadeUp 0.45s 0.28s ease both; }
   .bottom-grid     { animation: fadeUp 0.45s 0.34s ease both; }
+
+  /* ── RESPONSIVE EXTRA ── */
+  @media (max-width: 1024px) {
+    .dashboard-main {
+      margin-left: 0;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .dashboard-main {
+      padding: 1rem 0.5rem 2rem;
+    }
+    .hero-greeting {
+      font-size: 2rem;
+    }
+    .hero-subtitle {
+      font-size: 0.85rem;
+    }
+    .metrics-grid {
+      grid-template-columns: 1fr;
+      border-radius: 12px;
+    }
+    .metric-card {
+      padding: 1.25rem 1rem;
+      border-right: none;
+      border-bottom: 1px solid var(--border);
+    }
+    .metric-card:last-child {
+      border-bottom: none;
+    }
+    .metric-value {
+      font-size: 2.2rem;
+    }
+    .pending-card,
+    .activity-card {
+      border-radius: 12px;
+    }
+    .pending-item,
+    .activity-item {
+      padding: 1rem;
+    }
+  }
 </style>
 {% endblock %}
 

@@ -102,6 +102,151 @@ def whatsapp_transferencia_url(pedido):
     return f'https://wa.me/{numero}?text={quote(mensaje)}'
 
 
+def enviar_email_confirmacion_pedido(pedido):
+    """Envía email de confirmación al cliente cuando se crea un pedido."""
+    items_pedido = pedido.items.select_related(
+        'variante__producto',
+        'variante__talle'
+    ).prefetch_related('variante__colores')
+
+    productos_html = []
+    for item in items_pedido:
+        colores = item.color_nombre or ', '.join(
+            color.nombre for color in item.variante.colores.all()
+        )
+        talle = item.variante.talle.nombre if item.variante.talle else 'Sin talle'
+        detalle_color = f' - Color: {colores}' if colores else ''
+        productos_html.append(
+            '<tr>'
+            f'<td style="padding:14px 0;border-bottom:1px solid #efe7dc;">'
+            f'<strong style="color:#1f1712;">{escape(item.variante.producto.nombre)}</strong>'
+            f'<div style="font-size:13px;color:#786b60;margin-top:4px;">'
+            f'Talle {escape(talle)}{escape(detalle_color)}'
+            f'</div>'
+            f'</td>'
+            f'<td align="center" style="padding:14px 12px;border-bottom:1px solid #efe7dc;color:#1f1712;">'
+            f'{item.cantidad}'
+            f'</td>'
+            f'<td align="right" style="padding:14px 0;border-bottom:1px solid #efe7dc;color:#1f1712;font-weight:700;">'
+            f'${item.precio_total}'
+            f'</td>'
+            '</tr>'
+        )
+
+    nombre_cliente = pedido.cliente.user.first_name or pedido.cliente.user.username
+    metodo_pago_display = {
+        'mercado_pago': 'Mercado Pago',
+        'transferencia': 'Transferencia bancaria',
+        'efectivo': 'Efectivo en local',
+        'mercado_pago_qr': 'QR de Mercado Pago',
+    }.get(pedido.metodo_pago, pedido.metodo_pago)
+
+    estado_display = pedido.get_estado_display()
+    entrega_display = pedido.get_metodo_entrega_display()
+
+    mensaje_estado = ""
+    if pedido.metodo_pago in ['transferencia', 'efectivo', 'mercado_pago_qr']:
+        mensaje_estado = """
+        <div style="background:#fff8e6;border:1px solid #f5d67a;border-radius:10px;padding:16px;margin:20px 0;">
+          <p style="margin:0;color:#8a6d00;font-size:14px;">
+            <strong>⏳ Tu pedido está pendiente de confirmación.</strong><br>
+            La administradora revisará tu pedido y actualizará el estado. Te notificaremos por email cuando haya novedades.
+          </p>
+        </div>
+        """
+
+    html_email = f"""
+<!doctype html>
+<html>
+  <body style="margin:0;padding:0;background:#f6f1eb;font-family:Arial,Helvetica,sans-serif;color:#1f1712;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f6f1eb;padding:32px 12px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:640px;background:#fff;border-radius:18px;overflow:hidden;border:1px solid #eadfce;">
+            <tr>
+              <td style="background:#1f1712;padding:28px 32px;text-align:center;">
+                <div style="font-family:Georgia,serif;font-size:30px;letter-spacing:.04em;color:#d2ad3f;">IndiraGold</div>
+                <div style="font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:#eee3cf;margin-top:6px;">Confirmación de pedido</div>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:34px 34px 12px;">
+                <p style="margin:0 0 18px;font-size:16px;line-height:1.6;">
+                  Hola <strong>{escape(nombre_cliente)}</strong>,
+                </p>
+                <p style="margin:0 0 18px;font-size:16px;line-height:1.6;">
+                  Recibimos tu pedido <strong>#{pedido.id}</strong>. Acá te dejamos los detalles:
+                </p>
+
+                {mensaje_estado}
+
+                <div style="background:#faf7f2;border-radius:12px;padding:20px;margin:20px 0;">
+                  <table style="width:100%;font-size:14px;">
+                    <tr>
+                      <td style="padding:8px 0;color:#786b60;">Método de pago:</td>
+                      <td style="padding:8px 0;text-align:right;font-weight:700;">{escape(metodo_pago_display)}</td>
+                    </tr>
+                    <tr>
+                      <td style="padding:8px 0;color:#786b60;">Estado:</td>
+                      <td style="padding:8px 0;text-align:right;font-weight:700;">{escape(estado_display)}</td>
+                    </tr>
+                    <tr>
+                      <td style="padding:8px 0;color:#786b60;">Entrega:</td>
+                      <td style="padding:8px 0;text-align:right;font-weight:700;">{escape(entrega_display)}</td>
+                    </tr>
+                  </table>
+                </div>
+
+                <h3 style="margin:28px 0 14px;font-size:14px;text-transform:uppercase;letter-spacing:.1em;color:#6e0e2e;font-weight:700;">
+                  Productos
+                </h3>
+                <table style="width:100%;border-collapse:collapse;font-size:14px;">
+                  {''.join(productos_html)}
+                </table>
+
+                <div style="border-top:2px solid #1f1712;margin-top:20px;padding-top:16px;text-align:right;">
+                  <span style="font-size:14px;color:#786b60;">Total:</span>
+                  <span style="font-size:24px;font-weight:700;color:#6e0e2e;margin-left:12px;">${pedido.total}</span>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:24px 34px 34px;text-align:center;">
+                <p style="margin:0;font-size:13px;color:#786b60;">
+                  ¿Tenés dudas? Escribinos por WhatsApp al +54 9 221 637 5660
+                </p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
+"""
+
+    admin_email = getattr(settings, 'EMAIL_HOST_USER', None)
+    if pedido.cliente.user.email:
+        send_mail(
+            subject=f'Pedido #{pedido.id} - IndiraGold',
+            message=f'Recibimos tu pedido #{pedido.id}. Total: ${pedido.total}. Método de pago: {metodo_pago_display}.',
+            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', admin_email),
+            recipient_list=[pedido.cliente.user.email],
+            fail_silently=True,
+            html_message=html_email
+        )
+
+
+@login_required
+def enviar_comprobante_transferencia(request, pedido_id):
+    pedido = get_object_or_404(Pedido, pk=pedido_id, cliente__user=request.user)
+    carrito = get_or_create_cart(request)
+    carrito.items.all().delete()
+    request.session.pop('codigo_descuento', None)
+    request.session.pop('descuento_monto', None)
+    return redirect(whatsapp_transferencia_url(pedido))
+
+
 def qr_manual_image_url():
     url = (getattr(settings, 'MERCADO_PAGO_QR_IMAGE_URL', '') or '').strip()
     if not url or 'url-del-qr' in url:
@@ -120,13 +265,14 @@ def qr_data_a_imagen_base64(qr_data):
 
 
 def crear_qr_link_pago_mercado_pago(productos, external_reference):
+    site_url = settings.SITE_URL.rstrip('/')
     preference_response = sdk.preference().create({
         "items": productos,
         "external_reference": external_reference,
         "back_urls": {
-            "success": "http://127.0.0.1:8000/pedidos/mis-pedidos/",
-            "failure": "http://127.0.0.1:8000/pedidos/checkout/",
-            "pending": "http://127.0.0.1:8000/pedidos/mis-pedidos/"
+            "success": f"{site_url}/pedidos/mis-pedidos/",
+            "failure": f"{site_url}/pedidos/checkout/",
+            "pending": f"{site_url}/pedidos/mis-pedidos/"
         }
     })
 
@@ -1163,7 +1309,12 @@ def crear_pago(request):
                 precio_total=item.precio_total
             )
 
+        enviar_email_confirmacion_pedido(pedido)
+
         if metodo_pago == 'mercado_pago_qr':
+            carrito.items.all().delete()
+            request.session.pop('codigo_descuento', None)
+            request.session.pop('descuento_monto', None)
             return render(request, 'pedidos/pago_qr_pendiente.html', {
                 'pedido': pedido,
                 'qr_image_url': qr_pago['qr_image'],
@@ -1180,8 +1331,11 @@ def crear_pago(request):
                 'whatsapp_numero': '+54 9 221 637 5660',
             })
 
+        carrito.items.all().delete()
+        request.session.pop('codigo_descuento', None)
+        request.session.pop('descuento_monto', None)
         messages.success(request, f'Pedido #{pedido.id} creado para pagar en efectivo al retirar.')
-        return redirect('pedidos:detalle_pedido', pedido_id=pedido.id)
+        return redirect('pedidos:mis_pedidos')
 
     cuotas_activas = list(
         configuracion_pago.planes_cuotas.filter(activo=True).values_list('cuotas', flat=True)
@@ -1189,16 +1343,20 @@ def crear_pago(request):
     max_cuotas = max(cuotas_activas) if cuotas_activas else 1
 
     # CREAR PREFERENCIA
+    site_url = settings.SITE_URL.rstrip('/')
     preference_data = {
         "items": productos,
         "back_urls": {
-            "success": "http://127.0.0.1:8000/pedidos/pago-exitoso/",
-            "failure": "http://127.0.0.1:8000/",
-            "pending": "http://127.0.0.1:8000/"
+            "success": f"{site_url}/pedidos/pago-exitoso/",
+            "failure": f"{site_url}/",
+            "pending": f"{site_url}/"
         },
         "auto_return": "approved",
         "payment_methods": {
-            "installments": max_cuotas
+            "installments": max_cuotas,
+            "excluded_payment_types": [
+                {"id": "ticket"}
+            ]
         }
     }
     preference_response = sdk.preference().create(preference_data)
@@ -1590,16 +1748,10 @@ def pago_exitoso(request):
 
     messages.success(
         request,
-        "¡Tu pago fue realizado con éxito!"
+        f"¡Tu pago fue realizado con éxito! Pedido #{pedido.id} confirmado."
     )
 
-    return render(
-        request,
-        'pedidos/pago_exitoso.html',
-        {
-            'pedido': pedido
-        }
-    )
+    return redirect('pedidos:checkout')
     
 @admin_required
 def estadisticas_ventas(request):

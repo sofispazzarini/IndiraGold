@@ -1,5 +1,22 @@
 {% extends 'users/dashboard_admin.html' %}
 
+{% block extra_head %}
+<style>
+  @media (max-width: 1024px) {
+    .container-fluid { padding: 1.5rem !important; }
+  }
+  @media (max-width: 768px) {
+    .container-fluid { padding: 1rem !important; }
+  }
+  @media (max-width: 480px) {
+    .container-fluid { padding: 0.5rem !important; }
+    h2 { font-size: 1.4rem !important; }
+    .card { border-radius: 12px !important; }
+    .card-body { padding: 1rem !important; }
+  }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid py-4 d-flex justify-content-center">
     <div style="width: 100%; max-width: 1200px;">

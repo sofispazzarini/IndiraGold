@@ -167,6 +167,45 @@
     .pagos-page { margin-left: 0; padding: 2rem 1rem 4rem; }
     .pago-grid { grid-template-columns: 1fr; }
   }
+
+  @media (max-width: 768px) {
+    .pagos-page {
+      padding: 1.5rem 1rem 3rem;
+    }
+    .pagos-title {
+      font-size: 2rem;
+    }
+    .pago-card {
+      padding: 1.5rem;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .pagos-page {
+      padding: 1rem 0.5rem 2rem;
+    }
+    .pagos-title {
+      font-size: 1.6rem;
+    }
+    .pagos-subtitle {
+      font-size: 0.85rem;
+    }
+    .pago-card {
+      padding: 1rem;
+      border-radius: 12px;
+    }
+    .pago-title {
+      font-size: 1.1rem;
+    }
+    .pago-input {
+      padding: 0.65rem 0.85rem;
+      font-size: 0.9rem;
+    }
+    .pago-save {
+      padding: 0.75rem 1.2rem;
+      font-size: 0.9rem;
+    }
+  }
 </style>
 {% endblock %}
 

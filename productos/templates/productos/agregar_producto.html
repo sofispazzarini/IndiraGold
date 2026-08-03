@@ -1,5 +1,22 @@
 {% extends 'users/dashboard_admin.html' %}
 
+{% block extra_head %}
+<style>
+  @media (max-width: 1024px) {
+    .container-fluid { padding: 1.5rem !important; }
+  }
+  @media (max-width: 768px) {
+    .container-fluid { padding: 1rem !important; }
+    .row.g-0 > [class*="col-3"] { flex: 0 0 50%; max-width: 50%; }
+  }
+  @media (max-width: 480px) {
+    .container-fluid { padding: 0.5rem !important; }
+    .row.g-0 > [class*="col-3"] { flex: 0 0 100%; max-width: 100%; border-right: none !important; }
+    h2 { font-size: 1.4rem !important; }
+  }
+</style>
+{% endblock %}
+
 {% block content %}
 {% if form.errors %}
     <div class="alert alert-danger shadow-sm border-0 mb-4" style="border-radius: 15px;">

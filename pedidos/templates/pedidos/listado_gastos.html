@@ -428,6 +428,12 @@
 
   .btn-confirm:hover { background: #8a1239; }
 
+  @media (max-width: 1024px) {
+    .gestion-main {
+      margin-left: 0;
+    }
+  }
+
   @media (max-width: 768px) {
     .gestion-main {
       padding: 2rem 1.5rem;
@@ -442,6 +448,37 @@
     .gasto-actions {
       opacity: 1;
       transform: none;
+    }
+    .page-title {
+      font-size: 2rem;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .gestion-main {
+      padding: 1rem 0.5rem;
+    }
+    .page-title {
+      font-size: 1.6rem;
+    }
+    .page-subtitle {
+      font-size: 0.85rem;
+    }
+    .gasto-card {
+      padding: 1rem;
+      border-radius: 12px;
+    }
+    .gasto-desc {
+      font-size: 0.95rem;
+    }
+    .btn-add {
+      padding: 0.6rem 1rem;
+      font-size: 0.85rem;
+    }
+    .modal-content {
+      width: 95%;
+      margin: 1rem auto;
+      padding: 1.25rem;
     }
   }
 </style>

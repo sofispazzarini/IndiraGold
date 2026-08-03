@@ -23,6 +23,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 MERCADO_PAGO_ACCESS_TOKEN = os.getenv("MERCADO_PAGO_ACCESS_TOKEN")
 MERCADO_PAGO_QR_IMAGE_URL = os.getenv("MERCADO_PAGO_QR_IMAGE_URL", "")
 MERCADO_PAGO_QR_EXTERNAL_POS_ID = os.getenv("MERCADO_PAGO_QR_EXTERNAL_POS_ID", "")
+SITE_URL = os.getenv("SITE_URL", "http://127.0.0.1:8000")
 COMPROBANTE_WHATSAPP = os.getenv("COMPROBANTE_WHATSAPP", "5492216375660")
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
@@ -44,6 +45,7 @@ if DEBUG:
         "localhost",
         "127.0.0.1",
         ".ngrok-free.app",
+        ".ngrok-free.dev",
     ]
 
 CSRF_TRUSTED_ORIGINS = [
@@ -55,7 +57,13 @@ CSRF_TRUSTED_ORIGINS = [
 if DEBUG:
     CSRF_TRUSTED_ORIGINS += [
         "https://*.ngrok-free.app",
+        "https://*.ngrok-free.dev",
     ]
+    # Permitir cookies en redirecciones cross-site (ej: volver de Mercado Pago)
+    SESSION_COOKIE_SAMESITE = 'None'
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SAMESITE = 'None'
+    CSRF_COOKIE_SECURE = True
 
 
 # Application definition
