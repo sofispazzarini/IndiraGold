@@ -16,15 +16,60 @@
     --border: #e8dfd4;
 }
 
+@page {
+    margin: 10mm;
+    size: auto;
+}
+
 @media print {
-    .no-print { display: none !important; }
-    .qr-page { margin: 0; padding: 1rem; max-width: 100%; margin-left: 0; }
-    .qr-card { break-inside: avoid; page-break-inside: avoid; }
-    body { background: #fff !important; }
+    .no-print, .sidebar, .page-header, .print-hint { display: none !important; }
+
+    body {
+        background: #fff !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    .qr-page {
+        margin: 0 !important;
+        padding: 1rem !important;
+        max-width: none !important;
+        width: 100% !important;
+        display: flex !important;
+        justify-content: center !important;
+    }
+
     /* Solo mostrar seleccionados si hay selección */
     .qr-grid.has-selection .qr-card:not(.selected) { display: none !important; }
-    .qr-card.selected { border-color: transparent; box-shadow: none; }
-    .qr-checkbox { display: none !important; }
+
+    /* Ocultar información de texto */
+    .qr-code-label, .qr-talle, .qr-color, .qr-checkbox { display: none !important; }
+
+    /* Tarjetas sin estilo - solo el QR */
+    .qr-card {
+        border: none !important;
+        box-shadow: none !important;
+        background: transparent !important;
+        padding: 0.25rem !important;
+        border-radius: 0 !important;
+        break-inside: avoid;
+        page-break-inside: avoid;
+    }
+
+    /* Grid compacto para imprimir varios por hoja */
+    .qr-grid {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        gap: 0.5rem !important;
+        justify-content: center !important;
+    }
+
+    /* QR más pequeño para impresión */
+    .qr-card img {
+        width: 100px !important;
+        height: 100px !important;
+        margin: 0 !important;
+    }
 }
 
 .qr-page {
