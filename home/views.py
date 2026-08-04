@@ -1,4 +1,5 @@
 # home/views.py
+import json
 from django.views.generic import TemplateView
 from productos.models import Producto, Categoria, Talle, Color, Variante # 1. Agregamos Variante al import
 from django.contrib import messages
@@ -22,6 +23,13 @@ class HomePublicaView(TemplateView):
         expire_cart_if_needed(self.request.session)
 
         productos = Producto.objects.filter(activo=True).prefetch_related('variantes__talle', 'variantes__colores')
+
+        for producto in productos:
+            variantes_data = [
+                {'id': v.id, 'talle': v.talle.nombre, 'stock': v.stock}
+                for v in producto.variantes.filter(activa=True).select_related('talle')
+            ]
+            producto.variantes_json = json.dumps(variantes_data)
 
         talles = (
             Talle.objects.filter(variante__activa=True, variante__stock__gt=0, variante__producto__activo=True)

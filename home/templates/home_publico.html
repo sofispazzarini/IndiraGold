@@ -158,11 +158,9 @@
                     <button
                       type="button"
                       class="product-card__btn"
-                      onclick="abrirModalCantidad(
-                        {{ producto.variantes.first.id }},
-                        '{{ producto.nombre }}',
-                        {{ producto.stock_total }}
-                      )"
+                      data-variantes='{{ producto.variantes_json|safe }}'
+                      data-nombre="{{ producto.nombre }}"
+                      onclick="abrirModalCantidad(this)"
                     >
 
                       <svg xmlns="http://www.w3.org/2000/svg"
@@ -391,11 +389,9 @@ function scrollCatOrden{{ cat_orden.id }}(dir) {
     <button
       type="button"
       class="product-card__btn"
-      onclick="abrirModalCantidad(
-        {{ producto.variantes.first.id }},
-        '{{ producto.nombre }}',
-        {{ producto.stock_total }}
-      )"
+      data-variantes='{{ producto.variantes_json|safe }}'
+      data-nombre="{{ producto.nombre }}"
+      onclick="abrirModalCantidad(this)"
     >
 
       <svg xmlns="http://www.w3.org/2000/svg"
@@ -555,6 +551,10 @@ function scrollCatOrden{{ cat_orden.id }}(dir) {
       {% csrf_token %}
       <input type="hidden" name="variante_id" id="modalCantidadProductoId">
       <input type="hidden" name="next" value="{{ request.get_full_path }}">
+      <div id="modalTallesContainer" style="display:none;">
+        <label style="display:block; margin-bottom:.5rem; font-size:.9rem; font-weight:600; color:#3d342a;">Selecciona tu talle</label>
+        <div id="modalTallesGrid"></div>
+      </div>
       <div>
         <label for="modalCantidadInput" style="display:block; margin-bottom:.5rem; font-size:.9rem; font-weight:600; color:#3d342a;">Cantidad</label>
         <input id="modalCantidadInput" name="cantidad" type="number" min="1" value="1" class="form-control" style="border:1px solid #e8dfd4; border-radius:10px; padding:.8rem 1rem; font-size:1rem; width:100%;">
@@ -569,6 +569,38 @@ function scrollCatOrden{{ cat_orden.id }}(dir) {
 </div>
 
 <style>
+  /* SELECTOR DE TALLES EN MODAL */
+  #modalTallesGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(50px, 1fr));
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+  }
+  #modalTallesGrid .talle-btn {
+    padding: 0.6rem;
+    border: 1px solid #e8dfd4;
+    border-radius: 8px;
+    background: #fff;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: #3d342a;
+    transition: all 0.15s ease;
+  }
+  #modalTallesGrid .talle-btn:hover:not(.sin-stock) {
+    border-color: #1a1612;
+  }
+  #modalTallesGrid .talle-btn.seleccionado {
+    border-color: #1a1612;
+    background: #1a1612;
+    color: #fff;
+  }
+  #modalTallesGrid .talle-btn.sin-stock {
+    opacity: 0.4;
+    cursor: not-allowed;
+    background: #f3ede6;
+  }
+
   /* CARROUSEL PRINCIPAL */
   .main-carousel {
     position: relative;
@@ -1337,14 +1369,59 @@ function scrollCatOrden{{ cat_orden.id }}(dir) {
   renderCartExpiry();
   startCartExpiryTicker();
 
-  function abrirModalCantidad(productoId, productoNombre, stock) {
+  let varianteSeleccionadaModal = null;
+
+  function abrirModalCantidad(btn) {
+    const variantes = JSON.parse(btn.dataset.variantes);
+    const nombre = btn.dataset.nombre;
     const modal = document.getElementById('modalCantidad');
-    document.getElementById('modalCantidadProductoId').value = productoId;
-    document.getElementById('modalCantidadProducto').textContent = productoNombre;
-    document.getElementById('modalCantidadInput').value = 1;
-    document.getElementById('modalCantidadInput').max = stock;
-    document.getElementById('modalCantidadStock').textContent = `Disponibles: ${stock}`;
+    const tallesContainer = document.getElementById('modalTallesContainer');
+    const tallesGrid = document.getElementById('modalTallesGrid');
+
+    document.getElementById('modalCantidadProducto').textContent = nombre;
+
+    if (variantes.length > 1) {
+      const primerConStock = variantes.findIndex(v => v.stock > 0);
+      const indexSeleccionado = primerConStock >= 0 ? primerConStock : 0;
+
+      tallesGrid.innerHTML = variantes.map((v, i) => `
+        <button type="button" class="talle-btn ${i === indexSeleccionado ? 'seleccionado' : ''} ${v.stock <= 0 ? 'sin-stock' : ''}"
+                data-id="${v.id}" data-stock="${v.stock}"
+                onclick="seleccionarTalleModal(this)" ${v.stock <= 0 ? 'disabled' : ''}>
+          ${v.talle.toUpperCase()}
+        </button>
+      `).join('');
+      tallesContainer.style.display = 'block';
+      varianteSeleccionadaModal = variantes[indexSeleccionado];
+    } else {
+      tallesContainer.style.display = 'none';
+      varianteSeleccionadaModal = variantes[0];
+    }
+
+    actualizarModalStock();
     modal.style.display = 'flex';
+  }
+
+  function seleccionarTalleModal(btn) {
+    if (btn.disabled) return;
+    document.querySelectorAll('#modalTallesGrid .talle-btn').forEach(b => b.classList.remove('seleccionado'));
+    btn.classList.add('seleccionado');
+    varianteSeleccionadaModal = {
+      id: parseInt(btn.dataset.id),
+      stock: parseInt(btn.dataset.stock)
+    };
+    actualizarModalStock();
+  }
+
+  function actualizarModalStock() {
+    const input = document.getElementById('modalCantidadInput');
+    const stockLabel = document.getElementById('modalCantidadStock');
+    const hiddenId = document.getElementById('modalCantidadProductoId');
+
+    hiddenId.value = varianteSeleccionadaModal.id;
+    input.max = varianteSeleccionadaModal.stock;
+    input.value = 1;
+    stockLabel.textContent = `Disponibles: ${varianteSeleccionadaModal.stock}`;
   }
 
   function cerrarModalCantidad() {

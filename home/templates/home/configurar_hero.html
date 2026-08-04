@@ -392,10 +392,72 @@
 </div>
 
 <script>
-document.querySelectorAll('input[type="color"]').forEach(input => {
-    input.addEventListener('input', function() {
-        document.getElementById(this.id + '_text').value = this.value;
+document.addEventListener('DOMContentLoaded', function() {
+  const preview = document.getElementById('preview');
+  const previewEyebrow = preview.querySelector('.preview-eyebrow');
+  const previewTitle = preview.querySelector('.preview-title');
+  const previewSub = preview.querySelector('.preview-sub');
+
+  // Colores
+  document.getElementById('color_fondo').addEventListener('input', function() {
+    document.getElementById('color_fondo_text').value = this.value;
+    preview.style.backgroundColor = this.value;
+  });
+
+  document.getElementById('color_texto').addEventListener('input', function() {
+    document.getElementById('color_texto_text').value = this.value;
+    previewTitle.style.color = this.value;
+    previewSub.style.color = this.value;
+  });
+
+  document.getElementById('color_acento').addEventListener('input', function() {
+    document.getElementById('color_acento_text').value = this.value;
+    previewEyebrow.style.color = this.value;
+  });
+
+  // Textos
+  document.querySelector('input[name="eyebrow"]').addEventListener('input', function() {
+    previewEyebrow.textContent = this.value;
+  });
+
+  document.querySelector('input[name="titulo_linea1"]').addEventListener('input', function() {
+    actualizarTitulo();
+  });
+
+  document.querySelector('input[name="titulo_linea2"]').addEventListener('input', function() {
+    actualizarTitulo();
+  });
+
+  function actualizarTitulo() {
+    const linea1 = document.querySelector('input[name="titulo_linea1"]').value;
+    const linea2 = document.querySelector('input[name="titulo_linea2"]').value;
+    previewTitle.innerHTML = linea1 + '<br><em>' + linea2 + '</em>';
+  }
+
+  document.querySelector('input[name="subtitulo"]').addEventListener('input', function() {
+    previewSub.textContent = this.value;
+  });
+
+  // Fuente
+  document.querySelector('select[name="fuente_titulo"]').addEventListener('change', function() {
+    previewTitle.style.fontFamily = "'" + this.value + "', serif";
+  });
+
+  // Imagen de fondo
+  const imgInput = document.querySelector('input[name="imagen_fondo"]');
+  if (imgInput) {
+    imgInput.addEventListener('change', function() {
+      if (this.files && this.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          preview.style.backgroundImage = 'url(' + e.target.result + ')';
+          preview.style.backgroundSize = 'cover';
+          preview.style.backgroundPosition = 'center';
+        };
+        reader.readAsDataURL(this.files[0]);
+      }
     });
+  }
 });
 </script>
 {% endblock %}
