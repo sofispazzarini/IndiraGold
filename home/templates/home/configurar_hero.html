@@ -233,6 +233,17 @@
     gap: 0.5rem;
 }
 
+.alert-error {
+    background: #fee2e2;
+    color: #991b1b;
+    padding: 1rem;
+    border-radius: 10px;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
 @media (max-width: 900px) {
     .hero-config-page {
         margin-left: 0;
@@ -257,8 +268,8 @@
 
     {% if messages %}
     {% for message in messages %}
-    <div class="alert-success">
-        <i class="bi bi-check-circle-fill"></i> {{ message }}
+    <div class="alert-{{ message.tags|default:'success' }}">
+        <i class="bi bi-{% if message.tags == 'error' %}x-circle-fill{% else %}check-circle-fill{% endif %}"></i> {{ message }}
     </div>
     {% endfor %}
     {% endif %}

@@ -1,5 +1,6 @@
 # home/views.py
 import json
+from PIL import Image
 from django.views.generic import TemplateView
 from productos.models import Producto, Categoria, Talle, Color, Variante # 1. Agregamos Variante al import
 from django.contrib import messages
@@ -263,9 +264,17 @@ def configurar_hero(request):
             hero.imagen_fondo.delete(save=False)
             hero.imagen_fondo = None
         elif 'imagen_fondo' in request.FILES:
-            if hero.imagen_fondo:
-                hero.imagen_fondo.delete(save=False)
-            hero.imagen_fondo = request.FILES['imagen_fondo']
+            imagen = request.FILES['imagen_fondo']
+            try:
+                img = Image.open(imagen)
+                img.verify()
+                imagen.seek(0)
+                if hero.imagen_fondo:
+                    hero.imagen_fondo.delete(save=False)
+                hero.imagen_fondo = imagen
+            except Exception:
+                messages.error(request, 'No se pudo agregar la imagen. Asegurate de subir un archivo de imagen válido (JPG, PNG, etc).')
+                return redirect('home:configurar_hero')
 
         hero.save()
         messages.success(request, 'Configuración del Hero actualizada.')
