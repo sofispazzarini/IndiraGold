@@ -85,11 +85,18 @@ def agregar_producto(request):
 			activa=True
 		)
 		colores_variante = list(variante.colores.all())
-		colores_validos = {color.nombre.lower(): color.nombre for color in colores_variante}
+		colores_validos = {color.nombre.lower(): color for color in colores_variante}
+		color_hex = None
 		if color_nombre:
-			color_nombre = colores_validos.get(color_nombre.lower(), '')
+			color_obj = colores_validos.get(color_nombre.lower())
+			if color_obj:
+				color_nombre = color_obj.nombre
+				color_hex = color_obj.codigo_hex
+			else:
+				color_nombre = ''
 		elif len(colores_variante) == 1:
 			color_nombre = colores_variante[0].nombre
+			color_hex = colores_variante[0].codigo_hex
 
 		producto = variante.producto
 
@@ -140,21 +147,32 @@ def agregar_producto(request):
 			carrito = get_or_create_cart(request)
 
 			from .models import CarritoItem
+			from decimal import Decimal
+
+			# Calcular precio con descuento si hay oferta activa
+			precio_base = variante.precio or producto.precio
+			oferta = producto.obtener_oferta_activa()
+			if oferta:
+				descuento = Decimal(oferta.descuento) / Decimal(100)
+				precio_con_descuento = precio_base * (1 - descuento)
+			else:
+				precio_con_descuento = precio_base
 
 			item, created = CarritoItem.objects.get_or_create(
 				carrito=carrito,
 				variante=variante,
 				defaults={
 					'cantidad': 0,
-					'precio_unitario': variante.precio or producto.precio,
+					'precio_unitario': precio_con_descuento,
 					'precio_total': 0
 				}
 			)
 
 			item.cantidad = new_qty
-			item.precio_unitario = variante.precio or producto.precio
+			item.precio_unitario = precio_con_descuento
 			item.precio_total = item.cantidad * item.precio_unitario
 			item.color_nombre = color_nombre or item.color_nombre
+			item.color_hex = color_hex or item.color_hex
 			item.save()
 
 			# Sincronizar sesión con BD

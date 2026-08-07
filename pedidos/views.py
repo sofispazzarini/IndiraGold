@@ -2533,9 +2533,18 @@ def registrar_venta_local(request):
                     'error': f'No hay stock suficiente para {variante.producto.nombre}'
                 }, status=400)
 
-            subtotal = (
-                variante.precio * cantidad
-            )
+            # Usar precio de variante o del producto si es 0
+            precio_base = variante.precio if variante.precio > 0 else variante.producto.precio
+
+            # Aplicar descuento si hay oferta activa
+            oferta = variante.producto.obtener_oferta_activa()
+            if oferta:
+                descuento = Decimal(oferta.descuento) / Decimal(100)
+                precio_unitario = precio_base * (1 - descuento)
+            else:
+                precio_unitario = precio_base
+
+            subtotal = precio_unitario * cantidad
 
             VentaLocalItem.objects.create(
 
@@ -2549,7 +2558,7 @@ def registrar_venta_local(request):
 
                 cantidad=cantidad,
 
-                precio_unitario=variante.precio,
+                precio_unitario=precio_unitario,
 
                 subtotal=subtotal
 

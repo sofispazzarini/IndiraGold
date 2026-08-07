@@ -808,11 +808,16 @@ def buscar_productos(request):
 
     return JsonResponse(data, safe=False)
 def obtener_variantes_producto(request, producto_id):
+    from decimal import Decimal
 
     producto = get_object_or_404(
         Producto,
         id=producto_id
     )
+
+    # Calcular descuento si hay oferta activa
+    oferta = producto.obtener_oferta_activa()
+    descuento = Decimal(oferta.descuento) / Decimal(100) if oferta else Decimal(0)
 
     variantes = producto.variantes.filter(
         activa=True,
@@ -828,8 +833,15 @@ def obtener_variantes_producto(request, producto_id):
         colores = []
 
         for color in variante.colores.all():
+            colores.append({
+                'nombre': color.nombre,
+                'hex': color.codigo_hex
+            })
 
-            colores.append(color.nombre)
+        # Usar precio de variante o del producto si es 0
+        precio_base = variante.precio if variante.precio > 0 else producto.precio
+        # Aplicar descuento al precio
+        precio_final = float(precio_base * (1 - descuento))
 
         data.append({
 
@@ -841,7 +853,7 @@ def obtener_variantes_producto(request, producto_id):
 
             'stock': variante.stock,
 
-            'precio': float(variante.precio)
+            'precio': precio_final
 
         })
 

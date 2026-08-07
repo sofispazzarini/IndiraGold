@@ -765,7 +765,9 @@
                 <div class="product-name">{{ item.variante.producto.nombre }}</div>
                 <div class="product-talle">Talle: {{ item.variante.talle.nombre }}</div>
                 {% if item.color_nombre %}
-                  <div class="product-talle">Color: {{ item.color_nombre|title }}</div>
+                  <div class="product-talle d-flex align-items-center gap-1">Color:
+                    <span title="{{ item.color_nombre }}" style="display:inline-block; width:16px; height:16px; background-color:{{ item.color_hex|default:'#888' }}; border-radius:50%; border:1px solid #ccc;"></span>
+                  </div>
                 {% endif %}
                 <div class="cantidad-wrap">
                   <button type="button" class="cantidad-btn btn-cantidad" data-action="disminuir" data-variante="{{ item.variante.id }}">-</button>
@@ -1295,7 +1297,7 @@
             <span class="value">${{ subtotal }}</span>
           </div>
 
-          <div class="resumen-row">
+          <div class="resumen-row" id="envio-row" style="display:none;">
             <span class="label">Envío</span>
             <span class="value green" id="envio-label">Gratis</span>
           </div>
@@ -1422,6 +1424,7 @@ const camposFlex = document.getElementById('campos-flex');
 const camposCorreo = document.getElementById('campos-correo');
 const camposLocal = document.getElementById('campos-local');
 const envioTexto = document.getElementById('envio-label');
+const envioRow = document.getElementById('envio-row');
 const totalDisplay = document.getElementById('total-final-display');
 const pagoMercado = document.getElementById('pago-mercado');
 const pagoTransferencia = document.getElementById('pago-transferencia');
@@ -1482,6 +1485,11 @@ function actualizarEntrega() {
   }
 
   asegurarMetodoPagoSeleccionado();
+
+  // Mostrar fila de envío solo cuando NO es retiro en local
+  if (envioRow) {
+    envioRow.style.display = metodo === 'local' ? 'none' : 'flex';
+  }
 
   if (costoEnvio > 0) {
     envioTexto.innerText = formatearPesos(costoEnvio);
