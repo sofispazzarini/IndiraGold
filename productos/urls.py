@@ -21,6 +21,9 @@ urlpatterns = [
     # AJAX para el modal de previsualización
     path('ajax/detalle-producto/<int:producto_id>/', views.obtener_detalle_producto_ajax, name='get_detalle_producto_ajax'),
     path('ajax/tabla-medidas/<int:producto_id>/', views.obtener_tabla_medidas_ajax, name='obtener_tabla_medidas'),
+    path('ajax/subcategorias/<int:categoria_id>/', views.api_subcategorias, name='api_subcategorias'),
+    path('ajax/crear-categoria/', views.api_crear_categoria, name='api_crear_categoria'),
+    path('ajax/crear-subcategoria/', views.api_crear_subcategoria, name='api_crear_subcategoria'),
 
     # --- VARIANTES ---
     path('variante/<int:variante_id>/eliminar/', views.eliminar_variante, name='eliminar_variante'),

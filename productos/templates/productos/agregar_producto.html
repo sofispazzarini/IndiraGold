@@ -38,14 +38,14 @@
         </ul>
     </div>
 {% endif %}
-<div class="container-fluid d-flex justify-content-center py-4">
-    <div style="width: 100%; max-width: 1050px;">
+<div class="container-fluid py-4" style="display: flex; justify-content: center; align-items: flex-start; min-height: calc(100vh - 120px); padding-left: 6rem;">
+    <div style="width: 100%; max-width: 950px;">
         
         <div class="d-flex align-items-center mb-4">
             <a href="{% url 'productos:productos_por_subcategoria' subcategoria.id %}" class="btn border-0 p-2">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
             </a>
-            <h2 class="ms-2 mb-0" style="font-family: 'Cormorant Garamond';">Crear Ficha: <span style="color: #b8922a;">{{ subcategoria.nombre }}</span></h2>
+            <h2 class="ms-2 mb-0" style="font-family: 'Cormorant Garamond';">Crear Ficha: <span id="tituloSubcategoria" style="color: #b8922a; text-transform: capitalize;">{{ subcategoria.nombre }}</span></h2>
         </div>
 
         <form id="formProductoFinal" method="post" enctype="multipart/form-data">
@@ -157,11 +157,29 @@
             <div class="row mb-4">
                 <div class="col-md-6">
                     <label class="form-label fw-bold">Categoría</label>
-                    <input type="text" class="form-control bg-light" value="{{ categoria.nombre }}" readonly>
+                    <div class="d-flex gap-2">
+                        <select id="selectCategoria" class="form-select" style="text-transform: capitalize;">
+                            {% for cat in todas_categorias %}
+                            <option value="{{ cat.id }}" {% if cat.id == categoria.id %}selected{% endif %}>{{ cat.nombre }}</option>
+                            {% endfor %}
+                        </select>
+                        <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#modalNuevaCategoria" title="Agregar categoría">
+                            <i class="bi bi-plus-lg"></i>
+                        </button>
+                    </div>
                 </div>
                 <div class="col-md-6">
                     <label class="form-label fw-bold">Subcategoría</label>
-                    <input type="text" class="form-control bg-light" value="{{ subcategoria.nombre }}" readonly>
+                    <div class="d-flex gap-2">
+                        <select id="selectSubcategoria" name="subcategoria_id" class="form-select" style="text-transform: capitalize;">
+                            {% for sub in todas_subcategorias %}
+                            <option value="{{ sub.id }}" {% if sub.id == subcategoria.id %}selected{% endif %}>{{ sub.nombre }}</option>
+                            {% endfor %}
+                        </select>
+                        <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#modalNuevaSubcategoria" title="Agregar subcategoría">
+                            <i class="bi bi-plus-lg"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -233,6 +251,7 @@
     let variantes = [];
     let tempColores = [];
     let tempMedidas = [];
+    let formModificado = false;
     const proveedoresData = [
         {% for p in proveedores %}
         { id: "{{ p.id }}", nombre: "{{ p.nombre|escapejs }}" }{% if not forloop.last %},{% endif %}
@@ -241,7 +260,37 @@
 
     const dicColors = { 'azul': '#0000ff', 'rojo': '#ff0000', 'verde': '#00ff00', 'negro': '#000000', 'blanco': '#ffffff', 'rosa': '#ffc0cb', 'amarillo': '#ffff00', 'celeste': '#87ceeb' };
 
+    // Función para mostrar mensaje de éxito
+    function mostrarExito(mensaje) {
+        let alertDiv = document.getElementById('alertaExito');
+        if (!alertDiv) {
+            alertDiv = document.createElement('div');
+            alertDiv.id = 'alertaExito';
+            alertDiv.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 9999; padding: 15px 25px; background: #d4edda; border: 1px solid #c3e6cb; color: #155724; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); font-size: 0.9rem;';
+            document.body.appendChild(alertDiv);
+        }
+        alertDiv.innerHTML = `<strong>✓</strong> ${mensaje}`;
+        alertDiv.style.display = 'block';
+        setTimeout(() => alertDiv.style.display = 'none', 4000);
+    }
+
+    // Alerta antes de salir si hay datos sin guardar
+    window.addEventListener('beforeunload', function(e) {
+        if (formModificado) {
+            e.preventDefault();
+            e.returnValue = '¿Estás seguro? Vas a perder la información que ingresaste.';
+            return e.returnValue;
+        }
+    });
+
     document.addEventListener('DOMContentLoaded', function() {
+        // Detectar cambios en el formulario
+        document.getElementById('formProductoFinal').addEventListener('input', function() {
+            formModificado = true;
+        });
+        document.getElementById('formProductoFinal').addEventListener('change', function() {
+            formModificado = true;
+        });
         
         // --- 1. PREVISUALIZACIONES ---
         document.getElementById('inputImgTecnica').onchange = (e) => {
@@ -311,17 +360,18 @@
                     return;
                 }
                 variantes.push({ talle, colores: [...tempColores], medidas: [...tempMedidas], stock, precio: 0 });
+                formModificado = true;
                 console.log('Variante agregada:', variantes);
                 actualizarUI();
                 console.log('UI actualizada');
+                // Cerrar modal manualmente
                 let modalEl = document.getElementById('modalVariante');
-                let modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
-                modal.hide();
-                // Forzar cierre del backdrop
+                modalEl.classList.remove('show');
+                modalEl.style.display = 'none';
                 document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
                 document.body.classList.remove('modal-open');
                 document.body.style.overflow = '';
-                console.log('Modal cerrado');
+                document.body.style.paddingRight = '';
                 // Reset
                 tempColores = []; tempMedidas = [];
                 e.target.reset();
@@ -382,6 +432,9 @@
                 event.preventDefault();
                 alert('Seleccioná un proveedor de la lista.');
                 input.focus();
+            } else {
+                // Desactivar alerta al guardar correctamente
+                formModificado = false;
             }
         });
     }
@@ -416,7 +469,15 @@
                 hidden.value = data.proveedor.id;
                 input.value = data.proveedor.nombre;
                 form.reset();
-                bootstrap.Modal.getInstance(modalEl).hide();
+                // Cerrar modal manualmente
+                modalEl.classList.remove('show');
+                modalEl.style.display = 'none';
+                document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+                document.body.classList.remove('modal-open');
+                document.body.style.overflow = '';
+                document.body.style.paddingRight = '';
+                // Mostrar mensaje de éxito
+                mostrarExito(`Proveedor "${data.proveedor.nombre}" agregado`);
             } catch (error) {
                 errorBox.textContent = error.message;
                 errorBox.classList.remove('d-none');
@@ -426,22 +487,21 @@
 
     function renderTempColores() {
         const contenedor = document.getElementById('displayColoresTemp');
-        
-        // Si hay colores, removemos el d-none para que se vea el cuadrado gris
+
         if (tempColores.length > 0) {
             contenedor.classList.remove('d-none');
         } else {
             contenedor.classList.add('d-none');
         }
 
-        // Armamos la pastilla visual con el círculo de color al lado del nombre
+        // Solo círculo de color con botón de eliminar
         contenedor.innerHTML = tempColores.map((c, i) => `
-            <span class="badge bg-dark me-2 mb-1 d-inline-flex align-items-center" style="font-size: 0.85rem; padding: 6px 10px;">
-                ${c.colorNinguno 
-                    ? 'Sin color' 
-                    : `<span style="display:inline-block; width:12px; height:12px; background-color:${c.colorHex}; border-radius:50%; margin-right:6px; border:1px solid #fff;"></span>${c.colorNombre}`
+            <span class="d-inline-flex align-items-center me-2 mb-1 px-2 py-1 rounded" style="background: #333;" title="${c.colorNombre || 'Sin color'}">
+                ${c.colorNinguno
+                    ? '<span class="text-white small">Sin color</span>'
+                    : `<span style="display:inline-block; width:20px; height:20px; background-color:${c.colorHex}; border-radius:50%; border:2px solid #fff;"></span>`
                 }
-                <button type="button" class="btn-close btn-close-white ms-2" style="font-size:0.5rem" onclick="tempColores.splice(${i},1); renderTempColores()"></button>
+                <button type="button" class="btn-close btn-close-white ms-1" style="font-size:0.45rem" onclick="tempColores.splice(${i},1); renderTempColores()"></button>
             </span>
         `).join('');
     }
@@ -536,5 +596,205 @@
         document.getElementById('variantes_json_input').value = JSON.stringify(variantes);
         document.getElementById('stockGlobalInput').value = variantes.reduce((total, v) => total + (parseInt(v.stock, 10) || 0), 0);
     }
+
+    // --- LÓGICA CATEGORÍA / SUBCATEGORÍA ---
+    const selectCat = document.getElementById('selectCategoria');
+    const selectSub = document.getElementById('selectSubcategoria');
+    const tituloSub = document.getElementById('tituloSubcategoria');
+
+    // Actualizar título cuando cambia subcategoría
+    selectSub.addEventListener('change', function() {
+        const selectedOption = this.options[this.selectedIndex];
+        if (selectedOption && selectedOption.value) {
+            tituloSub.textContent = selectedOption.text;
+        }
+    });
+
+    // Cargar subcategorías cuando cambia categoría
+    selectCat.addEventListener('change', function() {
+        const catId = this.value;
+        selectSub.innerHTML = '<option value="">Cargando...</option>';
+
+        fetch(`/productos/ajax/subcategorias/${catId}/`)
+            .then(r => r.json())
+            .then(data => {
+                if (data.length === 0) {
+                    selectSub.innerHTML = '<option value="">No hay subcategorías</option>';
+                    tituloSub.textContent = 'Sin subcategoría';
+                } else {
+                    selectSub.innerHTML = data.map(s =>
+                        `<option value="${s.id}">${s.nombre}</option>`
+                    ).join('');
+                    tituloSub.textContent = data[0].nombre;
+                }
+            })
+            .catch(() => {
+                selectSub.innerHTML = '<option value="">Error al cargar</option>';
+            });
+    });
+
     </script>
+
+<!-- Modal Nueva Categoría -->
+<div class="modal fade" id="modalNuevaCategoria" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow" style="border-radius: 20px;">
+            <div class="modal-body p-4 text-center">
+                <h5 class="fw-bold mb-3" style="font-family: 'Cormorant Garamond'; color: #b8922a;">Nueva Categoría</h5>
+                <div id="errorCategoria" class="d-none mb-3 p-2 rounded" style="background: #fff5f5; border: 1px solid #f5c6cb; color: #721c24; font-size: 0.85rem;"></div>
+                <form id="formNuevaCategoria">
+                    <input type="text" id="inputNuevaCategoria" class="form-control mb-3 text-center" placeholder="Nombre de la categoría" required style="border-radius: 10px;">
+                    <div class="d-flex gap-2 justify-content-center">
+                        <button type="button" class="btn btn-light px-4" data-bs-dismiss="modal" style="border-radius: 50px;">Cancelar</button>
+                        <button type="submit" class="btn px-4" style="background: #1a1612; color: #fff; border-radius: 50px;">Guardar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Nueva Subcategoría -->
+<div class="modal fade" id="modalNuevaSubcategoria" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow" style="border-radius: 20px;">
+            <div class="modal-body p-4 text-center">
+                <h5 class="fw-bold mb-3" style="font-family: 'Cormorant Garamond'; color: #b8922a;">Nueva Subcategoría</h5>
+                <p class="text-muted small mb-3">Se creará en la categoría seleccionada</p>
+                <div id="errorSubcategoria" class="d-none mb-3 p-2 rounded" style="background: #fff5f5; border: 1px solid #f5c6cb; color: #721c24; font-size: 0.85rem;"></div>
+                <form id="formNuevaSubcategoria">
+                    <input type="text" id="inputNuevaSubcategoria" class="form-control mb-3 text-center" placeholder="Nombre de la subcategoría" required style="border-radius: 10px;">
+                    <div class="d-flex gap-2 justify-content-center">
+                        <button type="button" class="btn btn-light px-4" data-bs-dismiss="modal" style="border-radius: 50px;">Cancelar</button>
+                        <button type="submit" class="btn px-4" style="background: #1a1612; color: #fff; border-radius: 50px;">Guardar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Función para mostrar errores en los modales
+function mostrarError(elementId, mensaje) {
+    const errorDiv = document.getElementById(elementId);
+    errorDiv.textContent = mensaje;
+    errorDiv.classList.remove('d-none');
+    setTimeout(() => errorDiv.classList.add('d-none'), 5000);
+}
+
+function ocultarError(elementId) {
+    document.getElementById(elementId).classList.add('d-none');
+}
+
+// Función para mostrar mensaje de éxito en la página
+function mostrarExito(mensaje) {
+    let alertDiv = document.getElementById('alertaExito');
+    if (!alertDiv) {
+        alertDiv = document.createElement('div');
+        alertDiv.id = 'alertaExito';
+        alertDiv.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 9999; padding: 15px 25px; background: #d4edda; border: 1px solid #c3e6cb; color: #155724; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); font-size: 0.9rem; animation: slideIn 0.3s ease;';
+        document.body.appendChild(alertDiv);
+    }
+    alertDiv.innerHTML = `<strong>✓</strong> ${mensaje}`;
+    alertDiv.style.display = 'block';
+    setTimeout(() => alertDiv.style.display = 'none', 4000);
+}
+
+// Función para cerrar modal y limpiar backdrop
+function cerrarModal(modalId) {
+    const modalEl = document.getElementById(modalId);
+
+    // Ocultar el modal manualmente
+    modalEl.classList.remove('show');
+    modalEl.style.display = 'none';
+    modalEl.setAttribute('aria-hidden', 'true');
+    modalEl.removeAttribute('aria-modal');
+
+    // Limpiar backdrops
+    document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+
+    // Restaurar el body
+    document.body.classList.remove('modal-open');
+    document.body.style.overflow = '';
+    document.body.style.paddingRight = '';
+}
+
+// Script para modales de categoría/subcategoría
+document.getElementById('formNuevaCategoria').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const input = document.getElementById('inputNuevaCategoria');
+    const nombre = input.value.trim();
+    if (!nombre) return;
+
+    ocultarError('errorCategoria');
+    const selectCat = document.getElementById('selectCategoria');
+    const selectSub = document.getElementById('selectSubcategoria');
+    const tituloSub = document.getElementById('tituloSubcategoria');
+
+    fetch('/productos/ajax/crear-categoria/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: `nombre=${encodeURIComponent(nombre)}`
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            const option = new Option(data.nombre, data.id, true, true);
+            selectCat.add(option);
+            selectSub.innerHTML = '<option value="">No hay subcategorías</option>';
+            tituloSub.textContent = 'Sin subcategoría';
+            cerrarModal('modalNuevaCategoria');
+            input.value = '';
+            mostrarExito(`Categoría "${data.nombre}" creada correctamente`);
+        } else {
+            mostrarError('errorCategoria', data.error || 'No se pudo crear la categoría');
+        }
+    })
+    .catch(() => mostrarError('errorCategoria', 'Error de conexión. Verificá tu internet e intentá de nuevo.'));
+});
+
+document.getElementById('formNuevaSubcategoria').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const input = document.getElementById('inputNuevaSubcategoria');
+    const nombre = input.value.trim();
+    const selectCat = document.getElementById('selectCategoria');
+    const selectSub = document.getElementById('selectSubcategoria');
+    const tituloSub = document.getElementById('tituloSubcategoria');
+    const catId = selectCat.value;
+    const catNombre = selectCat.options[selectCat.selectedIndex].text;
+    if (!nombre || !catId) return;
+
+    ocultarError('errorSubcategoria');
+
+    fetch('/productos/ajax/crear-subcategoria/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: `nombre=${encodeURIComponent(nombre)}&categoria_id=${catId}`
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            if (selectSub.options.length === 1 && !selectSub.options[0].value) {
+                selectSub.innerHTML = '';
+            }
+            const option = new Option(data.nombre, data.id, true, true);
+            selectSub.add(option);
+            tituloSub.textContent = data.nombre;
+            cerrarModal('modalNuevaSubcategoria');
+            input.value = '';
+            mostrarExito(`Subcategoría "${data.nombre}" creada en ${catNombre}`);
+        } else {
+            mostrarError('errorSubcategoria', data.error || 'No se pudo crear la subcategoría');
+        }
+    })
+    .catch(() => mostrarError('errorSubcategoria', 'Error de conexión. Verificá tu internet e intentá de nuevo.'));
+});
+</script>
 {% endblock %}

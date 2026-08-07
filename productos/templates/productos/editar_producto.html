@@ -148,12 +148,12 @@
                                             <input type="number" min="0" step="1" name="variante_stock_{{ variante.id }}" value="{{ variante.stock }}" class="form-control form-control-sm variant-stock-input">
                                         </td>
                                         <td>
-                                            <div class="small mb-1">
-                                                <span class="text-dark fw-bold">Color:</span> 
+                                            <div class="small mb-1 d-flex align-items-center gap-1">
+                                                <span class="text-dark fw-bold">Color:</span>
                                                 {% for c in variante.colores.all %}
-                                                    <span class="badge bg-light text-dark border fw-normal me-1">{{ c.nombre }}</span>
+                                                    <span title="{{ c.nombre }}" style="display:inline-block; width:18px; height:18px; background-color:{{ c.codigo_hex }}; border-radius:50%; border:2px solid #ddd;"></span>
                                                 {% empty %}
-                                                    <span class="text-muted italic">No cargado</span>
+                                                    <span class="text-muted italic">-</span>
                                                 {% endfor %}
                                             </div>
                                             <div class="text-muted x-small">

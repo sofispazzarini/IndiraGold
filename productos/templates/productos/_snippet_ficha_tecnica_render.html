@@ -59,10 +59,10 @@
                             <strong style="color:#1a1612;">{% if variante.talle %}{{ variante.talle.nombre|upper }}{% else %}SIN TALLE{% endif %}</strong><br>
                             Stock: {{ variante.stock }}<br>
                             {% if variante.colores.all %}
-                                Colores:
+                                <span style="display:inline-flex; align-items:center; gap:4px;">Colores:
                                 {% for color in variante.colores.all %}
-                                    {{ color.nombre }}{% if not forloop.last %}, {% endif %}
-                                {% endfor %}<br>
+                                    <span title="{{ color.nombre }}" style="display:inline-block; width:14px; height:14px; background-color:{{ color.codigo_hex }}; border-radius:50%; border:1px solid #ccc;"></span>
+                                {% endfor %}</span><br>
                             {% endif %}
                             {% if variante.medidas.all %}
                                 Medidas:
