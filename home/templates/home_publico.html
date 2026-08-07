@@ -1119,6 +1119,24 @@ function scrollCatOrden{{ cat_orden.id }}(dir) {
     .welcome-title { font-size: 2.2rem; }
     .talle-btn { min-width: 46px; padding: 0.6rem 0.8rem; font-size: 0.85rem; }
   }
+
+  /* Botón de talle en navbar */
+  .nb-talle-btn {
+    background: none;
+    border: 1.5px solid var(--border);
+    padding: 0.4em 0.8em;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: inherit;
+  }
+  .nb-talle-btn:hover {
+    border-color: var(--gold);
+    color: var(--gold);
+  }
 </style>
 
 <script>
@@ -1507,6 +1525,10 @@ function scrollCatOrden{{ cat_orden.id }}(dir) {
     localStorage.setItem('welcomeClosed', 'true');
   }
 
+  function mostrarWelcome() {
+    document.getElementById('welcomeModal').classList.add('show');
+  }
+
   function seleccionarTalle(talleId) {
     cerrarWelcome();
     document.getElementById('talleFilter').value = talleId;
@@ -1516,8 +1538,19 @@ function scrollCatOrden{{ cat_orden.id }}(dir) {
     }, 300);
   }
 
-  // Mostrar modal si no fue cerrado antes
+  // Mostrar modal si no fue cerrado antes + agregar botón al navbar
   document.addEventListener('DOMContentLoaded', function() {
+    // Agregar botón de talle al navbar
+    const navLinks = document.querySelector('.navbar__links');
+    if (navLinks) {
+      const talleBtn = document.createElement('button');
+      talleBtn.className = 'nb-talle-btn';
+      talleBtn.textContent = 'Elegir talle';
+      talleBtn.onclick = mostrarWelcome;
+      navLinks.insertBefore(talleBtn, navLinks.firstChild);
+    }
+
+    // Mostrar modal automáticamente si no fue cerrado antes
     if (!localStorage.getItem('welcomeClosed')) {
       document.getElementById('welcomeModal').classList.add('show');
     }
