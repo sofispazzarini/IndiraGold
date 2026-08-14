@@ -30,6 +30,7 @@ class CarritoItem(models.Model):
     carrito = models.ForeignKey(Carrito, on_delete=models.CASCADE, related_name='items')
     variante = models.ForeignKey(Variante, on_delete=models.CASCADE)
     color_nombre = models.CharField(max_length=100, blank=True, null=True)
+    color_hex = models.CharField(max_length=7, blank=True, null=True)
     cantidad = models.PositiveIntegerField()
     precio_unitario = models.DecimalField(max_digits=10, decimal_places=2)
     precio_total = models.DecimalField(max_digits=10, decimal_places=2)

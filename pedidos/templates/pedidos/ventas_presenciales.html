@@ -868,19 +868,10 @@
 
                 </label>
 
-                <select
-                    id="color-select"
-                    class="form-select rounded-4"
-                    
-                >
-
-                    <option value="">
-
-                        Seleccionar color
-
-                    </option>
-
-                </select>
+                <div id="color-buttons" class="d-flex flex-wrap gap-2 p-2 border rounded-4" style="min-height:42px; max-height:90px; overflow-y:auto; background:#fafafa;">
+                    <span class="text-muted small" id="color-placeholder">Seleccioná un talle primero</span>
+                </div>
+                <input type="hidden" id="color-select" value="">
 
             </div>
 
@@ -2008,8 +1999,9 @@ document.addEventListener(
             talleSelect.innerHTML =
                 '<option value="">Seleccionar talle</option>'
 
-            colorSelect.innerHTML =
-                '<option value="">Seleccionar color</option>'
+            colorSelect.value = ''
+            document.getElementById('color-buttons').innerHTML =
+                '<span class="text-muted small">Seleccioná un talle primero</span>'
 
             // CARGAR TALLES
 
@@ -2058,9 +2050,11 @@ async function seleccionarProducto(producto){
 
     const talleSelect = document.getElementById('talle-select')
     const colorSelect = document.getElementById('color-select')
+    const colorButtons = document.getElementById('color-buttons')
 
     talleSelect.innerHTML = '<option value="">Seleccionar talle</option>'
-    colorSelect.innerHTML = '<option value="">Seleccionar color</option>'
+    colorSelect.value = ''
+    colorButtons.innerHTML = '<span class="text-muted small" id="color-placeholder">Seleccioná un talle primero</span>'
 
     variantes.forEach(variante => {
         talleSelect.innerHTML += `
@@ -2112,34 +2106,43 @@ document.getElementById(
             v => v.id == varianteId
         )
 
-        const colorSelect = document.getElementById(
-            'color-select'
-        )
+        const colorSelect = document.getElementById('color-select')
+        const colorButtons = document.getElementById('color-buttons')
 
-        colorSelect.innerHTML =
-            '<option value="">Seleccionar color</option>'
+        colorSelect.value = ''
+        colorButtons.innerHTML = '<span class="text-muted small">Seleccioná un color</span>'
 
         if(!variante){
-
-            document.getElementById(
-                'stock-variante'
-            ).value = '-'
-
+            document.getElementById('stock-variante').value = '-'
+            colorButtons.innerHTML = '<span class="text-muted small">Seleccioná un talle primero</span>'
             return
         }
 
-        variante.colores.forEach(color => {
+        colorButtons.innerHTML = ''
 
-            colorSelect.innerHTML += `
-
-                <option value="${color}">
-
-                    ${color}
-
-                </option>
-
-            `
-        })
+        if (variante.colores.length === 0) {
+            colorButtons.innerHTML = '<span class="text-muted small">Sin colores</span>';
+        } else {
+            variante.colores.forEach(color => {
+                const nombre = color.nombre || color;
+                const hex = color.hex || (nombre.startsWith('#') ? nombre : '#888');
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'color-btn';
+                btn.dataset.color = nombre;
+                btn.dataset.hex = hex;
+                btn.title = nombre;
+                btn.innerHTML = `<span style="display:inline-block; width:28px; height:28px; border-radius:50%; background-color:${hex}; border:2px solid #ddd;"></span>`;
+                btn.style.cssText = 'padding:4px; border:2px solid transparent; border-radius:8px; background:none; cursor:pointer;';
+                btn.onclick = function() {
+                    document.querySelectorAll('.color-btn').forEach(b => b.style.borderColor = 'transparent');
+                    this.style.borderColor = '#b8922a';
+                    document.getElementById('color-select').value = nombre;
+                    actualizarStockSeleccionado();
+                };
+                colorButtons.appendChild(btn);
+            });
+        }
 
         actualizarStockSeleccionado()
 
@@ -2150,12 +2153,7 @@ document.getElementById(
     }
 )
 
-document.getElementById(
-    'color-select'
-).addEventListener(
-    'change',
-    actualizarStockSeleccionado
-)
+// El color-select ahora es un input hidden, no necesita evento change
 
 document.getElementById(
     'btn-agregar-producto'
@@ -2170,6 +2168,10 @@ document.getElementById(
         const color = document.getElementById(
             'color-select'
         ).value
+
+        const colorBtn = document.querySelector('.color-btn[style*="border-color: rgb(184, 146, 42)"]') ||
+                         document.querySelector('.color-btn[style*="#b8922a"]')
+        const colorHex = colorBtn ? colorBtn.dataset.hex : (color.startsWith('#') ? color : '#888')
 
         const cantidad = parseInt(
             document.getElementById(
@@ -2238,6 +2240,8 @@ document.getElementById(
 
             color: color,
 
+            colorHex: colorHex,
+
             cantidad: cantidad,
 
             precio: variante.precio,
@@ -2287,11 +2291,14 @@ function renderProductosVenta(){
                 <div class="d-flex justify-content-between pe-4">
                     <div>
                         <div class="fw-bold">${producto.producto}</div>
-                        <small class="text-muted">${producto.talle} · ${producto.color}</small>
+                        <small class="text-muted d-flex align-items-center gap-1">
+                            ${producto.talle}
+                            ${producto.color ? `<span style="display:inline-block; width:14px; height:14px; border-radius:50%; background-color:${producto.colorHex || '#888'}; border:1px solid #ccc;"></span>` : ''}
+                        </small>
                     </div>
                     <div class="text-end">
                         <div class="fw-bold">x${producto.cantidad}</div>
-                        <small>$${producto.subtotal}</small>
+                        <small>$${producto.subtotal.toLocaleString('es-AR')}</small>
                     </div>
                 </div>
             </div>
@@ -2363,15 +2370,16 @@ function mostrarMensaje(texto){
 
     `
 
-    document.getElementById(
-        'configuracion-variante'
-    ).prepend(div)
+    // Insertar mensaje en un lugar visible
+    const contenedor = document.querySelector('.card-body') || document.body;
+    contenedor.prepend(div)
+
+    // Scroll al mensaje
+    div.scrollIntoView({ behavior: 'smooth', block: 'center' })
 
     setTimeout(() => {
-
         div.remove()
-
-    }, 3000)
+    }, 4000)
 }
 </script>
 <script>

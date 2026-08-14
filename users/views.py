@@ -178,12 +178,27 @@ def agregar_direccion(request, cliente_id):
     if request.method == 'POST':
         form = NuevaDireccionForm(request.POST, initial={'cliente': cliente})
         if form.is_valid():
-            direccion = form.save(commit=False)
-            direccion.cliente = cliente
-            direccion.save()
-            mensaje = 'Dirección agregada correctamente.'
-            form = NuevaDireccionForm(initial={'cliente': cliente})  # Limpiar formulario
-            direcciones = direcciones_sin_duplicados(cliente.direcciones.all().order_by('etiqueta', 'calle', 'numero'))  # Actualizar lista
+            # Verificar si ya existe una dirección igual usando el método del modelo
+            etiqueta = form.cleaned_data.get('etiqueta', '')
+            calle = form.cleaned_data.get('calle', '')
+            numero = form.cleaned_data.get('numero', '')
+            ciudad = form.cleaned_data.get('ciudad', '')
+            provincia = form.cleaned_data.get('provincia', '')
+            codigo_postal = form.cleaned_data.get('codigo_postal', '')
+            referencia = form.cleaned_data.get('referencia', '')
+
+            clave = Direccion.clave_unica(etiqueta, calle, numero, ciudad, provincia, codigo_postal, referencia)
+            existe = any(d.clave_normalizada == clave for d in cliente.direcciones.all())
+
+            if existe:
+                mensaje = 'Ya existe una dirección igual para este cliente.'
+            else:
+                direccion = form.save(commit=False)
+                direccion.cliente = cliente
+                direccion.save()
+                mensaje = 'Dirección agregada correctamente.'
+                form = NuevaDireccionForm(initial={'cliente': cliente})  # Limpiar formulario
+                direcciones = direcciones_sin_duplicados(cliente.direcciones.all().order_by('etiqueta', 'calle', 'numero'))  # Actualizar lista
         else:
             mensaje = 'Por favor revisa los datos ingresados.'
     else:

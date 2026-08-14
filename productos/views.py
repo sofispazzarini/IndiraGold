@@ -109,12 +109,18 @@ def productos_por_subcategoria(request, subcat_id):
 def agregar_producto(request, subcat_id):
     subcategoria = get_object_or_404(Subcategoria, id=subcat_id, activa=True)
     proveedores = Proveedor.objects.all().order_by('nombre')
-    categoria_padre = subcategoria.categoria 
+    categoria_padre = subcategoria.categoria
     if request.method == 'POST':
         form = ProductoForm(request.POST, request.FILES)
         variantes_json = request.POST.get('variantes_json')
-        imagenes_galeria = request.FILES.getlist('imagenes') 
-        
+        imagenes_galeria = request.FILES.getlist('imagenes')
+
+        # Usar subcategoría del formulario si se cambió
+        subcat_form_id = request.POST.get('subcategoria_id')
+        if subcat_form_id:
+            subcategoria = get_object_or_404(Subcategoria, id=subcat_form_id, activa=True)
+            categoria_padre = subcategoria.categoria
+
         if len(imagenes_galeria) > 5:
             messages.error(request, "Máximo 5 imágenes de galería permitidas.")
         elif form.is_valid():
@@ -149,8 +155,15 @@ def agregar_producto(request, subcat_id):
                     colores_data = v.get('colores', [])
                     for c in colores_data:
                         nombre_color = c.get('colorNombre') or c.get('colorHex')
+                        codigo_hex = c.get('colorHex', '#888888')
                         if nombre_color:
-                            color_obj, _ = Color.objects.get_or_create(nombre=nombre_color)
+                            color_obj, created = Color.objects.get_or_create(
+                                nombre=nombre_color,
+                                defaults={'codigo_hex': codigo_hex}
+                            )
+                            if not created and color_obj.codigo_hex != codigo_hex:
+                                color_obj.codigo_hex = codigo_hex
+                                color_obj.save()
                             nueva_variante.colores.add(color_obj)
                             VarianteColor.objects.get_or_create(
                                 variante=nueva_variante,
@@ -172,11 +185,19 @@ def agregar_producto(request, subcat_id):
                 producto.save(update_fields=['stock'])
             
             messages.success(request, 'Producto guardado correctamente.')
-            return redirect('productos:productos_por_subcategoria', subcat_id=subcat_id)
+            return redirect('productos:productos_por_subcategoria', subcat_id=subcategoria.id)
     else:
         form = ProductoForm()
-    return render(request, 'productos/agregar_producto.html', 
-    {'form': form, 'subcategoria': subcategoria, 'proveedores': proveedores,'categoria': categoria_padre,})
+    todas_categorias = Categoria.objects.filter(activa=True).order_by('nombre')
+    todas_subcategorias = Subcategoria.objects.filter(categoria=categoria_padre, activa=True).order_by('nombre')
+    return render(request, 'productos/agregar_producto.html', {
+        'form': form,
+        'subcategoria': subcategoria,
+        'proveedores': proveedores,
+        'categoria': categoria_padre,
+        'todas_categorias': todas_categorias,
+        'todas_subcategorias': todas_subcategorias,
+    })
 
 @admin_required
 def editar_producto(request, prod_id):
@@ -298,6 +319,40 @@ def eliminar_variante(request, variante_id):
     messages.success(request, 'Variante eliminada correctamente.')
     return redirect('productos:editar_producto', prod_id=producto_id)
 
+# --- API AJAX ---
+
+@admin_required
+def api_subcategorias(request, categoria_id):
+    subcategorias = Subcategoria.objects.filter(categoria_id=categoria_id, activa=True).order_by('nombre')
+    data = [{'id': s.id, 'nombre': s.nombre} for s in subcategorias]
+    return JsonResponse(data, safe=False)
+
+@admin_required
+@require_POST
+def api_crear_categoria(request):
+    nombre = request.POST.get('nombre', '').strip()
+    if not nombre:
+        return JsonResponse({'success': False, 'error': 'Ingresá un nombre para la categoría'})
+    if Categoria.objects.filter(nombre__iexact=nombre).exists():
+        return JsonResponse({'success': False, 'error': f'Ya tenés una categoría llamada "{nombre}". Elegí otro nombre.'})
+    categoria = Categoria.objects.create(nombre=nombre, activa=True)
+    return JsonResponse({'success': True, 'id': categoria.id, 'nombre': categoria.nombre})
+
+@admin_required
+@require_POST
+def api_crear_subcategoria(request):
+    nombre = request.POST.get('nombre', '').strip()
+    categoria_id = request.POST.get('categoria_id')
+    if not nombre:
+        return JsonResponse({'success': False, 'error': 'Ingresá un nombre para la subcategoría'})
+    if not categoria_id:
+        return JsonResponse({'success': False, 'error': 'Seleccioná una categoría primero'})
+    categoria = get_object_or_404(Categoria, id=categoria_id, activa=True)
+    if Subcategoria.objects.filter(nombre__iexact=nombre, categoria=categoria).exists():
+        return JsonResponse({'success': False, 'error': f'Ya tenés una subcategoría "{nombre}" en {categoria.nombre}. Elegí otro nombre.'})
+    subcategoria = Subcategoria.objects.create(nombre=nombre, categoria=categoria, activa=True)
+    return JsonResponse({'success': True, 'id': subcategoria.id, 'nombre': subcategoria.nombre})
+
 # --- CATEGORÍAS Y SUBCATEGORÍAS ---
 
 @admin_required
@@ -307,11 +362,12 @@ def agregar_categoria(request):
         if form.is_valid():
             form.save()
             messages.success(request, 'Categoría agregada.')
+            return redirect('productos:gestion_productos')
         else:
-            mensaje = 'Por favor revisa los datos ingresados.'
+            messages.error(request, 'Por favor revisa los datos ingresados.')
+            return render(request, 'productos/agregar_categoria.html', {'form': form})
     form = CategoriaForm()
-    categorias = Categoria.objects.filter(activa=True).order_by('nombre')
-    return render(request, 'productos/agregar_categoria.html', {'form': form, 'categorias': categorias})
+    return render(request, 'productos/agregar_categoria.html', {'form': form})
 
 @admin_required
 @require_POST
@@ -560,38 +616,91 @@ def obtener_tabla_medidas_ajax(request, producto_id):
 def editar_variante(request, variante_id):
     variante = get_object_or_404(Variante, id=variante_id)
     producto = variante.producto
-    
+
     if request.method == 'POST':
-        form = VarianteForm(request.POST, instance=variante)
-        if form.is_valid():
-            var_editada = form.save()
+        # Actualizar talle
+        talle_nombre = request.POST.get('talle_nombre', '').strip()
+        if talle_nombre:
+            talle_obj, _ = Talle.objects.get_or_create(nombre=talle_nombre)
+            variante.talle = talle_obj
 
-            # 1. CAPTURAR Y GUARDAR COLOR
-            color_nombre = request.POST.get('color_nombre', '').strip()
-            if color_nombre:
-                color_obj, _ = Color.objects.get_or_create(nombre=color_nombre)
-                var_editada.colores.set([color_obj])
-            else:
-                var_editada.colores.clear()
+        # Actualizar stock
+        stock = request.POST.get('stock', '0')
+        variante.stock = int(stock) if stock else 0
+        variante.save()
 
-            # 2. CAPTURAR Y GUARDAR MEDIDA
-            alto = request.POST.get('alto', '')
-            ancho = request.POST.get('ancho', '')
-            largo = request.POST.get('largo', '')
-            tiro = request.POST.get('tiro', '')
-            if alto or ancho or largo or tiro:
-                medida = Medida()
-                medida.alto = alto if alto else 0
-                medida.ancho = ancho if ancho else 0
-                medida.largo = largo if largo else 0
-                medida.tiro = tiro if tiro else 0
-                medida.save()
-                var_editada.medidas.set([medida])
+        # Recalcular stock del producto
+        recalcular_stock_producto(producto)
 
-            messages.success(request, f"Talle {variante.talle.nombre} actualizado correctamente.")
-            return redirect('productos:editar_producto', prod_id=producto.id)
-    else:
-        form = VarianteForm(instance=variante)
+        var_editada = variante
+
+        # 1. CAPTURAR Y GUARDAR COLORES (múltiples)
+        colores_datos = request.POST.getlist('colores')
+        if colores_datos:
+            colores_objs = []
+            for dato in colores_datos:
+                dato = dato.strip()
+                if dato:
+                    # Formato: "nombre|#hex" o solo "nombre"
+                    if '|' in dato:
+                        nombre, codigo_hex = dato.split('|', 1)
+                    else:
+                        nombre = dato
+                        codigo_hex = '#888888'
+                    color_obj, created = Color.objects.get_or_create(
+                        nombre=nombre,
+                        defaults={'codigo_hex': codigo_hex}
+                    )
+                    if not created and color_obj.codigo_hex != codigo_hex:
+                        color_obj.codigo_hex = codigo_hex
+                        color_obj.save()
+                    colores_objs.append(color_obj)
+            var_editada.colores.set(colores_objs)
+        else:
+            var_editada.colores.clear()
+
+        # 2. CAPTURAR Y GUARDAR MEDIDAS (múltiples)
+        def limpiar_decimal(valor):
+            """Convierte comas a puntos y maneja valores vacíos"""
+            if not valor:
+                return 0
+            return valor.replace(',', '.')
+
+        medidas_ids = request.POST.getlist('medida_id')
+        altos = request.POST.getlist('alto')
+        anchos = request.POST.getlist('ancho')
+        largos = request.POST.getlist('largo')
+        tiros = request.POST.getlist('tiro')
+
+        medidas_a_mantener = []
+        for i, medida_id in enumerate(medidas_ids):
+            if medida_id:  # Medida existente
+                try:
+                    medida = Medida.objects.get(id=medida_id)
+                    medida.alto = limpiar_decimal(altos[i])
+                    medida.ancho = limpiar_decimal(anchos[i])
+                    medida.largo = limpiar_decimal(largos[i])
+                    medida.tiro = limpiar_decimal(tiros[i])
+                    medida.save()
+                    medidas_a_mantener.append(medida)
+                except Medida.DoesNotExist:
+                    pass
+            else:  # Nueva medida
+                if altos[i] or anchos[i] or largos[i] or tiros[i]:
+                    medida = Medida.objects.create(
+                        alto=limpiar_decimal(altos[i]),
+                        ancho=limpiar_decimal(anchos[i]),
+                        largo=limpiar_decimal(largos[i]),
+                        tiro=limpiar_decimal(tiros[i])
+                    )
+                    medidas_a_mantener.append(medida)
+
+        var_editada.medidas.set(medidas_a_mantener)
+
+        messages.success(request, f"Talle {variante.talle.nombre} actualizado correctamente.")
+        return redirect('productos:editar_producto', prod_id=producto.id)
+
+    form = VarianteForm(instance=variante)
     
     # Pasamos los datos actuales para rellenar los inputs
     return render(request, 'productos/editar_variante.html', {
@@ -599,7 +708,7 @@ def editar_variante(request, variante_id):
         'variante': variante,
         'producto': producto,
         'color_actual': variante.colores.first(),
-        'medida_actual': variante.medidas.first()
+        'medidas': variante.medidas.all()
     })
 
 
@@ -699,11 +808,16 @@ def buscar_productos(request):
 
     return JsonResponse(data, safe=False)
 def obtener_variantes_producto(request, producto_id):
+    from decimal import Decimal
 
     producto = get_object_or_404(
         Producto,
         id=producto_id
     )
+
+    # Calcular descuento si hay oferta activa
+    oferta = producto.obtener_oferta_activa()
+    descuento = Decimal(oferta.descuento) / Decimal(100) if oferta else Decimal(0)
 
     variantes = producto.variantes.filter(
         activa=True,
@@ -719,8 +833,15 @@ def obtener_variantes_producto(request, producto_id):
         colores = []
 
         for color in variante.colores.all():
+            colores.append({
+                'nombre': color.nombre,
+                'hex': color.codigo_hex
+            })
 
-            colores.append(color.nombre)
+        # Usar precio de variante o del producto si es 0
+        precio_base = variante.precio if variante.precio > 0 else producto.precio
+        # Aplicar descuento al precio
+        precio_final = float(precio_base * (1 - descuento))
 
         data.append({
 
@@ -732,7 +853,7 @@ def obtener_variantes_producto(request, producto_id):
 
             'stock': variante.stock,
 
-            'precio': float(variante.precio)
+            'precio': precio_final
 
         })
 

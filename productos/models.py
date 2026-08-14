@@ -153,6 +153,7 @@ class Medida(models.Model):
 
 class Color(models.Model):
     nombre = models.CharField(max_length=30)
+    codigo_hex = models.CharField(max_length=7, default='#888888')
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
