@@ -26,10 +26,20 @@ class HomePublicaView(TemplateView):
         productos = Producto.objects.filter(activo=True).prefetch_related('variantes__talle', 'variantes__colores')
 
         for producto in productos:
-            variantes_data = [
-                {'id': v.id, 'talle': v.talle.nombre, 'stock': v.stock}
-                for v in producto.variantes.filter(activa=True).select_related('talle')
-            ]
+            variantes_data = []
+            for v in producto.variantes.filter(activa=True).select_related('talle').prefetch_related('colores'):
+                variantes_data.append({
+                    'id': v.id,
+                    'talle': v.talle.nombre,
+                    'stock': v.stock,
+                    'colores': [
+                        {
+                            'nombre': color.nombre,
+                            'codigo_hex': color.codigo_hex or '#888888',
+                        }
+                        for color in v.colores.all()
+                    ],
+                })
             producto.variantes_json = json.dumps(variantes_data)
 
         talles = (

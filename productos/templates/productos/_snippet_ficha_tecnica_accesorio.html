@@ -43,7 +43,7 @@
             <div class="val d-flex flex-wrap gap-2 mt-2">
                 {% for variante in producto.variantes.all %}
                     {% for color in variante.colores.all %}
-                    <span class="badge" style="background: #1a1612; color: #fff; padding: 4px 10px; border-radius: 3px; font-size: 0.8rem;">{{ color.nombre }}</span>
+                    <span title="{{ color.nombre|default:'Color' }}" style="display:inline-block; width:16px; height:16px; background-color:{{ color.codigo_hex|default:'#888888' }}; border-radius:50%; border:1px solid #ccc; vertical-align:middle;"></span>
                     {% endfor %}
                 {% endfor %}
             </div>

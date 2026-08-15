@@ -22,6 +22,71 @@ from .utils import (
 	set_cart_started_at_if_missing,
 	SESSION_CART_COLORS_KEY,
 )
+import re
+
+SESSION_CART_KEY = "carrito"
+SESSION_CART_ITEM_KEY_SEPARATOR = "::"
+
+
+def _normalize_hex(val: str | None) -> str | None:
+	"""Return a normalized hex color string like '#aabbcc' or None if invalid."""
+	if not val:
+		return None
+	v = str(val).strip()
+	m = re.match(r'^#?([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$', v)
+	if not m:
+		return None
+	return f"#{m.group(1)}"
+
+
+def _resolve_item_color_hex(item) -> str | None:
+	"""Resolve a usable hex color from persisted item fields."""
+	color_hex = _normalize_hex(getattr(item, 'color_hex', None))
+	if color_hex:
+		return color_hex
+
+	color_nombre = getattr(item, 'color_nombre', None)
+	color_hex = _normalize_hex(color_nombre)
+	if color_hex:
+		return color_hex
+
+	if color_nombre:
+		return _normalize_hex(
+			item.variante.colores.filter(nombre__iexact=color_nombre).values_list('codigo_hex', flat=True).first()
+		)
+
+	return None
+
+
+def _normalize_color_token(value) -> str:
+	if value is None:
+		return ""
+	token = str(value).strip().lower()
+	if not token:
+		return ""
+	token = re.sub(r"[^a-z0-9#]+", "_", token)
+	return token.strip("_")
+
+
+def _make_cart_item_key(variante_id, color_nombre=None, color_hex=None) -> str:
+	base_key = str(int(variante_id))
+	color_token = _normalize_color_token(color_hex or color_nombre)
+	return f"{base_key}{SESSION_CART_ITEM_KEY_SEPARATOR}{color_token}" if color_token else base_key
+
+
+def _parse_cart_item_key(key) -> tuple[int | None, str]:
+	raw_key = str(key or "")
+	if SESSION_CART_ITEM_KEY_SEPARATOR in raw_key:
+		variante_part, color_token = raw_key.split(SESSION_CART_ITEM_KEY_SEPARATOR, 1)
+	else:
+		variante_part, color_token = raw_key, ""
+
+	try:
+		variante_id = int(variante_part)
+	except (TypeError, ValueError):
+		return None, ""
+
+	return variante_id, color_token
 
 
 def _get_session_cart(session) -> dict[str, int]:
@@ -32,7 +97,7 @@ def _get_session_cart(session) -> dict[str, int]:
 	normalized: dict[str, int] = {}
 	for key, value in cart.items():
 		try:
-			normalized[str(int(key))] = max(0, int(value))
+			normalized[str(key)] = max(0, int(value))
 		except (TypeError, ValueError):
 			continue
 	return normalized
@@ -98,6 +163,12 @@ def agregar_producto(request):
 			color_nombre = colores_variante[0].nombre
 			color_hex = colores_variante[0].codigo_hex
 
+		# Normalizar formato HEX (asegurar leading '#')
+		if color_hex:
+			color_hex = color_hex.strip()
+			if color_hex and not color_hex.startswith('#'):
+				color_hex = f"#{color_hex}"
+
 		producto = variante.producto
 
 	except Variante.DoesNotExist:
@@ -120,8 +191,7 @@ def agregar_producto(request):
 	# Carrito actual
 	cart = _get_session_cart(request.session)
 
-	# IMPORTANTE: ahora usamos variante.id
-	key = str(variante.id)
+	key = _make_cart_item_key(variante.id, color_nombre=color_nombre, color_hex=color_hex)
 
 	current_qty = int(cart.get(key, 0))
 	new_qty = current_qty + cantidad_int
@@ -158,15 +228,21 @@ def agregar_producto(request):
 			else:
 				precio_con_descuento = precio_base
 
-			item, created = CarritoItem.objects.get_or_create(
-				carrito=carrito,
+			item = carrito.items.filter(
 				variante=variante,
-				defaults={
-					'cantidad': 0,
-					'precio_unitario': precio_con_descuento,
-					'precio_total': 0
-				}
-			)
+				color_nombre=color_nombre or None,
+				color_hex=color_hex or None,
+			).first()
+			if not item:
+				item = CarritoItem.objects.create(
+					carrito=carrito,
+					variante=variante,
+					color_nombre=color_nombre or None,
+					color_hex=color_hex or None,
+					cantidad=0,
+					precio_unitario=precio_con_descuento,
+					precio_total=0,
+				)
 
 			item.cantidad = new_qty
 			item.precio_unitario = precio_con_descuento
@@ -179,13 +255,17 @@ def agregar_producto(request):
 			carrito_final = {}
 
 			for item_db in carrito.items.all():
-				carrito_final[str(item_db.variante.id)] = item_db.cantidad
+				item_key = _make_cart_item_key(item_db.variante.id, item_db.color_nombre, item_db.color_hex)
+				carrito_final[item_key] = item_db.cantidad
 
 			request.session['carrito'] = carrito_final
 			colores_final = {}
 			for item_db in carrito.items.all():
-				if item_db.color_nombre:
-					colores_final[str(item_db.variante.id)] = item_db.color_nombre
+				item_key = _make_cart_item_key(item_db.variante.id, item_db.color_nombre, item_db.color_hex)
+				colores_final[item_key] = {
+					"nombre": item_db.color_nombre,
+					"hex": item_db.color_hex,
+				}
 			request.session[SESSION_CART_COLORS_KEY] = colores_final
 			request.session.modified = True
 
@@ -205,8 +285,10 @@ def agregar_producto(request):
 		cart_colors = request.session.get(SESSION_CART_COLORS_KEY)
 		if not isinstance(cart_colors, dict):
 			cart_colors = {}
-		if color_nombre:
-			cart_colors[key] = color_nombre
+		cart_colors[key] = {
+			"nombre": color_nombre or None,
+			"hex": color_hex or None,
+		}
 
 		set_cart_started_at_if_missing(request.session)
 
@@ -226,13 +308,15 @@ def agregar_producto(request):
 
 @require_POST
 def eliminar_producto(request):
-	variante_id = request.POST.get("variante_id") or request.POST.get("id")
+	cart_key = request.POST.get("cart_key") or request.POST.get("variante_id") or request.POST.get("id")
 	next_url = request.POST.get("next") or request.GET.get("next")
 	if not next_url:
 		next_url = reverse("home:home")
 
 	try:
-		variante_id_int = int(variante_id)
+		variante_id_int, color_token = _parse_cart_item_key(cart_key)
+		if not variante_id_int:
+			raise ValueError("Producto inválido")
 	except (TypeError, ValueError):
 		messages.error(request, "Producto inválido.")
 		if _is_ajax(request):
@@ -245,9 +329,16 @@ def eliminar_producto(request):
 			from .models import CarritoItem
 			carrito = get_or_create_cart(request)
 			
-			# Buscar items de este producto en el carrito
+			# Buscar items de esta combinación exacta
+			color_data = request.session.get(SESSION_CART_COLORS_KEY, {}).get(str(cart_key), {})
+			if isinstance(color_data, str):
+				color_data = {"nombre": color_data, "hex": None}
+			color_nombre = color_data.get("nombre")
+			color_hex = color_data.get("hex")
 			items_a_eliminar = carrito.items.filter(
-				variante__id=variante_id_int
+				variante__id=variante_id_int,
+				color_nombre=color_nombre or None,
+				color_hex=color_hex or None,
 			)
 			
 			if items_a_eliminar.exists():
@@ -255,13 +346,15 @@ def eliminar_producto(request):
 				# Actualizar sesión: sumar cantidades por producto_id
 				carrito_final = {}
 				for item_db in carrito.items.all():
-					pid = str(item_db.variante.producto.id)
-					carrito_final[pid] = carrito_final.get(pid, 0) + item_db.cantidad
+					item_key = _make_cart_item_key(item_db.variante.id, item_db.color_nombre, item_db.color_hex)
+					carrito_final[item_key] = item_db.cantidad
 				request.session['carrito'] = carrito_final
 				request.session[SESSION_CART_COLORS_KEY] = {
-					str(item_db.variante.id): item_db.color_nombre
+					_make_cart_item_key(item_db.variante.id, item_db.color_nombre, item_db.color_hex): {
+						"nombre": item_db.color_nombre,
+						"hex": item_db.color_hex,
+					}
 					for item_db in carrito.items.all()
-					if item_db.color_nombre
 				}
 				request.session.modified = True
 				messages.success(request, "Producto eliminado del carrito.")
@@ -272,7 +365,7 @@ def eliminar_producto(request):
 	else:
 		# Usuario invitado: eliminar de sesión
 		cart = _get_session_cart(request.session)
-		key = str(variante_id_int)
+		key = str(cart_key)
 
 		if key in cart:
 			del cart[key]
@@ -324,38 +417,42 @@ def confirmar_compra(request):
 		messages.error(request, "Tu usuario no tiene un perfil de cliente asociado.")
 		return redirect(next_url)
 
-	productos = Producto.objects.filter(id__in=cart.keys(), activo=True).prefetch_related("variantes__talle", "variantes__colores")
-	productos_by_id = {producto.id: producto for producto in productos}
-
 	items_a_crear = []
 	total = 0
 	cart_colors = request.session.get(SESSION_CART_COLORS_KEY)
 	if not isinstance(cart_colors, dict):
 		cart_colors = {}
 
-	for producto_id, cantidad in cart.items():
-		producto = productos_by_id.get(int(producto_id))
-		if not producto:
+	for cart_key, cantidad in cart.items():
+		variante_id, _color_token = _parse_cart_item_key(cart_key)
+		if not variante_id:
+			continue
+
+		variante = Producto.objects.none()
+		variante = (
+			Producto.objects.filter(variantes__id=variante_id, activo=True)
+			.select_related()
+			.first()
+		)
+		if not variante:
 			messages.error(request, "Uno de los productos del carrito ya no está disponible.")
 			return redirect(next_url)
 
-		if producto.stock < cantidad:
-			messages.error(request, f"Stock insuficiente para {producto.nombre}. Disponible: {producto.stock}.")
+		variante_obj = variante.variantes.filter(id=variante_id, activa=True).first()
+		if not variante_obj:
+			messages.error(request, f"El producto {variante.nombre} no tiene esa variante activa para confirmar la compra.")
 			return redirect(next_url)
 
-		variante = producto.variantes.filter(activa=True).order_by("id").first()
-		if not variante:
-			messages.error(request, f"El producto {producto.nombre} no tiene variantes activas para confirmar la compra.")
+		if variante_obj.stock < cantidad:
+			messages.error(request, f"Stock insuficiente para la variante de {variante.nombre}. Disponible: {variante_obj.stock}.")
 			return redirect(next_url)
 
-		# Validar stock de la variante
-		if variante.stock < cantidad:
-			messages.error(request, f"Stock insuficiente para la variante de {producto.nombre}. Disponible: {variante.stock}.")
-			return redirect(next_url)
-
-		precio_unitario = variante.precio or producto.precio
+		color_data = cart_colors.get(str(cart_key), {})
+		if isinstance(color_data, str):
+			color_data = {"nombre": color_data, "hex": None}
+		precio_unitario = variante_obj.precio or variante.precio
 		precio_total = precio_unitario * cantidad
-		items_a_crear.append((variante, cantidad, precio_unitario, precio_total, producto, cart_colors.get(str(variante.id))))
+		items_a_crear.append((variante_obj, cantidad, precio_unitario, precio_total, variante, color_data.get("nombre")))
 		total += precio_total
 
 	with transaction.atomic():
@@ -487,14 +584,18 @@ def _build_home_context(request):
 		try:
 			carrito = get_or_create_cart(request)
 			for item_db in carrito.items.all().select_related('variante__producto'):
+				color_hex = _resolve_item_color_hex(item_db)
+				item_key = _make_cart_item_key(item_db.variante.id, item_db.color_nombre, item_db.color_hex)
 				items.append({
 					"id": item_db.variante.producto.id,  # Usar ID del producto para eliminar
 					"variante_id": item_db.variante.id,
+					"cart_key": item_key,
 					"nombre": item_db.variante.producto.nombre,
 					"precio": item_db.precio_unitario,
 					"cantidad": item_db.cantidad,
 					"subtotal": item_db.precio_total,
 					"color_nombre": item_db.color_nombre,
+					"color_hex": color_hex,
 				})
 				total_qty += item_db.cantidad
 				total_price += item_db.precio_total
@@ -503,9 +604,12 @@ def _build_home_context(request):
 			carrito_sincronizado = {}
 			colores_sincronizados = {}
 			for item_db in carrito.items.all():
-				carrito_sincronizado[str(item_db.variante.id)] = item_db.cantidad
-				if item_db.color_nombre:
-					colores_sincronizados[str(item_db.variante.id)] = item_db.color_nombre
+				item_key = _make_cart_item_key(item_db.variante.id, item_db.color_nombre, item_db.color_hex)
+				carrito_sincronizado[item_key] = item_db.cantidad
+				colores_sincronizados[item_key] = {
+					"nombre": item_db.color_nombre,
+					"hex": item_db.color_hex,
+				}
 			request.session['carrito'] = carrito_sincronizado
 			request.session[SESSION_CART_COLORS_KEY] = colores_sincronizados
 			request.session.modified = True
@@ -523,20 +627,22 @@ def _build_home_context(request):
 		if not isinstance(cart_colors, dict):
 			cart_colors = {}
 
-		quantities: dict[int, int] = {}
+		quantities: dict[str, int] = {}
+		variante_ids: set[int] = set()
 
 		for key, value in cart.items():
 			try:
-				variante_id = int(key)
+				variante_id, _color_token = _parse_cart_item_key(key)
 				qty = int(value)
 			except (TypeError, ValueError):
 				continue
 
-			if qty > 0:
-				quantities[variante_id] = qty
+			if variante_id and qty > 0:
+				quantities[key] = qty
+				variante_ids.add(variante_id)
 
 		variantes = Variante.objects.select_related("producto").filter(
-			id__in=quantities.keys(),
+			id__in=variante_ids,
 			activa=True,
 			producto__activo=True
 		)
@@ -545,23 +651,37 @@ def _build_home_context(request):
 			v.id: v for v in variantes
 		}
 
-		for variante_id, qty in quantities.items():
+		for cart_key, qty in quantities.items():
+			variante_id, _color_token = _parse_cart_item_key(cart_key)
+			if not variante_id:
+				continue
 			variante = variantes_by_id.get(variante_id)
 
 			if not variante:
 				continue
 
+			color_data = cart_colors.get(str(cart_key)) or {}
+			if isinstance(color_data, str):
+				color_data = {"nombre": color_data, "hex": None}
+			color_nombre = color_data.get("nombre")
+			color_hex = _normalize_hex(color_data.get("hex"))
+			if not color_hex and color_nombre:
+				color_hex = _normalize_hex(
+					variante.colores.filter(nombre__iexact=color_nombre).values_list('codigo_hex', flat=True).first()
+				)
 			precio = variante.precio or variante.producto.precio
 			subtotal = precio * qty
 
 			items.append({
 				"id": variante.producto.id,
 				"variante_id": variante.id,
+				"cart_key": str(cart_key),
 				"nombre": variante.producto.nombre,
 				"precio": precio,
 				"cantidad": qty,
 				"subtotal": subtotal,
-				"color_nombre": cart_colors.get(str(variante.id)),
+				"color_nombre": color_nombre,
+				"color_hex": color_hex,
 			})
 
 			total_qty += qty
@@ -582,36 +702,58 @@ from django.shortcuts import redirect
 
 @require_POST
 def sumar_producto(request):
-    variante_id = request.POST.get("variante_id")
-    next_url = request.POST.get("next") or request.GET.get("next")
+	cart_key = request.POST.get("cart_key") or request.POST.get("variante_id")
+	next_url = request.POST.get("next") or request.GET.get("next")
 
-    try:
-        variante_id_int = int(variante_id)
-    except (TypeError, ValueError):
-        messages.error(request, "Producto inválido.")
-        return redirect(next_url)
+	try:
+		variante_id_int, _color_token = _parse_cart_item_key(cart_key)
+		if not variante_id_int:
+			raise ValueError("Producto inválido")
+	except (TypeError, ValueError):
+		messages.error(request, "Producto inválido.")
+		return redirect(next_url)
 
-    if request.user.is_authenticated:
-        carrito = get_or_create_cart(request)
+	if request.user.is_authenticated:
+		carrito = get_or_create_cart(request)
+		color_data = request.session.get(SESSION_CART_COLORS_KEY, {}).get(str(cart_key), {})
+		if isinstance(color_data, str):
+			color_data = {"nombre": color_data, "hex": None}
+		color_nombre = color_data.get("nombre")
+		color_hex = color_data.get("hex")
 
-        item = carrito.items.filter(variante_id=variante_id_int).first()
+		item = carrito.items.filter(
+			variante_id=variante_id_int,
+			color_nombre=color_nombre or None,
+			color_hex=color_hex or None,
+		).first()
 
-        if item:
-            item.cantidad += 1
-            item.save()
-        else:
-            carrito.items.create(variante_id=variante_id_int, cantidad=1)
+		if item:
+			item.cantidad += 1
+			item.save()
+		else:
+			from productos.models import Variante
 
-        messages.success(request, "Cantidad actualizada.")
-    else:
-        cart = _get_session_cart(request.session)
-        key = str(variante_id_int)
+			variante = Variante.objects.filter(id=variante_id_int).first()
+			if variante:
+				carrito.items.create(
+					variante_id=variante_id_int,
+					cantidad=1,
+					color_nombre=color_nombre,
+					color_hex=color_hex,
+					precio_unitario=variante.precio,
+					precio_total=variante.precio,
+				)
 
-        cart[key] = cart.get(key, 0) + 1
-        request.session["carrito"] = cart
-        request.session.modified = True
+		messages.success(request, "Cantidad actualizada.")
+	else:
+		cart = _get_session_cart(request.session)
+		key = str(cart_key)
 
-    if _is_ajax(request):
-        return _render_cart_fragment(request)
+		cart[key] = cart.get(key, 0) + 1
+		request.session["carrito"] = cart
+		request.session.modified = True
 
-    return redirect(next_url)
+		if _is_ajax(request):
+			return _render_cart_fragment(request)
+
+		return redirect(next_url)

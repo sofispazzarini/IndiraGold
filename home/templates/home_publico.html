@@ -550,10 +550,15 @@ function scrollCatOrden{{ cat_orden.id }}(dir) {
     <form id="modalCantidadForm" class="js-cart-form" method="post" action="/carritos/agregar/" style="padding:1.25rem; display:grid; gap:1rem;">
       {% csrf_token %}
       <input type="hidden" name="variante_id" id="modalCantidadProductoId">
+      <input type="hidden" name="color_nombre" id="modalCantidadColorNombre">
       <input type="hidden" name="next" value="{{ request.get_full_path }}">
       <div id="modalTallesContainer" style="display:none;">
         <label style="display:block; margin-bottom:.5rem; font-size:.9rem; font-weight:600; color:#3d342a;">Selecciona tu talle</label>
         <div id="modalTallesGrid"></div>
+      </div>
+      <div id="modalColoresContainer" style="display:none;">
+        <label style="display:block; margin-bottom:.5rem; font-size:.9rem; font-weight:600; color:#3d342a;">Selecciona tu color</label>
+        <div id="modalColoresGrid" style="display:flex; flex-wrap:wrap; gap:.55rem;"></div>
       </div>
       <div>
         <label for="modalCantidadInput" style="display:block; margin-bottom:.5rem; font-size:.9rem; font-weight:600; color:#3d342a;">Cantidad</label>
@@ -957,6 +962,8 @@ function scrollCatOrden{{ cat_orden.id }}(dir) {
   .cart-item { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: .75rem 0; border-bottom: 1px solid #f3ede6; }
   .cart-item__info { flex: 1; }
   .cart-item__name { font-size: .9rem; font-weight: 500; color: #1a1612; }
+  .cart-item__meta { display: flex; align-items: center; gap: .45rem; margin-top: .15rem; font-size: .76rem; color: #3d342a; }
+  .cart-color-dot { width: 14px; height: 14px; border-radius: 50%; border: 1px solid rgba(29, 22, 18, 0.2); display: inline-block; box-shadow: inset 0 0 0 1px rgba(255,255,255,.5), 0 0 0 1px rgba(29,22,18,.08); flex-shrink: 0; }
   .cart-item__price { font-size: .82rem; color: #8c7e70; margin-top: .1rem; }
   .cart-item__qty { display: flex; align-items: center; gap: .4rem; }
   .qty-btn { width: 24px; height: 24px; border-radius: 4px; border: 1px solid #e8dfd4; background: #fff; cursor: pointer; font-size: .9rem; display: flex; align-items: center; justify-content: center; color: #3d342a; }
@@ -1314,6 +1321,9 @@ function scrollCatOrden{{ cat_orden.id }}(dir) {
   }
 
   async function submitCartForm(form) {
+    // Prevent duplicate submits
+    if (form.dataset.submitting === '1') return;
+    form.dataset.submitting = '1';
     const formData = new FormData(form);
     try {
       const response = await fetch(form.action, {
@@ -1331,12 +1341,18 @@ function scrollCatOrden{{ cat_orden.id }}(dir) {
       const applied = applyCartFromHtml(html);
 
       if (applied) {
-        cerrarModalCantidad(); // 👈 ESTO ES LO QUE FALTA
+        try { cerrarModalCantidad(); } catch (e) { /* ignore */ }
       } else {
+        form.removeAttribute('data-submitting');
         form.submit();
       }
     } catch (error) {
+      form.removeAttribute('data-submitting');
       form.submit();
+    }
+    finally {
+      // ensure flag cleared
+      try { form.removeAttribute('data-submitting'); } catch (e) {}
     }
   }
 
@@ -1370,15 +1386,80 @@ function scrollCatOrden{{ cat_orden.id }}(dir) {
   startCartExpiryTicker();
 
   let varianteSeleccionadaModal = null;
+  let modalVariantesActuales = [];
+  let colorSeleccionadoModal = '';
+
+  function normalizarHexColor(hex) {
+    const valor = (hex || '').trim();
+    if (!valor) return '#888888';
+    return valor.startsWith('#') ? valor : `#${valor}`;
+  }
+
+  function renderizarColoresModal(varianteId) {
+    const container = document.getElementById('modalColoresContainer');
+    const grid = document.getElementById('modalColoresGrid');
+    const hiddenColor = document.getElementById('modalCantidadColorNombre');
+    const variante = modalVariantesActuales.find(v => Number(v.id) === Number(varianteId));
+    const colores = variante && Array.isArray(variante.colores) ? variante.colores : [];
+
+    if (!colores.length) {
+      container.style.display = 'none';
+      colorSeleccionadoModal = '';
+      hiddenColor.value = '';
+      return;
+    }
+
+    container.style.display = 'block';
+    grid.innerHTML = colores.map((color, index) => {
+      const nombre = color.nombre || 'Color';
+      const hex = normalizarHexColor(color.codigo_hex || color.hex || '#888888');
+      if (index === 0) colorSeleccionadoModal = nombre;
+      return `
+        <button type="button"
+                class="color-circle-btn ${index === 0 ? 'seleccionado' : ''}"
+                data-color-name="${nombre}"
+                title="${nombre}"
+                aria-label="${nombre}"
+                style="width: 32px; height: 32px; border-radius: 50%; border: 2px solid ${index === 0 ? '#1a1612' : '#e8dfd4'}; background: ${hex}; box-shadow: inset 0 0 0 2px rgba(255,255,255,.9); cursor:pointer; padding:0; transition:all .15s ease;"
+                onclick="seleccionarColorModal(this)"></button>
+      `;
+    }).join('');
+
+    hiddenColor.value = colorSeleccionadoModal;
+  }
+
+  function seleccionarColorModal(btn) {
+    document.querySelectorAll('#modalColoresGrid .color-circle-btn').forEach(el => {
+      el.style.borderColor = '#e8dfd4';
+      el.style.transform = 'scale(1)';
+    });
+    btn.style.borderColor = '#1a1612';
+    btn.style.transform = 'scale(1.08)';
+    colorSeleccionadoModal = btn.dataset.colorName || '';
+    document.getElementById('modalCantidadColorNombre').value = colorSeleccionadoModal;
+  }
 
   function abrirModalCantidad(btn) {
-    const variantes = JSON.parse(btn.dataset.variantes);
+    let variantes = [];
+    try {
+      variantes = JSON.parse(btn.dataset.variantes || '[]');
+    } catch (e) {
+      console.warn('No se pudieron parsear las variantes del producto', e, btn.dataset.variantes);
+      return;
+    }
+    modalVariantesActuales = variantes;
     const nombre = btn.dataset.nombre;
     const modal = document.getElementById('modalCantidad');
     const tallesContainer = document.getElementById('modalTallesContainer');
     const tallesGrid = document.getElementById('modalTallesGrid');
 
     document.getElementById('modalCantidadProducto').textContent = nombre;
+    document.getElementById('modalCantidadColorNombre').value = '';
+
+    if (!variantes.length) {
+      console.warn('El botón de agregar no tiene variantes válidas');
+      return;
+    }
 
     if (variantes.length > 1) {
       const primerConStock = variantes.findIndex(v => v.stock > 0);
@@ -1398,6 +1479,12 @@ function scrollCatOrden{{ cat_orden.id }}(dir) {
       varianteSeleccionadaModal = variantes[0];
     }
 
+    if (!varianteSeleccionadaModal || typeof varianteSeleccionadaModal.id === 'undefined') {
+      console.warn('No hay variante seleccionada válida para abrir el modal');
+      return;
+    }
+
+    renderizarColoresModal(varianteSeleccionadaModal.id);
     actualizarModalStock();
     modal.style.display = 'flex';
   }
@@ -1410,6 +1497,7 @@ function scrollCatOrden{{ cat_orden.id }}(dir) {
       id: parseInt(btn.dataset.id),
       stock: parseInt(btn.dataset.stock)
     };
+    renderizarColoresModal(varianteSeleccionadaModal.id);
     actualizarModalStock();
   }
 

@@ -26,6 +26,26 @@
     font-size:.85rem;
     font-weight:700;
     }
+    .back-link-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.7rem 1rem;
+        border-radius: 999px;
+        border: 1px solid #d9cdb5;
+        background: #fff;
+        color: #1a1612;
+        font-size: 0.88rem;
+        font-weight: 600;
+        text-decoration: none;
+        margin-bottom: 1rem;
+        transition: all .2s ease;
+    }
+    .back-link-btn:hover {
+        background: #f8f2e8;
+        border-color: #b8922a;
+        color: #1a1612;
+    }
     .detalle-hero {
         max-width: 1200px;
         margin: 2rem auto;
@@ -259,22 +279,34 @@
     }
 
     .color-btn {
-        padding: 0.65rem 0.9rem;
-        border: 1px solid #e8dfd4;
+        width: 42px;
+        height: 42px;
+        padding: 0;
+        border: 2px solid #e8dfd4;
         background: white;
-        border-radius: 999px;
+        border-radius: 50%;
         cursor: pointer;
-        font-weight: 600;
-        font-size: 0.85rem;
-        color: #3d342a;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
         transition: all .2s;
+        box-shadow: inset 0 0 0 1px rgba(0,0,0,.04);
+    }
+
+    .color-btn .color-swatch {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        border: 2px solid rgba(255,255,255,0.9);
+        box-shadow: 0 0 0 1px rgba(0,0,0,0.08);
+        display: block;
     }
 
     .color-btn:hover,
     .color-btn.seleccionado {
         border-color: #6E0E2E;
-        color: #6E0E2E;
-        background: rgba(110, 14, 46, 0.04);
+        transform: scale(1.04);
+        box-shadow: 0 0 0 3px rgba(110, 14, 46, 0.08);
     }
     
     /* --- BOTONES --- */
@@ -492,6 +524,11 @@
 </style>
 
 <div class="detalle-hero">
+    <a href="javascript:history.back();" class="back-link-btn" aria-label="Volver atrás">
+        <span aria-hidden="true">←</span>
+        Volver
+    </a>
+
     <!-- BREADCRUMB -->
     <div class="breadcrumb-custom">
         <a href="/">Inicio</a>
@@ -750,6 +787,38 @@ function seleccionarTalle(element) {
     renderizarColores(varianteSeleccionada.id);
 }
 
+function normalizarHexColor(nombre, hex) {
+    const nombreNormalizado = (nombre || '').trim().toLowerCase();
+    const hexNormalizado = (hex || '').trim().toLowerCase();
+    const mapa = {
+        rojo: '#ff0000',
+        verde: '#00ff00',
+        azul: '#0000ff',
+        negro: '#000000',
+        blanco: '#ffffff',
+        gris: '#808080',
+        rosa: '#ffc0cb',
+        amarillo: '#ffff00',
+        celeste: '#87ceeb',
+        violeta: '#800080',
+        naranja: '#ffa500',
+        marron: '#a52a2a',
+        cafe: '#a52a2a',
+        beige: '#d2b48c',
+        turquesa: '#40e0d0'
+    };
+
+    if (hexNormalizado && hexNormalizado !== '#888888') {
+        return hexNormalizado;
+    }
+
+    if (nombreNormalizado && mapa[nombreNormalizado]) {
+        return mapa[nombreNormalizado];
+    }
+
+    return hexNormalizado || '#888888';
+}
+
 function renderizarColores(varianteId) {
     const wrap = document.getElementById('colorSelectorWrap');
     const grid = document.getElementById('coloresGrid');
@@ -768,15 +837,26 @@ function renderizarColores(varianteId) {
     wrap.style.display = 'block';
     colores.forEach((color, index) => {
         const button = document.createElement('button');
+        const swatch = document.createElement('span');
+        const colorHex = normalizarHexColor(color.nombre, color.hex || color.codigo_hex || color.color_hex || '#888888');
+
         button.type = 'button';
         button.className = 'color-btn' + (index === 0 ? ' seleccionado' : '');
-        button.textContent = color.nombre;
         button.dataset.colorNombre = color.nombre;
+        button.title = color.nombre || 'Color';
+        button.setAttribute('aria-label', color.nombre || 'Color');
+
+        swatch.className = 'color-swatch';
+        swatch.style.backgroundColor = colorHex;
+        swatch.style.borderColor = colorHex;
+        button.appendChild(swatch);
+
         button.addEventListener('click', () => {
             document.querySelectorAll('.color-btn').forEach(btn => btn.classList.remove('seleccionado'));
             button.classList.add('seleccionado');
             colorSeleccionado = button.dataset.colorNombre || '';
         });
+
         grid.appendChild(button);
         if (index === 0) {
             colorSeleccionado = color.nombre;

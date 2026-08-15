@@ -869,12 +869,25 @@ def confirmar_pedido(request):
 @login_required
 def eliminar_item_carrito(request, variante_id):
     from carritos.models import CarritoItem
+    from carritos.views import _make_cart_item_key, _parse_cart_item_key
 
     carrito = get_or_create_cart(request)
+    cart_key = request.POST.get("cart_key") or str(variante_id)
+    variante_id_int, _color_token = _parse_cart_item_key(cart_key)
+    if not variante_id_int:
+        variante_id_int = int(variante_id)
 
     # Intentar eliminar el item (sin 404 si no existe)
     try:
-        item = CarritoItem.objects.get(carrito=carrito, variante_id=variante_id)
+        color_data = request.session.get('carrito_colores', {}).get(str(cart_key), {})
+        if isinstance(color_data, str):
+            color_data = {"nombre": color_data, "hex": None}
+        item = CarritoItem.objects.get(
+            carrito=carrito,
+            variante_id=variante_id_int,
+            color_nombre=color_data.get("nombre") or None,
+            color_hex=color_data.get("hex") or None,
+        )
         item.delete()
         messages.success(request, "Producto quitado del carrito.")
     except CarritoItem.DoesNotExist:
@@ -884,8 +897,8 @@ def eliminar_item_carrito(request, variante_id):
     # Sincronizar la sesión
     carrito_final = {}
     for item_db in carrito.items.all():
-        vid = str(item_db.variante.id)
-        carrito_final[vid] = item_db.cantidad
+        key = _make_cart_item_key(item_db.variante.id, item_db.color_nombre, item_db.color_hex)
+        carrito_final[key] = item_db.cantidad
     request.session['carrito'] = carrito_final
     request.session.modified = True
 
