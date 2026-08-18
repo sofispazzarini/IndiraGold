@@ -615,3 +615,79 @@ def sumar_producto(request):
         return _render_cart_fragment(request)
 
     return redirect(next_url)
+
+
+import json
+
+@require_POST
+def restaurar_carrito(request):
+    """
+    Restaura el carrito desde localStorage backup.
+    Recibe JSON: { "items": [{"variante_id": 123, "cantidad": 2, "color_nombre": "Negro"}, ...] }
+    Retorna cart fragment HTML.
+    """
+    if request.user.is_authenticated:
+        return _render_cart_fragment(request)
+
+    try:
+        data = json.loads(request.body)
+        items = data.get('items', [])
+
+        if not isinstance(items, list) or not items:
+            return _render_cart_fragment(request)
+
+    except (json.JSONDecodeError, TypeError):
+        return _render_cart_fragment(request)
+
+    from productos.models import Variante
+
+    expire_cart_if_needed(request.session)
+
+    cart = {}
+    cart_colors = {}
+
+    variante_ids = []
+    items_by_id = {}
+
+    for item in items:
+        try:
+            vid = int(item.get('variante_id', 0))
+            qty = int(item.get('cantidad', 0))
+            color = item.get('color_nombre') or ''
+
+            if vid > 0 and qty > 0:
+                variante_ids.append(vid)
+                items_by_id[vid] = {'cantidad': qty, 'color_nombre': color.strip()}
+        except (TypeError, ValueError):
+            continue
+
+    if not variante_ids:
+        return _render_cart_fragment(request)
+
+    valid_variantes = Variante.objects.filter(
+        id__in=variante_ids,
+        activa=True,
+        producto__activo=True
+    ).values('id', 'stock')
+
+    valid_by_id = {v['id']: v for v in valid_variantes}
+
+    for vid, item_data in items_by_id.items():
+        if vid not in valid_by_id:
+            continue
+
+        variante = valid_by_id[vid]
+        qty = min(item_data['cantidad'], variante['stock'])
+
+        if qty > 0:
+            cart[str(vid)] = qty
+            if item_data['color_nombre']:
+                cart_colors[str(vid)] = item_data['color_nombre']
+
+    if cart:
+        set_cart_started_at_if_missing(request.session)
+        request.session['carrito'] = cart
+        request.session[SESSION_CART_COLORS_KEY] = cart_colors
+        request.session.modified = True
+
+    return _render_cart_fragment(request)
