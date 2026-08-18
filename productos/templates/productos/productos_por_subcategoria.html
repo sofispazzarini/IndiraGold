@@ -517,5 +517,13 @@
       console.error(error);
     }
   }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const params = new URLSearchParams(window.location.search);
+    const previewId = params.get('preview');
+    if (previewId) {
+      abrirPreviewAdmin(previewId);
+    }
+  });
 </script>
 {% endblock %}

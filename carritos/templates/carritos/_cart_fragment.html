@@ -12,8 +12,11 @@
       <div class="cart-item">
         <div class="cart-item__info">
           <div class="cart-item__name">{{ item.nombre }}</div>
-          {% if item.color_nombre %}
-            <div class="cart-item__meta">Color: {{ item.color_nombre|title }}</div>
+          {% if item.color_nombre or item.color_hex %}
+            <div class="cart-item__meta">
+              <span style="font-size: .78rem; color: #3d342a;">Color:</span>
+              <span class="cart-color-dot" style="background-color: {{ item.color_hex|default:item.color_nombre|default:'#888888' }};"></span>
+            </div>
           {% endif %}
           <div class="cart-item__price">${{ item.subtotal }}</div>
         </div>
@@ -22,7 +25,7 @@
         </div>
         <form method="post" action="{% url 'carritos:sumar_producto' %}" class="js-cart-form" style="display:inline">
           {% csrf_token %}
-          <input type="hidden" name="variante_id" value="{{ item.variante_id }}">
+          <input type="hidden" name="cart_key" value="{{ item.cart_key|default:item.variante_id }}">
           <button type="submit" class="cart-item__add" title="Sumar">
             +
           </button>
@@ -30,6 +33,7 @@
         {% if request.user.is_authenticated %}
         <form method="post" action="{% url 'pedidos:eliminar_item_carrito' item.variante_id %}" class="js-cart-form" style="display:inline">
           {% csrf_token %}
+          <input type="hidden" name="cart_key" value="{{ item.cart_key|default:item.variante_id }}">
           <input type="hidden" name="next" value="{{ request.get_full_path }}" />
           <button type="submit" class="cart-item__remove" aria-label="Eliminar del carrito" title="Eliminar" style="color:#ef4444">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">
@@ -41,7 +45,7 @@
         {% else %}
         <form method="post" action="{% url 'carritos:eliminar_producto' %}" class="js-cart-form" style="display:inline">
           {% csrf_token %}
-          <input type="hidden" name="variante_id" value="{{ item.variante_id }}" /> 
+          <input type="hidden" name="cart_key" value="{{ item.cart_key|default:item.variante_id }}" /> 
           <input type="hidden" name="next" value="{{ request.get_full_path }}" />
           <button type="submit" class="cart-item__remove" aria-label="Eliminar del carrito" title="Eliminar" style="color:#ef4444">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">

@@ -9,27 +9,31 @@
         }
 
         .tabla-medidas-header {
-            background: #1a1612;
+            background: linear-gradient(135deg, #1a1612 0%, #2d261f 100%);
             color: white;
-            padding: 1rem 1.25rem;
+            padding: 1.15rem 1.25rem;
             border-radius: 12px 12px 0 0;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
         }
 
         .tabla-medidas-header h3 {
             margin: 0;
             font-family: 'Cormorant Garamond', serif;
-            font-size: 1.3rem;
+            font-size: 1.55rem;
             font-weight: 600;
-            color: #b8922a;
+            line-height: 1.1;
+            color: #d7b86b;
+            letter-spacing: 0.02em;
         }
 
         .tabla-medidas-subtitle {
-            font-size: 0.75rem;
-            color: rgba(255,255,255,0.6);
-            letter-spacing: 0.1em;
+            margin-top: 0.3rem;
+            font-size: 0.7rem;
+            color: rgba(255,255,255,0.72);
+            letter-spacing: 0.12em;
             text-transform: uppercase;
         }
 
@@ -76,6 +80,43 @@
         /* Sección de Medidas */
         .medidas-section {
             margin-top: 1.5rem;
+        }
+
+        .tabla-medidas-scroll {
+            width: 100%;
+            display: block;
+        }
+
+        .tabla-medidas-scroll.is-scroll {
+            display: block;
+            max-height: 240px;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding-right: 0.15rem;
+        }
+
+        .tabla-medidas-scroll.is-scroll .tabla-medidas {
+            margin-bottom: 0;
+        }
+
+        .tabla-medidas tbody tr {
+            height: 56px;
+        }
+
+        .tabla-medidas thead th {
+            position: sticky;
+            top: 0;
+            z-index: 1;
+            background: #faf7f2;
+        }
+
+        .tabla-medidas-scroll.is-scroll::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .tabla-medidas-scroll.is-scroll::-webkit-scrollbar-thumb {
+            background: #d7c6aa;
+            border-radius: 999px;
         }
 
         .medidas-title {
@@ -192,7 +233,7 @@
     <div class="tabla-medidas-header">
         <div>
             <h3>{{ producto.nombre }}</h3>
-            <div class="tabla-medidas-subtitle">Ficha técnica</div>
+            <div class="tabla-medidas-subtitle">Especificaciones</div>
         </div>
     </div>
 
@@ -207,7 +248,7 @@
         </div>
         {% if producto.avios %}
         <div class="ficha-row">
-            <div class="ficha-label">Avíos</div>
+            <div class="ficha-label">Accesorios</div>
             <div class="ficha-value">{{ producto.avios }}</div>
         </div>
         {% endif %}
@@ -238,6 +279,7 @@
             {% endwith %}
 
             {% if variantes.0.medidas.all %}
+                <div class="tabla-medidas-scroll{% if filas_medidas > 3 %} is-scroll{% endif %}">
                 <table class="tabla-medidas">
                     <thead>
                         <tr>
@@ -276,10 +318,11 @@
                         {% endfor %}
                     </tbody>
                 </table>
-                <p class="nota-medidas">* Las medidas están expresadas en centímetros y pueden variar ligeramente.</p>
+                </div>
+                <p class="nota-medidas">* Las medidas se expresan en centímetros y pueden variar ligeramente según la prenda y el tejido.</p>
             {% else %}
                 <div class="sin-medidas">
-                    No hay medidas registradas para este producto.
+                    Todavía no hay medidas registradas para este producto.
                 </div>
             {% endif %}
         </div>

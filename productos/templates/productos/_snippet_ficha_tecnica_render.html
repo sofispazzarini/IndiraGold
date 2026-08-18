@@ -59,9 +59,9 @@
                             <strong style="color:#1a1612;">{% if variante.talle %}{{ variante.talle.nombre|upper }}{% else %}SIN TALLE{% endif %}</strong><br>
                             Stock: {{ variante.stock }}<br>
                             {% if variante.colores.all %}
-                                <span style="display:inline-flex; align-items:center; gap:4px;">Colores:
+                                <span style="display:inline-flex; align-items:center; gap:6px; flex-wrap: wrap;">Colores:
                                 {% for color in variante.colores.all %}
-                                    <span title="{{ color.nombre }}" style="display:inline-block; width:14px; height:14px; background-color:{{ color.codigo_hex }}; border-radius:50%; border:1px solid #ccc;"></span>
+                                    <span title="{{ color.nombre|default:'Color' }}" style="display:inline-block; width:16px; height:16px; background-color:{{ color.codigo_hex|default:'#888888' }}; border-radius:50%; border:1px solid #ccc; vertical-align:middle;"></span>
                                 {% endfor %}</span><br>
                             {% endif %}
                             {% if variante.medidas.all %}

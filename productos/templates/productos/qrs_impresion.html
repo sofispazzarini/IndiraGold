@@ -331,7 +331,7 @@
 
 {% block content %}
 <div class="qr-page">
-    <a href="{% url 'productos:detalle_producto' producto.id %}" class="back-link no-print">
+    <a href="{{ volver_url }}" class="back-link no-print">
         <i class="bi bi-arrow-left"></i> Volver al producto
     </a>
 
@@ -367,7 +367,9 @@
             <img src="{% url 'productos:variante_color_qr' vc.id %}" alt="QR {{ vc }}">
             <div class="qr-code-label">{{ producto.codigo }}</div>
             <div class="qr-talle">{{ vc.variante.talle.nombre }}</div>
-            <div class="qr-color">{{ vc.color.nombre }}</div>
+            <div class="qr-color d-flex align-items-center justify-content-center">
+                <span title="{{ vc.color.nombre }}" style="display:inline-block; width:14px; height:14px; border-radius:50%; background-color:{{ vc.color.codigo_hex|default:'#888888' }}; border:1px solid #d8d0c5;"></span>
+            </div>
         </div>
         {% endfor %}
     </div>

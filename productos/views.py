@@ -25,10 +25,84 @@ from decimal import Decimal
 from django.utils import timezone
 
 
+COLOR_HEX_BY_NAME = {
+    'rojo': '#ff0000',
+    'verde': '#00ff00',
+    'azul': '#0000ff',
+    'negro': '#000000',
+    'blanco': '#ffffff',
+    'gris': '#808080',
+    'rosa': '#ffc0cb',
+    'amarillo': '#ffff00',
+    'celeste': '#87ceeb',
+    'violeta': '#800080',
+    'naranja': '#ffa500',
+    'marron': '#a52a2a',
+    'café': '#a52a2a',
+    'beige': '#d2b48c',
+    'turquesa': '#40e0d0',
+}
+
+
+def normalizar_hex_color(nombre, codigo_hex=None):
+    nombre_limpio = (nombre or '').strip().lower()
+    hex_actual = (codigo_hex or '').strip().lower()
+
+    if hex_actual and hex_actual != '#888888':
+        return hex_actual
+
+    if nombre_limpio in COLOR_HEX_BY_NAME:
+        return COLOR_HEX_BY_NAME[nombre_limpio]
+
+    return hex_actual or '#888888'
+
+
 def recalcular_stock_producto(producto):
     producto.stock = producto.stock_total
     producto.save(update_fields=['stock'])
     return producto.stock
+
+
+def producto_debe_regenerar_qr(codigo_original, codigo_nuevo):
+    return (codigo_original or '').strip() != (codigo_nuevo or '').strip()
+
+
+def variante_debe_regenerar_qr(variante, talle_original_id, colores_originales_ids):
+    colores_nuevos_ids = set(variante.colores.values_list('id', flat=True))
+    return variante.talle_id != talle_original_id or colores_nuevos_ids != set(colores_originales_ids)
+
+
+def sincronizar_qrs_variante_color(variante, regenerar_qr=False):
+    """Mantiene los registros VarianteColor sincronizados con los colores actuales de la variante.
+
+    Si regenerar_qr=True, reasigna el qr_code de los registros existentes para
+    forzar la reimpresión de los QR después de cambios en el producto.
+    """
+    colores_actuales = list(variante.colores.all())
+
+    registros_actuales = list(VarianteColor.objects.filter(variante=variante).select_related('color'))
+    ids_nuevos = {color.id for color in colores_actuales}
+
+    para_borrar = [vc for vc in registros_actuales if vc.color_id not in ids_nuevos]
+    for vc in para_borrar:
+        vc.delete()
+
+    for color in colores_actuales:
+        vc, created = VarianteColor.objects.get_or_create(
+            variante=variante,
+            color=color,
+            defaults={'activo': True}
+        )
+        if created or regenerar_qr or not vc.qr_code:
+            vc.qr_code = str(uuid.uuid4())
+            vc.save(update_fields=['qr_code'])
+
+    for vc in VarianteColor.objects.filter(variante=variante).select_related('color'):
+        if regenerar_qr or not vc.qr_code:
+            vc.qr_code = str(uuid.uuid4())
+            vc.save(update_fields=['qr_code'])
+
+    return VarianteColor.objects.filter(variante=variante, activo=True).select_related('color')
 
 # --- DECORADOR AUXILIAR ---
 def admin_required(view_func):
@@ -64,7 +138,12 @@ def detalle_producto(request, producto_id):
                 'id': variante.id,
                 'stock': variante.stock,
                 'colores': [
-                    {'id': color.id, 'nombre': color.nombre}
+                    {
+                        'id': color.id,
+                        'nombre': color.nombre,
+                        'codigo_hex': normalizar_hex_color(color.nombre, color.codigo_hex),
+                        'hex': normalizar_hex_color(color.nombre, color.codigo_hex),
+                    }
                     for color in variante.colores.all()
                 ],
             }
@@ -155,7 +234,10 @@ def agregar_producto(request, subcat_id):
                     colores_data = v.get('colores', [])
                     for c in colores_data:
                         nombre_color = c.get('colorNombre') or c.get('colorHex')
-                        codigo_hex = c.get('colorHex', '#888888')
+                        codigo_hex = normalizar_hex_color(
+                            nombre_color,
+                            c.get('colorHex') or '#888888'
+                        )
                         if nombre_color:
                             color_obj, created = Color.objects.get_or_create(
                                 nombre=nombre_color,
@@ -212,6 +294,7 @@ def editar_producto(request, prod_id):
         form = ProductoForm(request.POST, request.FILES, instance=producto)
         nuevas_fotos = request.FILES.getlist('fotos_galeria')
         esquema_nuevo = request.FILES.get('imagen_tecnica')
+        codigo_original = producto.codigo
         
         if form.is_valid():
             # 2. commit=False para reasignar las relaciones obligatorias
@@ -235,6 +318,10 @@ def editar_producto(request, prod_id):
                         variante.save(update_fields=['stock'])
                     except ValueError:
                         messages.error(request, f"Stock inválido para {variante.talle.nombre}.")
+
+            if producto_debe_regenerar_qr(codigo_original, producto_editado.codigo):
+                for variante in producto_editado.variantes.all().prefetch_related('colores'):
+                    sincronizar_qrs_variante_color(variante, regenerar_qr=True)
 
             recalcular_stock_producto(producto_editado)
             # 3. Guardado de fotos comerciales (Máximo 5 controlado en HTML)
@@ -594,9 +681,11 @@ def obtener_tabla_medidas_ajax(request, producto_id):
             })
         
         # Construir la tabla HTML
+        filas_medidas = sum(variante.medidas.count() for variante in variantes)
         tabla_html = render_to_string('productos/_tabla_medidas.html', {
             'producto': producto,
             'variantes': variantes,
+            'filas_medidas': filas_medidas,
         })
         
         return JsonResponse({
@@ -616,6 +705,8 @@ def obtener_tabla_medidas_ajax(request, producto_id):
 def editar_variante(request, variante_id):
     variante = get_object_or_404(Variante, id=variante_id)
     producto = variante.producto
+    talle_original_id = variante.talle_id
+    colores_originales_ids = list(variante.colores.values_list('id', flat=True))
 
     if request.method == 'POST':
         # Actualizar talle
@@ -697,6 +788,11 @@ def editar_variante(request, variante_id):
 
         var_editada.medidas.set(medidas_a_mantener)
 
+        if variante_debe_regenerar_qr(var_editada, talle_original_id, colores_originales_ids):
+            sincronizar_qrs_variante_color(var_editada, regenerar_qr=True)
+        else:
+            sincronizar_qrs_variante_color(var_editada)
+
         messages.success(request, f"Talle {variante.talle.nombre} actualizado correctamente.")
         return redirect('productos:editar_producto', prod_id=producto.id)
 
@@ -725,16 +821,14 @@ def variante_color_qr(request, vc_id):
 def producto_qrs_impresion(request, producto_id):
     """Vista de impresión masiva de todos los QRs de un producto."""
     producto = get_object_or_404(Producto, id=producto_id)
+    volver_url = reverse('productos:gestion_productos')
+    if producto.subcategoria_id:
+        volver_url = f"{reverse('productos:productos_por_subcategoria', args=[producto.subcategoria_id])}?preview={producto.id}"
 
-    # Generar VarianteColor automáticamente si no existen
+    # Generar VarianteColor automáticamente si no existen y revalidar la sincronización de QR
     variantes = producto.variantes.filter(activa=True).prefetch_related('colores')
     for variante in variantes:
-        for color in variante.colores.all():
-            VarianteColor.objects.get_or_create(
-                variante=variante,
-                color=color,
-                defaults={'activo': True}
-            )
+        sincronizar_qrs_variante_color(variante)
 
     variantes_color = VarianteColor.objects.filter(
         variante__producto=producto,
@@ -743,7 +837,8 @@ def producto_qrs_impresion(request, producto_id):
 
     return render(request, 'productos/qrs_impresion.html', {
         'producto': producto,
-        'variantes_color': variantes_color
+        'variantes_color': variantes_color,
+        'volver_url': volver_url,
     })
 def buscar_productos(request):
 
