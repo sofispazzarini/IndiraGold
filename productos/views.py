@@ -117,11 +117,33 @@ def detalle_producto(request, producto_id):
     """
     producto = get_object_or_404(Producto, id=producto_id, activo=True)
     variantes = producto.variantes.filter(activa=True).select_related('talle').prefetch_related('colores', 'medidas')
-    
+
     # Si no hay variantes activas, mostrar que ha sido descontinuado
     if not variantes.exists():
         variantes = []
-    
+
+    # Obtener producto anterior y siguiente en la misma subcategoría
+    producto_anterior = None
+    producto_siguiente = None
+
+    if producto.subcategoria:
+        # Anterior: ID mayor (viene antes en orden -id)
+        producto_anterior = (
+            Producto.objects
+            .filter(subcategoria=producto.subcategoria, activo=True, id__gt=producto.id)
+            .order_by('id')
+            .only('id', 'nombre')
+            .first()
+        )
+        # Siguiente: ID menor (viene después en orden -id)
+        producto_siguiente = (
+            Producto.objects
+            .filter(subcategoria=producto.subcategoria, activo=True, id__lt=producto.id)
+            .order_by('-id')
+            .only('id', 'nombre')
+            .first()
+        )
+
     # Obtener productos relacionados de la misma subcategoría
     productos_relacionados = (
         Producto.objects
@@ -151,8 +173,10 @@ def detalle_producto(request, producto_id):
         ],
         'productos_relacionados': productos_relacionados,
         'talles_disponibles': [v.talle for v in variantes],
+        'producto_anterior': producto_anterior,
+        'producto_siguiente': producto_siguiente,
     }
-    
+
     return render(request, 'productos/producto_detalle.html', context)
 
 # --- GESTIÓN DE PRODUCTOS Y NAVEGACIÓN ---

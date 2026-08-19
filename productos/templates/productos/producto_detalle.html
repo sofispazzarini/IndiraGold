@@ -46,6 +46,46 @@
         border-color: #b8922a;
         color: #1a1612;
     }
+    /* Navegación de productos */
+    .product-nav {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 1rem;
+    }
+    .product-nav-arrows {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    .product-nav-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        border: 1px solid #e8dfd4;
+        background: #fff;
+        color: #1a1612;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-decoration: none;
+    }
+    .product-nav-btn:hover {
+        background: #b8922a;
+        color: #fff;
+        border-color: #b8922a;
+    }
+    .product-nav-btn.disabled {
+        opacity: 0.35;
+        cursor: not-allowed;
+        pointer-events: none;
+    }
+    .product-nav-btn svg {
+        width: 18px;
+        height: 18px;
+    }
     .detalle-hero {
         max-width: 1200px;
         margin: 2rem auto;
@@ -524,10 +564,46 @@
 </style>
 
 <div class="detalle-hero">
-    <a href="javascript:history.back();" class="back-link-btn" aria-label="Volver atrás">
-        <span aria-hidden="true">←</span>
-        Volver
-    </a>
+    <div class="product-nav">
+        <a href="javascript:history.back();" class="back-link-btn" aria-label="Volver atrás">
+            <span aria-hidden="true">←</span>
+            Volver
+        </a>
+
+        <div class="product-nav-arrows">
+            {% if producto_anterior %}
+                <a href="{% url 'productos:detalle_producto' producto_anterior.id %}"
+                   class="product-nav-btn"
+                   title="{{ producto_anterior.nombre }}">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16">
+                        <path fill-rule="evenodd" d="M11.354 1.646a.5.5 0 0 1 0 .708L5.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0z"/>
+                    </svg>
+                </a>
+            {% else %}
+                <span class="product-nav-btn disabled">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16">
+                        <path fill-rule="evenodd" d="M11.354 1.646a.5.5 0 0 1 0 .708L5.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0z"/>
+                    </svg>
+                </span>
+            {% endif %}
+
+            {% if producto_siguiente %}
+                <a href="{% url 'productos:detalle_producto' producto_siguiente.id %}"
+                   class="product-nav-btn"
+                   title="{{ producto_siguiente.nombre }}">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16">
+                        <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"/>
+                    </svg>
+                </a>
+            {% else %}
+                <span class="product-nav-btn disabled">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16">
+                        <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"/>
+                    </svg>
+                </span>
+            {% endif %}
+        </div>
+    </div>
 
     <!-- BREADCRUMB -->
     <div class="breadcrumb-custom">
