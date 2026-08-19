@@ -869,43 +869,49 @@ def confirmar_pedido(request):
 @login_required
 def eliminar_item_carrito(request, variante_id):
     from carritos.models import CarritoItem
-    from carritos.views import _make_cart_item_key, _parse_cart_item_key
+    from carritos.utils import _make_cart_item_key, _parse_cart_item_key, SESSION_CART_COLORS_KEY
 
     carrito = get_or_create_cart(request)
     cart_key = request.POST.get("cart_key") or str(variante_id)
+    next_url = request.POST.get("next") or request.META.get('HTTP_REFERER') or reverse('home:home')
     variante_id_int, _color_token = _parse_cart_item_key(cart_key)
     if not variante_id_int:
         variante_id_int = int(variante_id)
 
-    # Intentar eliminar el item (sin 404 si no existe)
-    try:
-        color_data = request.session.get('carrito_colores', {}).get(str(cart_key), {})
-        if isinstance(color_data, str):
-            color_data = {"nombre": color_data, "hex": None}
-        item = CarritoItem.objects.get(
-            carrito=carrito,
-            variante_id=variante_id_int,
-            color_nombre=color_data.get("nombre") or None,
-            color_hex=color_data.get("hex") or None,
-        )
-        item.delete()
+    # Buscar item comparando cart_key generada con la recibida
+    item_a_eliminar = None
+    for item_db in carrito.items.filter(variante_id=variante_id_int):
+        item_key = _make_cart_item_key(item_db.variante.id, item_db.color_nombre, item_db.color_hex)
+        if item_key == cart_key:
+            item_a_eliminar = item_db
+            break
+
+    # Fallback: si no encontró por cart_key exacto, eliminar el primero de esa variante
+    if item_a_eliminar is None:
+        item_a_eliminar = carrito.items.filter(variante_id=variante_id_int).first()
+
+    if item_a_eliminar:
+        item_a_eliminar.delete()
         messages.success(request, "Producto quitado del carrito.")
-    except CarritoItem.DoesNotExist:
-        # El item ya no existe, simplemente continuamos
-        pass
 
     # Sincronizar la sesión
     carrito_final = {}
+    colores_final = {}
     for item_db in carrito.items.all():
         key = _make_cart_item_key(item_db.variante.id, item_db.color_nombre, item_db.color_hex)
         carrito_final[key] = item_db.cantidad
+        colores_final[key] = {
+            "nombre": item_db.color_nombre,
+            "hex": item_db.color_hex,
+        }
     request.session['carrito'] = carrito_final
+    request.session[SESSION_CART_COLORS_KEY] = colores_final
     request.session.modified = True
 
     if not carrito.items.exists():
         messages.info(request, "No quedan productos en tu carrito.")
 
-    return redirect('pedidos:checkout')
+    return redirect(next_url)
 sdk = mercadopago.SDK(settings.MERCADO_PAGO_ACCESS_TOKEN)
 
 

@@ -14,8 +14,9 @@ class Cliente(models.Model):
     dni = models.CharField(
         max_length=8,
         unique=True,
+        blank=True,
+        null=True,
         validators=[dni_validator],
-        default='00000000'
     )
     deuda_total = models.DecimalField(
         max_digits=10,
