@@ -15,6 +15,20 @@ def _to_int(value) -> int | None:
     except (TypeError, ValueError):
         return None
 
+def obtener_o_crear_carrito(request):
+    if request.user.is_authenticated:
+        carrito, _ = Carrito.objects.get_or_create(cliente=request.user)
+        return carrito
+
+    # 1. Forzar a Django a generar una clave de sesión si no existe
+    if not request.session.session_key:
+        request.session.save()
+
+    session_id = request.session.session_key
+
+    # 2. Obtener o crear el carrito asociado a la session_key fija
+    carrito, _ = Carrito.objects.get_or_create(session_id=session_id)
+    return carrito
 
 def get_cart_started_at(session) -> int | None:
     return _to_int(session.get(SESSION_CART_STARTED_AT_KEY))
