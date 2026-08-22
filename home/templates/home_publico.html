@@ -1776,7 +1776,6 @@ function scrollCatOrden{{ cat_orden.id }}(dir) {
   // Welcome Modal
   function cerrarWelcome() {
     document.getElementById('welcomeModal').classList.remove('show');
-    localStorage.setItem('welcomeClosed', 'true');
   }
 
   function mostrarWelcome() {
@@ -1807,10 +1806,8 @@ function scrollCatOrden{{ cat_orden.id }}(dir) {
       navLinks.insertBefore(talleBtn, navLinks.firstChild);
     }
 
-    // Mostrar modal automáticamente si no fue cerrado antes
-    if (!localStorage.getItem('welcomeClosed')) {
-      document.getElementById('welcomeModal').classList.add('show');
-    }
+    // Mostrar modal automáticamente cada vez que se carga la página
+    document.getElementById('welcomeModal').classList.add('show');
   });
 </script>
 

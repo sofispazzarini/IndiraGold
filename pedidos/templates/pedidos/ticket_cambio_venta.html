@@ -15,9 +15,11 @@
 <div class="line">Cliente: {{ cliente_nombre }}</div>
 <div class="line">Modo de pago:</div>
 <div class="line">{{ metodo_pago }}</div>
-<div class="line">Subtotal: <span class="{% if es_regalo %}price-gift{% endif %}">{{ subtotal }}</span></div>
-<div class="line">Descuento: 0% (- <span class="{% if es_regalo %}price-gift{% endif %}">{{ descuento }}</span>)</div>
-<div class="line strong">TOTAL: <span class="{% if es_regalo %}price-gift{% endif %}">{{ total }}</span></div>
+{% if not es_regalo %}
+<div class="line">Subtotal: {{ subtotal }}</div>
+<div class="line">Descuento: 0% (- {{ descuento }})</div>
+<div class="line strong">TOTAL: {{ total }}</div>
+{% endif %}
 
 <div class="spacer"></div>
 
@@ -28,7 +30,7 @@
     <div>• {{ item.producto }}</div>
     <div>Color: {{ item.color|default:"-" }}</div>
     <div>Talle: {{ item.talle }}</div>
-    <div>Precio: <span class="{% if es_regalo %}price-gift{% endif %}">{{ item.precio }}</span></div>
+    {% if not es_regalo %}<div>Precio: {{ item.precio }}</div>{% endif %}
 </div>
 {% endfor %}
 {% endblock %}

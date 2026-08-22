@@ -141,6 +141,162 @@
     .form-actions { flex-direction: column; }
     .btn-cancel, .btn-submit { width: 100%; justify-content: center; }
 }
+
+/* Select con botón de acción */
+.select-with-action {
+    display: flex;
+    gap: 0.5rem;
+    align-items: stretch;
+}
+.select-with-action .form-select {
+    flex: 1;
+}
+.btn-add-tema {
+    width: 42px;
+    border: 1.5px solid var(--gold);
+    background: var(--gold-faint);
+    border-radius: 8px;
+    color: var(--gold);
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.btn-add-tema:hover {
+    background: var(--gold);
+    color: #fff;
+}
+
+/* Modal */
+.modal-tema-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(26, 22, 18, 0.7);
+    backdrop-filter: blur(6px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 3000;
+}
+.modal-tema-backdrop.open { display: flex; }
+.modal-tema-box {
+    background: #fff;
+    border-radius: 20px;
+    padding: 2.5rem 3rem;
+    max-width: 420px;
+    width: 92%;
+    animation: modalIn 0.28s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+@keyframes modalIn {
+    from { opacity: 0; transform: scale(0.92) translateY(16px); }
+    to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+.modal-tema-eyebrow {
+    font-size: 0.6rem;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 0.5rem;
+}
+.modal-tema-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 2rem;
+    font-weight: 600;
+    color: var(--dark);
+    margin-bottom: 1.5rem;
+    line-height: 1.1;
+}
+.modal-tema-input {
+    width: 100%;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    padding: 0.85rem 1rem;
+    font-size: 0.95rem;
+    background: var(--gold-faint);
+    transition: all 0.2s;
+    font-family: inherit;
+    color: var(--text);
+    margin-bottom: 0.5rem;
+}
+.modal-tema-input:focus, .modal-tema-textarea:focus {
+    border-color: var(--gold);
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(184,146,42,0.1);
+    outline: none;
+}
+.modal-tema-label {
+    display: block;
+    font-size: 0.65rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 0.4rem;
+}
+.modal-tema-label + .modal-tema-input {
+    margin-bottom: 1rem;
+}
+.modal-tema-textarea {
+    width: 100%;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    font-size: 0.9rem;
+    background: var(--gold-faint);
+    transition: all 0.2s;
+    font-family: inherit;
+    color: var(--text);
+    margin-bottom: 0.5rem;
+    min-height: 70px;
+    resize: vertical;
+}
+.modal-tema-error {
+    color: #991b1b;
+    font-size: 0.78rem;
+    margin-bottom: 1rem;
+    display: none;
+}
+.modal-tema-error.show { display: block; }
+.modal-tema-actions {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: flex-end;
+    margin-top: 1.5rem;
+}
+.modal-tema-cancel {
+    padding: 0.75rem 1.5rem;
+    border-radius: 50px;
+    border: 1.5px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.18s;
+}
+.modal-tema-cancel:hover { border-color: var(--text); color: var(--text); }
+.modal-tema-submit {
+    padding: 0.75rem 1.8rem;
+    border-radius: 50px;
+    border: none;
+    background: var(--gold);
+    color: #fff;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    letter-spacing: 0.04em;
+    transition: all 0.18s;
+}
+.modal-tema-submit:hover { background: var(--dark); }
+.modal-tema-submit:disabled {
+    background: var(--muted);
+    cursor: not-allowed;
+}
 </style>
 {% endblock %}
 
@@ -174,11 +330,16 @@
                 <div class="form-row">
                     <div class="form-group">
                         <label class="form-label">Tema</label>
-                        <select name="tema" class="form-select" required>
-                            {% for choice in form.tema.field.queryset %}
-                            <option value="{{ choice.pk }}" {% if form.tema.value|stringformat:"s" == choice.pk|stringformat:"s" %}selected{% endif %}>{{ choice }}</option>
-                            {% endfor %}
-                        </select>
+                        <div class="select-with-action">
+                            <select name="tema" id="temaSelect" class="form-select" required>
+                                {% for choice in form.tema.field.queryset %}
+                                <option value="{{ choice.pk }}" {% if form.tema.value|stringformat:"s" == choice.pk|stringformat:"s" %}selected{% endif %}>{{ choice }}</option>
+                                {% endfor %}
+                            </select>
+                            <button type="button" class="btn-add-tema" onclick="abrirModalTema()" title="Crear nuevo tema">
+                                <i class="bi bi-plus-lg"></i>
+                            </button>
+                        </div>
                     </div>
                     <div class="form-group">
                         <label class="form-label">Orden</label>
@@ -239,4 +400,94 @@
         </div>
     </form>
 </div>
+
+<!-- Modal Nuevo Tema -->
+<div class="modal-tema-backdrop" id="modalTema">
+    <div class="modal-tema-box">
+        <p class="modal-tema-eyebrow">Clasificación</p>
+        <h2 class="modal-tema-title">Nuevo Tema</h2>
+        <label class="modal-tema-label">Nombre</label>
+        <input type="text" id="nuevoTemaInput" class="modal-tema-input" placeholder="Ej: Envíos, Pagos, Cambios..." maxlength="100">
+        <label class="modal-tema-label">Descripción <span style="color: var(--muted); font-weight: 400;">(opcional)</span></label>
+        <textarea id="nuevoTemaDescripcion" class="modal-tema-textarea" placeholder="Breve descripción del tema..."></textarea>
+        <p class="modal-tema-error" id="temaError"></p>
+        <div class="modal-tema-actions">
+            <button type="button" class="modal-tema-cancel" onclick="cerrarModalTema()">Cancelar</button>
+            <button type="button" class="modal-tema-submit" id="btnCrearTema" onclick="crearTema()">Crear</button>
+        </div>
+    </div>
+</div>
+
+<script>
+function abrirModalTema() {
+    document.getElementById('modalTema').classList.add('open');
+    document.getElementById('nuevoTemaInput').value = '';
+    document.getElementById('nuevoTemaDescripcion').value = '';
+    document.getElementById('temaError').classList.remove('show');
+    document.getElementById('nuevoTemaInput').focus();
+}
+
+function cerrarModalTema() {
+    document.getElementById('modalTema').classList.remove('open');
+}
+
+function crearTema() {
+    const input = document.getElementById('nuevoTemaInput');
+    const descripcionInput = document.getElementById('nuevoTemaDescripcion');
+    const nombre = input.value.trim();
+    const descripcion = descripcionInput.value.trim();
+    const errorEl = document.getElementById('temaError');
+    const btn = document.getElementById('btnCrearTema');
+
+    if (!nombre) {
+        errorEl.textContent = 'Ingresá un nombre para el tema';
+        errorEl.classList.add('show');
+        input.focus();
+        return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = 'Creando...';
+
+    fetch('{% url "consultas:crear_tema_ajax" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: 'nombre=' + encodeURIComponent(nombre) + '&descripcion=' + encodeURIComponent(descripcion)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const select = document.getElementById('temaSelect');
+            const option = document.createElement('option');
+            option.value = data.id;
+            option.textContent = data.nombre;
+            option.selected = true;
+            select.appendChild(option);
+            cerrarModalTema();
+        } else {
+            errorEl.textContent = data.error;
+            errorEl.classList.add('show');
+        }
+    })
+    .catch(() => {
+        errorEl.textContent = 'Error al crear el tema';
+        errorEl.classList.add('show');
+    })
+    .finally(() => {
+        btn.disabled = false;
+        btn.textContent = 'Crear';
+    });
+}
+
+document.getElementById('modalTema').addEventListener('click', function(e) {
+    if (e.target === this) cerrarModalTema();
+});
+
+document.getElementById('nuevoTemaInput').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') crearTema();
+});
+</script>
 {% endblock %}

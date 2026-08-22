@@ -1,6 +1,8 @@
 from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
+from django.http import JsonResponse
 from django.shortcuts import redirect, render, get_object_or_404
+from django.views.decorators.http import require_POST
 
 from .forms import TemaConsultaForm, ConsultaForm
 from .models import TemaConsulta, Consulta
@@ -25,6 +27,19 @@ def crear_tema(request):
     else:
         form = TemaConsultaForm()
     return render(request, 'consultas/crear_tema.html', {'form': form})
+
+
+@staff_member_required
+@require_POST
+def crear_tema_ajax(request):
+    nombre = request.POST.get('nombre', '').strip()
+    descripcion = request.POST.get('descripcion', '').strip()
+    if not nombre:
+        return JsonResponse({'success': False, 'error': 'El nombre es requerido'})
+    if TemaConsulta.objects.filter(nombre__iexact=nombre).exists():
+        return JsonResponse({'success': False, 'error': 'Ya existe un tema con ese nombre'})
+    tema = TemaConsulta.objects.create(nombre=nombre, descripcion=descripcion, activo=True)
+    return JsonResponse({'success': True, 'id': tema.id, 'nombre': tema.nombre})
 
 
 @staff_member_required

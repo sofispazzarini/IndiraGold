@@ -8,6 +8,7 @@ urlpatterns = [
     # Temas
     path('admin/temas/', views.gestion_temas, name='gestion_temas'),
     path('admin/temas/crear/', views.crear_tema, name='crear_tema'),
+    path('admin/temas/crear-ajax/', views.crear_tema_ajax, name='crear_tema_ajax'),
     path('admin/temas/<int:tema_id>/editar/', views.editar_tema, name='editar_tema'),
     path('admin/temas/<int:tema_id>/eliminar/', views.eliminar_tema, name='eliminar_tema'),
     path('admin/temas/<int:tema_id>/toggle/', views.toggle_estado_tema, name='toggle_estado_tema'),
