@@ -54,16 +54,6 @@ CSRF_TRUSTED_ORIGINS = [
     if origin.strip()
 ]
 
-if DEBUG:
-    CSRF_TRUSTED_ORIGINS += [
-        "https://*.ngrok-free.app",
-        "https://*.ngrok-free.dev",
-    ]
-    # Permitir cookies en redirecciones cross-site (ej: volver de Mercado Pago)
-    SESSION_COOKIE_SAMESITE = 'None'
-    SESSION_COOKIE_SECURE = True
-    CSRF_COOKIE_SAMESITE = 'None'
-    CSRF_COOKIE_SECURE = True
 
 
 # Application definition

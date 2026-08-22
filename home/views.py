@@ -2,17 +2,17 @@
 import json
 from PIL import Image
 from django.views.generic import TemplateView
-from productos.models import Producto, Categoria, Talle, Color, Variante # 1. Agregamos Variante al import
-from django.contrib import messages
-from django.contrib.admin.views.decorators import staff_member_required
-from django.shortcuts import redirect, render, get_object_or_404
 from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
 from django.shortcuts import redirect, render, get_object_or_404
 from productos.models import Producto, Categoria, Talle, Color, CategoriaOrden, Variante, Oferta
-from carritos.utils import clear_cart_session, expire_cart_if_needed, get_cart_seconds_left
-from productos.models import Producto, Categoria, Talle, Color, CategoriaOrden, Variante
-from carritos.utils import clear_cart_session, expire_cart_if_needed, get_cart_seconds_left, get_or_create_cart
+from carritos.utils import (
+    clear_cart_session,
+    expire_cart_if_needed,
+    get_cart_seconds_left,
+    get_or_create_cart,
+    SESSION_CART_COLORS_KEY,
+)
 from consultas.models import TemaConsulta
 from .models import SlideCarrousel, ConfiguracionHero
 from .forms import SlideCarrouselForm
@@ -116,62 +116,97 @@ class HomePublicaView(TemplateView):
 
         if self.request.user.is_authenticated:
             try:
+                from carritos.utils import _make_cart_item_key, SESSION_CART_COLORS_KEY
+                from carritos.views import _resolve_item_color_hex
+
                 carrito = get_or_create_cart(self.request)
                 for item_db in carrito.items.all().select_related('variante__producto'):
+                    color_hex = _resolve_item_color_hex(item_db)
+                    item_key = _make_cart_item_key(item_db.variante.id, item_db.color_nombre, item_db.color_hex)
                     items.append({
                         'id': item_db.variante.producto.id,
                         'variante_id': item_db.variante.id,
+                        'cart_key': item_key,
                         'nombre': item_db.variante.producto.nombre,
                         'precio': item_db.precio_unitario,
                         'cantidad': item_db.cantidad,
                         'subtotal': item_db.precio_total,
+                        'color_nombre': item_db.color_nombre,
+                        'color_hex': color_hex,
                     })
                     total_qty += item_db.cantidad
                     total_price += item_db.precio_total
 
+                # Sincronizar sesión con formato correcto
                 carrito_sincronizado = {}
+                colores_sincronizados = {}
                 for item_db in carrito.items.all():
-                    carrito_sincronizado[str(item_db.variante.id)] = item_db.cantidad
+                    item_key = _make_cart_item_key(item_db.variante.id, item_db.color_nombre, item_db.color_hex)
+                    carrito_sincronizado[item_key] = item_db.cantidad
+                    colores_sincronizados[item_key] = {
+                        "nombre": item_db.color_nombre,
+                        "hex": item_db.color_hex,
+                    }
                 self.request.session['carrito'] = carrito_sincronizado
+                self.request.session[SESSION_CART_COLORS_KEY] = colores_sincronizados
                 self.request.session.modified = True
             except Exception:
                 pass
         else:
+            from carritos.utils import _parse_cart_item_key, _normalize_hex, SESSION_CART_COLORS_KEY as COLORS_KEY
+
             cart = self.request.session.get('carrito')
+            cart_colors = self.request.session.get(COLORS_KEY)
             if not isinstance(cart, dict):
                 cart = {}
                 clear_cart_session(self.request.session)
+            if not isinstance(cart_colors, dict):
+                cart_colors = {}
 
-            quantities: dict[int, int] = {}
-            for key, value in cart.items():
+            # Parsear claves y agrupar por variante_id
+            cart_data = {}  # {cart_key: (variante_id, qty, color_data)}
+            variante_ids = set()
+            for cart_key, value in cart.items():
                 try:
-                    variante_id = int(key)
+                    variante_id, _color_token = _parse_cart_item_key(cart_key)
+                    if not variante_id:
+                        continue
                     qty = int(value)
+                    if qty <= 0:
+                        continue
+                    color_data = cart_colors.get(str(cart_key)) or {}
+                    if isinstance(color_data, str):
+                        color_data = {"nombre": color_data, "hex": None}
+                    cart_data[cart_key] = (variante_id, qty, color_data)
+                    variante_ids.add(variante_id)
                 except (TypeError, ValueError):
                     continue
-                if qty > 0:
-                    quantities[variante_id] = qty
 
             variantes = Variante.objects.select_related('producto').filter(
-                id__in=quantities.keys(),
+                id__in=variante_ids,
                 activa=True,
                 producto__activo=True
             )
             variantes_by_id = {v.id: v for v in variantes}
 
-            for variante_id, qty in quantities.items():
+            for cart_key, (variante_id, qty, color_data) in cart_data.items():
                 variante = variantes_by_id.get(variante_id)
                 if not variante:
                     continue
                 precio = variante.precio or variante.producto.precio
                 subtotal = precio * qty
+                color_nombre = color_data.get("nombre")
+                color_hex = _normalize_hex(color_data.get("hex"))
                 items.append({
                     'id': variante.producto.id,
                     'variante_id': variante.id,
+                    'cart_key': cart_key,
                     'nombre': variante.producto.nombre,
                     'precio': precio,
                     'cantidad': qty,
                     'subtotal': subtotal,
+                    'color_nombre': color_nombre,
+                    'color_hex': color_hex,
                 })
                 total_qty += qty
                 total_price += subtotal

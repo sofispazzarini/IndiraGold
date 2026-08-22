@@ -1,4 +1,5 @@
 from __future__ import annotations
+import json
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -7,7 +8,6 @@ from django.http import HttpRequest
 from django.shortcuts import render, redirect
 from django.urls import resolve, reverse
 from django.views.decorators.http import require_POST
-from django.contrib.auth.decorators import login_required
 from carritos.utils import vincular_carrito_con_usuario, get_or_create_cart
 
 from productos.models import Categoria
@@ -21,22 +21,14 @@ from .utils import (
 	get_cart_seconds_left,
 	set_cart_started_at_if_missing,
 	SESSION_CART_COLORS_KEY,
+	SESSION_CART_ITEM_KEY_SEPARATOR,
+	_normalize_hex,
+	_normalize_color_token,
+	_make_cart_item_key,
+	_parse_cart_item_key,
 )
-import re
 
 SESSION_CART_KEY = "carrito"
-SESSION_CART_ITEM_KEY_SEPARATOR = "::"
-
-
-def _normalize_hex(val: str | None) -> str | None:
-	"""Return a normalized hex color string like '#aabbcc' or None if invalid."""
-	if not val:
-		return None
-	v = str(val).strip()
-	m = re.match(r'^#?([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$', v)
-	if not m:
-		return None
-	return f"#{m.group(1)}"
 
 
 def _resolve_item_color_hex(item) -> str | None:
@@ -56,37 +48,6 @@ def _resolve_item_color_hex(item) -> str | None:
 		)
 
 	return None
-
-
-def _normalize_color_token(value) -> str:
-	if value is None:
-		return ""
-	token = str(value).strip().lower()
-	if not token:
-		return ""
-	token = re.sub(r"[^a-z0-9#]+", "_", token)
-	return token.strip("_")
-
-
-def _make_cart_item_key(variante_id, color_nombre=None, color_hex=None) -> str:
-	base_key = str(int(variante_id))
-	color_token = _normalize_color_token(color_hex or color_nombre)
-	return f"{base_key}{SESSION_CART_ITEM_KEY_SEPARATOR}{color_token}" if color_token else base_key
-
-
-def _parse_cart_item_key(key) -> tuple[int | None, str]:
-	raw_key = str(key or "")
-	if SESSION_CART_ITEM_KEY_SEPARATOR in raw_key:
-		variante_part, color_token = raw_key.split(SESSION_CART_ITEM_KEY_SEPARATOR, 1)
-	else:
-		variante_part, color_token = raw_key, ""
-
-	try:
-		variante_id = int(variante_part)
-	except (TypeError, ValueError):
-		return None, ""
-
-	return variante_id, color_token
 
 
 def _get_session_cart(session) -> dict[str, int]:
@@ -328,18 +289,19 @@ def eliminar_producto(request):
 		try:
 			from .models import CarritoItem
 			carrito = get_or_create_cart(request)
-			
-			# Buscar items de esta combinación exacta
-			color_data = request.session.get(SESSION_CART_COLORS_KEY, {}).get(str(cart_key), {})
-			if isinstance(color_data, str):
-				color_data = {"nombre": color_data, "hex": None}
-			color_nombre = color_data.get("nombre")
-			color_hex = color_data.get("hex")
-			items_a_eliminar = carrito.items.filter(
-				variante__id=variante_id_int,
-				color_nombre=color_nombre or None,
-				color_hex=color_hex or None,
-			)
+
+			# Buscar items que coincidan con la clave del carrito
+			# Primero intentar encontrar por cart_key exacto comparando con los items de BD
+			items_a_eliminar = None
+			for item_db in carrito.items.filter(variante__id=variante_id_int):
+				item_key = _make_cart_item_key(item_db.variante.id, item_db.color_nombre, item_db.color_hex)
+				if item_key == cart_key:
+					items_a_eliminar = carrito.items.filter(pk=item_db.pk)
+					break
+
+			# Fallback: si no encontró por cart_key, buscar solo por variante_id
+			if items_a_eliminar is None:
+				items_a_eliminar = carrito.items.filter(variante__id=variante_id_int)
 			
 			if items_a_eliminar.exists():
 				items_a_eliminar.delete()
@@ -697,8 +659,7 @@ def _build_home_context(request):
 		"cart_total": total_price,
 		"cart_expires_in": get_cart_seconds_left(request.session),
 	}
-from django.views.decorators.http import require_POST
-from django.shortcuts import redirect
+
 
 @require_POST
 def sumar_producto(request):
@@ -744,7 +705,22 @@ def sumar_producto(request):
 					precio_total=variante.precio,
 				)
 
+		# Sincronizar sesión con BD
+		carrito_final = {}
+		colores_final = {}
+		for item_db in carrito.items.all():
+			item_key = _make_cart_item_key(item_db.variante.id, item_db.color_nombre, item_db.color_hex)
+			carrito_final[item_key] = item_db.cantidad
+			colores_final[item_key] = {
+				"nombre": item_db.color_nombre,
+				"hex": item_db.color_hex,
+			}
+		request.session['carrito'] = carrito_final
+		request.session[SESSION_CART_COLORS_KEY] = colores_final
+		request.session.modified = True
+
 		messages.success(request, "Cantidad actualizada.")
+		return redirect(next_url or reverse("home:home"))
 	else:
 		cart = _get_session_cart(request.session)
 		key = str(cart_key)
@@ -753,7 +729,82 @@ def sumar_producto(request):
 		request.session["carrito"] = cart
 		request.session.modified = True
 
-		if _is_ajax(request):
-			return _render_cart_fragment(request)
+		return redirect(next_url or reverse("home:home"))
 
-		return redirect(next_url)
+
+@require_POST
+def restaurar_carrito(request):
+    """
+    Restaura el carrito desde localStorage backup.
+    Recibe JSON: { "items": [{"variante_id": 123, "cantidad": 2, "color_nombre": "Negro"}, ...] }
+    Retorna cart fragment HTML.
+    """
+    if request.user.is_authenticated:
+        return _render_cart_fragment(request)
+
+    try:
+        data = json.loads(request.body)
+        items = data.get('items', [])
+
+        if not isinstance(items, list) or not items:
+            return _render_cart_fragment(request)
+
+    except (json.JSONDecodeError, TypeError):
+        return _render_cart_fragment(request)
+
+    from productos.models import Variante
+
+    expire_cart_if_needed(request.session)
+
+    cart = {}
+    cart_colors = {}
+
+    variante_ids = []
+    items_by_id = {}
+
+    for item in items:
+        try:
+            vid = int(item.get('variante_id', 0))
+            qty = int(item.get('cantidad', 0))
+            color = item.get('color_nombre') or ''
+
+            if vid > 0 and qty > 0:
+                variante_ids.append(vid)
+                items_by_id[vid] = {'cantidad': qty, 'color_nombre': color.strip()}
+        except (TypeError, ValueError):
+            continue
+
+    if not variante_ids:
+        return _render_cart_fragment(request)
+
+    valid_variantes = Variante.objects.filter(
+        id__in=variante_ids,
+        activa=True,
+        producto__activo=True
+    ).values('id', 'stock')
+
+    valid_by_id = {v['id']: v for v in valid_variantes}
+
+    for vid, item_data in items_by_id.items():
+        if vid not in valid_by_id:
+            continue
+
+        variante = valid_by_id[vid]
+        qty = min(item_data['cantidad'], variante['stock'])
+
+        if qty > 0:
+            color_nombre = item_data['color_nombre'] or None
+            item_key = _make_cart_item_key(vid, color_nombre=color_nombre)
+            cart[item_key] = qty
+            cart_colors[item_key] = {
+                "nombre": color_nombre,
+                "hex": None,
+            }
+
+    if cart:
+        set_cart_started_at_if_missing(request.session)
+        request.session['carrito'] = cart
+        request.session[SESSION_CART_COLORS_KEY] = cart_colors
+        request.session.modified = True
+
+    return _render_cart_fragment(request)

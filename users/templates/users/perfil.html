@@ -730,7 +730,7 @@
             {% csrf_token %}
             <div class="form-grid">
               <div class="form-group">
-                <label class="form-label">Etiqueta</label>
+                <label class="form-label">Etiqueta (ej: casa, trabajo, etc)</label>
                 <input type="text" name="etiqueta" class="form-control" value="{{ dir.etiqueta|title }}" required>
               </div>
               <div class="form-group">
@@ -790,7 +790,7 @@
       {% endif %}
       <div class="form-grid">
         <div class="form-group">
-          <label class="form-label">Etiqueta</label>
+          <label class="form-label">Etiqueta (ej: casa, trabajo, etc)</label>
           {{ direccion_form.etiqueta }}
         </div>
         <div class="form-group">

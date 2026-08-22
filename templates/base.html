@@ -137,6 +137,24 @@
       height: 100%;
       object-fit: cover;
     }
+    .avatar.dropdown-toggle::after {
+      display: none;
+    }
+    .dropdown:has(.avatar) {
+      position: relative;
+    }
+    .dropdown:has(.avatar)::after {
+      content: '';
+      position: absolute;
+      bottom: -2px;
+      right: -2px;
+      width: 10px;
+      height: 10px;
+      background: var(--white);
+      border: 2px solid var(--gold);
+      border-radius: 50%;
+      pointer-events: none;
+    }
 
     .main {
       flex: 1;
@@ -331,6 +349,7 @@
             <li><a class="dropdown-item text-danger fw-bold" href="{% url 'users:logout' %}">Cerrar sesión</a></li>
           </ul>
         </div>
+      </div>
     </div>
   </header>
 

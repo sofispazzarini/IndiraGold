@@ -1,12 +1,57 @@
 from __future__ import annotations
+import re
 from .models import Carrito, CarritoItem
 from users.models import Cliente
 from django.utils import timezone
 from productos.models import Variante
+
 SESSION_CART_KEY = "carrito"
 SESSION_CART_COLORS_KEY = "carrito_colores"
 SESSION_CART_STARTED_AT_KEY = "carrito_started_at"
+SESSION_CART_ITEM_KEY_SEPARATOR = "::"
 CART_EXPIRATION_SECONDS = 60 * 60
+
+
+def _normalize_hex(val: str | None) -> str | None:
+    """Return a normalized hex color string like '#aabbcc' or None if invalid."""
+    if not val:
+        return None
+    v = str(val).strip()
+    m = re.match(r'^#?([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$', v)
+    if not m:
+        return None
+    return f"#{m.group(1).lower()}"
+
+
+def _normalize_color_token(value) -> str:
+    if value is None:
+        return ""
+    token = str(value).strip().lower()
+    if not token:
+        return ""
+    token = re.sub(r"[^a-z0-9#]+", "_", token)
+    return token.strip("_")
+
+
+def _make_cart_item_key(variante_id, color_nombre=None, color_hex=None) -> str:
+    base_key = str(int(variante_id))
+    color_token = _normalize_color_token(color_hex or color_nombre)
+    return f"{base_key}{SESSION_CART_ITEM_KEY_SEPARATOR}{color_token}" if color_token else base_key
+
+
+def _parse_cart_item_key(key) -> tuple[int | None, str]:
+    raw_key = str(key or "")
+    if SESSION_CART_ITEM_KEY_SEPARATOR in raw_key:
+        variante_part, color_token = raw_key.split(SESSION_CART_ITEM_KEY_SEPARATOR, 1)
+    else:
+        variante_part, color_token = raw_key, ""
+
+    try:
+        variante_id = int(variante_part)
+    except (TypeError, ValueError):
+        return None, ""
+
+    return variante_id, color_token
 
 
 def _to_int(value) -> int | None:
@@ -72,7 +117,7 @@ def expire_cart_if_needed(session) -> bool:
         return True
 
     return False
-from users.models import Cliente
+
 
 def get_or_create_cart(request):
     """
@@ -137,10 +182,12 @@ def vincular_carrito_con_usuario(request, session_id_previo=None, carrito_sesion
             # Fusionar items del carrito de invitado al carrito del usuario
             for item_invitado in carrito_invitado.items.all():
                 item_existente = carrito_user.items.filter(
-                    variante=item_invitado.variante
+                    variante=item_invitado.variante,
+                    color_nombre=item_invitado.color_nombre or None,
+                    color_hex=item_invitado.color_hex or None,
                 ).first()
                 if item_existente:
-                    # Sumar cantidades si ya existe
+                    # Sumar cantidades si ya existe (mismo variante + mismo color)
                     item_existente.cantidad += item_invitado.cantidad
                     item_existente.precio_total = (
                         item_existente.cantidad * item_existente.precio_unitario
@@ -161,31 +208,51 @@ def vincular_carrito_con_usuario(request, session_id_previo=None, carrito_sesion
     if not isinstance(colores_invitado, dict):
         colores_invitado = {}
 
-    for vid_str, qty in items_invitado.items():
+    for cart_key, qty in items_invitado.items():
         try:
             qty_int = int(qty)
             if qty_int <= 0:
                 continue
-            id_int = int(vid_str)
-            variante = Variante.objects.filter(id=id_int).first()
+
+            # Parsear la clave de sesión para extraer variante_id
+            variante_id, _color_token = _parse_cart_item_key(cart_key)
+            if not variante_id:
+                continue
+
+            variante = Variante.objects.select_related('producto').filter(id=variante_id).first()
             if not variante:
                 continue
-            # Sumar cantidades solo si es exactamente el mismo variante_id
-            item_existente = carrito_user.items.filter(variante=variante).first()
+
+            # Extraer info de color del dict de colores (con compatibilidad hacia atrás)
+            color_data = colores_invitado.get(str(cart_key)) or {}
+            if isinstance(color_data, str):
+                # Compatibilidad: formato viejo era solo string
+                color_data = {"nombre": color_data, "hex": None}
+
+            color_nombre = color_data.get("nombre") or None
+            color_hex = _normalize_hex(color_data.get("hex")) or None
+
+            # Buscar item existente considerando variante + color
+            item_existente = carrito_user.items.filter(
+                variante=variante,
+                color_nombre=color_nombre,
+                color_hex=color_hex,
+            ).first()
+
             if item_existente:
                 item_existente.cantidad += qty_int
-                if colores_invitado.get(str(id_int)):
-                    item_existente.color_nombre = colores_invitado.get(str(id_int))
                 item_existente.precio_total = item_existente.cantidad * item_existente.precio_unitario
                 item_existente.save()
             else:
+                precio = variante.precio or variante.producto.precio or 0
                 CarritoItem.objects.create(
                     carrito=carrito_user,
                     variante=variante,
-                    color_nombre=colores_invitado.get(str(id_int)),
+                    color_nombre=color_nombre,
+                    color_hex=color_hex,
                     cantidad=qty_int,
-                    precio_unitario=variante.precio,
-                    precio_total=qty_int * variante.precio
+                    precio_unitario=precio,
+                    precio_total=qty_int * precio
                 )
         except Exception:
             continue
@@ -194,32 +261,16 @@ def vincular_carrito_con_usuario(request, session_id_previo=None, carrito_sesion
     request.session.modified = True
 
     # 4. SINCRONIZACIÓN CRÍTICA: Actualizar sesión con TODO lo que hay en BD
-    # Usar variante_id como key para mantener todas las variantes
+    # Usar formato consistente: variante_id::color_token como key
     carrito_final = {}
     colores_final = {}
     for item_db in carrito_user.items.all():
-        carrito_final[str(item_db.variante.id)] = item_db.cantidad
-        if item_db.color_nombre:
-            colores_final[str(item_db.variante.id)] = item_db.color_nombre
+        item_key = _make_cart_item_key(item_db.variante.id, item_db.color_nombre, item_db.color_hex)
+        carrito_final[item_key] = item_db.cantidad
+        colores_final[item_key] = {
+            "nombre": item_db.color_nombre,
+            "hex": item_db.color_hex,
+        }
     request.session['carrito'] = carrito_final
     request.session[SESSION_CART_COLORS_KEY] = colores_final
     request.session.modified = True
-
-
-def _fusionar_item(carrito_destino, variante, cantidad):
-    """
-    Función auxiliar para agregar productos al carrito sin duplicar filas.
-    Si la variante ya existe, suma la cantidad.
-    """
-    item, created = CarritoItem.objects.get_or_create(
-        carrito=carrito_destino,
-        variante=variante,
-        defaults={
-            'cantidad': 0,
-            'precio_unitario': variante.precio,
-            'precio_total': 0
-        }
-    )
-    item.cantidad += cantidad
-    item.precio_total = item.cantidad * item.precio_unitario
-    item.save()

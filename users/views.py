@@ -369,13 +369,14 @@ def login_view(request):
             old_session_key = request.session.session_key
             
             auth_login(request, user) # Django limpia la sesión acá
-            # 4. REDIRECCIÓN INTELIGENTE
-            if user.is_superuser:
-                return redirect('users:dashboard_admin')
 
-            # 2. Los pasamos a la base de datos
+            # Vincular carrito de invitado con usuario (ANTES de cualquier redirect)
             from carritos.utils import vincular_carrito_con_usuario, get_or_create_cart
             vincular_carrito_con_usuario(request, session_id_previo=old_session_key, carrito_sesion=carrito_temporal)
+
+            # REDIRECCIÓN INTELIGENTE
+            if user.is_superuser:
+                return redirect('users:dashboard_admin')
 
             # Redirigir SIEMPRE a checkout si el usuario tenía productos en el carrito de la sesión antes de loguear
             if carrito_temporal and any(int(q) > 0 for q in carrito_temporal.values()):
