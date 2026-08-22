@@ -161,7 +161,7 @@ def dashboard_admin(request):
 @user_passes_test(lambda u: u.is_superuser)
 def listado_clientes(request):
     query = request.GET.get('q', '').strip()
-    clientes = Cliente.objects.select_related('user').all()
+    clientes = Cliente.objects.select_related('user').filter(user__is_superuser=False)
     if query:
         clientes = clientes.filter(
             Q(dni__icontains=query) |

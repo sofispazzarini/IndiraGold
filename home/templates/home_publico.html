@@ -1184,12 +1184,13 @@ function scrollCatOrden{{ cat_orden.id }}(dir) {
       const form = item.querySelector('form[action*="sumar"]') || item.querySelector('form[action*="eliminar"]');
       if (!form) return;
 
-      const varianteInput = form.querySelector('input[name="variante_id"]');
+      const cartKeyInput = form.querySelector('input[name="cart_key"]');
       const qtyEl = item.querySelector('.qty-num');
       const colorMeta = item.querySelector('.cart-item__meta');
 
-      if (varianteInput && qtyEl) {
-        const varianteId = parseInt(varianteInput.value, 10);
+      if (cartKeyInput && qtyEl) {
+        const cartKey = cartKeyInput.value;
+        const varianteId = parseInt(cartKey.split('::')[0], 10);
         const cantidad = parseInt(qtyEl.textContent, 10);
         let colorNombre = null;
 
@@ -1198,7 +1199,7 @@ function scrollCatOrden{{ cat_orden.id }}(dir) {
         }
 
         if (varianteId && cantidad > 0) {
-          items.push({ variante_id: varianteId, cantidad, color_nombre: colorNombre });
+          items.push({ cart_key: cartKey, variante_id: varianteId, cantidad, color_nombre: colorNombre });
         }
       }
     });
