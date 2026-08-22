@@ -561,6 +561,205 @@
             font-size: 0.85rem;
         }
     }
+
+    /* CARRITO FLOTANTE */
+    .cart-fab {
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
+        z-index: 1100;
+        width: 56px;
+        height: 56px;
+        background: #1a1612;
+        color: #fff;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .cart-fab:hover {
+        transform: scale(1.08);
+        box-shadow: 0 6px 20px rgba(0,0,0,0.35);
+    }
+    .cart-fab__count {
+        position: absolute;
+        top: -4px;
+        right: -4px;
+        background: #c9a96e;
+        color: #1a1612;
+        font-size: 0.7rem;
+        font-weight: 700;
+        min-width: 20px;
+        height: 20px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0 5px;
+    }
+
+    .cart-panel {
+        position: fixed;
+        top: 0;
+        right: -380px;
+        width: 360px;
+        max-width: 100vw;
+        height: 100vh;
+        background: #fff;
+        z-index: 1150;
+        display: flex;
+        flex-direction: column;
+        box-shadow: -4px 0 24px rgba(0,0,0,0.15);
+        transition: right 0.3s ease;
+    }
+    .cart-panel.open {
+        right: 0;
+    }
+    .cart-panel__header {
+        padding: 1.25rem;
+        border-bottom: 1px solid #e8dfd4;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .cart-panel__header h3 {
+        margin: 0;
+        font-family: 'Cormorant Garamond', serif;
+        font-size: 1.4rem;
+        font-weight: 700;
+        color: #1a1612;
+    }
+    .cart-close {
+        background: none;
+        border: none;
+        font-size: 1.3rem;
+        cursor: pointer;
+        color: #8c7e70;
+    }
+    .cart-panel__items {
+        flex: 1;
+        overflow-y: auto;
+        padding: 1rem;
+    }
+    .cart-panel__footer {
+        padding: 1rem 1.25rem;
+        border-top: 1px solid #e8dfd4;
+        background: #faf8f5;
+    }
+    .cart-expire {
+        font-size: 0.8rem;
+        color: #8c7e70;
+        margin-bottom: 0.5rem;
+        text-align: center;
+    }
+    .cart-total {
+        display: flex;
+        justify-content: space-between;
+        font-weight: 700;
+        font-size: 1.1rem;
+        margin-bottom: 1rem;
+        color: #1a1612;
+    }
+    .cart-checkout {
+        width: 100%;
+        padding: 0.9rem;
+        background: #1a1612;
+        color: #fff;
+        border: none;
+        border-radius: 10px;
+        font-weight: 600;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: background 0.2s ease;
+    }
+    .cart-checkout:hover {
+        background: #2d2a26;
+    }
+
+    .cart-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.45);
+        z-index: 1140;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.3s ease;
+    }
+    .cart-overlay.open {
+        opacity: 1;
+        pointer-events: auto;
+    }
+
+    .cart-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.75rem 0;
+        border-bottom: 1px solid #f0ebe4;
+    }
+    .cart-item__info {
+        flex: 1;
+    }
+    .cart-item__name {
+        font-weight: 600;
+        color: #1a1612;
+        font-size: 0.9rem;
+    }
+    .cart-item__meta {
+        font-size: 0.78rem;
+        color: #8c7e70;
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+    }
+    .cart-color-dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        border: 1px solid rgba(0,0,0,0.1);
+    }
+    .cart-item__price {
+        font-weight: 600;
+        color: #1a1612;
+    }
+    .cart-item__qty {
+        background: #f3ede6;
+        padding: 0.3rem 0.6rem;
+        border-radius: 6px;
+        font-weight: 600;
+        font-size: 0.85rem;
+    }
+    .cart-item__add, .cart-item__remove {
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-size: 1.1rem;
+        padding: 0.3rem;
+    }
+    .cart-empty {
+        text-align: center;
+        padding: 2rem 1rem;
+        color: #8c7e70;
+    }
+
+    .toast-message {
+        background: #1a1612;
+        color: #fff;
+        padding: 0.75rem 1.25rem;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+    .toast-message--error {
+        background: #ef4444;
+    }
+    .toast-message--info {
+        background: #3b82f6;
+    }
 </style>
 
 <div class="detalle-hero">
@@ -823,6 +1022,37 @@
     </div>
 </div>
 
+<!-- CARRITO FLOTANTE -->
+<div class="cart-fab" id="cartFab" onclick="toggleCart()">
+  <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" viewBox="0 0 16 16">
+    <path d="M8 1a2.5 2.5 0 0 1 2.5 2.5V4h-5v-.5A2.5 2.5 0 0 1 8 1zm3.5 3v-.5a3.5 3.5 0 1 0-7 0V4H1v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V4h-3.5z"/>
+  </svg>
+  <span class="cart-fab__count" id="cartCount">{{ cart_count|default:0 }}</span>
+</div>
+
+<!-- PANEL CARRITO -->
+<div class="cart-panel" id="cartPanel">
+  <div class="cart-panel__header">
+    <h3>Tu carrito</h3>
+    <button onclick="toggleCart()" class="cart-close">✕</button>
+  </div>
+  <div class="cart-panel__items" id="cartItems">{% include 'carritos/_cart_fragment.html' %}</div>
+  <div class="cart-panel__footer">
+    <div class="cart-expire" id="cartExpire" style="display:none">
+      Expira en <span id="cartExpireValue">--:--</span>
+    </div>
+    <div class="cart-total">
+      <span>Total</span>
+      <span id="cartTotal">${{ cart_total|default:"0" }}</span>
+    </div>
+    <button class="cart-checkout" type="button" onclick="checkout()">Confirmar pedido</button>
+  </div>
+</div>
+<div class="cart-overlay" id="cartOverlay" onclick="toggleCart()"></div>
+
+<!-- Toast Container -->
+<div id="toastContainer" style="position:fixed; bottom:90px; right:20px; z-index:9999; display:flex; flex-direction:column; gap:8px;"></div>
+
 {{ variantes_data|json_script:"variantes-data" }}
 <script>
 let varianteSeleccionada = null;
@@ -995,6 +1225,169 @@ window.addEventListener('load', async () => {
         console.error('Error al cargar tabla de medidas:', error);
     }
 });
+
+// ─── CARRITO FLOTANTE ───
+const isAuthenticated = {{ request.user.is_authenticated|yesno:"true,false" }};
+let cartExpiresIn = parseInt('{{ cart_expires_in|default:0 }}', 10) || 0;
+let cartExpireTimer = null;
+
+function toggleCart() {
+    const panel = document.getElementById('cartPanel');
+    const overlay = document.getElementById('cartOverlay');
+    panel.classList.toggle('open');
+    overlay.classList.toggle('open');
+}
+
+function checkout() {
+    const count = parseInt(document.getElementById('cartCount').textContent || '0');
+    if (count <= 0) {
+        showToast('Tu carrito está vacío', 'info');
+        return;
+    }
+    {% if request.user.is_authenticated %}
+        window.location.href = '/pedidos/checkout/';
+    {% else %}
+        window.location.href = '/users/login/?next=/pedidos/checkout/';
+    {% endif %}
+}
+
+function getCsrfToken() {
+    const match = document.cookie.match(/(?:^|; )csrftoken=([^;]+)/);
+    return match ? decodeURIComponent(match[1]) : '';
+}
+
+function showToast(text, level) {
+    if (!text) return;
+    const container = document.getElementById('toastContainer');
+    if (!container) return;
+
+    const toast = document.createElement('div');
+    const isError = (level || '').includes('error');
+    const isInfo = (level || '').includes('info');
+    toast.className = `toast-message${isError ? ' toast-message--error' : isInfo ? ' toast-message--info' : ''}`;
+    toast.textContent = text;
+    container.appendChild(toast);
+
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(-6px)';
+        setTimeout(() => toast.remove(), 180);
+    }, 2200);
+}
+
+function applyCartFromHtml(html) {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
+    const fragment = doc.getElementById('cartFragment');
+    if (!fragment) return false;
+
+    const cartItems = document.getElementById('cartItems');
+    const cartCount = document.getElementById('cartCount');
+    const cartTotal = document.getElementById('cartTotal');
+
+    if (cartItems) {
+        cartItems.innerHTML = fragment.innerHTML;
+    }
+    if (cartCount) {
+        cartCount.textContent = fragment.dataset.cartCount || '0';
+    }
+    if (cartTotal) {
+        cartTotal.textContent = fragment.dataset.cartTotal || '$0';
+    }
+
+    cartExpiresIn = parseInt(fragment.dataset.cartExpiresIn || '0', 10) || 0;
+    renderCartExpiry();
+
+    const flashMessages = doc.querySelectorAll('.cart-flash-message');
+    flashMessages.forEach((node) => {
+        showToast(node.textContent?.trim() || '', node.dataset.level || '');
+    });
+
+    return true;
+}
+
+async function submitCartForm(form) {
+    if (form.dataset.submitting === '1') return;
+    form.dataset.submitting = '1';
+    const formData = new FormData(form);
+    try {
+        const response = await fetch(form.action, {
+            method: 'POST',
+            body: formData,
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        });
+
+        if (!response.ok) {
+            form.submit();
+            return;
+        }
+
+        const html = await response.text();
+        const applied = applyCartFromHtml(html);
+
+        if (applied) {
+            try { cerrarModalCantidadDetalle(); } catch (e) { /* ignore */ }
+        } else {
+            form.removeAttribute('data-submitting');
+            form.submit();
+        }
+    } catch (error) {
+        form.removeAttribute('data-submitting');
+        form.submit();
+    }
+    finally {
+        try { form.removeAttribute('data-submitting'); } catch (e) {}
+    }
+}
+
+document.addEventListener('submit', function (event) {
+    const form = event.target.closest('form.js-cart-form');
+    if (!form) {
+        // Also handle the detail modal form
+        if (event.target.id === 'modalCantidadDetalleForm') {
+            event.preventDefault();
+            submitCartForm(event.target);
+        }
+        return;
+    }
+    event.preventDefault();
+    submitCartForm(form);
+});
+
+function renderCartExpiry() {
+    const cartCount = parseInt(document.getElementById('cartCount')?.textContent || '0', 10);
+    const expireEl = document.getElementById('cartExpire');
+    const valueEl = document.getElementById('cartExpireValue');
+    if (!expireEl || !valueEl) return;
+
+    if (cartCount <= 0 || cartExpiresIn <= 0) {
+        expireEl.style.display = 'none';
+        return;
+    }
+
+    expireEl.style.display = 'block';
+    const mins = Math.floor(cartExpiresIn / 60);
+    const secs = cartExpiresIn % 60;
+    valueEl.textContent = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+}
+
+function startCartExpiryTicker() {
+    if (cartExpireTimer) clearInterval(cartExpireTimer);
+    cartExpireTimer = setInterval(() => {
+        const cartCount = parseInt(document.getElementById('cartCount')?.textContent || '0', 10);
+        if (cartCount <= 0) {
+            renderCartExpiry();
+            return;
+        }
+        if (cartExpiresIn > 0) {
+            cartExpiresIn--;
+            renderCartExpiry();
+        }
+    }, 1000);
+}
+
+renderCartExpiry();
+startCartExpiryTicker();
 </script>
 
 {% endblock %}

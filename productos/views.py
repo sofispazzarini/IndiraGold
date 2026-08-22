@@ -23,6 +23,15 @@ from .forms import (
 from django.db.models import Q, Sum
 from decimal import Decimal
 from django.utils import timezone
+from carritos.utils import (
+    get_or_create_cart,
+    get_cart_seconds_left,
+    expire_cart_if_needed,
+    SESSION_CART_COLORS_KEY,
+    _make_cart_item_key,
+    _parse_cart_item_key,
+    _normalize_hex,
+)
 
 
 COLOR_HEX_BY_NAME = {
@@ -115,6 +124,8 @@ def detalle_producto(request, producto_id):
     Página pública de detalle de un producto.
     Muestra información completa, variantes, medidas y opción de compra.
     """
+    expire_cart_if_needed(request.session)
+
     producto = get_object_or_404(Producto, id=producto_id, activo=True)
     variantes = producto.variantes.filter(activa=True).select_related('talle').prefetch_related('colores', 'medidas')
 
@@ -122,27 +133,23 @@ def detalle_producto(request, producto_id):
     if not variantes.exists():
         variantes = []
 
-    # Obtener producto anterior y siguiente en la misma subcategoría
-    producto_anterior = None
-    producto_siguiente = None
-
-    if producto.subcategoria:
-        # Anterior: ID mayor (viene antes en orden -id)
-        producto_anterior = (
-            Producto.objects
-            .filter(subcategoria=producto.subcategoria, activo=True, id__gt=producto.id)
-            .order_by('id')
-            .only('id', 'nombre')
-            .first()
-        )
-        # Siguiente: ID menor (viene después en orden -id)
-        producto_siguiente = (
-            Producto.objects
-            .filter(subcategoria=producto.subcategoria, activo=True, id__lt=producto.id)
-            .order_by('-id')
-            .only('id', 'nombre')
-            .first()
-        )
+    # Obtener producto anterior y siguiente (todos los productos activos)
+    # Anterior: ID mayor (viene antes en orden -id)
+    producto_anterior = (
+        Producto.objects
+        .filter(activo=True, id__gt=producto.id)
+        .order_by('id')
+        .only('id', 'nombre')
+        .first()
+    )
+    # Siguiente: ID menor (viene después en orden -id)
+    producto_siguiente = (
+        Producto.objects
+        .filter(activo=True, id__lt=producto.id)
+        .order_by('-id')
+        .only('id', 'nombre')
+        .first()
+    )
 
     # Obtener productos relacionados de la misma subcategoría
     productos_relacionados = (
@@ -151,7 +158,99 @@ def detalle_producto(request, producto_id):
         .exclude(id=producto.id)
         .prefetch_related('imagenes')[:4]
     )
-    
+
+    # Construir contexto del carrito
+    cart_items = []
+    cart_count = 0
+    cart_total = 0
+
+    if request.user.is_authenticated:
+        try:
+            carrito = get_or_create_cart(request)
+            for item_db in carrito.items.all().select_related('variante__producto'):
+                color_hex = _normalize_hex(getattr(item_db, 'color_hex', None))
+                if not color_hex and item_db.color_nombre:
+                    color_hex = _normalize_hex(
+                        item_db.variante.colores.filter(nombre__iexact=item_db.color_nombre)
+                        .values_list('codigo_hex', flat=True).first()
+                    )
+                item_key = _make_cart_item_key(item_db.variante.id, item_db.color_nombre, item_db.color_hex)
+                cart_items.append({
+                    "id": item_db.variante.producto.id,
+                    "variante_id": item_db.variante.id,
+                    "cart_key": item_key,
+                    "nombre": item_db.variante.producto.nombre,
+                    "precio": item_db.precio_unitario,
+                    "cantidad": item_db.cantidad,
+                    "subtotal": item_db.precio_total,
+                    "color_nombre": item_db.color_nombre,
+                    "color_hex": color_hex,
+                })
+                cart_count += item_db.cantidad
+                cart_total += item_db.precio_total
+        except Exception:
+            pass
+    else:
+        cart = request.session.get("carrito")
+        cart_colors = request.session.get(SESSION_CART_COLORS_KEY)
+        if not isinstance(cart, dict):
+            cart = {}
+        if not isinstance(cart_colors, dict):
+            cart_colors = {}
+
+        variante_ids = set()
+        for key in cart.keys():
+            vid, _ = _parse_cart_item_key(key)
+            if vid:
+                variante_ids.add(vid)
+
+        variantes_map = {
+            v.id: v for v in Variante.objects.select_related("producto").filter(
+                id__in=variante_ids, activa=True, producto__activo=True
+            )
+        }
+
+        for cart_key, qty in cart.items():
+            try:
+                qty = int(qty)
+                if qty <= 0:
+                    continue
+                vid, _ = _parse_cart_item_key(cart_key)
+                if not vid:
+                    continue
+                variante = variantes_map.get(vid)
+                if not variante:
+                    continue
+
+                color_data = cart_colors.get(str(cart_key)) or {}
+                if isinstance(color_data, str):
+                    color_data = {"nombre": color_data, "hex": None}
+                color_nombre = color_data.get("nombre")
+                color_hex = _normalize_hex(color_data.get("hex"))
+                if not color_hex and color_nombre:
+                    color_hex = _normalize_hex(
+                        variante.colores.filter(nombre__iexact=color_nombre)
+                        .values_list('codigo_hex', flat=True).first()
+                    )
+                precio = variante.precio or variante.producto.precio
+                subtotal = precio * qty
+
+                cart_items.append({
+                    "id": variante.producto.id,
+                    "variante_id": variante.id,
+                    "cart_key": str(cart_key),
+                    "nombre": variante.producto.nombre,
+                    "precio": precio,
+                    "cantidad": qty,
+                    "subtotal": subtotal,
+                    "color_nombre": color_nombre,
+                    "color_hex": color_hex,
+                })
+                cart_count += qty
+                cart_total += subtotal
+            except (TypeError, ValueError):
+                continue
+
     context = {
         'producto': producto,
         'variantes': variantes,
@@ -175,6 +274,10 @@ def detalle_producto(request, producto_id):
         'talles_disponibles': [v.talle for v in variantes],
         'producto_anterior': producto_anterior,
         'producto_siguiente': producto_siguiente,
+        'cart_items': cart_items,
+        'cart_count': cart_count,
+        'cart_total': cart_total,
+        'cart_expires_in': get_cart_seconds_left(request.session),
     }
 
     return render(request, 'productos/producto_detalle.html', context)

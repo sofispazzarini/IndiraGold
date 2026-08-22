@@ -521,6 +521,24 @@ def _build_home_context(request):
 	expire_cart_if_needed(request.session)
 
 	productos = Producto.objects.filter(activo=True).prefetch_related('variantes__talle', 'variantes__colores')
+
+	for producto in productos:
+		variantes_data = []
+		for v in producto.variantes.filter(activa=True).select_related('talle').prefetch_related('colores'):
+			variantes_data.append({
+				'id': v.id,
+				'talle': v.talle.nombre,
+				'stock': v.stock,
+				'colores': [
+					{
+						'nombre': color.nombre,
+						'codigo_hex': color.codigo_hex or '#888888',
+					}
+					for color in v.colores.all()
+				],
+			})
+		producto.variantes_json = json.dumps(variantes_data)
+
 	productos_destacados = productos.order_by("-created_at")[:8]
 	# Fallback simple: si por algún motivo no hay destacados, reutilizamos los primeros del catálogo
 	if not productos_destacados:
@@ -767,10 +785,11 @@ def restaurar_carrito(request):
             vid = int(item.get('variante_id', 0))
             qty = int(item.get('cantidad', 0))
             color = item.get('color_nombre') or ''
+            cart_key = item.get('cart_key') or ''
 
             if vid > 0 and qty > 0:
                 variante_ids.append(vid)
-                items_by_id[vid] = {'cantidad': qty, 'color_nombre': color.strip()}
+                items_by_id[vid] = {'cantidad': qty, 'color_nombre': color.strip(), 'cart_key': cart_key.strip()}
         except (TypeError, ValueError):
             continue
 
@@ -794,7 +813,11 @@ def restaurar_carrito(request):
 
         if qty > 0:
             color_nombre = item_data['color_nombre'] or None
-            item_key = _make_cart_item_key(vid, color_nombre=color_nombre)
+            saved_cart_key = item_data.get('cart_key')
+            if saved_cart_key:
+                item_key = saved_cart_key
+            else:
+                item_key = _make_cart_item_key(vid, color_nombre=color_nombre)
             cart[item_key] = qty
             cart_colors[item_key] = {
                 "nombre": color_nombre,
