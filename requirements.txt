@@ -1,6 +1,8 @@
 Django>=4.0
 psycopg2-binary
+mysqlclient
 Pillow
 qrcode[pil]
 python-dotenv
 mercadopago
+whitenoise

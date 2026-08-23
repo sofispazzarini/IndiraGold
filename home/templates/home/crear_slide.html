@@ -192,6 +192,131 @@
         color: #a0aec0;
         margin-top: 0.3rem;
     }
+
+    /* Character counter */
+    .char-limit {
+        font-weight: 400;
+        color: #a0aec0;
+        font-size: 0.8rem;
+    }
+    .char-counter {
+        font-size: 0.75rem;
+        color: #a0aec0;
+        text-align: right;
+        margin-top: 0.2rem;
+    }
+    .char-counter.warning { color: #d97706; }
+    .char-counter.limit { color: #dc2626; font-weight: 600; }
+    .char-toast {
+        position: fixed;
+        bottom: 2rem;
+        left: 50%;
+        transform: translateX(-50%) translateY(100px);
+        background: #dc2626;
+        color: #fff;
+        padding: 0.75rem 1.5rem;
+        border-radius: 8px;
+        font-size: 0.85rem;
+        font-weight: 500;
+        z-index: 9999;
+        opacity: 0;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    }
+    .char-toast.show {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+
+    /* Custom file upload */
+    .file-upload-wrapper {
+        border: 2px dashed #cbd5e1;
+        border-radius: 12px;
+        padding: 2rem;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.2s;
+        background: #f9fafb;
+        position: relative;
+    }
+    .file-upload-wrapper:hover,
+    .file-upload-wrapper.dragover {
+        border-color: #b8922a;
+        background: #fdf6e3;
+    }
+    .file-input-hidden {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        top: 0;
+        left: 0;
+        opacity: 0;
+        cursor: pointer;
+    }
+    .file-upload-content {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.5rem;
+        pointer-events: none;
+    }
+    .file-upload-content i {
+        font-size: 2.5rem;
+        color: #b8922a;
+    }
+    .file-upload-text {
+        font-size: 0.95rem;
+        color: #4a5568;
+        font-weight: 500;
+    }
+    .file-upload-hint {
+        font-size: 0.8rem;
+        color: #a0aec0;
+    }
+    .file-upload-preview {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 0.75rem;
+        background: #fff;
+        border-radius: 8px;
+        border: 1px solid #e2e8f0;
+    }
+    .file-upload-preview img {
+        width: 80px;
+        height: 80px;
+        object-fit: cover;
+        border-radius: 6px;
+    }
+    .file-info {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+    }
+    .file-name {
+        font-size: 0.85rem;
+        color: #4a5568;
+        font-weight: 500;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .file-remove {
+        background: none;
+        border: none;
+        color: #a0aec0;
+        cursor: pointer;
+        padding: 0.5rem;
+        border-radius: 50%;
+        transition: all 0.2s;
+        display: flex;
+    }
+    .file-remove:hover {
+        background: #fef2f2;
+        color: #dc2626;
+    }
     .img-preview-current {
         max-width: 100%;
         max-height: 200px;
@@ -227,14 +352,6 @@
     <div class="modern-title">{% if slide %}Editar Slide{% else %}Nuevo Slide{% endif %}</div>
     <div class="modern-sub">{% if slide %}Modificar imagen{% else %}Agregar al carrousel{% endif %}</div>
 
-    {% if messages %}
-        {% for message in messages %}
-        <div class="alert alert-success border-0 shadow-sm rounded-4 p-3 d-flex align-items-center mb-4">
-            <i class="bi bi-check-circle-fill me-3 fs-4 text-success"></i> {{ message }}
-        </div>
-        {% endfor %}
-    {% endif %}
-
     <form method="post" enctype="multipart/form-data" autocomplete="off">
         {% csrf_token %}
 
@@ -246,11 +363,20 @@
                 <p class="form-hint mt-2">Imagen actual. Subí una nueva para reemplazarla.</p>
             </div>
             {% endif %}
-            <div class="modern-file">
-                <i class="bi bi-cloud-arrow-up mb-2" style="font-size: 2rem; color: #b8922a;"></i>
-                <p class="mb-2" style="color: #4a5568;">Arrastrá o hacé clic para subir</p>
-                <input type="file" name="imagen" accept="image/*" {% if not slide %}required{% endif %}>
-                <p class="form-hint mb-0">Recomendado: 1920x1080px. Formatos: JPG, PNG, WebP</p>
+            <div class="file-upload-wrapper" id="fileUploadWrapper">
+                <input type="file" name="imagen" id="imagenInput" accept="image/*" class="file-input-hidden" {% if not slide %}required{% endif %}>
+                <div class="file-upload-content" id="fileContent">
+                    <i class="bi bi-cloud-arrow-up"></i>
+                    <span class="file-upload-text">Arrastrá una imagen o hacé clic para seleccionar</span>
+                    <span class="file-upload-hint">Recomendado: 1920x1080px. Formatos: JPG, PNG, WebP (máx. 5MB)</span>
+                </div>
+                <div class="file-upload-preview" id="filePreview" style="display: none;">
+                    <img id="previewImg" src="" alt="Preview">
+                    <div class="file-info">
+                        <span class="file-name" id="fileName"></span>
+                        <button type="button" class="file-remove" id="fileRemove"><i class="bi bi-x-lg"></i></button>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -258,21 +384,24 @@
             <div class="modern-section-title">2. Contenido</div>
             <div class="modern-row">
                 <div class="modern-col-full">
-                    <label class="modern-label"><i class="bi bi-type me-1"></i> Título (opcional)</label>
-                    <input type="text" name="titulo" value="{{ form.titulo.value|default:'' }}" class="modern-input" placeholder="Ej: Nueva Colección">
+                    <label class="modern-label"><i class="bi bi-type me-1"></i> Título (opcional) <span class="char-limit">máx. 100</span></label>
+                    <input type="text" name="titulo" value="{{ form.titulo.value|default:'' }}" class="modern-input char-input" data-max="100" maxlength="100" placeholder="Ej: Nueva Colección">
+                    <div class="char-counter"><span class="char-count">0</span>/100</div>
                     <div class="form-hint">Se mostrará sobre la imagen</div>
                 </div>
             </div>
             <div class="modern-row">
                 <div class="modern-col-full">
-                    <label class="modern-label"><i class="bi bi-card-text me-1"></i> Subtítulo (opcional)</label>
-                    <input type="text" name="subtitulo" value="{{ form.subtitulo.value|default:'' }}" class="modern-input" placeholder="Descripción breve...">
+                    <label class="modern-label"><i class="bi bi-card-text me-1"></i> Subtítulo (opcional) <span class="char-limit">máx. 200</span></label>
+                    <input type="text" name="subtitulo" value="{{ form.subtitulo.value|default:'' }}" class="modern-input char-input" data-max="200" maxlength="200" placeholder="Descripción breve...">
+                    <div class="char-counter"><span class="char-count">0</span>/200</div>
                 </div>
             </div>
             <div class="modern-row">
                 <div class="modern-col-full">
-                    <label class="modern-label"><i class="bi bi-link-45deg me-1"></i> Link (opcional)</label>
-                    <input type="url" name="link" value="{{ form.link.value|default:'' }}" class="modern-input" placeholder="https://...">
+                    <label class="modern-label"><i class="bi bi-link-45deg me-1"></i> Link (opcional) <span class="char-limit">máx. 200</span></label>
+                    <input type="url" name="link" value="{{ form.link.value|default:'' }}" class="modern-input char-input" data-max="200" maxlength="200" placeholder="https://...">
+                    <div class="char-counter"><span class="char-count">0</span>/200</div>
                     <div class="form-hint">URL al hacer clic en el slide</div>
                 </div>
             </div>
@@ -316,4 +445,120 @@
         </div>
     </form>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // File upload
+    const fileWrapper = document.getElementById('fileUploadWrapper');
+    const fileInput = document.getElementById('imagenInput');
+    const fileContent = document.getElementById('fileContent');
+    const filePreviewDiv = document.getElementById('filePreview');
+    const previewImg = document.getElementById('previewImg');
+    const fileName = document.getElementById('fileName');
+    const fileRemove = document.getElementById('fileRemove');
+
+    if (fileWrapper && fileInput) {
+        ['dragenter', 'dragover'].forEach(evt => {
+            fileWrapper.addEventListener(evt, function(e) {
+                e.preventDefault();
+                fileWrapper.classList.add('dragover');
+            });
+        });
+
+        ['dragleave', 'drop'].forEach(evt => {
+            fileWrapper.addEventListener(evt, function(e) {
+                e.preventDefault();
+                fileWrapper.classList.remove('dragover');
+            });
+        });
+
+        fileWrapper.addEventListener('drop', function(e) {
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                fileInput.files = files;
+                handleFileSelect(files[0]);
+            }
+        });
+
+        fileInput.addEventListener('change', function() {
+            if (this.files && this.files[0]) {
+                handleFileSelect(this.files[0]);
+            }
+        });
+
+        if (fileRemove) {
+            fileRemove.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                fileInput.value = '';
+                fileContent.style.display = 'flex';
+                filePreviewDiv.style.display = 'none';
+            });
+        }
+
+        function handleFileSelect(file) {
+            if (!file.type.startsWith('image/')) {
+                alert('Por favor seleccioná una imagen');
+                return;
+            }
+            if (file.size > 5 * 1024 * 1024) {
+                alert('La imagen no puede superar los 5MB');
+                fileInput.value = '';
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                previewImg.src = e.target.result;
+                fileName.textContent = file.name;
+                fileContent.style.display = 'none';
+                filePreviewDiv.style.display = 'flex';
+            };
+            reader.readAsDataURL(file);
+        }
+    }
+
+    // Character counter
+    const charToast = document.createElement('div');
+    charToast.className = 'char-toast';
+    charToast.textContent = 'Llegaste al límite de caracteres';
+    document.body.appendChild(charToast);
+
+    let toastTimeout = null;
+
+    function showCharToast() {
+        charToast.classList.add('show');
+        if (toastTimeout) clearTimeout(toastTimeout);
+        toastTimeout = setTimeout(() => {
+            charToast.classList.remove('show');
+        }, 5000);
+    }
+
+    document.querySelectorAll('.char-input').forEach(input => {
+        const counter = input.parentElement.querySelector('.char-counter');
+        if (!counter) return;
+        const countSpan = counter.querySelector('.char-count');
+        const max = parseInt(input.dataset.max);
+
+        function updateCounter() {
+            const len = input.value.length;
+            countSpan.textContent = len;
+            counter.classList.remove('warning', 'limit');
+            if (len >= max) {
+                counter.classList.add('limit');
+            } else if (len >= max * 0.8) {
+                counter.classList.add('warning');
+            }
+        }
+
+        updateCounter();
+
+        input.addEventListener('input', function() {
+            updateCounter();
+            if (this.value.length >= max) {
+                showCharToast();
+            }
+        });
+    });
+});
+</script>
 {% endblock %}

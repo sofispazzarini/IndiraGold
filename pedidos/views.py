@@ -361,7 +361,7 @@ def crear_envio_pedido(pedido):
         return EnvioPedido.objects.get_or_create(
             pedido=pedido,
             defaults={
-                'proveedor': pedido.correo or 'andreani',
+                'proveedor': pedido.correo or 'correo_argentino',
                 'tipo_entrega': pedido.tipo_correo or 'domicilio',
                 'sucursal': pedido.sucursal_correo,
                 'costo': pedido.costo_envio,
@@ -376,8 +376,6 @@ def url_seguimiento_envio(envio):
         return ''
     if envio.proveedor == 'correo_argentino':
         return 'https://www.correoargentino.com.ar/formularios/e-commerce'
-    if envio.proveedor == 'andreani':
-        return 'https://www.andreani.com/#!/personas'
     return ''
 
 
@@ -1230,8 +1228,8 @@ def crear_pago(request):
             return redirect('pedidos:checkout')
 
     if request.session['metodo_entrega'] == 'correo':
-        if request.session.get('correo') not in ['andreani', 'correo_argentino']:
-            messages.error(request, 'Selecciona Andreani o Correo Argentino.')
+        if request.session.get('correo') != 'correo_argentino':
+            messages.error(request, 'Selecciona Correo Argentino.')
             return redirect('pedidos:checkout')
         if request.session.get('tipo_correo') not in ['domicilio', 'sucursal']:
             messages.error(request, 'Selecciona el tipo de entrega por correo.')
@@ -2726,19 +2724,23 @@ def contexto_ticket_venta(venta):
         'producto',
         'variante',
         'variante__talle'
-    )
+    ).prefetch_related('variante__colores')
     fecha = timezone.localtime(venta.created_at)
-    items_ticket = [
-        {
+    items_ticket = []
+    for item in items:
+        color_mostrar = item.color
+        if item.color and item.color.startswith('#'):
+            color_obj = item.variante.colores.filter(codigo_hex__iexact=item.color).first()
+            if color_obj:
+                color_mostrar = color_obj.nombre
+        items_ticket.append({
             'producto': item.producto.nombre,
-            'color': item.color,
+            'color': color_mostrar,
             'talle': item.variante.talle.nombre,
             'precio': formato_pesos(item.precio_unitario),
             'cantidad': item.cantidad,
             'subtotal': formato_pesos(item.subtotal),
-        }
-        for item in items
-    ]
+        })
     configuracion_envio = ConfiguracionEnvio.actual()
     costo_envio = (
         Decimal(configuracion_envio.costo_flex)

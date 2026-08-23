@@ -406,6 +406,37 @@
   .btn-confirm.danger { background: var(--burgundy); }
   .btn-confirm.danger:hover { background: #8a1239; }
 
+  /* Character counter */
+  .char-counter {
+    font-size: 0.72rem;
+    color: var(--muted);
+    text-align: center;
+    margin-top: -1.5rem;
+    margin-bottom: 1.5rem;
+  }
+  .char-counter.warning { color: #d97706; }
+  .char-counter.limit { color: #dc2626; font-weight: 600; }
+  .char-toast {
+    position: fixed;
+    bottom: 2rem;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: #dc2626;
+    color: #fff;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    z-index: 9999;
+    opacity: 0;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+  }
+  .char-toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
   .modal-divider {
     height: 1px;
     background: var(--border);
@@ -514,9 +545,10 @@
     <p class="modal-eyebrow">{{ categoria.nombre }}</p>
     <h2 class="modal-title">Nueva subcategoría</h2>
     <p class="modal-subtitle">Agregá un nombre para la nueva subcategoría.</p>
-    <form method="post">
+    <form method="post" id="formAddSub">
       {% csrf_token %}
-      <input type="text" name="nombre" id="newSubInput" class="modal-input" placeholder="Nombre de la subcategoría" required>
+      <input type="text" name="nombre" id="newSubInput" class="modal-input char-input" data-max="100" maxlength="100" placeholder="Nombre de la subcategoría (máx. 100)" required>
+      <div class="char-counter"><span class="char-count">0</span>/100</div>
       <div class="modal-actions">
         <button type="button" class="btn-cancel" onclick="closeModals()">Cancelar</button>
         <button type="submit" class="btn-confirm">Guardar</button>
@@ -548,7 +580,10 @@
 <script>
   function openAddModal() {
     document.getElementById('modalAdd').classList.add('open');
-    setTimeout(() => document.getElementById('newSubInput').focus(), 100);
+    const input = document.getElementById('newSubInput');
+    input.value = '';
+    updateCharCounter(input);
+    setTimeout(() => input.focus(), 100);
   }
 
   function closeModals() {
@@ -575,6 +610,48 @@
 
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape') closeModals();
+  });
+
+  // Character counter
+  const charToast = document.createElement('div');
+  charToast.className = 'char-toast';
+  charToast.textContent = 'Llegaste al límite de caracteres';
+  document.body.appendChild(charToast);
+
+  let toastTimeout = null;
+
+  function showCharToast() {
+    charToast.classList.add('show');
+    if (toastTimeout) clearTimeout(toastTimeout);
+    toastTimeout = setTimeout(() => {
+      charToast.classList.remove('show');
+    }, 5000);
+  }
+
+  function updateCharCounter(input) {
+    const counter = input.nextElementSibling;
+    if (!counter || !counter.classList.contains('char-counter')) return;
+    const countSpan = counter.querySelector('.char-count');
+    const max = parseInt(input.dataset.max);
+    const len = input.value.length;
+    countSpan.textContent = len;
+    counter.classList.remove('warning', 'limit');
+    if (len >= max) {
+      counter.classList.add('limit');
+    } else if (len >= max * 0.8) {
+      counter.classList.add('warning');
+    }
+  }
+
+  document.querySelectorAll('.char-input').forEach(input => {
+    updateCharCounter(input);
+    input.addEventListener('input', function() {
+      updateCharCounter(this);
+      const max = parseInt(this.dataset.max);
+      if (this.value.length >= max) {
+        showCharToast();
+      }
+    });
   });
 </script>
 {% endblock %}

@@ -320,12 +320,22 @@ function scrollCatOrden{{ cat_orden.id }}(dir) {
               <option value="{{ talle.id }}">{{ talle.nombre }}</option>
             {% endfor %}
           </select>
-          <select id="colorFilter" onchange="filterColor(this.value)">
-            <option value="">Todos los colores</option>
-            {% for color in colores %}
-              <option value="{{ color.id }}">{{ color.nombre }}</option>
-            {% endfor %}
-          </select>
+          <div class="color-dropdown" id="colorDropdown">
+            <button type="button" class="color-dropdown__btn" onclick="toggleColorDropdown()">
+              <span class="color-dropdown__label">Todos los colores</span>
+              <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M7.247 11.14L2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z"/></svg>
+            </button>
+            <div class="color-dropdown__menu" id="colorMenu">
+              <div class="color-dropdown__item" onclick="selectColor('', 'Todos los colores', null)">
+                <span class="color-dropdown__text">Todos los colores</span>
+              </div>
+              <div class="color-dropdown__colors">
+                {% for color in colores %}
+                <span class="color-dropdown__circle" style="background: {{ color.codigo_hex }};" title="{{ color.nombre }}" onclick="selectColor('{{ color.id }}', '{{ color.nombre }}', '{{ color.codigo_hex }}')"></span>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -728,6 +738,7 @@ function scrollCatOrden{{ cat_orden.id }}(dir) {
     position: relative;
     overflow: hidden;
     border-bottom: 1px solid #e8dfd4;
+    margin-bottom: 2rem;
   }
   .hero__bg {
     position: absolute;
@@ -793,6 +804,47 @@ function scrollCatOrden{{ cat_orden.id }}(dir) {
     outline: none;
   }
   .variant-filters select:focus { border-color: #b8922a; }
+
+  /* Color dropdown */
+  .color-dropdown { position: relative; }
+  .color-dropdown__btn {
+    display: flex; align-items: center; gap: .5rem;
+    border: 1px solid #e8dfd4; background: #fff; color: #1a1612;
+    border-radius: 8px; padding: .45rem .65rem;
+    font-size: .82rem; font-family: 'DM Sans', sans-serif;
+    cursor: pointer; min-width: 160px; justify-content: space-between;
+  }
+  .color-dropdown__btn:hover { border-color: #b8922a; }
+  .color-dropdown__menu {
+    position: absolute; top: 100%; left: 0;
+    background: #fff; border: 1px solid #e8dfd4; border-radius: 8px;
+    margin-top: 4px; box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+    z-index: 100; display: none; padding: .5rem;
+    min-width: 180px;
+  }
+  .color-dropdown.open .color-dropdown__menu { display: block; }
+  .color-dropdown__item {
+    padding: .4rem .5rem; cursor: pointer; font-size: .82rem;
+    border-bottom: 1px solid #e8dfd4; margin-bottom: .5rem;
+  }
+  .color-dropdown__item:hover { background: #faf7f0; border-radius: 4px; }
+  .color-dropdown__colors {
+    display: flex; flex-wrap: wrap; gap: .5rem; padding: .25rem 0;
+  }
+  .color-dropdown__circle {
+    width: 24px; height: 24px; border-radius: 50%;
+    border: 2px solid transparent; transition: all .15s;
+  }
+  .color-dropdown__circle:hover {
+    transform: scale(1.15);
+    border-color: #b8922a;
+  }
+  .color-dropdown__text { color: #1a1612; }
+  .color-dropdown__label { display: flex; align-items: center; gap: .5rem; }
+  .color-dropdown__selected-circle {
+    width: 14px; height: 14px; border-radius: 50%;
+    border: 1px solid rgba(0,0,0,0.1);
+  }
 
   .products-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.5rem; }
 
@@ -1372,6 +1424,31 @@ function scrollCatOrden{{ cat_orden.id }}(dir) {
     selectedColor = colorId;
     applyFilters();
   }
+
+  // Color dropdown functions
+  function toggleColorDropdown() {
+    const dropdown = document.getElementById('colorDropdown');
+    dropdown.classList.toggle('open');
+  }
+
+  function selectColor(colorId, colorName, colorHex) {
+    const label = document.querySelector('.color-dropdown__label');
+    if (colorHex) {
+      label.innerHTML = `<span class="color-dropdown__selected-circle" style="background: ${colorHex};"></span> ${colorName}`;
+    } else {
+      label.textContent = colorName;
+    }
+    document.getElementById('colorDropdown').classList.remove('open');
+    filterColor(colorId);
+  }
+
+  // Close dropdown when clicking outside
+  document.addEventListener('click', function(e) {
+    const dropdown = document.getElementById('colorDropdown');
+    if (dropdown && !dropdown.contains(e.target)) {
+      dropdown.classList.remove('open');
+    }
+  });
 
   function checkEmpty() {
     const visible = [...getCatalogCards()].filter(c => c.style.display !== 'none');

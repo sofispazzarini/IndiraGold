@@ -317,6 +317,22 @@
         }
     }
 
+    /* Character counter */
+    .char-limit { font-weight: 400; color: var(--muted); font-size: 0.7rem; }
+    .char-counter { font-size: 0.72rem; color: var(--muted); text-align: right; margin-top: 0.25rem; }
+    .char-counter.warning { color: #d97706; }
+    .char-counter.limit { color: #dc2626; font-weight: 600; }
+    .char-toast {
+        position: fixed; bottom: 2rem; left: 50%;
+        transform: translateX(-50%) translateY(100px);
+        background: #dc2626; color: #fff;
+        padding: 0.75rem 1.5rem; border-radius: 8px;
+        font-size: 0.85rem; font-weight: 500; z-index: 9999;
+        opacity: 0; transition: all 0.3s ease;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    }
+    .char-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
 </style>
 
 {% endblock %}
@@ -1242,24 +1258,27 @@
                     <div id="nuevoClienteError" class="alert alert-danger d-none small"></div>
                     <div class="row g-3">
                         <div class="col-md-6">
-                            <label class="form-label fw-bold">Nombre</label>
-                            <input type="text" name="nombre" class="form-control rounded-4" required>
+                            <label class="form-label fw-bold">Nombre <span class="char-limit">máx. 50</span></label>
+                            <input type="text" name="nombre" class="form-control rounded-4 char-input" data-max="50" maxlength="50" required>
+                            <div class="char-counter"><span class="char-count">0</span>/50</div>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label fw-bold">Apellido</label>
-                            <input type="text" name="apellido" class="form-control rounded-4" required>
+                            <label class="form-label fw-bold">Apellido <span class="char-limit">máx. 50</span></label>
+                            <input type="text" name="apellido" class="form-control rounded-4 char-input" data-max="50" maxlength="50" required>
+                            <div class="char-counter"><span class="char-count">0</span>/50</div>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-bold">DNI</label>
-                            <input type="text" name="dni" class="form-control rounded-4" required>
+                            <input type="text" name="dni" class="form-control rounded-4 solo-numeros" inputmode="numeric" pattern="[0-9]*" maxlength="8" required>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-bold">Teléfono</label>
-                            <input type="text" name="telefono" class="form-control rounded-4" required>
+                            <input type="text" name="telefono" class="form-control rounded-4 solo-numeros" inputmode="numeric" pattern="[0-9]*" maxlength="20" required>
                         </div>
                         <div class="col-12">
-                            <label class="form-label fw-bold">Email</label>
-                            <input type="email" name="email" class="form-control rounded-4" required>
+                            <label class="form-label fw-bold">Email <span class="char-limit">máx. 100</span></label>
+                            <input type="email" name="email" class="form-control rounded-4 char-input" data-max="100" maxlength="100" required>
+                            <div class="char-counter"><span class="char-count">0</span>/100</div>
                         </div>
                     </div>
                 </div>
@@ -1326,6 +1345,55 @@
     </div>
 </div>
 <script>
+
+// Solo números para DNI y Teléfono
+document.querySelectorAll('.solo-numeros').forEach(input => {
+    input.addEventListener('keydown', function(e) {
+        if (e.key.length === 1 && !/[0-9]/.test(e.key)) {
+            e.preventDefault();
+        }
+    });
+    input.addEventListener('paste', function(e) {
+        const paste = (e.clipboardData || window.clipboardData).getData('text');
+        if (!/^\d+$/.test(paste)) {
+            e.preventDefault();
+        }
+    });
+});
+
+// Character counter
+const charToast = document.createElement('div');
+charToast.className = 'char-toast';
+charToast.textContent = 'Llegaste al límite de caracteres';
+document.body.appendChild(charToast);
+
+let toastTimeout = null;
+function showCharToast() {
+    charToast.classList.add('show');
+    if (toastTimeout) clearTimeout(toastTimeout);
+    toastTimeout = setTimeout(() => charToast.classList.remove('show'), 5000);
+}
+
+document.querySelectorAll('.char-input').forEach(input => {
+    const counter = input.nextElementSibling;
+    if (!counter || !counter.classList.contains('char-counter')) return;
+    const countSpan = counter.querySelector('.char-count');
+    const max = parseInt(input.dataset.max);
+
+    function updateCounter() {
+        const len = input.value.length;
+        countSpan.textContent = len;
+        counter.classList.remove('warning', 'limit');
+        if (len >= max) counter.classList.add('limit');
+        else if (len >= max * 0.8) counter.classList.add('warning');
+    }
+
+    updateCounter();
+    input.addEventListener('input', function() {
+        updateCounter();
+        if (this.value.length >= max) showCharToast();
+    });
+});
 
 const inputCliente = document.getElementById(
     'buscar-cliente'

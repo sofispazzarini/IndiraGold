@@ -125,7 +125,7 @@ def payload_envio(envio):
 
 
 def config_proveedor(proveedor):
-    prefijo = 'ANDREANI' if proveedor == 'andreani' else 'CORREO_ARGENTINO'
+    prefijo = 'CORREO_ARGENTINO'
     return ConfigProveedor(
         nombre=proveedor,
         base_url=(os.getenv(f'{prefijo}_API_BASE_URL') or '').rstrip('/'),
@@ -244,6 +244,10 @@ def completar_endpoint(endpoint, envio, tracking=''):
 
 
 def extraer_importe_cotizacion(respuesta):
+    # Verificar si rates está vacío
+    if isinstance(respuesta, dict) and respuesta.get('rates') == []:
+        raise ErrorEnvio('Correo Argentino no tiene tarifas para esta ruta. Verifica que tu cuenta tenga cotizacion habilitada.')
+
     candidatos = [
         respuesta,
         respuesta.get('rate') if isinstance(respuesta, dict) else None,
@@ -284,7 +288,7 @@ def cotizar_correo_argentino(codigo_postal, tipo_entrega='domicilio', items=None
 
 def generar_etiqueta(envio):
     if envio.proveedor == 'flex':
-        raise ErrorEnvio('Envio Flex no genera etiqueta de Andreani/Correo.')
+        raise ErrorEnvio('Envio Flex no genera etiqueta de Correo Argentino.')
     if envio.proveedor == 'correo_argentino':
         raise ErrorEnvio('Correo Argentino MiCorreo solo cotiza/importa; la etiqueta se emite desde el portal MiCorreo.')
 

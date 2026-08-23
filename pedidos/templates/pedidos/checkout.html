@@ -1034,9 +1034,6 @@
                 <label>Correo</label>
 
                 <select name="correo" class="form-select">
-                    <option value="andreani">
-                    Andreani
-                    </option>
                     <option value="correo_argentino">
                     Correo Argentino
                     </option>
@@ -1540,24 +1537,11 @@ document.querySelectorAll('input[name="direccion_correo_id"]').forEach(radio => 
 });
 
 document.querySelector('select[name="correo"]')?.addEventListener('change', () => {
-  const proveedor = valorCampo('select[name="correo"]');
-  if (proveedor !== 'correo_argentino') {
-    costoCorreo = costoCorreoBase;
-    if (correoCotizacionBox) {
-      correoCotizacionBox.style.display = 'block';
-      correoCotizacionBox.textContent = costoCorreo > 0
-        ? `Andreani: ${formatearPesos(costoCorreo)}`
-        : 'Andreani: gratis';
-    }
-    actualizarEntrega();
-    return;
-  }
   costoCorreo = 0;
   cotizarCorreo();
 });
 
 document.querySelector('input[name="codigo_postal_sucursal"]')?.addEventListener('input', () => {
-  if (valorCampo('select[name="correo"]') !== 'correo_argentino') return;
   costoCorreo = 0;
   clearTimeout(window.cotizarCorreoTimer);
   window.cotizarCorreoTimer = setTimeout(cotizarCorreo, 500);
@@ -1586,19 +1570,7 @@ function agregarCampo(form, nombre, valor) {
 
 async function cotizarCorreo() {
   const metodoEntrega = valorSeleccionado('metodo_entrega') || 'local';
-  const proveedor = valorCampo('select[name="correo"]');
   if (metodoEntrega !== 'correo') return;
-  if (proveedor !== 'correo_argentino') {
-    costoCorreo = costoCorreoBase;
-    if (correoCotizacionBox) {
-      correoCotizacionBox.style.display = 'block';
-      correoCotizacionBox.textContent = costoCorreo > 0
-        ? `Andreani: ${formatearPesos(costoCorreo)}`
-        : 'Andreani: gratis';
-    }
-    actualizarEntrega();
-    return;
-  }
 
   const tipoCorreo = valorSeleccionado('tipo_correo') || 'domicilio';
   const direccionId = valorSeleccionado('direccion_correo_id');

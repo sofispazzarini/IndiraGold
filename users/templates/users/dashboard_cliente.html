@@ -310,6 +310,75 @@
 
   <div class="cards-grid">
 
+    {% if es_cliente_recurrente %}
+    <!-- Usuario recurrente: Compras primero -->
+    <div class="feature-card">
+      <div class="card-icon">
+        <i class="bi bi-bag-heart"></i>
+      </div>
+      <h3 class="card-title">Mis pedidos</h3>
+      <p class="card-desc">
+        Revisá el historial de tus compras y seguí el estado de tus envíos.
+      </p>
+      <a href="{% url 'pedidos:mis_pedidos' %}" class="card-btn primary">
+        Ver pedidos <i class="bi bi-chevron-right"></i>
+      </a>
+    </div>
+
+    <div class="feature-card">
+      <div class="card-icon">
+        <i class="bi bi-cart3"></i>
+      </div>
+      <h3 class="card-title">Mi carrito</h3>
+      <p class="card-desc">
+        Revisá los productos que agregaste y completá tu compra.
+      </p>
+      <a href="{% url 'pedidos:checkout' %}" class="card-btn primary">
+        Ver carrito <i class="bi bi-chevron-right"></i>
+      </a>
+    </div>
+
+    <div class="feature-card">
+      <div class="card-icon">
+        <i class="bi bi-shop"></i>
+      </div>
+      <h3 class="card-title">Seguir comprando</h3>
+      <p class="card-desc">
+        Explorá nuestro catálogo y descubrí las últimas novedades.
+      </p>
+      <a href="{% url 'home:home' %}" class="card-btn primary">
+        Ver catálogo <i class="bi bi-arrow-right"></i>
+      </a>
+    </div>
+
+    <div class="feature-card">
+      <div class="card-icon">
+        <i class="bi bi-shield-lock"></i>
+      </div>
+      <h3 class="card-title">Seguridad</h3>
+      <p class="card-desc">
+        Actualizá tu contraseña periódicamente para mantener tu cuenta protegida.
+      </p>
+      <a href="{% url 'users:password_change' %}" class="card-btn secondary">
+        Cambiar clave <i class="bi bi-chevron-right"></i>
+      </a>
+    </div>
+
+    <div class="feature-card">
+      <div class="card-icon">
+        <i class="bi bi-geo-alt"></i>
+      </div>
+      <h3 class="card-title">Direcciones</h3>
+      <p class="card-desc">
+        Guardá tus domicilios con etiqueta y referencia para comprar más rápido.
+      </p>
+      <a href="{% url 'users:perfil' %}#direcciones" class="card-btn secondary">
+        Agregar dirección <i class="bi bi-chevron-right"></i>
+      </a>
+    </div>
+
+    {% else %}
+    <!-- Usuario nuevo: Perfil primero -->
     <div class="feature-card">
       <div class="card-icon">
         <i class="bi bi-shield-lock"></i>
@@ -374,6 +443,7 @@
         Ver catálogo <i class="bi bi-arrow-right"></i>
       </a>
     </div>
+    {% endif %}
 
   </div>
 

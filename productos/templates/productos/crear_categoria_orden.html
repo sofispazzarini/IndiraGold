@@ -178,6 +178,42 @@
         color: #a0aec0;
         margin-top: 0.3rem;
     }
+
+    /* Character counter */
+    .char-limit {
+        font-weight: 400;
+        color: #a0aec0;
+        font-size: 0.8rem;
+    }
+    .char-counter {
+        font-size: 0.75rem;
+        color: #a0aec0;
+        text-align: right;
+        margin-top: 0.2rem;
+    }
+    .char-counter.warning { color: #d97706; }
+    .char-counter.limit { color: #dc2626; font-weight: 600; }
+    .char-toast {
+        position: fixed;
+        bottom: 2rem;
+        left: 50%;
+        transform: translateX(-50%) translateY(100px);
+        background: #dc2626;
+        color: #fff;
+        padding: 0.75rem 1.5rem;
+        border-radius: 8px;
+        font-size: 0.85rem;
+        font-weight: 500;
+        z-index: 9999;
+        opacity: 0;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    }
+    .char-toast.show {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+
     @media (max-width: 700px) {
         .modern-card {
             padding: 1.2rem 0.5rem 1.5rem 0.5rem;
@@ -206,14 +242,6 @@
     <div class="modern-title">{% if categoria %}Editar Categoria{% else %}Nueva Categoria{% endif %}</div>
     <div class="modern-sub">{% if categoria %}Modificar categoria de orden{% else %}Crear seccion destacada{% endif %}</div>
 
-    {% if messages %}
-        {% for message in messages %}
-        <div class="alert alert-{{ message.tags }} border-0 shadow-sm rounded-4 p-3 d-flex align-items-center mb-4">
-            <i class="bi bi-check-circle-fill me-3 fs-4"></i> {{ message }}
-        </div>
-        {% endfor %}
-    {% endif %}
-
     <form method="post" autocomplete="off">
         {% csrf_token %}
 
@@ -221,14 +249,16 @@
             <div class="modern-section-title">1. Informacion</div>
             <div class="modern-row">
                 <div class="modern-col-full">
-                    <label class="modern-label"><i class="bi bi-tag me-1"></i> Nombre *</label>
-                    <input type="text" name="nombre" value="{{ form.nombre.value|default:'' }}" class="modern-input" placeholder="Ej: Ofertas, Novedades, Destacados" required>
+                    <label class="modern-label"><i class="bi bi-tag me-1"></i> Nombre * <span class="char-limit">máx. 100</span></label>
+                    <input type="text" name="nombre" value="{{ form.nombre.value|default:'' }}" class="modern-input char-input" data-max="100" maxlength="100" placeholder="Ej: Ofertas, Novedades, Destacados" required>
+                    <div class="char-counter"><span class="char-count">0</span>/100</div>
                 </div>
             </div>
             <div class="modern-row">
                 <div class="modern-col-full">
-                    <label class="modern-label"><i class="bi bi-card-text me-1"></i> Descripcion (opcional)</label>
-                    <textarea name="descripcion" class="modern-textarea" placeholder="Descripcion breve de la categoria...">{{ form.descripcion.value|default:'' }}</textarea>
+                    <label class="modern-label"><i class="bi bi-card-text me-1"></i> Descripcion (opcional) <span class="char-limit">máx. 500</span></label>
+                    <textarea name="descripcion" class="modern-textarea char-input" data-max="500" maxlength="500" placeholder="Descripcion breve de la categoria...">{{ form.descripcion.value|default:'' }}</textarea>
+                    <div class="char-counter"><span class="char-count">0</span>/500</div>
                 </div>
             </div>
         </div>
@@ -266,4 +296,51 @@
         </div>
     </form>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Character counter
+    const charToast = document.createElement('div');
+    charToast.className = 'char-toast';
+    charToast.textContent = 'Llegaste al límite de caracteres';
+    document.body.appendChild(charToast);
+
+    let toastTimeout = null;
+
+    function showCharToast() {
+        charToast.classList.add('show');
+        if (toastTimeout) clearTimeout(toastTimeout);
+        toastTimeout = setTimeout(() => {
+            charToast.classList.remove('show');
+        }, 5000);
+    }
+
+    document.querySelectorAll('.char-input').forEach(input => {
+        const counter = input.parentElement.querySelector('.char-counter');
+        if (!counter) return;
+        const countSpan = counter.querySelector('.char-count');
+        const max = parseInt(input.dataset.max);
+
+        function updateCounter() {
+            const len = input.value.length;
+            countSpan.textContent = len;
+            counter.classList.remove('warning', 'limit');
+            if (len >= max) {
+                counter.classList.add('limit');
+            } else if (len >= max * 0.8) {
+                counter.classList.add('warning');
+            }
+        }
+
+        updateCounter();
+
+        input.addEventListener('input', function() {
+            updateCounter();
+            if (this.value.length >= max) {
+                showCharToast();
+            }
+        });
+    });
+});
+</script>
 {% endblock %}

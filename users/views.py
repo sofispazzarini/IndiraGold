@@ -39,7 +39,16 @@ class CustomPasswordChangeView(PasswordChangeView):
 
 @login_required
 def dashboard_cliente(request):
-    return render(request, 'users/dashboard_cliente.html')
+    from pedidos.models import Pedido
+    es_cliente_recurrente = False
+    try:
+        cliente = request.user.cliente
+        es_cliente_recurrente = Pedido.objects.filter(cliente=cliente).exists()
+    except:
+        pass
+    return render(request, 'users/dashboard_cliente.html', {
+        'es_cliente_recurrente': es_cliente_recurrente
+    })
 
 
 @login_required

@@ -435,7 +435,7 @@
                     <span class="detail-val">{{ pedido.envio.tracking }}</span>
                 </div>
                 {% endif %}
-                {% if pedido.envio.proveedor == 'correo_argentino' or pedido.envio.proveedor == 'andreani' %}
+                {% if pedido.envio.proveedor == 'correo_argentino' %}
                 <form method="post" action="{% url 'pedidos:actualizar_tracking_envio' pedido.id %}" style="margin-top:1rem;">
                     {% csrf_token %}
                     <label class="detail-lbl" style="display:block;margin-bottom:.45rem;">Codigo de seguimiento</label>
@@ -456,14 +456,7 @@
                     <span class="detail-lbl">Etiqueta</span>
                     <span class="detail-val"><a href="{{ pedido.envio.etiqueta.url }}" target="_blank">Imprimir</a></span>
                 </div>
-                {% elif pedido.envio.proveedor == 'andreani' %}
-                <form method="post" action="{% url 'pedidos:generar_etiqueta_pedido' pedido.id %}" style="margin-top:1rem;">
-                    {% csrf_token %}
-                    <button type="submit" class="btn-act btn-hist" style="width:100%; justify-content:center;">
-                        <i class="bi bi-printer"></i> Generar etiqueta
-                    </button>
-                </form>
-                {% if pedido.envio.error %}
+                                {% if pedido.envio.error %}
                 <div class="payment-row">
                     <span class="detail-lbl">Error</span>
                     <span class="detail-val" style="color:#6E0E2E;">{{ pedido.envio.error }}</span>

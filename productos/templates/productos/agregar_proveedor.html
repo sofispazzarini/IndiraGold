@@ -426,6 +426,42 @@
 
   .btn-confirm.danger:hover { background: #8a1239; }
 
+  /* Character counter */
+  .char-limit {
+    font-weight: 400;
+    color: var(--muted);
+    font-size: 0.7rem;
+  }
+  .char-counter {
+    font-size: 0.7rem;
+    color: var(--muted);
+    text-align: center;
+    margin-top: -0.8rem;
+    margin-bottom: 1rem;
+  }
+  .char-counter.warning { color: #d97706; }
+  .char-counter.limit { color: #dc2626; font-weight: 600; }
+  .char-toast {
+    position: fixed;
+    bottom: 2rem;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: #dc2626;
+    color: #fff;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    z-index: 9999;
+    opacity: 0;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+  }
+  .char-toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
   @media (max-width: 768px) {
     .gestion-main {
       padding: 2rem 1.5rem;
@@ -529,11 +565,13 @@
   <div class="modal-box">
     <p class="modal-eyebrow">Catálogo</p>
     <h2 class="modal-title">Nuevo proveedor</h2>
-    <form method="post">
+    <form method="post" id="formAdd">
       {% csrf_token %}
-      <input type="text" name="nombre" class="modal-input" placeholder="Nombre del proveedor" required>
-      <input type="text" name="telefono" class="modal-input" placeholder="Teléfono de contacto" required>
-      <input type="text" name="informacion_adicional" class="modal-input" placeholder="Notas adicionales (opcional)">
+      <input type="text" name="nombre" class="modal-input char-input" data-max="100" maxlength="100" placeholder="Nombre del proveedor (máx. 100)" required>
+      <div class="char-counter"><span class="char-count">0</span>/100</div>
+      <input type="tel" name="telefono" class="modal-input" maxlength="20" placeholder="Teléfono de contacto" required>
+      <input type="text" name="informacion_adicional" class="modal-input char-input" data-max="500" maxlength="500" placeholder="Notas adicionales (opcional, máx. 500)">
+      <div class="char-counter"><span class="char-count">0</span>/500</div>
       <div class="modal-actions">
         <button type="button" class="btn-cancel" onclick="closeModals()">Cancelar</button>
         <button type="submit" class="btn-confirm">Guardar</button>
@@ -547,12 +585,14 @@
   <div class="modal-box">
     <p class="modal-eyebrow">Catálogo</p>
     <h2 class="modal-title">Editar proveedor</h2>
-    <form method="post">
+    <form method="post" id="formEdit">
       {% csrf_token %}
       <input type="hidden" name="edit_id" id="edit_id">
-      <input type="text" name="nombre" id="edit_nombre" class="modal-input" required>
-      <input type="text" name="telefono" id="edit_telefono" class="modal-input" required>
-      <input type="text" name="informacion_adicional" id="edit_info" class="modal-input">
+      <input type="text" name="nombre" id="edit_nombre" class="modal-input char-input" data-max="100" maxlength="100" required>
+      <div class="char-counter"><span class="char-count">0</span>/100</div>
+      <input type="tel" name="telefono" id="edit_telefono" class="modal-input" maxlength="20" required>
+      <input type="text" name="informacion_adicional" id="edit_info" class="modal-input char-input" data-max="500" maxlength="500">
+      <div class="char-counter"><span class="char-count">0</span>/500</div>
       <div class="modal-actions">
         <button type="button" class="btn-cancel" onclick="closeModals()">Cancelar</button>
         <button type="submit" class="btn-confirm">Actualizar</button>
@@ -581,6 +621,12 @@
 <script>
   function openModal(id) {
     document.getElementById(id).classList.add('open');
+    if (id === 'modalAdd') {
+      document.querySelectorAll('#formAdd .char-input').forEach(input => {
+        input.value = '';
+        updateCharCounter(input);
+      });
+    }
   }
 
   function closeModals() {
@@ -593,6 +639,9 @@
       document.getElementById('edit_nombre').value = this.dataset.nombre;
       document.getElementById('edit_telefono').value = this.dataset.telefono;
       document.getElementById('edit_info').value = this.dataset.info || '';
+      document.querySelectorAll('#formEdit .char-input').forEach(input => {
+        updateCharCounter(input);
+      });
       openModal('modalEdit');
     });
   });
@@ -613,6 +662,48 @@
 
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape') closeModals();
+  });
+
+  // Character counter
+  const charToast = document.createElement('div');
+  charToast.className = 'char-toast';
+  charToast.textContent = 'Llegaste al límite de caracteres';
+  document.body.appendChild(charToast);
+
+  let toastTimeout = null;
+
+  function showCharToast() {
+    charToast.classList.add('show');
+    if (toastTimeout) clearTimeout(toastTimeout);
+    toastTimeout = setTimeout(() => {
+      charToast.classList.remove('show');
+    }, 5000);
+  }
+
+  function updateCharCounter(input) {
+    const counter = input.nextElementSibling;
+    if (!counter || !counter.classList.contains('char-counter')) return;
+    const countSpan = counter.querySelector('.char-count');
+    const max = parseInt(input.dataset.max);
+    const len = input.value.length;
+    countSpan.textContent = len;
+    counter.classList.remove('warning', 'limit');
+    if (len >= max) {
+      counter.classList.add('limit');
+    } else if (len >= max * 0.8) {
+      counter.classList.add('warning');
+    }
+  }
+
+  document.querySelectorAll('.char-input').forEach(input => {
+    updateCharCounter(input);
+    input.addEventListener('input', function() {
+      updateCharCounter(this);
+      const max = parseInt(this.dataset.max);
+      if (this.value.length >= max) {
+        showCharToast();
+      }
+    });
   });
 </script>
 {% endblock %}

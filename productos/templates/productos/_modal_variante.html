@@ -9,26 +9,29 @@
         <form id="formVarianteInternal">
           
           <div class="mb-4">
-            <label class="form-label fw-bold" style="color: #8c7e70; font-size: 0.8rem;">TALLE (opcional)</label>
-            <input type="text" class="form-control" id="inputTalleLibre" placeholder="Ej: S, M, XL, 42, Unico... o dejalo vacio"
+            <label class="form-label fw-bold" style="color: #8c7e70; font-size: 0.8rem;">TALLE (opcional) <span class="char-limit">máx. 50</span></label>
+            <input type="text" class="form-control char-input" id="inputTalleLibre" data-max="50" maxlength="50" placeholder="Ej: S, M, XL, 42, Unico... O Dejalo Vacio"
                    style="border-radius: 8px; border: 1.5px solid #e8dfd4; text-transform: capitalize;">
+            <div class="char-counter"><span class="char-count">0</span>/50</div>
           </div>
 
           <div class="mb-4">
             <label class="form-label fw-bold" style="color: #8c7e70; font-size: 0.8rem;">STOCK DE ESTA VARIANTE</label>
             <input type="number" min="0" step="1" class="form-control" id="inputStockVariante" placeholder="Ej: 12" required
-                   style="border-radius: 8px; border: 1.5px solid #e8dfd4;">
+                   style="border-radius: 8px; border: 1.5px solid #e8dfd4;"
+                   onkeydown="return event.key !== 'e' && event.key !== 'E' && event.key !== '+' && event.key !== '-' && event.key !== '.'">
           </div>
           
           <div class="mb-4">
-            <label class="form-label fw-bold" style="color: #8c7e70; font-size: 0.8rem;">COLORES</label>
+            <label class="form-label fw-bold" style="color: #8c7e70; font-size: 0.8rem;">COLORES <span class="char-limit">máx. 30</span></label>
             <div class="input-group mb-2">
-              <input type="color" class="form-control form-control-color" id="colorPickerModal" value="#000000" title="Elegir color" 
+              <input type="color" class="form-control form-control-color" id="colorPickerModal" value="#000000" title="Elegir color"
                      style="max-width: 50px; height: 38px; padding: 2px; border-radius: 8px 0 0 8px; cursor: pointer;">
-              <input type="text" class="form-control" id="colorNombreModal" placeholder="Nombre (Ej: Azul Marino)" 
+              <input type="text" class="form-control char-input" id="colorNombreModal" data-max="30" maxlength="30" placeholder="Nombre (Ej: Azul Marino)"
                      style="border-top: 1.5px solid #e8dfd4; border-bottom: 1.5px solid #e8dfd4; border-left: none;">
               <button type="button" class="btn btn-dark" id="btnPostColor" style="border-radius: 0 8px 8px 0;">+</button>
             </div>
+            <div class="char-counter" style="margin-top: -0.4rem;"><span class="char-count">0</span>/30</div>
             <div class="form-check mb-2">
               <input class="form-check-input" type="checkbox" id="colorNingunoModal">
               <label class="form-check-label small" for="colorNingunoModal">No aplica color</label>

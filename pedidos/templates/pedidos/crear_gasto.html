@@ -127,6 +127,22 @@
     .alert-success { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
     .alert-danger { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
 
+    /* Character counter */
+    .char-limit { font-weight: 400; color: var(--muted); font-size: 0.6rem; }
+    .char-counter { font-size: 0.72rem; color: var(--muted); text-align: right; margin-top: 0.25rem; }
+    .char-counter.warning { color: #d97706; }
+    .char-counter.limit { color: #dc2626; font-weight: 600; }
+    .char-toast {
+        position: fixed; bottom: 2rem; left: 50%;
+        transform: translateX(-50%) translateY(100px);
+        background: #dc2626; color: #fff;
+        padding: 0.75rem 1.5rem; border-radius: 8px;
+        font-size: 0.85rem; font-weight: 500; z-index: 9999;
+        opacity: 0; transition: all 0.3s ease;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    }
+    .char-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
     /* Responsive */
     @media (max-width: 900px) {
         .gasto-form-page { margin-left: 0; padding: 2rem 1.5rem; }
@@ -166,8 +182,9 @@
                 </div>
                 <div class="form-row full">
                     <div class="form-group">
-                        <label class="form-label">Descripción</label>
-                        <input type="text" name="descripcion" value="{{ form.descripcion.value|default:'' }}" class="form-input" placeholder="Ej: Compra de materiales" required>
+                        <label class="form-label">Descripción <span class="char-limit">máx. 200</span></label>
+                        <input type="text" name="descripcion" value="{{ form.descripcion.value|default:'' }}" class="form-input char-input" data-max="200" maxlength="200" placeholder="Ej: Compra de materiales" required>
+                        <div class="char-counter"><span class="char-count">0</span>/200</div>
                     </div>
                 </div>
                 <div class="form-row">
@@ -188,8 +205,9 @@
                 </div>
                 <div class="form-row full">
                     <div class="form-group">
-                        <label class="form-label">Observaciones (opcional)</label>
-                        <textarea name="observaciones" class="form-textarea" placeholder="Notas adicionales sobre el gasto...">{{ form.observaciones.value|default:'' }}</textarea>
+                        <label class="form-label">Observaciones (opcional) <span class="char-limit">máx. 500</span></label>
+                        <textarea name="observaciones" class="form-textarea char-input" data-max="500" maxlength="500" placeholder="Notas adicionales sobre el gasto...">{{ form.observaciones.value|default:'' }}</textarea>
+                        <div class="char-counter"><span class="char-count">0</span>/500</div>
                     </div>
                 </div>
             </div>
@@ -216,4 +234,41 @@
         </div>
     </form>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const charToast = document.createElement('div');
+    charToast.className = 'char-toast';
+    charToast.textContent = 'Llegaste al límite de caracteres';
+    document.body.appendChild(charToast);
+
+    let toastTimeout = null;
+    function showCharToast() {
+        charToast.classList.add('show');
+        if (toastTimeout) clearTimeout(toastTimeout);
+        toastTimeout = setTimeout(() => charToast.classList.remove('show'), 5000);
+    }
+
+    document.querySelectorAll('.char-input').forEach(input => {
+        const counter = input.nextElementSibling;
+        if (!counter || !counter.classList.contains('char-counter')) return;
+        const countSpan = counter.querySelector('.char-count');
+        const max = parseInt(input.dataset.max);
+
+        function updateCounter() {
+            const len = input.value.length;
+            countSpan.textContent = len;
+            counter.classList.remove('warning', 'limit');
+            if (len >= max) counter.classList.add('limit');
+            else if (len >= max * 0.8) counter.classList.add('warning');
+        }
+
+        updateCounter();
+        input.addEventListener('input', function() {
+            updateCounter();
+            if (this.value.length >= max) showCharToast();
+        });
+    });
+});
+</script>
 {% endblock %}

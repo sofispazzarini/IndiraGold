@@ -317,7 +317,7 @@ class ConfiguracionEnvio(models.Model):
     )
     correo_activo = models.BooleanField(
         default=False,
-        help_text='Mostrar Andreani/Correo Argentino como opcion en el checkout'
+        help_text='Mostrar Correo Argentino como opcion en el checkout'
     )
 
     precio_flex = models.DecimalField(
@@ -388,7 +388,6 @@ class ConfiguracionEnvio(models.Model):
 
 class EnvioPedido(models.Model):
     PROVEEDORES = (
-        ('andreani', 'Andreani'),
         ('correo_argentino', 'Correo Argentino'),
         ('flex', 'Envio Flex'),
     )

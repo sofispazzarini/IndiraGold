@@ -148,6 +148,173 @@
 .form-hint {
     font-size: 0.78rem;
     color: var(--muted);
+}
+
+.char-limit {
+    font-weight: 400;
+    color: var(--muted);
+    font-size: 0.75rem;
+}
+
+.char-counter {
+    font-size: 0.75rem;
+    color: var(--muted);
+    text-align: right;
+    margin-top: 0.25rem;
+}
+
+.char-counter.warning {
+    color: #d97706;
+}
+
+.char-counter.limit {
+    color: #dc2626;
+    font-weight: 600;
+}
+
+.char-toast {
+    position: fixed;
+    bottom: 2rem;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: #dc2626;
+    color: #fff;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    z-index: 9999;
+    opacity: 0;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+}
+
+.char-toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
+/* File Upload */
+.current-image-preview {
+    margin-bottom: 1rem;
+    display: inline-block;
+}
+
+.current-image-preview img {
+    max-width: 200px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    display: block;
+}
+
+.current-image-preview span {
+    font-size: 0.8rem;
+    color: var(--muted);
+    margin-top: 0.5rem;
+    display: block;
+}
+
+.file-upload-wrapper {
+    border: 2px dashed var(--border);
+    border-radius: 12px;
+    padding: 2rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: var(--gold-faint);
+    position: relative;
+}
+
+.file-upload-wrapper:hover,
+.file-upload-wrapper.dragover {
+    border-color: var(--gold);
+    background: rgba(184, 146, 42, 0.08);
+}
+
+.file-input-hidden {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.file-upload-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    pointer-events: none;
+}
+
+.file-upload-content i {
+    font-size: 2.5rem;
+    color: var(--gold);
+}
+
+.file-upload-text {
+    font-size: 0.95rem;
+    color: var(--text);
+    font-weight: 500;
+}
+
+.file-upload-hint {
+    font-size: 0.8rem;
+    color: var(--muted);
+}
+
+.file-upload-preview {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.75rem;
+    background: #fff;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+}
+
+.file-upload-preview img {
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 6px;
+}
+
+.file-info {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.file-name {
+    font-size: 0.85rem;
+    color: var(--text);
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.file-remove {
+    background: none;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 50%;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.file-remove:hover {
+    background: #fef2f2;
+    color: #dc2626;
     margin-top: 0.2rem;
 }
 
@@ -266,14 +433,6 @@
         </div>
     </div>
 
-    {% if messages %}
-    {% for message in messages %}
-    <div class="alert-{{ message.tags|default:'success' }}">
-        <i class="bi bi-{% if message.tags == 'error' %}x-circle-fill{% else %}check-circle-fill{% endif %}"></i> {{ message }}
-    </div>
-    {% endfor %}
-    {% endif %}
-
     <form method="post" enctype="multipart/form-data">
         {% csrf_token %}
 
@@ -281,30 +440,34 @@
             <div class="section-title"><i class="bi bi-type"></i> Textos</div>
             <div class="form-grid">
                 <div class="form-group">
-                    <label class="form-label">Eyebrow (texto pequeño)</label>
-                    <input type="text" name="eyebrow" value="{{ hero.eyebrow }}" class="form-input">
-                    <span class="form-hint">Ej: "Nueva colección"</span>
+                    <label class="form-label">Eyebrow (texto pequeño) <span class="char-limit">máx. 100</span></label>
+                    <input type="text" name="eyebrow" value="{{ hero.eyebrow }}" class="form-input char-input" data-max="100" maxlength="100">
+                    <div class="char-counter"><span class="char-count">0</span>/100</div>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Texto del botón</label>
-                    <input type="text" name="texto_cta" value="{{ hero.texto_cta }}" class="form-input">
+                    <label class="form-label">Texto del botón <span class="char-limit">máx. 50</span></label>
+                    <input type="text" name="texto_cta" value="{{ hero.texto_cta }}" class="form-input char-input" data-max="50" maxlength="50">
+                    <div class="char-counter"><span class="char-count">0</span>/50</div>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Título línea 1</label>
-                    <input type="text" name="titulo_linea1" value="{{ hero.titulo_linea1 }}" class="form-input">
+                    <label class="form-label">Título línea 1 <span class="char-limit">máx. 100</span></label>
+                    <input type="text" name="titulo_linea1" value="{{ hero.titulo_linea1 }}" class="form-input char-input" data-max="100" maxlength="100">
+                    <div class="char-counter"><span class="char-count">0</span>/100</div>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Título línea 2 (cursiva)</label>
-                    <input type="text" name="titulo_linea2" value="{{ hero.titulo_linea2 }}" class="form-input">
+                    <label class="form-label">Título línea 2 (cursiva) <span class="char-limit">máx. 100</span></label>
+                    <input type="text" name="titulo_linea2" value="{{ hero.titulo_linea2 }}" class="form-input char-input" data-max="100" maxlength="100">
+                    <div class="char-counter"><span class="char-count">0</span>/100</div>
                 </div>
                 <div class="form-group full-width">
-                    <label class="form-label">Subtítulo</label>
-                    <input type="text" name="subtitulo" value="{{ hero.subtitulo }}" class="form-input">
+                    <label class="form-label">Subtítulo <span class="char-limit">máx. 255</span></label>
+                    <input type="text" name="subtitulo" value="{{ hero.subtitulo }}" class="form-input char-input" data-max="255" maxlength="255">
+                    <div class="char-counter"><span class="char-count">0</span>/255</div>
                 </div>
                 <div class="form-group full-width">
-                    <label class="form-label">Link del botón</label>
-                    <input type="text" name="link_cta" value="{{ hero.link_cta }}" class="form-input">
-                    <span class="form-hint">Ej: "#catalogo" o una URL completa</span>
+                    <label class="form-label">Link del botón <span class="char-limit">máx. 255</span></label>
+                    <input type="text" name="link_cta" value="{{ hero.link_cta }}" class="form-input char-input" data-max="255" maxlength="255">
+                    <div class="char-counter"><span class="char-count">0</span>/255</div>
                 </div>
             </div>
         </div>
@@ -343,12 +506,26 @@
                 <div class="form-group full-width">
                     <label class="form-label">Imagen de fondo (opcional)</label>
                     {% if hero.imagen_fondo %}
-                    <div style="margin-bottom: 1rem;">
-                        <img src="{{ hero.imagen_fondo.url }}" alt="Fondo actual" style="max-width: 200px; border-radius: 8px; border: 1px solid var(--border);">
-                        <p style="font-size: 0.8rem; color: var(--muted); margin-top: 0.5rem;">Imagen actual</p>
+                    <div class="current-image-preview">
+                        <img src="{{ hero.imagen_fondo.url }}" alt="Fondo actual">
+                        <span>Imagen actual</span>
                     </div>
                     {% endif %}
-                    <input type="file" name="imagen_fondo" accept="image/*" class="form-input" style="padding: 0.75rem;">
+                    <div class="file-upload-wrapper" id="fileUploadWrapper">
+                        <input type="file" name="imagen_fondo" id="imagenFondoInput" accept="image/*" class="file-input-hidden">
+                        <div class="file-upload-content">
+                            <i class="bi bi-cloud-arrow-up"></i>
+                            <span class="file-upload-text">Arrastrá una imagen o hacé clic para seleccionar</span>
+                            <span class="file-upload-hint">PNG, JPG o WebP (máx. 5MB)</span>
+                        </div>
+                        <div class="file-upload-preview" id="filePreview" style="display: none;">
+                            <img id="previewImg" src="" alt="Preview">
+                            <div class="file-info">
+                                <span class="file-name" id="fileName"></span>
+                                <button type="button" class="file-remove" id="fileRemove"><i class="bi bi-x-lg"></i></button>
+                            </div>
+                        </div>
+                    </div>
                     <span class="form-hint">Si subís una imagen, reemplaza el color de fondo. Dejá vacío para mantener la actual o usar solo color.</span>
                 </div>
                 {% if hero.imagen_fondo %}
@@ -454,21 +631,133 @@ document.addEventListener('DOMContentLoaded', function() {
     previewTitle.style.fontFamily = "'" + this.value + "', serif";
   });
 
-  // Imagen de fondo
-  const imgInput = document.querySelector('input[name="imagen_fondo"]');
-  if (imgInput) {
-    imgInput.addEventListener('change', function() {
-      if (this.files && this.files[0]) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-          preview.style.backgroundImage = 'url(' + e.target.result + ')';
-          preview.style.backgroundSize = 'cover';
-          preview.style.backgroundPosition = 'center';
-        };
-        reader.readAsDataURL(this.files[0]);
+  // Imagen de fondo - Custom upload
+  const fileWrapper = document.getElementById('fileUploadWrapper');
+  const fileInput = document.getElementById('imagenFondoInput');
+  const fileContent = fileWrapper ? fileWrapper.querySelector('.file-upload-content') : null;
+  const filePreviewDiv = document.getElementById('filePreview');
+  const previewImg = document.getElementById('previewImg');
+  const fileName = document.getElementById('fileName');
+  const fileRemove = document.getElementById('fileRemove');
+
+  if (fileWrapper && fileInput) {
+    // Drag and drop
+    ['dragenter', 'dragover'].forEach(evt => {
+      fileWrapper.addEventListener(evt, function(e) {
+        e.preventDefault();
+        fileWrapper.classList.add('dragover');
+      });
+    });
+
+    ['dragleave', 'drop'].forEach(evt => {
+      fileWrapper.addEventListener(evt, function(e) {
+        e.preventDefault();
+        fileWrapper.classList.remove('dragover');
+      });
+    });
+
+    fileWrapper.addEventListener('drop', function(e) {
+      const files = e.dataTransfer.files;
+      if (files.length > 0) {
+        fileInput.files = files;
+        handleFileSelect(files[0]);
       }
     });
+
+    // File input change
+    fileInput.addEventListener('change', function() {
+      if (this.files && this.files[0]) {
+        handleFileSelect(this.files[0]);
+      }
+    });
+
+    // Remove file
+    if (fileRemove) {
+      fileRemove.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        fileInput.value = '';
+        fileContent.style.display = 'flex';
+        filePreviewDiv.style.display = 'none';
+        preview.style.backgroundImage = '';
+      });
+    }
+
+    function handleFileSelect(file) {
+      if (!file.type.startsWith('image/')) {
+        alert('Por favor seleccioná una imagen');
+        return;
+      }
+
+      if (file.size > 5 * 1024 * 1024) {
+        alert('La imagen no puede superar los 5MB');
+        fileInput.value = '';
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        previewImg.src = e.target.result;
+        fileName.textContent = file.name;
+        fileContent.style.display = 'none';
+        filePreviewDiv.style.display = 'flex';
+
+        // Update hero preview
+        preview.style.backgroundImage = 'url(' + e.target.result + ')';
+        preview.style.backgroundSize = 'cover';
+        preview.style.backgroundPosition = 'center';
+      };
+      reader.readAsDataURL(file);
+    }
   }
+
+  // Character counter
+  const charToast = document.createElement('div');
+  charToast.className = 'char-toast';
+  charToast.textContent = 'Llegaste al límite de caracteres';
+  document.body.appendChild(charToast);
+
+  let toastTimeout = null;
+
+  function showCharToast() {
+    charToast.classList.add('show');
+    if (toastTimeout) clearTimeout(toastTimeout);
+    toastTimeout = setTimeout(() => {
+      charToast.classList.remove('show');
+    }, 5000);
+  }
+
+  document.querySelectorAll('.char-input').forEach(input => {
+    const counter = input.parentElement.querySelector('.char-counter');
+    const countSpan = counter.querySelector('.char-count');
+    const max = parseInt(input.dataset.max);
+
+    function updateCounter() {
+      const len = input.value.length;
+      countSpan.textContent = len;
+      counter.classList.remove('warning', 'limit');
+      if (len >= max) {
+        counter.classList.add('limit');
+      } else if (len >= max * 0.8) {
+        counter.classList.add('warning');
+      }
+    }
+
+    updateCounter();
+
+    input.addEventListener('input', function() {
+      updateCounter();
+      if (this.value.length >= max) {
+        showCharToast();
+      }
+    });
+
+    input.addEventListener('keypress', function(e) {
+      if (this.value.length >= max && e.key !== 'Backspace' && e.key !== 'Delete') {
+        showCharToast();
+      }
+    });
+  });
 });
 </script>
 {% endblock %}

@@ -151,7 +151,7 @@
   }
 
   .form-row.three-cols {
-    grid-template-columns: 2fr 2fr 1fr;
+    grid-template-columns: 2fr 1.5fr 0.8fr;
   }
 
   .form-group {
@@ -160,19 +160,19 @@
   }
 
   .form-label {
-    font-size: 0.78rem;
+    font-size: 0.9rem;
     font-weight: 500;
     color: var(--text);
-    margin-bottom: 0.4rem;
+    margin-bottom: 0.5rem;
   }
 
   .form-input,
   .form-select {
     border: none;
     border-bottom: 1.5px solid var(--border);
-    padding: 0.75rem 1rem;
+    padding: 0.85rem 1rem;
     font-family: 'Montserrat', sans-serif;
-    font-size: 0.9rem;
+    font-size: 1rem;
     background: transparent;
     color: var(--dark);
     transition: border-color 0.2s;
@@ -186,8 +186,24 @@
 
   .form-input::placeholder {
     color: var(--muted);
-    font-size: 0.85rem;
+    font-size: 0.95rem;
   }
+
+  /* Character counter */
+  .char-limit { font-weight: 400; color: var(--muted); font-size: 0.7rem; }
+  .char-counter { font-size: 0.75rem; color: var(--muted); text-align: right; margin-top: 0.25rem; }
+  .char-counter.warning { color: #d97706; }
+  .char-counter.limit { color: #dc2626; font-weight: 600; }
+  .char-toast {
+    position: fixed; bottom: 2rem; left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: #dc2626; color: #fff;
+    padding: 0.75rem 1.5rem; border-radius: 8px;
+    font-size: 0.85rem; font-weight: 500; z-index: 9999;
+    opacity: 0; transition: all 0.3s ease;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+  }
+  .char-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
   .form-select {
     cursor: pointer;
@@ -196,6 +212,10 @@
     background-repeat: no-repeat;
     background-position: right 0 center;
     padding-right: 1.5rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+    min-width: 0;
   }
 
   /* Submit Button */
@@ -311,27 +331,30 @@
       <div class="form-row">
         <div class="form-group">
           <label class="form-label">DNI (Username)</label>
-          <input type="text" name="dni" value="{{ form.dni.value|default:'' }}" class="form-input" placeholder="Sin puntos">
+          <input type="text" name="dni" inputmode="numeric" pattern="[0-9]*" value="{{ form.dni.value|default:'' }}" class="form-input solo-numeros" maxlength="8" placeholder="Sin puntos">
         </div>
         <div class="form-group">
-          <label class="form-label">Nombre</label>
-          <input type="text" name="nombre" value="{{ form.nombre.value|default:'' }}" class="form-input" placeholder="Ej: Martina">
+          <label class="form-label">Nombre <span class="char-limit">máx. 50</span></label>
+          <input type="text" name="nombre" value="{{ form.nombre.value|default:'' }}" class="form-input char-input" data-max="50" maxlength="50" placeholder="Ej: Martina">
+          <div class="char-counter"><span class="char-count">0</span>/50</div>
         </div>
       </div>
       <div class="form-row">
         <div class="form-group">
-          <label class="form-label">Apellido</label>
-          <input type="text" name="apellido" value="{{ form.apellido.value|default:'' }}" class="form-input" placeholder="Ej: Colombo">
+          <label class="form-label">Apellido <span class="char-limit">máx. 50</span></label>
+          <input type="text" name="apellido" value="{{ form.apellido.value|default:'' }}" class="form-input char-input" data-max="50" maxlength="50" placeholder="Ej: Colombo">
+          <div class="char-counter"><span class="char-count">0</span>/50</div>
         </div>
         <div class="form-group">
-          <label class="form-label">Email</label>
-          <input type="email" name="email" value="{{ form.email.value|default:'' }}" class="form-input" placeholder="correo@ejemplo.com">
+          <label class="form-label">Email <span class="char-limit">máx. 100</span></label>
+          <input type="email" name="email" value="{{ form.email.value|default:'' }}" class="form-input char-input" data-max="100" maxlength="100" placeholder="correo@ejemplo.com">
+          <div class="char-counter"><span class="char-count">0</span>/100</div>
         </div>
       </div>
       <div class="form-row">
         <div class="form-group">
           <label class="form-label">Teléfono</label>
-          <input type="text" name="telefono" value="{{ form.telefono.value|default:'' }}" class="form-input" placeholder="Celular / WhatsApp">
+          <input type="tel" name="telefono" value="{{ form.telefono.value|default:'' }}" class="form-input" placeholder="Celular / WhatsApp">
         </div>
       </div>
     </div>
@@ -340,21 +363,24 @@
       <p class="section-title">Domicilio de entrega</p>
       <div class="form-row">
         <div class="form-group">
-          <label class="form-label">Etiqueta (ej: casa, trabajo, etc)</label>
-          <input type="text" name="etiqueta" value="{{ form.etiqueta.value|default:'' }}" class="form-input" placeholder="Ej: Casa, Trabajo">
+          <label class="form-label">Etiqueta (ej: casa, trabajo, etc) <span class="char-limit">máx. 50</span></label>
+          <input type="text" name="etiqueta" value="{{ form.etiqueta.value|default:'' }}" class="form-input char-input" data-max="50" maxlength="50" placeholder="Ej: Casa, Trabajo">
+          <div class="char-counter"><span class="char-count">0</span>/50</div>
         </div>
       </div>
       <div class="form-row">
         <div class="form-group">
-          <label class="form-label">Calle / Avenida</label>
-          <input type="text" name="calle" value="{{ form.calle.value|default:'' }}" class="form-input">
+          <label class="form-label">Calle / Avenida <span class="char-limit">máx. 100</span></label>
+          <input type="text" name="calle" value="{{ form.calle.value|default:'' }}" class="form-input char-input" data-max="100" maxlength="100">
+          <div class="char-counter"><span class="char-count">0</span>/100</div>
         </div>
         <div class="form-group">
-          <label class="form-label">Número</label>
-          <input type="text" name="numero" value="{{ form.numero.value|default:'' }}" class="form-input">
+          <label class="form-label">Número <span class="char-limit">máx. 10</span></label>
+          <input type="text" name="numero" value="{{ form.numero.value|default:'' }}" class="form-input char-input" data-max="10" maxlength="10">
+          <div class="char-counter"><span class="char-count">0</span>/10</div>
         </div>
       </div>
-      <div class="form-row three-cols">
+      <div class="form-row">
         <div class="form-group">
           <label class="form-label">Provincia</label>
           <select name="provincia" class="form-select">
@@ -364,18 +390,22 @@
           </select>
         </div>
         <div class="form-group">
-          <label class="form-label">Localidad</label>
-          <input type="text" name="ciudad" value="{{ form.ciudad.value|default:'' }}" class="form-input">
-        </div>
-        <div class="form-group">
-          <label class="form-label">C.P.</label>
-          <input type="text" name="codigo_postal" value="{{ form.codigo_postal.value|default:'' }}" class="form-input">
+          <label class="form-label">Localidad <span class="char-limit">máx. 50</span></label>
+          <input type="text" name="ciudad" value="{{ form.ciudad.value|default:'' }}" class="form-input char-input" data-max="50" maxlength="50">
+          <div class="char-counter"><span class="char-count">0</span>/50</div>
         </div>
       </div>
       <div class="form-row">
         <div class="form-group">
-          <label class="form-label">Referencia opcional</label>
-          <input type="text" name="referencia" value="{{ form.referencia.value|default:'' }}" class="form-input" placeholder="Ej: Porton verde, timbre roto">
+          <label class="form-label">C.P.</label>
+          <input type="text" name="codigo_postal" inputmode="numeric" pattern="[0-9]*" value="{{ form.codigo_postal.value|default:'' }}" class="form-input solo-numeros" maxlength="10">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Referencia opcional <span class="char-limit">máx. 255</span></label>
+          <input type="text" name="referencia" value="{{ form.referencia.value|default:'' }}" class="form-input char-input" data-max="255" maxlength="255" placeholder="Ej: Porton verde, timbre roto">
+          <div class="char-counter"><span class="char-count">0</span>/255</div>
         </div>
       </div>
     </div>
@@ -389,4 +419,56 @@
   </form>
 
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Bloquear letras en campos numéricos
+    document.querySelectorAll('.solo-numeros').forEach(input => {
+        input.addEventListener('keydown', function(e) {
+            if (e.key.length === 1 && !/[0-9]/.test(e.key)) {
+                e.preventDefault();
+            }
+        });
+        input.addEventListener('paste', function(e) {
+            const paste = (e.clipboardData || window.clipboardData).getData('text');
+            if (!/^\d+$/.test(paste)) {
+                e.preventDefault();
+            }
+        });
+    });
+
+    const charToast = document.createElement('div');
+    charToast.className = 'char-toast';
+    charToast.textContent = 'Llegaste al límite de caracteres';
+    document.body.appendChild(charToast);
+
+    let toastTimeout = null;
+    function showCharToast() {
+        charToast.classList.add('show');
+        if (toastTimeout) clearTimeout(toastTimeout);
+        toastTimeout = setTimeout(() => charToast.classList.remove('show'), 5000);
+    }
+
+    document.querySelectorAll('.char-input').forEach(input => {
+        const counter = input.nextElementSibling;
+        if (!counter || !counter.classList.contains('char-counter')) return;
+        const countSpan = counter.querySelector('.char-count');
+        const max = parseInt(input.dataset.max);
+
+        function updateCounter() {
+            const len = input.value.length;
+            countSpan.textContent = len;
+            counter.classList.remove('warning', 'limit');
+            if (len >= max) counter.classList.add('limit');
+            else if (len >= max * 0.8) counter.classList.add('warning');
+        }
+
+        updateCounter();
+        input.addEventListener('input', function() {
+            updateCounter();
+            if (this.value.length >= max) showCharToast();
+        });
+    });
+});
+</script>
 {% endblock %}
