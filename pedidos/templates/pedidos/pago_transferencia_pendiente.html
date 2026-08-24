@@ -100,6 +100,18 @@
     color: #6e0e2e;
     background: #fff;
   }
+  .btn-estado {
+    background: #1a1612;
+    color: #fff;
+    display: inline-flex;
+    align-items: center;
+    flex: 1;
+    justify-content: center;
+  }
+  .btn-estado:hover {
+    background: #2d2620;
+    color: #fff;
+  }
   @media (max-width: 900px) {
     .transfer-page {
       margin-left: 0;
@@ -156,8 +168,8 @@
       <a class="btn-whatsapp" href="{% url 'pedidos:enviar_comprobante_transferencia' pedido.id %}" title="Enviar comprobante por WhatsApp">
         <i class="bi bi-whatsapp"></i>
       </a>
-      <a class="btn-volver" href="{% url 'pedidos:checkout' %}">
-        Ver carrito
+      <a class="btn-estado" href="{% url 'pedidos:detalle_pedido' pedido.id %}">
+        <i class="bi bi-box-seam me-2"></i>Ver estado del pedido
       </a>
     </div>
   </div>
