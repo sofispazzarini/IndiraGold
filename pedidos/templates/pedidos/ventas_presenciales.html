@@ -137,9 +137,10 @@
         margin:0;
     }
 
-    .table-responsive{
+    .tabla-scroll-wrapper{
         overflow-x:auto;
         -webkit-overflow-scrolling:touch;
+        width:100%;
     }
 
     .ventas-table tbody td{
@@ -357,20 +358,17 @@
             padding-bottom:0.75rem;
         }
         /* Tabla con scroll horizontal */
-        .ventas-card{
-            overflow-x:auto !important;
+        .tabla-scroll-wrapper{
+            overflow-x:scroll !important;
             -webkit-overflow-scrolling:touch;
-        }
-        .table-responsive{
-            overflow-x:auto !important;
-            -webkit-overflow-scrolling:touch;
-            border-radius:12px;
             display:block;
             width:100%;
+            max-width:100vw;
+            padding-bottom:10px;
         }
         .ventas-table{
-            min-width:750px !important;
-            width:max-content;
+            min-width:800px !important;
+            width:800px !important;
         }
         .ventas-table th,
         .ventas-table td{
@@ -676,7 +674,7 @@
 
     <!-- TABLA -->
 
-    <div class="ventas-card" style="overflow:visible;">
+    <div class="ventas-card">
 
         <div class="section-title mb-3">Historial de ventas</div>
 
@@ -684,9 +682,8 @@
             <i class="bi bi-arrow-left-right me-1"></i> Desliza para ver todo
         </div>
 
-        <div class="table-responsive" style="overflow-x:auto !important; display:block; width:100%; -webkit-overflow-scrolling:touch;">
-
-            <table class="table ventas-table align-middle" style="min-width:800px;">
+        <div class="tabla-scroll-wrapper">
+            <table class="table ventas-table align-middle">
 
                 <thead>
 
