@@ -101,15 +101,17 @@
     background: #fff;
   }
   .btn-estado {
-    background: #1a1612;
+    background: linear-gradient(135deg, #b8922a 0%, #d4a84b 100%);
     color: #fff;
     display: inline-flex;
     align-items: center;
     flex: 1;
     justify-content: center;
+    border: none;
+    font-size: 0.9rem;
   }
   .btn-estado:hover {
-    background: #2d2620;
+    background: linear-gradient(135deg, #a07d1f 0%, #c49a3d 100%);
     color: #fff;
   }
   @media (max-width: 900px) {
@@ -168,8 +170,8 @@
       <a class="btn-whatsapp" href="{% url 'pedidos:enviar_comprobante_transferencia' pedido.id %}" title="Enviar comprobante por WhatsApp">
         <i class="bi bi-whatsapp"></i>
       </a>
-      <a class="btn-estado" href="{% url 'pedidos:detalle_pedido' pedido.id %}">
-        <i class="bi bi-box-seam me-2"></i>Ver estado del pedido
+      <a class="btn-estado" href="{% url 'pedidos:mis_pedidos' %}">
+        <i class="bi bi-box-seam me-2"></i>Mis pedidos
       </a>
     </div>
   </div>
