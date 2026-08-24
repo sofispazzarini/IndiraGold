@@ -546,7 +546,6 @@
         .gestion-main {
             padding: 1rem 0.5rem;
             max-width: 100%;
-            overflow-x: hidden;
         }
         .page-title {
             font-size: 1.4rem;
@@ -576,26 +575,21 @@
         }
         .ig-table-card {
             border-radius: 10px;
-            overflow-x: auto;
             margin: 0 -0.5rem;
             width: calc(100% + 1rem);
         }
         .table-responsive {
             border-radius: 10px;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        .table {
+            min-width: 700px;
         }
         .table th, .table td {
-            padding: 8px 5px;
-            font-size: 0.7rem;
+            padding: 8px 6px;
+            font-size: 0.75rem;
             white-space: nowrap;
-        }
-        /* Ocultar columnas menos importantes en móvil */
-        .table th.col-entrega,
-        .table td.col-entrega,
-        .table th.col-tipo,
-        .table td.col-tipo,
-        .table th.col-fecha,
-        .table td.col-fecha {
-            display: none !important;
         }
         .pedido-id {
             font-size: 0.9rem;
@@ -607,18 +601,12 @@
             font-size: 0.9rem;
         }
         .estado-badge {
-            padding: 0.2rem 0.4rem;
+            padding: 0.25rem 0.5rem;
             font-size: 0.65rem;
         }
         .btn-ver {
             padding: 6px 10px;
             font-size: 0.7rem;
-        }
-        .btn-ver i {
-            margin: 0 !important;
-        }
-        .btn-ver .btn-text {
-            display: none;
         }
         nav[aria-label="Paginación"] {
             margin-left: 0 !important;
@@ -627,6 +615,21 @@
         .pagination .page-link {
             padding: 0.35rem 0.6rem;
             font-size: 0.75rem;
+        }
+        /* Indicador de scroll */
+        .scroll-hint {
+            display: block;
+            text-align: center;
+            font-size: 0.7rem;
+            color: #9c8c7c;
+            padding: 0.5rem;
+        }
+        .scroll-hint i {
+            animation: swipe 1.5s ease-in-out infinite;
+        }
+        @keyframes swipe {
+            0%, 100% { transform: translateX(0); }
+            50% { transform: translateX(5px); }
         }
     }
 
@@ -741,6 +744,9 @@
   </div>
 
     {% if pedidos %}
+        <div class="scroll-hint d-none d-block d-sm-none">
+            <i class="bi bi-arrow-left-right me-1"></i> Desliza para ver todo
+        </div>
         <div class="ig-table-card">
             <div class="table-responsive">
                 <table class="table align-middle mb-0">
