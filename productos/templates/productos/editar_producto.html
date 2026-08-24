@@ -79,8 +79,14 @@
                         </div>
                         {% if producto.imagenes.count < 5 %}
                             <label class="small fw-bold mb-1">Añadir más fotos comerciales</label>
-                            <input type="file" name="fotos_galeria" multiple accept="image/jpeg,image/png,image/webp" class="form-control form-control-sm">
-                            <small class="text-muted">Formatos: JPG, PNG o WebP. Tamaño recomendado: 800x800px o mayor.</small>
+                            <div class="file-input-wrapper">
+                                <input type="file" name="fotos_galeria" id="inputFotosGaleria" multiple accept="image/jpeg,image/png,image/webp" class="file-input-hidden">
+                                <label for="inputFotosGaleria" class="file-input-label">
+                                    <i class="bi bi-cloud-upload me-2"></i>
+                                    <span id="labelFotosGaleria">Elegir imágenes</span>
+                                </label>
+                            </div>
+                            <small class="text-muted">Formatos: JPG, PNG o WebP. Tamaño recomendado: 800x800px.</small>
                         {% endif %}
                     </div>
                 </div>
@@ -175,10 +181,9 @@
                                         <td class="text-end">
                                             <div class="d-flex gap-1 justify-content-end">
                                                 <a href="{% url 'productos:editar_variante' variante.id %}" class="btn btn-sm btn-light text-primary border shadow-sm">✎</a>
-                                                <form action="{% url 'productos:eliminar_variante' variante.id %}" method="post">
-                                                    {% csrf_token %}
-                                                    <button type="submit" class="btn btn-sm btn-light text-danger border shadow-sm" onclick="return confirm('¿Borrar este talle?')">×</button>
-                                                </form>
+                                                <button type="button" class="btn btn-sm btn-light text-danger border shadow-sm btn-eliminar-talle"
+                                                        data-talle-nombre="{{ variante.talle.nombre }}"
+                                                        data-url="{% url 'productos:eliminar_variante' variante.id %}">×</button>
                                             </div>
                                         </td>
                                     </tr>
@@ -255,7 +260,68 @@ document.querySelectorAll('.btn-eliminar-foto').forEach(btn => {
     .x-small { font-size: 0.72rem; }
     .border-dashed { border: 2px dashed #e9ecef !important; }
     .badge { font-size: 0.7rem; }
+
+    /* File input bonito */
+    .file-input-wrapper { position: relative; display: inline-block; width: 100%; }
+    .file-input-hidden { position: absolute; left: 0; top: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer; }
+    .file-input-label {
+        display: flex; align-items: center; justify-content: center;
+        padding: 12px 20px; background: linear-gradient(135deg, #faf7f2 0%, #f5f0e8 100%);
+        border: 2px dashed #d4c5a9; border-radius: 12px;
+        color: #8c7e70; font-size: 0.9rem; font-weight: 500;
+        cursor: pointer; transition: all 0.2s ease;
+    }
+    .file-input-label:hover { border-color: #b8922a; background: #fdfbf7; color: #b8922a; }
+    .file-input-label i { font-size: 1.2rem; }
 </style>
+
+<!-- Modal Eliminar Talle -->
+<div class="modal fade" id="modalEliminarTalle" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
+            <div class="modal-body text-center p-4">
+                <div class="mb-3 d-flex justify-content-center">
+                    <div style="background: #fff3cd; width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                        <i class="bi bi-exclamation-triangle" style="font-size: 1.8rem; color: #856404;"></i>
+                    </div>
+                </div>
+                <h5 class="fw-bold text-dark mb-2">¿Eliminar este talle?</h5>
+                <p class="text-muted small mb-1">Vas a eliminar el talle:</p>
+                <p class="fw-bold text-dark mb-3" id="talleAEliminar" style="font-size: 1.2rem;"></p>
+                <p class="text-muted small mb-4">Se borrarán sus colores, medidas y stock asociado.</p>
+                <div class="d-flex justify-content-center gap-2">
+                    <button type="button" class="btn btn-light px-4" data-bs-dismiss="modal" style="border-radius: 10px; font-weight: 600;">Cancelar</button>
+                    <form id="formEliminarTalle" method="post" style="display:inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger px-4 shadow-sm" style="border-radius: 10px; font-weight: 600;">
+                            Sí, eliminar
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Límite de Imágenes -->
+<div class="modal fade" id="modalLimiteImagenes" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
+            <div class="modal-body text-center p-4">
+                <div class="mb-3 d-flex justify-content-center">
+                    <div style="background: #e3f2fd; width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                        <i class="bi bi-images" style="font-size: 1.8rem; color: #1976d2;"></i>
+                    </div>
+                </div>
+                <h5 class="fw-bold text-dark mb-2">Límite de imágenes</h5>
+                <p class="text-muted small mb-4" id="mensajeLimiteImagenes"></p>
+                <button type="button" class="btn btn-primary px-4" data-bs-dismiss="modal" style="border-radius: 10px; font-weight: 600; background: #b8922a; border: none;">
+                    Entendido
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const globalStock = document.getElementById('stockGlobalEdit');
@@ -272,16 +338,35 @@ document.addEventListener('DOMContentLoaded', function() {
     inputs.forEach(input => input.addEventListener('input', recalcularStockGlobal));
     recalcularStockGlobal();
 
-    // Validar máximo 5 fotos en galería
-    const inputGaleria = document.querySelector('input[name="fotos_galeria"]');
+    // Modal para eliminar talle
+    document.querySelectorAll('.btn-eliminar-talle').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const talleNombre = this.dataset.talleNombre;
+            const url = this.dataset.url;
+            document.getElementById('talleAEliminar').textContent = talleNombre;
+            document.getElementById('formEliminarTalle').action = url;
+            new bootstrap.Modal(document.getElementById('modalEliminarTalle')).show();
+        });
+    });
+
+    // Validar máximo 5 fotos en galería con modal
+    const inputGaleria = document.getElementById('inputFotosGaleria');
     if (inputGaleria) {
         const fotosExistentes = {{ producto.imagenes.count }};
         const disponibles = 5 - fotosExistentes;
+        const labelFotos = document.getElementById('labelFotosGaleria');
 
         inputGaleria.addEventListener('change', function() {
             if (this.files.length > disponibles) {
-                alert(`Solo podés agregar ${disponibles} imagen(es) más. Ya tenés ${fotosExistentes} de 5.`);
+                document.getElementById('mensajeLimiteImagenes').innerHTML =
+                    `Solo podés agregar <strong>${disponibles}</strong> imagen(es) más.<br>Ya tenés <strong>${fotosExistentes}</strong> de 5.`;
+                new bootstrap.Modal(document.getElementById('modalLimiteImagenes')).show();
                 this.value = '';
+                labelFotos.textContent = 'Elegir imágenes';
+            } else if (this.files.length > 0) {
+                labelFotos.textContent = this.files.length === 1
+                    ? '1 imagen seleccionada'
+                    : `${this.files.length} imágenes seleccionadas`;
             }
         });
     }

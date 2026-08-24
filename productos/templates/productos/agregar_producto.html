@@ -136,7 +136,13 @@
                 <div class="col-md-6">
                     <div class="card p-3 border-0 shadow-sm">
                         <label class="fw-bold mb-2">GALERÍA COMERCIAL (Máx 5)</label>
-                        <input type="file" name="imagenes" id="inputGaleria" multiple accept="image/*" class="form-control">
+                        <div class="file-input-wrapper">
+                            <input type="file" name="imagenes" id="inputGaleria" multiple accept="image/*" class="file-input-hidden">
+                            <label for="inputGaleria" class="file-input-label">
+                                <i class="bi bi-cloud-upload me-2"></i>
+                                <span id="labelGaleria">Elegir imágenes</span>
+                            </label>
+                        </div>
                         <div id="viewGaleria" class="d-flex flex-wrap gap-2 mt-3"></div>
                     </div>
                 </div>
@@ -415,12 +421,22 @@
         document.getElementById('inputGaleria').onchange = (e) => {
             const cont = document.getElementById('viewGaleria');
             const input = e.target;
+            const labelGaleria = document.getElementById('labelGaleria');
             cont.innerHTML = '';
 
             if (input.files.length > 5) {
-                alert('Solo podés subir hasta 5 imágenes en la galería comercial.');
+                document.getElementById('mensajeLimiteImagenes').innerHTML =
+                    'Solo podés subir hasta <strong>5</strong> imágenes en la galería comercial.';
+                new bootstrap.Modal(document.getElementById('modalLimiteImagenes')).show();
                 input.value = '';
+                labelGaleria.textContent = 'Elegir imágenes';
                 return;
+            }
+
+            if (input.files.length > 0) {
+                labelGaleria.textContent = input.files.length === 1
+                    ? '1 imagen seleccionada'
+                    : `${input.files.length} imágenes seleccionadas`;
             }
 
             Array.from(input.files).forEach(f => {
@@ -914,4 +930,39 @@ document.getElementById('formNuevaSubcategoria').addEventListener('submit', func
     .catch(() => mostrarError('errorSubcategoria', 'Error de conexión. Verificá tu internet e intentá de nuevo.'));
 });
 </script>
+
+<style>
+    /* File input bonito */
+    .file-input-wrapper { position: relative; display: inline-block; width: 100%; }
+    .file-input-hidden { position: absolute; left: 0; top: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer; }
+    .file-input-label {
+        display: flex; align-items: center; justify-content: center;
+        padding: 12px 20px; background: linear-gradient(135deg, #faf7f2 0%, #f5f0e8 100%);
+        border: 2px dashed #d4c5a9; border-radius: 12px;
+        color: #8c7e70; font-size: 0.9rem; font-weight: 500;
+        cursor: pointer; transition: all 0.2s ease;
+    }
+    .file-input-label:hover { border-color: #b8922a; background: #fdfbf7; color: #b8922a; }
+    .file-input-label i { font-size: 1.2rem; }
+</style>
+
+<!-- Modal Límite de Imágenes -->
+<div class="modal fade" id="modalLimiteImagenes" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
+            <div class="modal-body text-center p-4">
+                <div class="mb-3 d-flex justify-content-center">
+                    <div style="background: #e3f2fd; width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                        <i class="bi bi-images" style="font-size: 1.8rem; color: #1976d2;"></i>
+                    </div>
+                </div>
+                <h5 class="fw-bold text-dark mb-2">Límite de imágenes</h5>
+                <p class="text-muted small mb-4" id="mensajeLimiteImagenes"></p>
+                <button type="button" class="btn btn-primary px-4" data-bs-dismiss="modal" style="border-radius: 10px; font-weight: 600; background: #b8922a; border: none;">
+                    Entendido
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
