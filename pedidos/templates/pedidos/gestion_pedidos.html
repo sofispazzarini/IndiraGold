@@ -545,38 +545,86 @@
     @media (max-width: 480px) {
         .gestion-main {
             padding: 1rem 0.5rem;
+            max-width: 100%;
+            overflow-x: hidden;
         }
         .page-title {
-            font-size: 1.5rem;
+            font-size: 1.4rem;
         }
         .page-header {
             margin-bottom: 1rem;
             padding-bottom: 0.75rem;
         }
+        .header-eyebrow {
+            font-size: 0.55rem;
+        }
         .filter-card {
-            padding: 0.75rem;
+            padding: 0.5rem;
             border-radius: 10px;
+        }
+        .filter-card .d-flex {
+            flex-direction: column !important;
+            gap: 0.5rem !important;
+        }
+        .filter-card .d-flex > div {
+            min-width: 100% !important;
+            width: 100% !important;
+        }
+        .filter-select {
+            min-width: 100% !important;
+            font-size: 0.8rem;
         }
         .ig-table-card {
             border-radius: 10px;
             overflow-x: auto;
+            margin: 0 -0.5rem;
+            width: calc(100% + 1rem);
+        }
+        .table-responsive {
+            border-radius: 10px;
         }
         .table th, .table td {
-            padding: 10px 6px;
-            font-size: 0.75rem;
+            padding: 8px 5px;
+            font-size: 0.7rem;
             white-space: nowrap;
         }
-        .estado-badge {
-            padding: 0.25rem 0.5rem;
-            font-size: 0.7rem;
+        .pedido-id {
+            font-size: 0.9rem;
         }
-        .btn-action {
-            padding: 0.25rem 0.5rem;
+        .pedido-cliente {
             font-size: 0.75rem;
+        }
+        .pedido-total {
+            font-size: 0.9rem;
+        }
+        .estado-badge {
+            padding: 0.2rem 0.4rem;
+            font-size: 0.65rem;
+        }
+        .btn-ver {
+            padding: 6px 10px;
+            font-size: 0.7rem;
         }
         nav[aria-label="Paginación"] {
             margin-left: 0 !important;
             max-width: 100% !important;
+        }
+        .pagination .page-link {
+            padding: 0.35rem 0.6rem;
+            font-size: 0.75rem;
+        }
+    }
+
+    @media (max-width: 360px) {
+        .gestion-main {
+            padding: 0.75rem 0.35rem;
+        }
+        .page-title {
+            font-size: 1.2rem;
+        }
+        .table th, .table td {
+            padding: 6px 4px;
+            font-size: 0.65rem;
         }
     }
 
