@@ -90,15 +90,12 @@ def perfil(request):
         else:
             nombre = request.POST.get('nombre', '').strip()
             apellido = request.POST.get('apellido', '').strip()
-            email = request.POST.get('email', '').strip()
             telefono = request.POST.get('telefono', '').strip()
 
             if nombre:
                 request.user.first_name = capitalizar_texto(nombre)
             if apellido:
                 request.user.last_name = capitalizar_texto(apellido)
-            if email:
-                request.user.email = email
             if telefono:
                 cliente.telefono = telefono
 

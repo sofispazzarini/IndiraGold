@@ -90,31 +90,56 @@ class EditarClienteForm(forms.ModelForm):
 
 
 class NuevaDireccionForm(forms.ModelForm):
+    provincia = forms.ChoiceField(choices=PROVINCIAS, label='Provincia')
+
     class Meta:
         model = Direccion
         fields = ['etiqueta', 'calle', 'numero', 'ciudad', 'provincia', 'codigo_postal', 'referencia']
         widgets = {
-            'etiqueta': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: Casa, Trabajo'}),
-            'calle': forms.TextInput(attrs={'class': 'form-control'}),
-            'numero': forms.TextInput(attrs={'class': 'form-control'}),
-            'ciudad': forms.TextInput(attrs={'class': 'form-control'}),
-            'provincia': forms.TextInput(attrs={'class': 'form-control'}),
-            'codigo_postal': forms.TextInput(attrs={'class': 'form-control'}),
-            'referencia': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: Porton verde, timbre roto'}),
+            'etiqueta': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: Casa, Trabajo', 'maxlength': '50'}),
+            'calle': forms.TextInput(attrs={'class': 'form-control', 'maxlength': '100'}),
+            'numero': forms.TextInput(attrs={'class': 'form-control', 'maxlength': '10'}),
+            'ciudad': forms.TextInput(attrs={'class': 'form-control', 'maxlength': '50'}),
+            'codigo_postal': forms.TextInput(attrs={'class': 'form-control', 'maxlength': '10'}),
+            'referencia': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: Porton verde, timbre roto', 'maxlength': '255'}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['provincia'].widget.attrs['class'] = 'form-control'
+
+    def clean_etiqueta(self):
+        etiqueta = capitalizar_texto(self.cleaned_data['etiqueta'])
+        cliente = self.initial.get('cliente')
+        if cliente:
+            etiqueta_normalizada = etiqueta.strip().lower()
+            for direccion in cliente.direcciones.all():
+                if self.instance and self.instance.pk == direccion.pk:
+                    continue
+                if direccion.etiqueta.strip().lower() == etiqueta_normalizada:
+                    raise forms.ValidationError(f'Ya tenés una dirección con la etiqueta "{etiqueta}". Usá otra etiqueta.')
+        return etiqueta
+
+    def clean_calle(self):
+        return capitalizar_texto(self.cleaned_data['calle'])
+
+    def clean_ciudad(self):
+        return capitalizar_texto(self.cleaned_data['ciudad'])
+
+    def clean_referencia(self):
+        return capitalizar_texto(self.cleaned_data.get('referencia', ''))
 
     def clean(self):
         cleaned_data = super().clean()
-        etiqueta = cleaned_data.get('etiqueta')
         calle = cleaned_data.get('calle')
         numero = cleaned_data.get('numero')
         ciudad = cleaned_data.get('ciudad')
         provincia = cleaned_data.get('provincia')
         codigo_postal = cleaned_data.get('codigo_postal')
         cliente = self.initial.get('cliente')
-        if cliente:
+        if cliente and calle and numero and ciudad:
             nueva_clave = Direccion.clave_unica(
-                etiqueta,
+                cleaned_data.get('etiqueta', ''),
                 calle,
                 numero,
                 ciudad,
@@ -127,29 +152,4 @@ class NuevaDireccionForm(forms.ModelForm):
                     continue
                 if direccion.clave_normalizada == nueva_clave:
                     raise forms.ValidationError('Esta dirección ya está registrada para este cliente.')
-        if False and Direccion.objects.filter(
-            cliente=cliente,
-            etiqueta=etiqueta,
-            calle=calle,
-            numero=numero,
-            ciudad=ciudad,
-            provincia=provincia,
-            codigo_postal=codigo_postal
-        ).exists():
-            raise forms.ValidationError('Esta dirección ya está registrada para este cliente.')
         return cleaned_data
-
-    def clean_etiqueta(self):
-        return capitalizar_texto(self.cleaned_data['etiqueta'])
-
-    def clean_calle(self):
-        return capitalizar_texto(self.cleaned_data['calle'])
-
-    def clean_ciudad(self):
-        return capitalizar_texto(self.cleaned_data['ciudad'])
-
-    def clean_provincia(self):
-        return capitalizar_texto(self.cleaned_data['provincia'])
-
-    def clean_referencia(self):
-        return capitalizar_texto(self.cleaned_data.get('referencia', ''))

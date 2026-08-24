@@ -73,7 +73,7 @@
                             {% for foto in producto.imagenes.all %}
                                 <div class="col-3 position-relative">
                                     <img src="{{ foto.imagen.url }}" class="img-fluid rounded border shadow-sm" style="height: 110px; width: 100%; object-fit: cover;">
-                                    <a href="{% url 'productos:eliminar_foto' foto.id %}" class="btn btn-danger btn-sm position-absolute top-0 end-0 m-1 p-0 d-flex align-items-center justify-content-center shadow" style="width: 24px; height: 24px; border-radius: 50%; border: 2px solid white; z-index: 10;">×</a>
+                                    <button type="button" class="btn btn-danger btn-sm position-absolute top-0 end-0 m-1 p-0 d-flex align-items-center justify-content-center shadow btn-eliminar-foto" style="width: 24px; height: 24px; border-radius: 50%; border: 2px solid white; z-index: 10;" data-foto-id="{{ foto.id }}" data-bs-toggle="modal" data-bs-target="#modalEliminarFoto">×</button>
                                 </div>
                             {% endfor %}
                         </div>
@@ -212,6 +212,36 @@
         </div>
     </div>
 </div>
+
+<div class="modal fade" id="modalEliminarFoto" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow" style="border-radius: 20px;">
+            <div class="modal-body text-center p-4">
+                <div class="text-danger mb-3">
+                    <svg width="48" height="48" fill="currentColor" viewBox="0 0 16 16">
+                        <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
+                        <path d="M7.002 11a1 1 0 1 1 2 0 1 1 0 0 1-2 0zM7.1 4.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 4.995z"/>
+                    </svg>
+                </div>
+                <h5 class="fw-bold mb-2">¿Eliminar esta foto?</h5>
+                <p class="text-muted small">Esta acción quitará la foto de portada de forma permanente.</p>
+                <div class="d-flex gap-2 justify-content-center mt-4">
+                    <button type="button" class="btn btn-light px-4 rounded-pill" data-bs-dismiss="modal">Cancelar</button>
+                    <a href="#" id="confirmarEliminarFoto" class="btn btn-danger px-4 rounded-pill">Sí, eliminar</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.querySelectorAll('.btn-eliminar-foto').forEach(btn => {
+    btn.addEventListener('click', function() {
+        const fotoId = this.dataset.fotoId;
+        document.getElementById('confirmarEliminarFoto').href = `/productos/eliminar-foto/${fotoId}/`;
+    });
+});
+</script>
 
 {% include 'productos/_modal_confirmar_eliminar.html' %}
 

@@ -3,6 +3,7 @@
 
 {% block extra_head %}
 {{ block.super }}
+<link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.css" rel="stylesheet">
 <style>
   .perfil-main {
     min-height: calc(100vh - 60px);
@@ -679,9 +680,8 @@
         </div>
 
         <div class="form-group">
-          <label class="form-label">Email <span class="char-limit">máx. 100</span></label>
-          <input type="email" name="email" class="form-input char-input" data-max="100" maxlength="100" value="{{ request.user.email }}" placeholder="tu@email.com">
-          <div class="char-counter"><span class="char-count">0</span>/100</div>
+          <label class="form-label">Email</label>
+          <input type="email" class="form-input" value="{{ request.user.email }}" readonly style="cursor: not-allowed; color: var(--muted);">
         </div>
 
         <div class="form-group">
@@ -749,32 +749,58 @@
             {% csrf_token %}
             <div class="form-grid">
               <div class="form-group">
-                <label class="form-label">Etiqueta (ej: casa, trabajo, etc)</label>
-                <input type="text" name="etiqueta" class="form-control" value="{{ dir.etiqueta|title }}" required>
+                <label class="form-label">Etiqueta <span class="char-limit">máx. 50</span></label>
+                <input type="text" name="etiqueta" class="form-control" value="{{ dir.etiqueta|title }}" maxlength="50" required>
               </div>
               <div class="form-group">
-                <label class="form-label">Calle</label>
-                <input type="text" name="calle" class="form-control" value="{{ dir.calle|title }}" required>
+                <label class="form-label">Calle <span class="char-limit">máx. 100</span></label>
+                <input type="text" name="calle" class="form-control" value="{{ dir.calle|title }}" maxlength="100" required>
               </div>
               <div class="form-group">
                 <label class="form-label">Numero</label>
-                <input type="text" name="numero" class="form-control" value="{{ dir.numero }}" required>
-              </div>
-              <div class="form-group">
-                <label class="form-label">Ciudad</label>
-                <input type="text" name="ciudad" class="form-control" value="{{ dir.ciudad|title }}" required>
+                <input type="text" name="numero" class="form-control" value="{{ dir.numero }}" maxlength="10" required>
               </div>
               <div class="form-group">
                 <label class="form-label">Provincia</label>
-                <input type="text" name="provincia" class="form-control" value="{{ dir.provincia|title }}" required>
+                <select name="provincia" class="form-control edit-provincia-select" required>
+                  <option value="">Seleccioná una provincia</option>
+                  <option value="Buenos Aires"{% if dir.provincia|lower == "buenos aires" %} selected{% endif %}>Buenos Aires</option>
+                  <option value="CABA"{% if dir.provincia|lower == "caba" %} selected{% endif %}>Ciudad Autónoma de Buenos Aires</option>
+                  <option value="Catamarca"{% if dir.provincia|lower == "catamarca" %} selected{% endif %}>Catamarca</option>
+                  <option value="Chaco"{% if dir.provincia|lower == "chaco" %} selected{% endif %}>Chaco</option>
+                  <option value="Chubut"{% if dir.provincia|lower == "chubut" %} selected{% endif %}>Chubut</option>
+                  <option value="Córdoba"{% if dir.provincia|lower == "córdoba" %} selected{% endif %}>Córdoba</option>
+                  <option value="Corrientes"{% if dir.provincia|lower == "corrientes" %} selected{% endif %}>Corrientes</option>
+                  <option value="Entre Ríos"{% if dir.provincia|lower == "entre ríos" %} selected{% endif %}>Entre Ríos</option>
+                  <option value="Formosa"{% if dir.provincia|lower == "formosa" %} selected{% endif %}>Formosa</option>
+                  <option value="Jujuy"{% if dir.provincia|lower == "jujuy" %} selected{% endif %}>Jujuy</option>
+                  <option value="La Pampa"{% if dir.provincia|lower == "la pampa" %} selected{% endif %}>La Pampa</option>
+                  <option value="La Rioja"{% if dir.provincia|lower == "la rioja" %} selected{% endif %}>La Rioja</option>
+                  <option value="Mendoza"{% if dir.provincia|lower == "mendoza" %} selected{% endif %}>Mendoza</option>
+                  <option value="Misiones"{% if dir.provincia|lower == "misiones" %} selected{% endif %}>Misiones</option>
+                  <option value="Neuquén"{% if dir.provincia|lower == "neuquén" %} selected{% endif %}>Neuquén</option>
+                  <option value="Río Negro"{% if dir.provincia|lower == "río negro" %} selected{% endif %}>Río Negro</option>
+                  <option value="Salta"{% if dir.provincia|lower == "salta" %} selected{% endif %}>Salta</option>
+                  <option value="San Juan"{% if dir.provincia|lower == "san juan" %} selected{% endif %}>San Juan</option>
+                  <option value="San Luis"{% if dir.provincia|lower == "san luis" %} selected{% endif %}>San Luis</option>
+                  <option value="Santa Cruz"{% if dir.provincia|lower == "santa cruz" %} selected{% endif %}>Santa Cruz</option>
+                  <option value="Santa Fe"{% if dir.provincia|lower == "santa fe" %} selected{% endif %}>Santa Fe</option>
+                  <option value="Santiago del Estero"{% if dir.provincia|lower == "santiago del estero" %} selected{% endif %}>Santiago del Estero</option>
+                  <option value="Tierra del Fuego"{% if dir.provincia|lower == "tierra del fuego" %} selected{% endif %}>Tierra del Fuego</option>
+                  <option value="Tucumán"{% if dir.provincia|lower == "tucumán" %} selected{% endif %}>Tucumán</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Ciudad <span class="char-limit">máx. 50</span></label>
+                <input type="text" name="ciudad" class="form-control" value="{{ dir.ciudad|title }}" maxlength="50" required>
               </div>
               <div class="form-group">
                 <label class="form-label">Codigo postal</label>
-                <input type="text" name="codigo_postal" class="form-control" value="{{ dir.codigo_postal }}" required>
+                <input type="text" name="codigo_postal" class="form-control" value="{{ dir.codigo_postal }}" maxlength="10" required>
               </div>
               <div class="form-group full-width">
-                <label class="form-label">Referencia opcional</label>
-                <input type="text" name="referencia" class="form-control" value="{{ dir.referencia|title }}">
+                <label class="form-label">Referencia opcional <span class="char-limit">máx. 255</span></label>
+                <input type="text" name="referencia" class="form-control" value="{{ dir.referencia|title }}" maxlength="255">
               </div>
             </div>
             <button type="submit" name="editar_direccion_cliente" value="{{ dir.id }}" class="btn-submit">
@@ -804,37 +830,49 @@
       {% if direccion_form.errors %}
       <div class="alert alert-danger">
         <i class="bi bi-exclamation-circle-fill"></i>
-        Revisá los datos de la dirección.
+        {% for field in direccion_form %}
+          {% for error in field.errors %}
+            <div>{{ error }}</div>
+          {% endfor %}
+        {% endfor %}
+        {% for error in direccion_form.non_field_errors %}
+          <div>{{ error }}</div>
+        {% endfor %}
       </div>
       {% endif %}
       <div class="form-grid">
         <div class="form-group">
-          <label class="form-label">Etiqueta (ej: casa, trabajo, etc)</label>
+          <label class="form-label">Etiqueta <span class="char-limit">máx. 50</span></label>
           {{ direccion_form.etiqueta }}
+          <div class="char-counter"><span class="char-count">0</span>/50</div>
         </div>
         <div class="form-group">
-          <label class="form-label">Calle</label>
+          <label class="form-label">Calle <span class="char-limit">máx. 100</span></label>
           {{ direccion_form.calle }}
+          <div class="char-counter"><span class="char-count">0</span>/100</div>
         </div>
         <div class="form-group">
           <label class="form-label">Numero</label>
           {{ direccion_form.numero }}
         </div>
         <div class="form-group">
-          <label class="form-label">Ciudad</label>
-          {{ direccion_form.ciudad }}
-        </div>
-        <div class="form-group">
           <label class="form-label">Provincia</label>
           {{ direccion_form.provincia }}
+        </div>
+        <div class="form-group">
+          <label class="form-label">Ciudad <span class="char-limit">máx. 50</span></label>
+          <input list="lista_ciudades_nueva" name="ciudad" id="id_ciudad_nueva" class="form-control" placeholder="Seleccioná tu ciudad" value="{{ direccion_form.ciudad.value|default:'' }}" maxlength="50">
+          <datalist id="lista_ciudades_nueva"></datalist>
+          <div class="char-counter"><span class="char-count">0</span>/50</div>
         </div>
         <div class="form-group">
           <label class="form-label">Codigo postal</label>
           {{ direccion_form.codigo_postal }}
         </div>
         <div class="form-group full-width">
-          <label class="form-label">Referencia opcional</label>
+          <label class="form-label">Referencia opcional <span class="char-limit">máx. 255</span></label>
           {{ direccion_form.referencia }}
+          <div class="char-counter"><span class="char-count">0</span>/255</div>
         </div>
       </div>
       <button type="submit" name="agregar_direccion_cliente" class="btn-submit">
@@ -945,5 +983,63 @@ function previewImage(input) {
     reader.readAsDataURL(input.files[0]);
   }
 }
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // TomSelect para ciudad en formulario de nueva dirección
+  const provinciaSelect = document.getElementById('id_provincia');
+  const ciudadInput = document.getElementById('id_ciudad_nueva');
+
+  if (provinciaSelect && ciudadInput) {
+    const ts = new TomSelect(ciudadInput, { create: true, persist: false, maxItems: 1 });
+
+    provinciaSelect.addEventListener('change', function() {
+      ts.clear();
+      ts.clearOptions();
+      if (!this.value) return;
+      fetch(`https://apis.datos.gob.ar/georef/api/municipios?provincia=${encodeURIComponent(this.value)}&max=500`)
+        .then(r => r.json())
+        .then(data => {
+          data.municipios.forEach(m => ts.addOption({ value: m.nombre, text: m.nombre }));
+          ts.refreshOptions(false);
+        });
+    });
+
+    // Si ya hay una provincia seleccionada, cargar ciudades
+    if (provinciaSelect.value) {
+      fetch(`https://apis.datos.gob.ar/georef/api/municipios?provincia=${encodeURIComponent(provinciaSelect.value)}&max=500`)
+        .then(r => r.json())
+        .then(data => {
+          data.municipios.forEach(m => ts.addOption({ value: m.nombre, text: m.nombre }));
+          ts.refreshOptions(false);
+        });
+    }
+  }
+
+  // Character counters para campos del formulario de direccion
+  document.querySelectorAll('#address-form .form-control').forEach(input => {
+    const maxLen = parseInt(input.getAttribute('maxlength'));
+    if (!maxLen) return;
+    const counter = input.parentElement.querySelector('.char-counter');
+    if (!counter) return;
+    const countSpan = counter.querySelector('.char-count');
+
+    function updateCounter() {
+      const len = input.value.length;
+      countSpan.textContent = len;
+      counter.classList.remove('warning', 'limit');
+      if (len >= maxLen) counter.classList.add('limit');
+      else if (len >= maxLen * 0.8) counter.classList.add('warning');
+    }
+
+    updateCounter();
+    input.addEventListener('input', function() {
+      updateCounter();
+      if (this.value.length >= maxLen) showCharToast();
+    });
+  });
+});
 </script>
 {% endblock %}
