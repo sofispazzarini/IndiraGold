@@ -350,15 +350,22 @@
                     <span class="item-sku">{{ item.variante.producto.codigo }}</span>
                     <span class="item-variant">Talle {{ item.variante.talle.nombre }}</span>
                     {% if item.color_nombre %}
-                        <span class="item-color">
-                            <i class="bi bi-palette"></i> {{ item.color_nombre|title }}
-                        </span>
+                        {% if '#' in item.color_nombre %}
+                            <span class="item-color" style="display:inline-flex;align-items:center;gap:4px;">
+                                <span style="display:inline-block;width:14px;height:14px;background-color:{{ item.color_nombre }};border-radius:50%;border:1px solid #ccc;"></span>
+                            </span>
+                        {% else %}
+                            <span class="item-color">
+                                <i class="bi bi-palette"></i> {{ item.color_nombre|title }}
+                            </span>
+                        {% endif %}
                     {% else %}
                         {% with colores=item.variante.colores.all %}
                             {% if colores %}
                                 {% for color in colores %}
-                                <span class="item-color">
-                                    <i class="bi bi-palette"></i> {{ color.nombre }}
+                                <span class="item-color" style="display:inline-flex;align-items:center;gap:4px;">
+                                    <span style="display:inline-block;width:14px;height:14px;background-color:{{ color.codigo_hex }};border-radius:50%;border:1px solid #ccc;"></span>
+                                    {{ color.nombre }}
                                 </span>
                                 {% endfor %}
                             {% endif %}

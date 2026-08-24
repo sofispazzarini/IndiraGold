@@ -818,162 +818,52 @@
                                         
                                 </td>
                             </tr>
-                            <div
-                                class="modal fade"
-                                id="estadoModal{{ pedido.id }}"
-                                tabindex="-1"
-                                aria-hidden="true"
-                            >
-
-                                <div class="modal-dialog modal-dialog-centered">
-
-                                    <div class="modal-content border-0 rounded-4">
-
-                                        <div
-                                            class="modal-header border-0"
-                                            style="background:#f8f5ef;"
-                                        >
-
-                                            <h5
-                                                class="modal-title fw-bold"
-                                                style="color:#6E0E2E;"
-                                            >
-
-                                                Estado del pedido #{{ pedido.id }}
-
-                                            </h5>
-
-                                            <button
-                                                type="button"
-                                                class="btn-close"
-                                                data-bs-dismiss="modal"
-                                            ></button>
-
-                                        </div>
-
-                                        <div class="modal-body p-4">
-
-                                            <div class="mb-3">
-
-                                                <small class="text-muted">
-
-                                                    Cliente
-
-                                                </small>
-
-                                                <div class="fw-bold">
-
-                                                    {{ pedido.cliente.user.first_name|title }}
-                                                    {{ pedido.cliente.user.last_name|title }}
-
-                                                </div>
-
-                                            </div>
-
-                                            <div class="mb-4">
-
-                                                <small class="text-muted">
-
-                                                    Estado actual
-
-                                                </small>
-
-                                                <div>
-
-                                                    <span
-                                                        class="estado-badge estado-{{ pedido.estado }}"
-                                                    >
-
-                                                        {{ pedido.get_estado_display }}
-
-                                                    </span>
-
-                                                </div>
-
-                                            </div>
-
-                                            {% if pedido.estado == 'rechazado' or pedido.estado == 'entregado' %}
-
-                                                <div
-                                                    class="alert alert-warning rounded-4 mb-0"
-                                                >
-
-                                                    Este pedido ya fue finalizado y
-                                                    no puede modificarse.
-
-                                                </div>
-
-                                            {% else %}
-
-                                                <form
-                                                    method="POST"
-                                                    action="{% url 'pedidos:actualizar_estado_pedido' pedido.id %}"
-                                                >
-
-                                                    {% csrf_token %}
-
-                                                    <label
-                                                        class="form-label fw-bold"
-                                                    >
-
-                                                        Nuevo estado
-
-                                                    </label>
-
-                                                    <select
-                                                        name="estado"
-                                                        class="form-select rounded-4 mb-4"
-                                                    >
-
-                                                        {% for value, label in pedido.ESTADOS %}
-
-                                                            <option
-                                                                value="{{ value }}"
-                                                                {% if pedido.estado == value %}selected{% endif %}
-                                                            >
-
-                                                                {{ label }}
-
-                                                            </option>
-
-                                                        {% endfor %}
-
-                                                    </select>
-
-                                                    <button
-                                                        type="submit"
-                                                        class="btn w-100 rounded-pill fw-bold"
-                                                        style="
-                                                            background:linear-gradient(
-                                                                90deg,
-                                                                #fbe18b 0%,
-                                                                #b8922a 100%
-                                                            );
-                                                            color:#6E0E2E;
-                                                            padding:12px;
-                                                        "
-                                                    >
-
-                                                        Guardar cambios
-
-                                                    </button>
-
-                                                </form>
-
-                                            {% endif %}
-
-                                        </div>
-
-                                    </div>
-
-                                </div>
-
-                            </div>
                         {% endfor %}
                     </tbody>
                 </table>
             </div>
         </div>
+
+        {% for pedido in pedidos %}
+        <div class="modal fade" id="estadoModal{{ pedido.id }}" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content border-0 rounded-4">
+                    <div class="modal-header border-0" style="background:#f8f5ef;">
+                        <h5 class="modal-title fw-bold" style="color:#6E0E2E;">
+                            Estado del pedido #{{ pedido.id }}
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body p-4">
+                        <div class="mb-3">
+                            <small class="text-muted">Cliente</small>
+                            <div class="fw-bold">{{ pedido.cliente.user.first_name|title }} {{ pedido.cliente.user.last_name|title }}</div>
+                        </div>
+                        <div class="mb-4">
+                            <small class="text-muted">Estado actual</small>
+                            <div><span class="estado-badge estado-{{ pedido.estado }}">{{ pedido.get_estado_display }}</span></div>
+                        </div>
+                        {% if pedido.estado == 'rechazado' or pedido.estado == 'entregado' %}
+                            <div class="alert alert-warning rounded-4 mb-0">Este pedido ya fue finalizado y no puede modificarse.</div>
+                        {% else %}
+                            <form method="POST" action="{% url 'pedidos:actualizar_estado_pedido' pedido.id %}">
+                                {% csrf_token %}
+                                <label class="form-label fw-bold">Nuevo estado</label>
+                                <select name="estado" class="form-select rounded-4 mb-4">
+                                    {% for value, label in pedido.ESTADOS %}
+                                        <option value="{{ value }}" {% if pedido.estado == value %}selected{% endif %}>{{ label }}</option>
+                                    {% endfor %}
+                                </select>
+                                <button type="submit" class="btn w-100 rounded-pill fw-bold" style="background:linear-gradient(90deg,#fbe18b 0%,#b8922a 100%);color:#6E0E2E;padding:12px;">
+                                    Guardar cambios
+                                </button>
+                            </form>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
 
         {% if page_obj.has_other_pages %}
             <nav aria-label="Paginación" class="mt-4" style="max-width: 1100px; margin-left: 25%;">

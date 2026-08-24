@@ -2794,12 +2794,20 @@ def contexto_ticket_pedido(pedido):
     items_ticket = []
 
     for item in items:
-        colores = item.color_nombre or ', '.join(
-            color.nombre for color in item.variante.colores.all()
-        )
+        color_mostrar = item.color_nombre
+        if color_mostrar and color_mostrar.startswith('#'):
+            color_obj = item.variante.colores.filter(codigo_hex__iexact=color_mostrar).first()
+            if color_obj:
+                color_mostrar = color_obj.nombre
+            else:
+                color_mostrar = None
+        if not color_mostrar:
+            color_mostrar = ', '.join(
+                color.nombre for color in item.variante.colores.all()
+            ) or '-'
         items_ticket.append({
             'producto': item.variante.producto.nombre,
-            'color': colores,
+            'color': color_mostrar,
             'talle': item.variante.talle.nombre if item.variante.talle else 'Sin talle',
             'precio': formato_pesos(item.precio_unitario),
             'cantidad': item.cantidad,
