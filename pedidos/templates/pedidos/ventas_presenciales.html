@@ -334,6 +334,63 @@
         }
     }
 
+    /* Modal responsivo para móvil */
+    @media (max-width: 768px){
+        #nuevaVentaModal .modal-dialog{
+            margin: 0;
+            max-width: 100%;
+            height: 100%;
+        }
+        #nuevaVentaModal .modal-content{
+            height: 100%;
+            border-radius: 0 !important;
+            overflow-y: auto;
+        }
+        #nuevaVentaModal .modal-body{
+            padding: 1rem;
+        }
+        #nuevaVentaModal .modal-header{
+            padding: 1rem;
+        }
+        #nuevaVentaModal .row.g-4{
+            flex-direction: column;
+        }
+        #nuevaVentaModal .col-lg-7,
+        #nuevaVentaModal .col-lg-5{
+            width: 100%;
+            max-width: 100%;
+        }
+        #nuevaVentaModal .card{
+            padding: 1rem !important;
+            margin-bottom: 1rem !important;
+        }
+        #nuevaVentaModal h3{
+            font-size: 1.3rem;
+        }
+        #nuevaVentaModal h5{
+            font-size: 1rem;
+        }
+        #nuevaVentaModal .sticky-top{
+            position: relative !important;
+            top: auto !important;
+        }
+        #nuevaVentaModal .d-flex.gap-2{
+            flex-direction: column;
+        }
+        #nuevaVentaModal #buscar-producto{
+            width: 100%;
+        }
+        #nuevaVentaModal #btn-escanear-qr,
+        #nuevaVentaModal #btn-cancelar-scanner{
+            width: 100%;
+            margin-top: 0.5rem;
+        }
+        #nuevaVentaModal .col-md-4,
+        #nuevaVentaModal .col-md-6{
+            width: 100%;
+        }
+    }
+
     /* Character counter */
     .char-limit { font-weight: 400; color: var(--muted); font-size: 0.7rem; }
     .char-counter { font-size: 0.72rem; color: var(--muted); text-align: right; margin-top: 0.25rem; }
