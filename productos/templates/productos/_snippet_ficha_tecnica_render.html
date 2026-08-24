@@ -51,9 +51,7 @@
         <div class="ficha-col-ig col-3 d-flex flex-column">
             <label>TALLES / MEDIDAS / STOCK</label>
             <div class="val area flex-grow-1 text-muted ficha-scroll-block" style="font-size: 0.85rem;">
-                {% if producto.etiquetas %}
-                    {{ producto.etiquetas|linebreaks }}
-                {% elif producto.variantes.all %}
+                {% if producto.variantes.all %}
                     {% for variante in producto.variantes.all %}
                         <div class="mb-2 pb-2" style="border-bottom: 1px dashed #e8dfd4;">
                             <strong style="color:#1a1612;">{% if variante.talle %}{{ variante.talle.nombre|upper }}{% else %}SIN TALLE{% endif %}</strong><br>
