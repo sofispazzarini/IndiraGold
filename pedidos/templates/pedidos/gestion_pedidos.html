@@ -588,6 +588,15 @@
             font-size: 0.7rem;
             white-space: nowrap;
         }
+        /* Ocultar columnas menos importantes en móvil */
+        .table th.col-entrega,
+        .table td.col-entrega,
+        .table th.col-tipo,
+        .table td.col-tipo,
+        .table th.col-fecha,
+        .table td.col-fecha {
+            display: none !important;
+        }
         .pedido-id {
             font-size: 0.9rem;
         }
@@ -604,6 +613,12 @@
         .btn-ver {
             padding: 6px 10px;
             font-size: 0.7rem;
+        }
+        .btn-ver i {
+            margin: 0 !important;
+        }
+        .btn-ver .btn-text {
+            display: none;
         }
         nav[aria-label="Paginación"] {
             margin-left: 0 !important;
@@ -734,10 +749,10 @@
                             <th><i class="bi bi-hash me-1"></i>ID</th>
                             <th><i class="bi bi-person me-1"></i>Cliente</th>
                             <th><i class="bi bi-currency-dollar me-1"></i>Total</th>
-                            <th><i class="bi bi-truck me-1"></i>Entrega</th>
-                            <th><i class="bi bi-tag me-1"></i>Tipo</th>
+                            <th class="col-entrega"><i class="bi bi-truck me-1"></i>Entrega</th>
+                            <th class="col-tipo"><i class="bi bi-tag me-1"></i>Tipo</th>
                             <th><i class="bi bi-clock-history me-1"></i>Estado</th>
-                            <th><i class="bi bi-calendar me-1"></i>Fecha</th>
+                            <th class="col-fecha"><i class="bi bi-calendar me-1"></i>Fecha</th>
                             <th class="text-end">Acciones</th>
                         </tr>
                     </thead>
@@ -762,50 +777,36 @@
 
                                 </td>
                                 <td><strong class='badge-tipo'>${{ pedido.total }}</strong></td>
-                                <td>
-
+                                <td class="col-entrega">
                                     {% if pedido.metodo_entrega == 'local' %}
-
-                                        <span class="badge-tipo">
-                                            Retiro local
-                                        </span>
-
+                                        <span class="badge-tipo">Retiro local</span>
                                     {% else %}
-
-                                        <span class="badge-tipo">
-                                            Envío Correo
-                                        </span>
-
+                                        <span class="badge-tipo">Envío Correo</span>
                                     {% endif %}
-
                                 </td>
-                                <td><span class="badge-tipo">{{ pedido.get_tipo_venta_display }}</span></td>
+                                <td class="col-tipo"><span class="badge-tipo">{{ pedido.get_tipo_venta_display }}</span></td>
                                 <td>
                                     <span class="estado-badge estado-{{ pedido.estado }}">
                                         {{ pedido.get_estado_display }}
                                     </span>
                                 </td>
-                                <td><span class="text-muted">{{ pedido.created_at|date:"d/m/Y H:i" }}</span></td>
+                                <td class="col-fecha"><span class="text-muted">{{ pedido.created_at|date:"d/m/Y H:i" }}</span></td>
                                <td class="text-end">
 
                                     <div
                                         class="d-flex justify-content-end align-items-center gap-2 flex-wrap"
                                     >
-                                        <a href="{% url 'pedidos:detalle_pedido' pedido.id %}" class="btn-ver" >
-                                            <i class="bi bi-eye"></i> Ver
+                                        <a href="{% url 'pedidos:detalle_pedido' pedido.id %}" class="btn-ver" title="Ver detalle">
+                                            <i class="bi bi-eye"></i><span class="btn-text"> Ver</span>
                                         </a>
-                                    <!-- CAMBIAR ESTADO -->
                                         <button
                                             type="button"
                                             class="btn-ver"
                                             data-bs-toggle="modal"
                                             data-bs-target="#estadoModal{{ pedido.id }}"
+                                            title="Cambiar estado"
                                         >
-
-                                            <i class="bi bi-arrow-repeat"></i>
-
-                                            Estado
-
+                                            <i class="bi bi-arrow-repeat"></i><span class="btn-text"> Estado</span>
                                         </button>
                                         
                                 </td>
