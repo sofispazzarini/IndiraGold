@@ -271,6 +271,20 @@ document.addEventListener('DOMContentLoaded', function() {
 
     inputs.forEach(input => input.addEventListener('input', recalcularStockGlobal));
     recalcularStockGlobal();
+
+    // Validar máximo 5 fotos en galería
+    const inputGaleria = document.querySelector('input[name="fotos_galeria"]');
+    if (inputGaleria) {
+        const fotosExistentes = {{ producto.imagenes.count }};
+        const disponibles = 5 - fotosExistentes;
+
+        inputGaleria.addEventListener('change', function() {
+            if (this.files.length > disponibles) {
+                alert(`Solo podés agregar ${disponibles} imagen(es) más. Ya tenés ${fotosExistentes} de 5.`);
+                this.value = '';
+            }
+        });
+    }
 });
 </script>
 {% endblock %}

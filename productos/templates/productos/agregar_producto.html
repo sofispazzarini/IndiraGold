@@ -414,8 +414,16 @@
 
         document.getElementById('inputGaleria').onchange = (e) => {
             const cont = document.getElementById('viewGaleria');
+            const input = e.target;
             cont.innerHTML = '';
-            Array.from(e.target.files).slice(0, 5).forEach(f => {
+
+            if (input.files.length > 5) {
+                alert('Solo podés subir hasta 5 imágenes en la galería comercial.');
+                input.value = '';
+                return;
+            }
+
+            Array.from(input.files).forEach(f => {
                 const r = new FileReader();
                 r.onload = (ev) => {
                     cont.innerHTML += `<img src="${ev.target.result}" style="width:60px; height:60px; object-fit:cover; border-radius:8px; border:1px solid #ddd;">`;
