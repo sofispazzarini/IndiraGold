@@ -86,18 +86,28 @@ def calcular_descuento_cupon(subtotal, codigo):
 
 def whatsapp_comprobante_url(pedido):
     numero = getattr(settings, 'COMPROBANTE_WHATSAPP', '5492216375660')
+    cliente = pedido.cliente
+    nombre_completo = f'{cliente.user.first_name} {cliente.user.last_name}'.strip() or cliente.user.username
+    email = cliente.user.email or 'Sin email'
     mensaje = (
-        f'Hola IndiraGold, te envio el comprobante del pedido #{pedido.id}. '
-        f'Total: ${pedido.total}.'
+        f'Hola IndiraGold, te envio el comprobante del pedido #{pedido.id}.\n\n'
+        f'Cliente: {nombre_completo}\n'
+        f'Email: {email}\n'
+        f'Total: ${pedido.total}'
     )
     return f'https://wa.me/{numero}?text={quote(mensaje)}'
 
 
 def whatsapp_transferencia_url(pedido):
     numero = getattr(settings, 'COMPROBANTE_WHATSAPP', '5492216375660')
+    cliente = pedido.cliente
+    nombre_completo = f'{cliente.user.first_name} {cliente.user.last_name}'.strip() or cliente.user.username
+    email = cliente.user.email or 'Sin email'
     mensaje = (
-        f'Hola IndiraGold, te envio el comprobante de transferencia del pedido #{pedido.id}. '
-        f'Total: ${pedido.total}.'
+        f'Hola IndiraGold, te envio el comprobante de transferencia del pedido #{pedido.id}.\n\n'
+        f'Cliente: {nombre_completo}\n'
+        f'Email: {email}\n'
+        f'Total: ${pedido.total}'
     )
     return f'https://wa.me/{numero}?text={quote(mensaje)}'
 
