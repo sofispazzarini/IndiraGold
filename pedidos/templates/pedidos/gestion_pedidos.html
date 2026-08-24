@@ -649,7 +649,8 @@
     .table-responsive{
         background:white;
         border-radius:24px;
-        overflow:hidden;
+        overflow-x:auto;
+        -webkit-overflow-scrolling:touch;
         box-shadow:0 10px 30px rgba(0,0,0,.04);
     }
 
@@ -744,7 +745,7 @@
   </div>
 
     {% if pedidos %}
-        <div class="scroll-hint d-none d-block d-sm-none">
+        <div class="scroll-hint d-block d-sm-none">
             <i class="bi bi-arrow-left-right me-1"></i> Desliza para ver todo
         </div>
         <div class="ig-table-card">
