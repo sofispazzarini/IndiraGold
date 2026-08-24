@@ -26,6 +26,7 @@ urlpatterns = [
     path('ajax/crear-subcategoria/', views.api_crear_subcategoria, name='api_crear_subcategoria'),
 
     # --- VARIANTES ---
+    path('producto/<int:producto_id>/agregar-variante/', views.agregar_variante, name='agregar_variante'),
     path('variante/<int:variante_id>/eliminar/', views.eliminar_variante, name='eliminar_variante'),
 
     # --- CATEGORÍAS Y SUBCATEGORÍAS ---

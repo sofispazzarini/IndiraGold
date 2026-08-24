@@ -935,6 +935,80 @@ def editar_variante(request, variante_id):
     })
 
 
+@admin_required
+def agregar_variante(request, producto_id):
+    producto = get_object_or_404(Producto, id=producto_id)
+
+    if request.method == 'POST':
+        talle_nombre = request.POST.get('talle_nombre', '').strip() or 'Sin talle'
+        talle_obj, _ = Talle.objects.get_or_create(nombre=talle_nombre)
+
+        stock = request.POST.get('stock', '0')
+        stock_variante = int(stock) if stock else 0
+
+        nueva_variante = Variante.objects.create(
+            producto=producto,
+            talle=talle_obj,
+            stock=stock_variante,
+            precio=producto.precio or 0,
+            qr_code=str(uuid.uuid4())
+        )
+
+        colores_datos = request.POST.getlist('colores')
+        if colores_datos:
+            for dato in colores_datos:
+                dato = dato.strip()
+                if dato:
+                    if '|' in dato:
+                        nombre, codigo_hex = dato.split('|', 1)
+                    else:
+                        nombre = dato
+                        codigo_hex = '#888888'
+                    color_obj, created = Color.objects.get_or_create(
+                        nombre=nombre,
+                        defaults={'codigo_hex': codigo_hex}
+                    )
+                    if not created and color_obj.codigo_hex != codigo_hex:
+                        color_obj.codigo_hex = codigo_hex
+                        color_obj.save()
+                    nueva_variante.colores.add(color_obj)
+                    VarianteColor.objects.get_or_create(
+                        variante=nueva_variante,
+                        color=color_obj,
+                    )
+
+        def limpiar_decimal(valor):
+            if not valor:
+                return 0
+            return valor.replace(',', '.')
+
+        medidas_ids = request.POST.getlist('medida_id')
+        altos = request.POST.getlist('alto')
+        anchos = request.POST.getlist('ancho')
+        largos = request.POST.getlist('largo')
+        tiros = request.POST.getlist('tiro')
+
+        for i, medida_id in enumerate(medidas_ids):
+            if altos[i] or anchos[i] or largos[i] or tiros[i]:
+                medida = Medida.objects.create(
+                    alto=limpiar_decimal(altos[i]),
+                    ancho=limpiar_decimal(anchos[i]),
+                    largo=limpiar_decimal(largos[i]),
+                    tiro=limpiar_decimal(tiros[i])
+                )
+                nueva_variante.medidas.add(medida)
+
+        recalcular_stock_producto(producto)
+        sincronizar_qrs_variante_color(nueva_variante)
+
+        messages.success(request, f"Talle {talle_nombre} agregado correctamente.")
+        return redirect('productos:editar_producto', prod_id=producto.id)
+
+    return render(request, 'productos/agregar_variante.html', {
+        'producto': producto,
+    })
+
+
 # --- VISTAS QR ---
 
 def variante_color_qr(request, vc_id):
