@@ -55,6 +55,37 @@
     }
     .nb-link:hover { color: var(--dark); }
 
+    /* Responsive navbar */
+    @media (max-width: 600px) {
+      .navbar__inner {
+        padding: 0 0.75rem;
+      }
+      .nb-name {
+        font-size: 1.1rem;
+      }
+      .navbar__links {
+        gap: 0.5rem;
+      }
+      .nb-link {
+        font-size: 0.75rem;
+        padding: 0.4em 0.6em !important;
+        margin-left: 0 !important;
+      }
+    }
+
+    @media (max-width: 400px) {
+      .nb-name {
+        font-size: 0.95rem;
+      }
+      .nb-link {
+        font-size: 0.7rem;
+        padding: 0.35em 0.5em !important;
+      }
+      .navbar__links {
+        gap: 0.3rem;
+      }
+    }
+
     .messages-wrap { max-width: 1200px; margin: 1rem auto 0; padding: 0 2rem; }
     .message-item {
       border: 1px solid var(--border);

@@ -79,7 +79,8 @@
                         </div>
                         {% if producto.imagenes.count < 5 %}
                             <label class="small fw-bold mb-1">Añadir más fotos comerciales</label>
-                            <input type="file" name="fotos_galeria" multiple class="form-control form-control-sm">
+                            <input type="file" name="fotos_galeria" multiple accept="image/jpeg,image/png,image/webp" class="form-control form-control-sm">
+                            <small class="text-muted">Formatos: JPG, PNG o WebP. Tamaño recomendado: 800x800px o mayor.</small>
                         {% endif %}
                     </div>
                 </div>
@@ -227,7 +228,10 @@
                 <p class="text-muted small">Esta acción quitará la foto de portada de forma permanente.</p>
                 <div class="d-flex gap-2 justify-content-center mt-4">
                     <button type="button" class="btn btn-light px-4 rounded-pill" data-bs-dismiss="modal">Cancelar</button>
-                    <a href="#" id="confirmarEliminarFoto" class="btn btn-danger px-4 rounded-pill">Sí, eliminar</a>
+                    <form id="formEliminarFoto" method="post" style="display:inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger px-4 rounded-pill">Sí, eliminar</button>
+                    </form>
                 </div>
             </div>
         </div>
@@ -238,7 +242,7 @@
 document.querySelectorAll('.btn-eliminar-foto').forEach(btn => {
     btn.addEventListener('click', function() {
         const fotoId = this.dataset.fotoId;
-        document.getElementById('confirmarEliminarFoto').href = `/productos/eliminar-foto/${fotoId}/`;
+        document.getElementById('formEliminarFoto').action = `/productos/producto/foto/eliminar/${fotoId}/`;
     });
 });
 </script>
