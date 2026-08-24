@@ -304,25 +304,52 @@
             padding:0.75rem;
             border-radius:12px;
         }
+        .ventas-card.filtros-card{
+            padding:0.5rem 0.75rem;
+        }
+        .filtros-card .section-title{
+            font-size:0.6rem;
+            margin-bottom:0.5rem !important;
+        }
+        .filtros-card .form-label{
+            font-size:0.7rem;
+            margin-bottom:0.2rem;
+        }
+        .filtros-card .form-control{
+            padding:0.4rem 0.5rem;
+            font-size:0.8rem;
+        }
+        .filtros-card .filter-grid{
+            gap:0.5rem;
+        }
+        .filtros-card .btn{
+            padding:0.5rem 1rem;
+            font-size:0.8rem;
+        }
         .ventas-title{
             font-size:1.5rem;
         }
         .ventas-subtitle{
             font-size:0.8rem;
         }
+        .ventas-hero{
+            margin-bottom:1rem;
+            padding-bottom:1rem;
+        }
+        /* Tabla con scroll horizontal */
+        .table-responsive{
+            overflow-x:auto;
+            -webkit-overflow-scrolling:touch;
+            border-radius:12px;
+        }
+        .ventas-table{
+            min-width:650px;
+        }
         .ventas-table th,
         .ventas-table td{
-            padding:8px 4px;
-            font-size:0.7rem;
-        }
-        /* Ocultar columnas menos importantes en móvil */
-        .ventas-table th:nth-child(4),
-        .ventas-table td:nth-child(4),
-        .ventas-table th:nth-child(7),
-        .ventas-table td:nth-child(7),
-        .ventas-table th:nth-child(8),
-        .ventas-table td:nth-child(8){
-            display:none;
+            padding:10px 8px;
+            font-size:0.75rem;
+            white-space:nowrap;
         }
         .badge-total{
             padding:0.35rem 0.5rem;
@@ -331,6 +358,20 @@
         .btn-detail{
             padding:0.35rem 0.6rem;
             font-size:0.7rem;
+        }
+        /* Indicador de scroll */
+        .scroll-hint{
+            text-align:center;
+            font-size:0.7rem;
+            color:#9c8c7c;
+            padding:0.5rem;
+        }
+        .scroll-hint i{
+            animation:swipe 1.5s ease-in-out infinite;
+        }
+        @keyframes swipe{
+            0%,100%{transform:translateX(0);}
+            50%{transform:translateX(5px);}
         }
     }
 
@@ -493,7 +534,7 @@
     </div>
 
     
-    <div class="ventas-card mb-4">
+    <div class="ventas-card filtros-card mb-4">
 
         <div class="section-title mb-3">Filtros</div>
 
@@ -611,6 +652,10 @@
     <div class="ventas-card">
 
         <div class="section-title mb-3">Historial de ventas</div>
+
+        <div class="scroll-hint d-sm-none">
+            <i class="bi bi-arrow-left-right me-1"></i> Desliza para ver todo
+        </div>
 
         <div class="table-responsive">
 
