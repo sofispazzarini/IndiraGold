@@ -55,6 +55,12 @@ class Direccion(models.Model):
         valores = [etiqueta, calle, numero, ciudad, provincia, codigo_postal, referencia]
         return tuple(" ".join(str(valor or "").strip().casefold().split()) for valor in valores)
 
+    @staticmethod
+    def clave_direccion(calle, numero, ciudad, provincia, codigo_postal):
+        """Clave que solo compara la dirección física, sin etiqueta ni referencia"""
+        valores = [calle, numero, ciudad, provincia, codigo_postal]
+        return tuple(" ".join(str(valor or "").strip().casefold().split()) for valor in valores)
+
     @property
     def clave_normalizada(self):
         return self.clave_unica(
@@ -65,6 +71,17 @@ class Direccion(models.Model):
             self.provincia,
             self.codigo_postal,
             self.referencia,
+        )
+
+    @property
+    def clave_direccion_normalizada(self):
+        """Clave solo de dirección física para detectar duplicados"""
+        return self.clave_direccion(
+            self.calle,
+            self.numero,
+            self.ciudad,
+            self.provincia,
+            self.codigo_postal,
         )
 
 

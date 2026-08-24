@@ -138,18 +138,17 @@ class NuevaDireccionForm(forms.ModelForm):
         codigo_postal = cleaned_data.get('codigo_postal')
         cliente = self.initial.get('cliente')
         if cliente and calle and numero and ciudad:
-            nueva_clave = Direccion.clave_unica(
-                cleaned_data.get('etiqueta', ''),
+            # Comparar solo la dirección física (sin etiqueta ni referencia)
+            nueva_clave = Direccion.clave_direccion(
                 calle,
                 numero,
                 ciudad,
                 provincia,
                 codigo_postal,
-                cleaned_data.get('referencia', ''),
             )
             for direccion in cliente.direcciones.all():
                 if self.instance and self.instance.pk == direccion.pk:
                     continue
-                if direccion.clave_normalizada == nueva_clave:
-                    raise forms.ValidationError('Esta dirección ya está registrada para este cliente.')
+                if direccion.clave_direccion_normalizada == nueva_clave:
+                    raise forms.ValidationError('Esta dirección ya está registrada para este cliente (aunque tenga otra etiqueta).')
         return cleaned_data
