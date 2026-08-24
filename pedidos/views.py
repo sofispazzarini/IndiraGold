@@ -279,9 +279,6 @@ def crear_qr_link_pago_mercado_pago(productos, external_reference):
                 {"id": "ticket"},
                 {"id": "atm"},
                 {"id": "bank_transfer"}
-            ],
-            "excluded_payment_methods": [
-                {"id": "account_money"}
             ]
         }
     })
@@ -1385,9 +1382,6 @@ def crear_pago(request):
                 {"id": "ticket"},
                 {"id": "atm"},
                 {"id": "bank_transfer"}
-            ],
-            "excluded_payment_methods": [
-                {"id": "account_money"}
             ]
         }
     }
