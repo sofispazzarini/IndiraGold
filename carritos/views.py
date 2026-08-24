@@ -751,6 +751,71 @@ def sumar_producto(request):
 
 
 @require_POST
+def restar_producto(request):
+	cart_key = request.POST.get("cart_key") or request.POST.get("variante_id")
+	next_url = request.POST.get("next") or request.GET.get("next")
+
+	try:
+		variante_id_int, _color_token = _parse_cart_item_key(cart_key)
+		if not variante_id_int:
+			raise ValueError("Producto inválido")
+	except (TypeError, ValueError):
+		messages.error(request, "Producto inválido.")
+		return redirect(next_url or reverse("home:home"))
+
+	if request.user.is_authenticated:
+		carrito = get_or_create_cart(request)
+		color_data = request.session.get(SESSION_CART_COLORS_KEY, {}).get(str(cart_key), {})
+		if isinstance(color_data, str):
+			color_data = {"nombre": color_data, "hex": None}
+		color_nombre = color_data.get("nombre")
+		color_hex = color_data.get("hex")
+
+		item = carrito.items.filter(
+			variante_id=variante_id_int,
+			color_nombre=color_nombre or None,
+			color_hex=color_hex or None,
+		).first()
+
+		if item:
+			if item.cantidad > 1:
+				item.cantidad -= 1
+				item.save()
+			else:
+				item.delete()
+
+		# Sincronizar sesión con BD
+		carrito_final = {}
+		colores_final = {}
+		for item_db in carrito.items.all():
+			item_key = _make_cart_item_key(item_db.variante.id, item_db.color_nombre, item_db.color_hex)
+			carrito_final[item_key] = item_db.cantidad
+			colores_final[item_key] = {
+				"nombre": item_db.color_nombre,
+				"hex": item_db.color_hex,
+			}
+		request.session['carrito'] = carrito_final
+		request.session[SESSION_CART_COLORS_KEY] = colores_final
+		request.session.modified = True
+
+		messages.success(request, "Cantidad actualizada.")
+		return redirect(next_url or reverse("home:home"))
+	else:
+		cart = _get_session_cart(request.session)
+		key = str(cart_key)
+
+		if key in cart:
+			if cart[key] > 1:
+				cart[key] -= 1
+			else:
+				del cart[key]
+		request.session["carrito"] = cart
+		request.session.modified = True
+
+		return redirect(next_url or reverse("home:home"))
+
+
+@require_POST
 def restaurar_carrito(request):
     """
     Restaura el carrito desde localStorage backup.

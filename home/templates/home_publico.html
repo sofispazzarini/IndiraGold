@@ -510,7 +510,7 @@ function scrollCatOrden{{ cat_orden.id }}(dir) {
           <path d="M9 0h1.98c.144.715.54 1.617 1.235 2.512C12.895 3.389 13.797 4 15 4v2c-1.753 0-3.07-.814-4-1.829V11a5 5 0 1 1-5-5v2a3 3 0 1 0 3 3V0Z"/>
         </svg>
       </a>
-      <a href="https://mail.google.com/mail/?view=cm&fs=1&to=Indiragoldoficial@gmail.com" target="_blank" class="contact-link contact-link--email" aria-label="Email">
+      <a href="mailto:indiragoldoficial@gmail.com" class="contact-link contact-link--email" aria-label="Email">
         <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="currentColor" viewBox="0 0 16 16">
           <path d="M0 4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V4Zm2-1a1 1 0 0 0-1 1v.217l7 4.2 7-4.2V4a1 1 0 0 0-1-1H2Zm13 2.383-4.708 2.825L15 11.105V5.383Zm-.034 6.876-5.64-3.471L8 9.583l-1.326-.795-5.64 3.47A1 1 0 0 0 2 13h12a1 1 0 0 0 .966-.741ZM1 11.105l4.708-2.897L1 5.383v5.722Z"/>
         </svg>
@@ -1017,10 +1017,15 @@ function scrollCatOrden{{ cat_orden.id }}(dir) {
   .cart-item__meta { display: flex; align-items: center; gap: .45rem; margin-top: .15rem; font-size: .76rem; color: #3d342a; }
   .cart-color-dot { width: 14px; height: 14px; border-radius: 50%; border: 1px solid rgba(29, 22, 18, 0.2); display: inline-block; box-shadow: inset 0 0 0 1px rgba(255,255,255,.5), 0 0 0 1px rgba(29,22,18,.08); flex-shrink: 0; }
   .cart-item__price { font-size: .82rem; color: #8c7e70; margin-top: .1rem; }
-  .cart-item__qty { display: flex; align-items: center; gap: .4rem; }
+  .cart-item__qty { display: flex; align-items: center; gap: .35rem; }
   .qty-btn { width: 24px; height: 24px; border-radius: 4px; border: 1px solid #e8dfd4; background: #fff; cursor: pointer; font-size: .9rem; display: flex; align-items: center; justify-content: center; color: #3d342a; }
   .qty-btn:hover { border-color: #b8922a; color: #b8922a; }
-  .qty-num { font-size: .85rem; font-weight: 500; min-width: 20px; text-align: center; }
+  .qty-num { font-size: .85rem; font-weight: 600; min-width: 22px; text-align: center; color: #1a1612; }
+  .cart-item__add, .cart-item__subtract { width: 28px; height: 28px; border-radius: 50%; border: none; cursor: pointer; font-size: 1.1rem; font-weight: 600; display: flex; align-items: center; justify-content: center; transition: all .15s; }
+  .cart-item__add { background: #3b82f6; color: #fff; }
+  .cart-item__add:hover { background: #2563eb; }
+  .cart-item__subtract { background: #f3f4f6; color: #6b7280; }
+  .cart-item__subtract:hover { background: #e5e7eb; color: #374151; }
   .cart-item__remove { background: none; border: none; color: #8c7e70; cursor: pointer; font-size: .85rem; }
   .cart-item__remove:hover { color: #ef4444; }
   .cart-panel__footer { padding: 1.5rem; border-top: 1px solid #e8dfd4; }

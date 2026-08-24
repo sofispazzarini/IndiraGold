@@ -21,15 +21,18 @@
           <div class="cart-item__price">${{ item.subtotal }}</div>
         </div>
         <div class="cart-item__qty">
+          <form method="post" action="{% url 'carritos:restar_producto' %}" class="js-cart-form" style="display:inline">
+            {% csrf_token %}
+            <input type="hidden" name="cart_key" value="{{ item.cart_key|default:item.variante_id }}">
+            <button type="submit" class="cart-item__subtract" title="Restar">−</button>
+          </form>
           <span class="qty-num">{{ item.cantidad }}</span>
+          <form method="post" action="{% url 'carritos:sumar_producto' %}" class="js-cart-form" style="display:inline">
+            {% csrf_token %}
+            <input type="hidden" name="cart_key" value="{{ item.cart_key|default:item.variante_id }}">
+            <button type="submit" class="cart-item__add" title="Sumar">+</button>
+          </form>
         </div>
-        <form method="post" action="{% url 'carritos:sumar_producto' %}" class="js-cart-form" style="display:inline">
-          {% csrf_token %}
-          <input type="hidden" name="cart_key" value="{{ item.cart_key|default:item.variante_id }}">
-          <button type="submit" class="cart-item__add" title="Sumar">
-            +
-          </button>
-        </form>
         {% if request.user.is_authenticated %}
         <form method="post" action="{% url 'pedidos:eliminar_item_carrito' item.variante_id %}" class="js-cart-form" style="display:inline">
           {% csrf_token %}

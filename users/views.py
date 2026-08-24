@@ -530,6 +530,85 @@ def crear_cliente_ajax(request):
     )
     Cliente.objects.create(user=user, dni=dni, telefono=telefono)
 
+    # Enviar email de bienvenida con credenciales
+    from django.core.mail import send_mail
+    from django.conf import settings
+
+    html_email = f"""
+<!doctype html>
+<html>
+  <body style="margin:0;padding:0;background:#f6f1eb;font-family:Arial,Helvetica,sans-serif;color:#1f1712;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f6f1eb;padding:32px 12px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:580px;background:#fff;border-radius:18px;overflow:hidden;border:1px solid #eadfce;">
+            <tr>
+              <td style="background:#1f1712;padding:28px 32px;text-align:center;">
+                <div style="font-family:Georgia,serif;font-size:30px;letter-spacing:.04em;color:#d2ad3f;">IndiraGold</div>
+                <div style="font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:#eee3cf;margin-top:6px;">Bienvenida</div>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:34px;">
+                <p style="margin:0 0 18px;font-size:16px;line-height:1.6;">
+                  Hola <strong>{nombre}</strong>,
+                </p>
+                <p style="margin:0 0 24px;font-size:16px;line-height:1.6;">
+                  ¡Tu cuenta en <strong>IndiraGold</strong> fue creada con éxito! Ya podés ingresar a nuestra tienda online.
+                </p>
+
+                <div style="background:#faf7f2;border-radius:12px;padding:20px;margin:24px 0;">
+                  <div style="font-size:12px;text-transform:uppercase;letter-spacing:.1em;color:#8c7e70;font-weight:700;margin-bottom:12px;">Tus datos de acceso</div>
+                  <table style="width:100%;font-size:15px;">
+                    <tr>
+                      <td style="padding:8px 0;color:#786b60;">Usuario:</td>
+                      <td style="padding:8px 0;text-align:right;font-weight:700;color:#1f1712;">{dni}</td>
+                    </tr>
+                    <tr>
+                      <td style="padding:8px 0;color:#786b60;">Contraseña:</td>
+                      <td style="padding:8px 0;text-align:right;font-weight:700;color:#1f1712;">{dni}</td>
+                    </tr>
+                  </table>
+                </div>
+
+                <div style="background:#fff8e6;border:1px solid #f5d67a;border-radius:10px;padding:16px;margin:20px 0;">
+                  <p style="margin:0;color:#8a6d00;font-size:14px;">
+                    <strong>🔐 Importante:</strong> Por seguridad, te recomendamos cambiar tu contraseña después de iniciar sesión por primera vez.
+                  </p>
+                </div>
+
+                <p style="margin:24px 0 0;font-size:15px;line-height:1.6;color:#786b60;">
+                  ¡Gracias por ser parte de IndiraGold!
+                </p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:0 34px 34px;text-align:center;">
+                <p style="margin:0;font-size:13px;color:#786b60;">
+                  ¿Tenés dudas? Escribinos por WhatsApp al +54 9 221 637 5660
+                </p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
+"""
+
+    try:
+        send_mail(
+            'Bienvenida a IndiraGold',
+            f'Hola {nombre}, tu cuenta fue creada. Usuario: {dni} / Contraseña: {dni}',
+            settings.EMAIL_HOST_USER,
+            [email],
+            fail_silently=True,
+            html_message=html_email,
+        )
+    except Exception:
+        pass
+
     return JsonResponse({
         'success': True,
         'cliente': {

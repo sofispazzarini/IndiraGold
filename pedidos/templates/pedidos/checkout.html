@@ -1312,7 +1312,7 @@
                 placeholder="Ej: INDIRA15"
                 value="{{ codigo_descuento }}"
               >
-                <button type="button" id="aplicar-codigo-btn">Aplicar</button>
+                <button type="button" id="aplicar-codigo-btn" style="{% if codigo_descuento %}display:none;{% endif %}">Aplicar</button>
                 <button type="button" id="quitar-codigo-btn" style="{% if not codigo_descuento %}display:none;{% endif %}margin-left:8px;">Quitar</button>
             </div>
             <div class="coupon-message" id="coupon-message"></div>
@@ -1776,9 +1776,11 @@ if (couponButton) {
       descuentoCodigoLabel.textContent = `(${data.codigo})`;
       descuentoLabel.textContent = `- ${formatearPesos(descuentoAplicado)}`;
       descuentoRow.style.display = '';
-      // Mostrar boton quitar
+      // Mostrar boton quitar, ocultar aplicar
       const quitarBtn = document.getElementById('quitar-codigo-btn');
+      const aplicarBtn = document.getElementById('aplicar-codigo-btn');
       if (quitarBtn) quitarBtn.style.display = '';
+      if (aplicarBtn) aplicarBtn.style.display = 'none';
       couponMessage.textContent = `${data.nombre}: ${data.porcentaje}% de descuento aplicado.`;
       couponMessage.classList.add('success');
       actualizarEntrega();
@@ -1819,8 +1821,10 @@ if (quitarCodigoBtn) {
       descuentoRow.style.display = 'none';
       couponMessage.textContent = 'Descuento quitado.';
       couponMessage.className = 'coupon-message success';
-      // ocultar boton quitar
+      // ocultar boton quitar, mostrar aplicar
       quitarCodigoBtn.style.display = 'none';
+      const aplicarBtn = document.getElementById('aplicar-codigo-btn');
+      if (aplicarBtn) aplicarBtn.style.display = '';
       actualizarEntrega();
     } catch (err) {
       couponMessage.textContent = err.message;

@@ -273,6 +273,16 @@ def crear_qr_link_pago_mercado_pago(productos, external_reference):
             "success": f"{site_url}/pedidos/mis-pedidos/",
             "failure": f"{site_url}/pedidos/checkout/",
             "pending": f"{site_url}/pedidos/mis-pedidos/"
+        },
+        "payment_methods": {
+            "excluded_payment_types": [
+                {"id": "ticket"},
+                {"id": "atm"},
+                {"id": "bank_transfer"}
+            ],
+            "excluded_payment_methods": [
+                {"id": "account_money"}
+            ]
         }
     })
 
@@ -1372,7 +1382,12 @@ def crear_pago(request):
         "payment_methods": {
             "installments": max_cuotas,
             "excluded_payment_types": [
-                {"id": "ticket"}
+                {"id": "ticket"},
+                {"id": "atm"},
+                {"id": "bank_transfer"}
+            ],
+            "excluded_payment_methods": [
+                {"id": "account_money"}
             ]
         }
     }

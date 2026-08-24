@@ -521,7 +521,7 @@
       const nombre = this.dataset.nombre;
 
       document.getElementById('deleteCatNombre').textContent = nombre;
-      document.getElementById('deleteForm').action = `/productos/categoria-orden/${id}/eliminar/`;
+      document.getElementById('deleteForm').action = `/productos/categorias-orden/${id}/eliminar/`;
       document.getElementById('modalDelete').classList.add('open');
     });
   });
