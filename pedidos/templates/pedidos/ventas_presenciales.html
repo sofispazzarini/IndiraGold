@@ -357,13 +357,20 @@
             padding-bottom:0.75rem;
         }
         /* Tabla con scroll horizontal */
+        .ventas-card{
+            overflow-x:auto !important;
+            -webkit-overflow-scrolling:touch;
+        }
         .table-responsive{
             overflow-x:auto !important;
             -webkit-overflow-scrolling:touch;
             border-radius:12px;
+            display:block;
+            width:100%;
         }
         .ventas-table{
-            min-width:700px !important;
+            min-width:750px !important;
+            width:max-content;
         }
         .ventas-table th,
         .ventas-table td{
