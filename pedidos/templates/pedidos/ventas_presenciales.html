@@ -2804,12 +2804,11 @@ document.querySelectorAll(
 
                                 </div>
 
-                                <small class="text-muted">
-
+                                <small class="text-muted" style="display:flex;align-items:center;gap:4px;">
                                     ${p.talle}
-                                    ·
-                                    ${p.color}
-
+                                    ${p.color ? (p.color.startsWith('#') ?
+                                        `· <span style="display:inline-block;width:14px;height:14px;background-color:${p.color};border-radius:50%;border:1px solid #ccc;"></span>` :
+                                        `· ${p.color}`) : ''}
                                 </small>
 
                             </div>

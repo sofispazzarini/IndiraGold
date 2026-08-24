@@ -291,16 +291,20 @@
                             <td>
                                 <span class="item-variant">Talle {{ item.variante.talle.nombre }}</span>
                                 {% if item.color_nombre %}
-                                    <div class="item-colors">
-                                        <i class="bi bi-palette"></i>
-                                        {{ item.color_nombre|title }}
+                                    <div class="item-colors" style="display:flex;align-items:center;gap:5px;">
+                                        {% if '#' in item.color_nombre %}
+                                            <span style="display:inline-block;width:16px;height:16px;background-color:{{ item.color_nombre }};border-radius:50%;border:1px solid #ccc;"></span>
+                                        {% else %}
+                                            <i class="bi bi-palette"></i> {{ item.color_nombre|title }}
+                                        {% endif %}
                                     </div>
                                 {% else %}
                                     {% with colores=item.variante.colores.all %}
                                         {% if colores %}
-                                        <div class="item-colors">
-                                            <i class="bi bi-palette"></i>
-                                            {% for color in colores %}{{ color.nombre }}{% if not forloop.last %}, {% endif %}{% endfor %}
+                                        <div class="item-colors" style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;">
+                                            {% for color in colores %}
+                                                <span style="display:inline-block;width:16px;height:16px;background-color:{{ color.codigo_hex }};border-radius:50%;border:1px solid #ccc;" title="{{ color.nombre }}"></span>
+                                            {% endfor %}
                                         </div>
                                         {% endif %}
                                     {% endwith %}
