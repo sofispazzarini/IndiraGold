@@ -225,8 +225,30 @@ class HomePublicaView(TemplateView):
         ctx['hero'] = ConfiguracionHero.actual()
 
         categorias_orden = CategoriaOrden.objects.filter(activo=True).prefetch_related(
-            'categoriaordenproducto_set__producto__imagenes'
+            'categoriaordenproducto_set__producto__imagenes',
+            'categoriaordenproducto_set__producto__variantes__talle',
+            'categoriaordenproducto_set__producto__variantes__colores'
         )
+        # Configurar variantes_json para productos en categorías de orden
+        for cat_orden in categorias_orden:
+            for rel in cat_orden.categoriaordenproducto_set.all():
+                producto = rel.producto
+                if not hasattr(producto, 'variantes_json') or not producto.variantes_json:
+                    variantes_data = []
+                    for v in producto.variantes.filter(activa=True):
+                        variantes_data.append({
+                            'id': v.id,
+                            'talle': v.talle.nombre,
+                            'stock': v.stock,
+                            'colores': [
+                                {
+                                    'nombre': color.nombre,
+                                    'codigo_hex': color.codigo_hex or '#888888',
+                                }
+                                for color in v.colores.all()
+                            ],
+                        })
+                    producto.variantes_json = json.dumps(variantes_data)
         ctx['categorias_orden'] = categorias_orden
         return ctx
 
