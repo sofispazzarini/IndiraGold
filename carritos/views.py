@@ -154,12 +154,20 @@ def agregar_producto(request):
 
 	key = _make_cart_item_key(variante.id, color_nombre=color_nombre, color_hex=color_hex)
 
-	current_qty = int(cart.get(key, 0))
-	new_qty = current_qty + cantidad_int
+	# Sumar TODAS las cantidades de esta variante (sin importar el color)
+	total_variante_qty = 0
+	for cart_key, qty in cart.items():
+		vid, _ = _parse_cart_item_key(cart_key)
+		if vid == variante.id:
+			total_variante_qty += qty
 
-	# Validar stock suficiente
-	if new_qty > variante.stock:
-		disponibles = variante.stock - current_qty
+	current_qty_this_key = int(cart.get(key, 0))
+	new_qty_this_key = current_qty_this_key + cantidad_int
+	new_total_qty = total_variante_qty + cantidad_int
+
+	# Validar stock suficiente (considerando TODAS las entradas de esta variante)
+	if new_total_qty > variante.stock:
+		disponibles = variante.stock - total_variante_qty
 		if disponibles <= 0:
 			messages.error(request, f"Ya tenés el máximo disponible en tu carrito ({variante.stock} unidades)")
 		else:
@@ -206,7 +214,7 @@ def agregar_producto(request):
 					precio_total=0,
 				)
 
-			item.cantidad = new_qty
+			item.cantidad = new_qty_this_key
 			item.precio_unitario = precio_con_descuento
 			item.precio_total = item.cantidad * item.precio_unitario
 			item.color_nombre = color_nombre or item.color_nombre
@@ -243,7 +251,7 @@ def agregar_producto(request):
 	# USUARIO INVITADO
 	# =========================
 	else:
-		cart[key] = new_qty
+		cart[key] = new_qty_this_key
 		cart_colors = request.session.get(SESSION_CART_COLORS_KEY)
 		if not isinstance(cart_colors, dict):
 			cart_colors = {}

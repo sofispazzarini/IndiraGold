@@ -797,7 +797,7 @@
 
 <div class="detalle-hero">
     <div class="product-nav">
-        <a href="javascript:history.back();" class="back-link-btn" aria-label="Volver atrás">
+        <a href="{% url 'home:home' %}" class="back-link-btn" aria-label="Volver atrás">
             <span aria-hidden="true">←</span>
             Volver
         </a>
@@ -1464,6 +1464,15 @@ function startCartExpiryTicker() {
 
 renderCartExpiry();
 startCartExpiryTicker();
+
+// Refrescar página cuando se vuelve desde el botón "Volver" del navegador
+window.addEventListener('pageshow', function(event) {
+    if (event.persisted) {
+        // La página fue cargada desde el cache del navegador (bfcache)
+        // Recargar para obtener el carrito actualizado
+        window.location.reload();
+    }
+});
 </script>
 
 {% endblock %}
