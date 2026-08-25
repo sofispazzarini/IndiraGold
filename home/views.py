@@ -7,7 +7,6 @@ from django.contrib.admin.views.decorators import staff_member_required
 from django.shortcuts import redirect, render, get_object_or_404
 from productos.models import Producto, Categoria, Talle, Color, CategoriaOrden, Variante, Oferta
 from carritos.utils import (
-    clear_cart_session,
     expire_cart_if_needed,
     get_cart_seconds_left,
     get_or_create_cart,
@@ -90,25 +89,6 @@ class HomePublicaView(TemplateView):
             ).distinct()
 
         ctx['productos_oferta'] = productos_oferta
-        cart = self.request.session.get('carrito')
-        if not isinstance(cart, dict):
-            cart = {}
-            clear_cart_session(self.request.session)
-
-        quantities: dict[int, int] = {}
-        for key, value in cart.items():
-            try:
-                pid = int(key)
-                qty = int(value)
-            except (TypeError, ValueError):
-                continue
-            if qty > 0:
-                quantities[pid] = qty
-
-        productos_by_id = {
-            p.id: p
-            for p in Producto.objects.filter(id__in=quantities.keys(), activo=True)
-        }
 
         items = []
         total_qty = 0
@@ -159,7 +139,6 @@ class HomePublicaView(TemplateView):
             cart_colors = self.request.session.get(COLORS_KEY)
             if not isinstance(cart, dict):
                 cart = {}
-                clear_cart_session(self.request.session)
             if not isinstance(cart_colors, dict):
                 cart_colors = {}
 
