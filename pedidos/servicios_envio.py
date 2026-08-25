@@ -286,11 +286,202 @@ def cotizar_correo_argentino(codigo_postal, tipo_entrega='domicilio', items=None
     return extraer_importe_cotizacion(respuesta), respuesta
 
 
+CODIGOS_PROVINCIA = {
+    'salta': 'A', 'buenos aires': 'B', 'caba': 'C', 'ciudad autonoma de buenos aires': 'C',
+    'san luis': 'D', 'entre rios': 'E', 'la rioja': 'F', 'santiago del estero': 'G',
+    'chaco': 'H', 'san juan': 'J', 'catamarca': 'K', 'la pampa': 'L', 'mendoza': 'M',
+    'misiones': 'N', 'formosa': 'P', 'neuquen': 'Q', 'rio negro': 'R', 'santa fe': 'S',
+    'tucuman': 'T', 'chubut': 'U', 'tierra del fuego': 'V', 'corrientes': 'W',
+    'cordoba': 'X', 'jujuy': 'Y', 'santa cruz': 'Z',
+}
+
+
+def normalizar_provincia(provincia):
+    if not provincia:
+        return 'B'
+    provincia_lower = provincia.lower().strip()
+    provincia_lower = provincia_lower.replace('á', 'a').replace('é', 'e').replace('í', 'i').replace('ó', 'o').replace('ú', 'u')
+    return CODIGOS_PROVINCIA.get(provincia_lower, 'B')
+
+
+def request_paqar(method, url, api_key, agreement, data=None):
+    body = json.dumps(data).encode('utf-8') if data is not None else None
+    headers = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Authorization': f'Apikey {api_key}',
+        'agreement': str(agreement),
+    }
+
+    request = Request(url, data=body, method=method, headers=headers)
+
+    try:
+        with urlopen(request, timeout=60) as response:
+            raw = response.read()
+            if not raw:
+                return {}
+            return json.loads(raw.decode('utf-8'))
+    except HTTPError as error:
+        detalle = error.read().decode('utf-8', errors='ignore')
+        raise ErrorEnvio(f'PAQ.AR respondio {error.code}: {detalle or error.reason}')
+    except URLError as error:
+        raise ErrorEnvio(f'No se pudo conectar con PAQ.AR: {error.reason}')
+    except json.JSONDecodeError:
+        raise ErrorEnvio('PAQ.AR no devolvio JSON valido.')
+
+
+def config_paqar():
+    return {
+        'base_url': (os.getenv('PAQAR_API_BASE_URL') or '').rstrip('/'),
+        'api_key': os.getenv('PAQAR_API_KEY') or '',
+        'agreement': os.getenv('PAQAR_AGREEMENT') or '',
+    }
+
+
+def paqar_configurado():
+    cfg = config_paqar()
+    return bool(cfg['base_url'] and cfg['api_key'] and cfg['agreement'])
+
+
+def crear_envio_paqar(envio):
+    cfg = config_paqar()
+    if not paqar_configurado():
+        raise ErrorEnvio('Falta configurar PAQ.AR 2.0 (PAQAR_API_BASE_URL, PAQAR_API_KEY, PAQAR_AGREEMENT).')
+
+    pedido = envio.pedido
+    cliente = pedido.cliente
+    user = cliente.user
+    items = pedido.items.select_related('variante__producto')
+    direccion = pedido.direccion
+    paquete = calcular_paquete_envio(items)
+
+    from datetime import datetime
+    fecha_venta = datetime.now().strftime('%Y-%m-%dT%H:%M:%S-03:00')
+
+    nombre_cliente = f'{user.first_name} {user.last_name}'.strip() or user.username
+    email_cliente = user.email or ''
+    telefono_cliente = cliente.telefono or ''
+
+    provincia_destino = normalizar_provincia(direccion.provincia if direccion else '')
+    tipo_entrega = 'homeDelivery' if envio.tipo_entrega == 'domicilio' else 'agency'
+
+    config_correo = config_proveedor('correo_argentino')
+
+    payload = {
+        'sellerId': cfg['agreement'],
+        'order': {
+            'senderData': {
+                'id': cfg['agreement'],
+                'businessName': 'Indira Gold',
+                'areaCodePhone': '221',
+                'phoneNumber': '6375660',
+                'email': 'indiragoldoficial@gmail.com',
+                'observation': '',
+                'address': {
+                    'streetName': 'Direccion de origen',
+                    'streetNumber': '123',
+                    'cityName': 'La Plata',
+                    'floor': '',
+                    'department': '',
+                    'state': 'B',
+                    'zipCode': config_correo.postal_code_origin or '1894',
+                }
+            },
+            'shippingData': {
+                'name': nombre_cliente,
+                'areaCodePhone': '',
+                'phoneNumber': telefono_cliente,
+                'areaCodeCellphone': '',
+                'cellphoneNumber': telefono_cliente,
+                'email': email_cliente,
+                'observation': f'Pedido #{pedido.id}',
+                'address': {
+                    'streetName': direccion.calle if direccion else '',
+                    'streetNumber': direccion.numero if direccion else '',
+                    'cityName': direccion.ciudad if direccion else '',
+                    'floor': '',
+                    'department': '',
+                    'state': provincia_destino,
+                    'zipCode': direccion.codigo_postal if direccion else '',
+                }
+            },
+            'parcels': [{
+                'dimensions': {
+                    'height': str(paquete['height']),
+                    'width': str(paquete['width']),
+                    'depth': str(paquete['length']),
+                },
+                'productWeight': str(paquete['weight']),
+                'productCategory': 'Indumentaria',
+                'declaredValue': str(int(pedido.total)),
+            }],
+            'deliveryType': tipo_entrega,
+            'agencyId': envio.sucursal or '',
+            'saleDate': fecha_venta,
+            'serviceType': 'CP',
+            'shipmentClientId': str(pedido.id),
+        }
+    }
+
+    url = f"{cfg['base_url']}/orders"
+    respuesta = request_paqar('POST', url, cfg['api_key'], cfg['agreement'], payload)
+
+    tracking = respuesta.get('trackingNumber') or respuesta.get('tracking')
+    if not tracking:
+        raise ErrorEnvio('PAQ.AR creo el envio pero no devolvio trackingNumber.')
+
+    return tracking, respuesta
+
+
+def obtener_etiqueta_paqar(tracking):
+    cfg = config_paqar()
+    if not paqar_configurado():
+        raise ErrorEnvio('Falta configurar PAQ.AR 2.0.')
+
+    url = f"{cfg['base_url']}/labels?labelFormat=10x15"
+    payload = [{
+        'sellerId': cfg['agreement'],
+        'trackingNumber': tracking,
+    }]
+
+    respuesta = request_paqar('POST', url, cfg['api_key'], cfg['agreement'], payload)
+
+    if not respuesta or not isinstance(respuesta, list) or len(respuesta) == 0:
+        raise ErrorEnvio('PAQ.AR no devolvio datos de etiqueta.')
+
+    etiqueta_data = respuesta[0]
+    if etiqueta_data.get('result', '').startswith('ERROR'):
+        raise ErrorEnvio(f"Error al obtener etiqueta: {etiqueta_data.get('result')}")
+
+    file_base64 = etiqueta_data.get('fileBase64')
+    if not file_base64:
+        raise ErrorEnvio('PAQ.AR no devolvio el archivo de etiqueta.')
+
+    return base64.b64decode(file_base64)
+
+
 def generar_etiqueta(envio):
     if envio.proveedor == 'flex':
         raise ErrorEnvio('Envio Flex no genera etiqueta de Correo Argentino.')
+
     if envio.proveedor == 'correo_argentino':
-        raise ErrorEnvio('Correo Argentino MiCorreo solo cotiza/importa; la etiqueta se emite desde el portal MiCorreo.')
+        if not paqar_configurado():
+            raise ErrorEnvio('Falta configurar PAQ.AR 2.0 para generar etiquetas de Correo Argentino.')
+
+        tracking, respuesta = crear_envio_paqar(envio)
+        etiqueta_pdf = obtener_etiqueta_paqar(tracking)
+
+        envio.tracking = tracking
+        envio.respuesta_api = respuesta
+        envio.estado = 'etiqueta_generada'
+        envio.error = ''
+        envio.etiqueta.save(
+            f'etiqueta_pedido_{envio.pedido_id}_{tracking}.pdf',
+            ContentFile(etiqueta_pdf),
+            save=False,
+        )
+        envio.save(update_fields=['tracking', 'respuesta_api', 'estado', 'error', 'etiqueta', 'updated_at'])
+        return envio
 
     config = config_proveedor(envio.proveedor)
     if not config.configurado:

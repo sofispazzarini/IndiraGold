@@ -885,7 +885,7 @@
                     Gratis
                     {% elif configuracion_envio.correo_a_coordinar %}
                     A coordinar
-                    {% else %}
+                    {% elif precio_correo and precio_correo > 0 %}
                     ${{ precio_correo }}
                     {% endif %}
                     </span>

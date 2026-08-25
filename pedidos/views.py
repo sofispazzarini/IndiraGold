@@ -1358,6 +1358,9 @@ def crear_pago(request):
             })
 
         if metodo_pago == 'transferencia':
+            carrito.items.all().delete()
+            request.session.pop('codigo_descuento', None)
+            request.session.pop('descuento_monto', None)
             return render(request, 'pedidos/pago_transferencia_pendiente.html', {
                 'pedido': pedido,
                 'configuracion_pago': configuracion_pago,
