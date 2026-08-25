@@ -24,6 +24,14 @@ from django.http import JsonResponse
 from django.contrib.auth.models import User
 # --- LOGOUT VIEW ---
 def logout_view(request):
+    # Limpiar carrito de sesión antes de cerrar sesión
+    if 'carrito' in request.session:
+        del request.session['carrito']
+    if 'carrito_colores' in request.session:
+        del request.session['carrito_colores']
+    if 'cart_started_at' in request.session:
+        del request.session['cart_started_at']
+    request.session.modified = True
     logout(request)
     return redirect(reverse('home:home'))
 # Vista personalizada para cambio de contraseña con mensaje de éxito en la misma página

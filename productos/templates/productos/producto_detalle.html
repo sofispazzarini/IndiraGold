@@ -726,18 +726,51 @@
         color: #1a1612;
     }
     .cart-item__qty {
+        display: flex;
+        align-items: center;
+        gap: 0;
         background: #f3ede6;
-        padding: 0.3rem 0.6rem;
-        border-radius: 6px;
-        font-weight: 600;
-        font-size: 0.85rem;
+        border-radius: 8px;
+        overflow: hidden;
     }
-    .cart-item__add, .cart-item__remove {
-        background: none;
+    .cart-item__qty .qty-num {
+        min-width: 32px;
+        text-align: center;
+        font-weight: 600;
+        font-size: 0.9rem;
+        color: #1a1612;
+    }
+    .cart-item__subtract,
+    .cart-item__add {
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: transparent;
         border: none;
         cursor: pointer;
         font-size: 1.1rem;
+        font-weight: 600;
+        color: #1a1612;
+        transition: background 0.15s;
+    }
+    .cart-item__subtract:hover,
+    .cart-item__add:hover {
+        background: rgba(0,0,0,0.08);
+    }
+    .cart-item__subtract {
+        border-radius: 8px 0 0 8px;
+    }
+    .cart-item__add {
+        border-radius: 0 8px 8px 0;
+    }
+    .cart-item__remove {
+        background: none;
+        border: none;
+        cursor: pointer;
         padding: 0.3rem;
+        margin-left: 0.5rem;
     }
     .cart-empty {
         text-align: center;
@@ -1063,10 +1096,27 @@ const variantesData = JSON.parse(document.getElementById('variantes-data').textC
 document.addEventListener('DOMContentLoaded', function() {
     const primerTalle = document.querySelector('.talle-btn');
     if (primerTalle) {
+        const varianteId = primerTalle.dataset.varianteId;
+        const data = variantesData.find(v => String(v.id) === String(varianteId));
+        const enCarrito = data ? (data.en_carrito || 0) : 0;
+        const stockReal = parseInt(primerTalle.dataset.stock) || 0;
+        const disponible = Math.max(0, stockReal - enCarrito);
+
         varianteSeleccionada = {
-            id: primerTalle.dataset.varianteId,
-            stock: parseInt(primerTalle.dataset.stock) || 0
+            id: varianteId,
+            stock: stockReal,
+            en_carrito: enCarrito,
+            disponible: disponible
         };
+
+        const stockInfo = document.getElementById('stockVarianteInfo');
+        if (stockInfo) {
+            if (enCarrito > 0) {
+                stockInfo.textContent = `Disponibles: ${disponible} (ya tenés ${enCarrito} en el carrito)`;
+            } else {
+                stockInfo.textContent = `Disponibles: ${stockReal}`;
+            }
+        }
         renderizarColores(varianteSeleccionada.id);
     }
 });
@@ -1081,14 +1131,26 @@ function seleccionarTalle(element) {
     document.querySelectorAll('.talle-btn').forEach(el => el.classList.remove('seleccionado'));
     element.classList.add('seleccionado');
 
+    const varianteId = element.dataset.varianteId;
+    const data = variantesData.find(v => String(v.id) === String(varianteId));
+    const enCarrito = data ? (data.en_carrito || 0) : 0;
+    const stockReal = parseInt(element.dataset.stock) || 0;
+    const disponible = Math.max(0, stockReal - enCarrito);
+
     varianteSeleccionada = {
-        id: element.dataset.varianteId,
-        stock: parseInt(element.dataset.stock) || 0
+        id: varianteId,
+        stock: stockReal,
+        en_carrito: enCarrito,
+        disponible: disponible
     };
 
     const stockInfo = document.getElementById('stockVarianteInfo');
     if (stockInfo) {
-        stockInfo.textContent = `Disponibles: ${varianteSeleccionada.stock}`;
+        if (enCarrito > 0) {
+            stockInfo.textContent = `Disponibles: ${disponible} (ya tenés ${enCarrito} en el carrito)`;
+        } else {
+            stockInfo.textContent = `Disponibles: ${stockReal}`;
+        }
     }
     renderizarColores(varianteSeleccionada.id);
 }
@@ -1195,13 +1257,27 @@ function abrirModalCantidadDetalle() {
         alert('Por favor selecciona un talle');
         return;
     }
+
+    const disponible = varianteSeleccionada.disponible ?? varianteSeleccionada.stock ?? 0;
+    const enCarrito = varianteSeleccionada.en_carrito || 0;
+
+    if (disponible <= 0) {
+        showToast(`Ya tenés el máximo disponible en tu carrito (${varianteSeleccionada.stock} unidades)`, 'error');
+        return;
+    }
+
     const modal = document.getElementById('modalCantidadDetalle');
     document.getElementById('modalCantidadDetalleProductoId').value = varianteSeleccionada.id;
     document.getElementById('modalCantidadDetalleColorNombre').value = colorSeleccionado || '';
     document.getElementById('modalCantidadDetalleProducto').textContent = productoNombre;
     document.getElementById('modalCantidadDetalleInput').value = 1;
-    document.getElementById('modalCantidadDetalleInput').max = varianteSeleccionada.stock || 9999;
-    document.getElementById('modalCantidadDetalleStock').textContent = varianteSeleccionada.stock ? `Disponibles: ${varianteSeleccionada.stock}` : '';
+    document.getElementById('modalCantidadDetalleInput').max = disponible;
+
+    let stockText = `Podés agregar hasta ${disponible}`;
+    if (enCarrito > 0) {
+        stockText += ` (ya tenés ${enCarrito} en el carrito)`;
+    }
+    document.getElementById('modalCantidadDetalleStock').textContent = stockText;
     modal.style.display = 'flex';
 }
 

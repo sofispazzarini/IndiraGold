@@ -159,10 +159,11 @@ def agregar_producto(request):
 
 	# Validar stock suficiente
 	if new_qty > variante.stock:
-		messages.error(
-			request,
-			f"Stock insuficiente. Disponibles: {variante.stock}, intentas: {new_qty}"
-		)
+		disponibles = variante.stock - current_qty
+		if disponibles <= 0:
+			messages.error(request, f"Ya tenés el máximo disponible en tu carrito ({variante.stock} unidades)")
+		else:
+			messages.error(request, f"Solo podés agregar {disponibles} más (hay {variante.stock} en stock)")
 
 		if _is_ajax(request):
 			return _render_cart_fragment(request)

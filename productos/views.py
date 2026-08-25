@@ -251,6 +251,13 @@ def detalle_producto(request, producto_id):
             except (TypeError, ValueError):
                 continue
 
+    # Calcular cantidades en carrito por variante para limitar el máximo
+    cart_qty_by_variante = {}
+    for item in cart_items:
+        vid = item.get('variante_id')
+        if vid:
+            cart_qty_by_variante[vid] = cart_qty_by_variante.get(vid, 0) + item.get('cantidad', 0)
+
     context = {
         'producto': producto,
         'variantes': variantes,
@@ -258,6 +265,7 @@ def detalle_producto(request, producto_id):
             {
                 'id': variante.id,
                 'stock': variante.stock,
+                'en_carrito': cart_qty_by_variante.get(variante.id, 0),
                 'colores': [
                     {
                         'id': color.id,
