@@ -1062,6 +1062,7 @@ def quitar_codigo_descuento(request):
 @login_required
 @require_POST
 def cotizar_correo_argentino_checkout(request):
+    import re
     cliente, _ = Cliente.objects.get_or_create(user=request.user)
     carrito = get_or_create_cart(request)
     items = carrito.items.all().select_related('variante__producto')
@@ -1079,6 +1080,11 @@ def cotizar_correo_argentino_checkout(request):
 
     if not codigo_postal:
         return JsonResponse({'success': False, 'error': 'Indica un codigo postal.'}, status=400)
+
+    # Extraer solo los 4 digitos del codigo postal (ej: "B1900AVW" -> "1900")
+    numeros = re.findall(r'\d+', codigo_postal)
+    if numeros:
+        codigo_postal = numeros[0][:4]
 
     paquete = calcular_paquete_envio(items)
 
