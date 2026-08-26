@@ -1725,8 +1725,10 @@ async function cotizarCorreo() {
   const data = new FormData();
   data.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
   data.append('tipo_correo', tipoCorreo);
-  data.append('direccion_correo_id', direccionId);
-  data.append('codigo_postal', cpSucursal);
+  if (direccionId) data.append('direccion_correo_id', direccionId);
+  if (cpSucursal) data.append('codigo_postal', cpSucursal);
+
+  console.log('Cotizando:', {tipoCorreo, direccionId, cpSucursal});
 
   try {
     const response = await fetch("{% url 'pedidos:cotizar_correo_argentino' %}", {
