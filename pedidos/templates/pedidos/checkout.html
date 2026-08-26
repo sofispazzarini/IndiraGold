@@ -2073,14 +2073,13 @@ async function cargarTodasLasSucursales() {
 }
 
 function filtrarSucursales(filtro) {
+  ocultarErrorSucursales();
+
   if (!filtro) {
     mostrarListaSucursales(todasLasSucursales);
     Object.values(marcadores).forEach(m => m.setOpacity(1));
-    if (mapaLeaflet && todasLasSucursales.length > 0) {
-      const bounds = todasLasSucursales
-        .filter(s => s.latitud && s.longitud)
-        .map(s => [parseFloat(s.latitud), parseFloat(s.longitud)]);
-      if (bounds.length > 0) mapaLeaflet.fitBounds(bounds, { padding: [20, 20], maxZoom: 6 });
+    if (mapaLeaflet) {
+      mapaLeaflet.setView([-38, -64], 4);
     }
     return;
   }
@@ -2089,6 +2088,13 @@ function filtrarSucursales(filtro) {
     const texto = `${s.nombre} ${s.ciudad} ${s.provincia} ${s.codigo_postal}`.toLowerCase();
     return texto.includes(filtro);
   });
+
+  if (filtradas.length === 0) {
+    mostrarErrorSucursales('No encontramos sucursales para "' + filtro + '". Probá con otra ciudad.');
+    document.getElementById('sucursales-lista').style.display = 'none';
+    Object.values(marcadores).forEach(m => m.setOpacity(0.2));
+    return;
+  }
 
   mostrarListaSucursales(filtradas);
 
@@ -2099,12 +2105,11 @@ function filtrarSucursales(filtro) {
   });
 
   // Centrar en los filtrados
-  if (filtradas.length > 0 && filtradas.length <= 30) {
-    const bounds = filtradas
-      .filter(s => s.latitud && s.longitud)
-      .map(s => [parseFloat(s.latitud), parseFloat(s.longitud)]);
-    if (bounds.length > 0 && mapaLeaflet) {
-      mapaLeaflet.fitBounds(bounds, { padding: [20, 20], maxZoom: 12 });
+  const conCoordenadas = filtradas.filter(s => s.latitud && s.longitud);
+  if (conCoordenadas.length > 0) {
+    const bounds = conCoordenadas.map(s => [parseFloat(s.latitud), parseFloat(s.longitud)]);
+    if (mapaLeaflet) {
+      mapaLeaflet.fitBounds(bounds, { padding: [30, 30], maxZoom: 14 });
     }
   }
 }

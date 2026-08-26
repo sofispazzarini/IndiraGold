@@ -1148,10 +1148,16 @@ def buscar_sucursales_correo(request):
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=400)
 
+    # Si pide todas, devolver todas. Si es búsqueda, limitar a 100
+    if todas == '1':
+        resultado = sucursales
+    else:
+        resultado = sucursales[:100]
+
     return JsonResponse({
         'success': True,
-        'sucursales': sucursales[:50],
-        'count': len(sucursales),
+        'sucursales': resultado,
+        'count': len(resultado),
     })
 
 
