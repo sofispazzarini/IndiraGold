@@ -838,7 +838,10 @@
   }
 </style>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
 {% endblock %}
 
 {% block content %}
@@ -2003,6 +2006,7 @@ document.querySelectorAll('.btn-eliminar-item').forEach(btn => {
 // ========== SUCURSALES CON MAPA ==========
 let mapaLeaflet = null;
 let marcadores = {};
+let clusterGroup = null;
 let todasLasSucursales = [];
 let sucursalesCargadas = false;
 
@@ -2077,10 +2081,7 @@ function filtrarSucursales(filtro) {
 
   if (!filtro) {
     mostrarListaSucursales(todasLasSucursales);
-    Object.values(marcadores).forEach(m => m.setOpacity(1));
-    if (mapaLeaflet) {
-      mapaLeaflet.setView([-38, -64], 4);
-    }
+    mostrarSucursalesEnMapa(todasLasSucursales);
     return;
   }
 
@@ -2092,23 +2093,39 @@ function filtrarSucursales(filtro) {
   if (filtradas.length === 0) {
     mostrarErrorSucursales('No encontramos sucursales para "' + filtro + '". Probá con otra ciudad.');
     document.getElementById('sucursales-lista').style.display = 'none';
-    Object.values(marcadores).forEach(m => m.setOpacity(0.2));
     return;
   }
 
   mostrarListaSucursales(filtradas);
 
-  // Atenuar marcadores que no coinciden
-  const idsFiltrados = new Set(filtradas.map(s => s.id));
-  Object.entries(marcadores).forEach(([id, marker]) => {
-    marker.setOpacity(idsFiltrados.has(id) ? 1 : 0.2);
-  });
+  // Actualizar mapa con solo las filtradas
+  if (clusterGroup) {
+    clusterGroup.clearLayers();
+    marcadores = {};
 
-  // Centrar en los filtrados
-  const conCoordenadas = filtradas.filter(s => s.latitud && s.longitud);
-  if (conCoordenadas.length > 0) {
-    const bounds = conCoordenadas.map(s => [parseFloat(s.latitud), parseFloat(s.longitud)]);
-    if (mapaLeaflet) {
+    filtradas.forEach(s => {
+      if (!s.latitud || !s.longitud) return;
+      const lat = parseFloat(s.latitud);
+      const lng = parseFloat(s.longitud);
+      if (isNaN(lat) || isNaN(lng)) return;
+
+      const marker = L.marker([lat, lng]);
+      marker.sucursalData = s;
+      marker.bindPopup(`
+        <div class="popup-sucursal-nombre">${s.nombre}</div>
+        <div class="popup-sucursal-direccion">${s.direccion}, ${s.ciudad}</div>
+        <button type="button" class="popup-btn-seleccionar" onclick="seleccionarSucursalDesdePopup('${s.id}')">
+          Seleccionar esta sucursal
+        </button>
+      `);
+      marcadores[s.id] = marker;
+      clusterGroup.addLayer(marker);
+    });
+
+    // Centrar en los filtrados
+    const conCoordenadas = filtradas.filter(s => s.latitud && s.longitud);
+    if (conCoordenadas.length > 0 && mapaLeaflet) {
+      const bounds = conCoordenadas.map(s => [parseFloat(s.latitud), parseFloat(s.longitud)]);
       mapaLeaflet.fitBounds(bounds, { padding: [30, 30], maxZoom: 14 });
     }
   }
@@ -2127,15 +2144,23 @@ function inicializarMapa() {
     attribution: '© OpenStreetMap'
   }).addTo(mapaLeaflet);
 
+  clusterGroup = L.markerClusterGroup({
+    maxClusterRadius: 50,
+    spiderfyOnMaxZoom: true,
+    showCoverageOnHover: false,
+    zoomToBoundsOnClick: true
+  });
+  mapaLeaflet.addLayer(clusterGroup);
+
   marcadores = {};
   setTimeout(() => mapaLeaflet.invalidateSize(), 100);
 }
 
 function mostrarSucursalesEnMapa(sucursales) {
-  if (!mapaLeaflet) return;
+  if (!mapaLeaflet || !clusterGroup) return;
 
   // Limpiar marcadores anteriores
-  Object.values(marcadores).forEach(m => mapaLeaflet.removeLayer(m));
+  clusterGroup.clearLayers();
   marcadores = {};
 
   const conCoordenadas = sucursales.filter(s => s.latitud && s.longitud);
@@ -2150,7 +2175,7 @@ function mostrarSucursalesEnMapa(sucursales) {
 
     bounds.push([lat, lng]);
 
-    const marker = L.marker([lat, lng]).addTo(mapaLeaflet);
+    const marker = L.marker([lat, lng]);
     marker.sucursalData = s;
 
     const popupContent = `
@@ -2162,10 +2187,11 @@ function mostrarSucursalesEnMapa(sucursales) {
     `;
     marker.bindPopup(popupContent);
     marcadores[s.id] = marker;
+    clusterGroup.addLayer(marker);
   });
 
   if (bounds.length > 0) {
-    mapaLeaflet.fitBounds(bounds, { padding: [30, 30], maxZoom: 13 });
+    mapaLeaflet.fitBounds(bounds, { padding: [30, 30], maxZoom: 6 });
   }
 }
 
