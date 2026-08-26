@@ -1104,17 +1104,26 @@ def cotizar_correo_argentino_checkout(request):
     })
 
 
+_cache_sucursales = {'data': None, 'timestamp': 0}
+
 @login_required
 def buscar_sucursales_correo(request):
     from pedidos.servicios_envio import buscar_sucursales_paqar
+    import time
+
     busqueda = request.GET.get('busqueda', '').strip().lower()
     todas = request.GET.get('todas', '').strip()
     codigo_postal = request.GET.get('codigo_postal', '').strip()
     localidad = request.GET.get('localidad', '').strip()
 
     try:
-        # Cargar todas las sucursales desde la API
-        todas_sucursales = buscar_sucursales_paqar()
+        # Usar caché de 10 minutos para no llamar a la API cada vez
+        ahora = time.time()
+        if _cache_sucursales['data'] is None or (ahora - _cache_sucursales['timestamp']) > 600:
+            _cache_sucursales['data'] = buscar_sucursales_paqar()
+            _cache_sucursales['timestamp'] = ahora
+
+        todas_sucursales = _cache_sucursales['data']
 
         # Si hay búsqueda, filtrar por nombre o ciudad
         if busqueda:
@@ -1141,7 +1150,7 @@ def buscar_sucursales_correo(request):
 
     return JsonResponse({
         'success': True,
-        'sucursales': sucursales[:50],  # Limitar a 50 resultados
+        'sucursales': sucursales[:50],
         'count': len(sucursales),
     })
 
