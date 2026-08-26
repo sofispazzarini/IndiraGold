@@ -800,29 +800,19 @@
   .popup-btn-seleccionar:hover {
     background: #8a1239;
   }
-  .btn-sucursal-buscar {
-    background: var(--burgundy);
-    color: #fff;
-    border: none;
-    padding: 0.6rem 1.2rem;
-    border-radius: 8px;
-    font-size: 0.9rem;
-    font-weight: 500;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 0.4rem;
-    transition: all 0.2s;
-    white-space: nowrap;
+  .sucursal-buscador {
+    position: relative;
+    margin-bottom: 1rem;
   }
-  .btn-sucursal-buscar:hover {
-    background: #8a1239;
-    transform: translateY(-1px);
+  .sucursal-buscador i {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--muted);
   }
-  .btn-sucursal-buscar:disabled {
-    background: var(--muted);
-    cursor: not-allowed;
-    transform: none;
+  .sucursal-buscador input {
+    padding-left: 38px;
   }
 </style>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -1175,33 +1165,31 @@
                 <!-- SUCURSAL -->
                 <div class="form-group" id="correo-sucursal-box">
 
-                <label>Codigo postal de destino</label>
+                <p style="font-size:0.85rem; color:var(--muted); margin-bottom:1rem;">
+                    Busca la sucursal donde queres retirar tu pedido
+                </p>
 
-                <div style="display:flex; gap:0.5rem; margin-bottom:0.5rem;">
+                <div class="sucursal-buscador">
+                    <i class="bi bi-search"></i>
                     <input
                         type="text"
-                        id="buscar-cp-sucursal"
+                        id="filtro-sucursal"
                         class="form-control"
-                        placeholder="Ej: 1900"
-                        style="flex:1; max-width:150px;"
-                        inputmode="numeric"
-                        pattern="[0-9]*"
-                        maxlength="8"
+                        placeholder="Buscar por nombre o ciudad..."
                     >
-                    <button type="button" class="btn-sucursal-buscar" id="btn-buscar-sucursales">
-                        <i class="bi bi-geo-alt"></i> Buscar sucursales
-                    </button>
+                </div>
+
+                <div id="sucursales-loading" style="display:none; text-align:center; padding:2rem; color:var(--muted);">
+                    <i class="bi bi-arrow-repeat spin"></i> Cargando sucursales...
                 </div>
 
                 <div id="sucursales-error" class="alert-warning" style="display:none; margin-bottom:0.5rem;"></div>
 
-                <div id="sucursales-loading" style="display:none; text-align:center; padding:1rem; color:var(--muted);">
-                    <i class="bi bi-arrow-repeat spin"></i> Buscando sucursales cercanas...
-                </div>
+                <div id="sucursales-mapa" style="height:280px; border-radius:12px; margin-bottom:1rem; display:none; border:1px solid var(--border);"></div>
 
-                <div id="sucursales-mapa" style="height:300px; border-radius:8px; margin-bottom:1rem; display:none;"></div>
+                <div id="sucursales-mapa" style="height:300px; border-radius:12px; margin-bottom:1rem; display:none; border:1px solid var(--border);"></div>
 
-                <div id="sucursales-lista" style="max-height:250px; overflow-y:auto; display:none;"></div>
+                <div id="sucursales-lista" style="max-height:220px; overflow-y:auto; display:none;"></div>
 
                 <div id="sucursal-seleccionada" class="alert-success" style="display:none; margin-top:0.5rem;">
                     <i class="bi bi-check-circle"></i> <span id="sucursal-seleccionada-nombre"></span>
@@ -1992,25 +1980,14 @@ document.querySelectorAll('.btn-eliminar-item').forEach(btn => {
   });
 });
 
-// ========== BUSCAR SUCURSALES ==========
+// ========== SUCURSALES CON MAPA ==========
 let mapaLeaflet = null;
 let marcadores = [];
+let todasLasSucursales = [];
+let sucursalesCargadas = false;
 
-const inputCpSucursal = document.getElementById('buscar-cp-sucursal');
-const btnBuscarSucursales = document.getElementById('btn-buscar-sucursales');
+const filtroSucursal = document.getElementById('filtro-sucursal');
 const errorSucursales = document.getElementById('sucursales-error');
-
-inputCpSucursal?.addEventListener('input', function(e) {
-  this.value = this.value.replace(/[^0-9]/g, '');
-});
-
-btnBuscarSucursales?.addEventListener('click', buscarSucursales);
-inputCpSucursal?.addEventListener('keypress', function(e) {
-  if (e.key === 'Enter') {
-    e.preventDefault();
-    buscarSucursales();
-  }
-});
 
 function mostrarErrorSucursales(mensaje) {
   if (errorSucursales) {
@@ -2020,45 +1997,32 @@ function mostrarErrorSucursales(mensaje) {
 }
 
 function ocultarErrorSucursales() {
-  if (errorSucursales) {
-    errorSucursales.style.display = 'none';
-  }
+  if (errorSucursales) errorSucursales.style.display = 'none';
 }
 
-async function buscarSucursales() {
-  const codigoPostal = inputCpSucursal?.value.trim() || '';
+document.querySelectorAll('input[name="tipo_correo"]').forEach(radio => {
+  radio.addEventListener('change', function() {
+    if (this.value === 'sucursal' && !sucursalesCargadas) {
+      cargarTodasLasSucursales();
+    }
+  });
+});
 
-  ocultarErrorSucursales();
-
-  if (!codigoPostal) {
-    mostrarErrorSucursales('Ingresa un codigo postal (ej: 1900)');
-    inputCpSucursal?.focus();
-    return;
-  }
-
-  if (!/^\d{4,8}$/.test(codigoPostal)) {
-    mostrarErrorSucursales('El codigo postal debe tener entre 4 y 8 digitos');
-    inputCpSucursal?.focus();
-    return;
-  }
-
+async function cargarTodasLasSucursales() {
   const loading = document.getElementById('sucursales-loading');
   const mapaContainer = document.getElementById('sucursales-mapa');
   const listaContainer = document.getElementById('sucursales-lista');
-  const seleccionada = document.getElementById('sucursal-seleccionada');
 
-  btnBuscarSucursales.disabled = true;
+  ocultarErrorSucursales();
   loading.style.display = 'block';
   mapaContainer.style.display = 'none';
   listaContainer.style.display = 'none';
-  seleccionada.style.display = 'none';
 
   try {
-    const response = await fetch(`/pedidos/checkout/buscar-sucursales/?codigo_postal=${encodeURIComponent(codigoPostal)}`);
+    const response = await fetch('/pedidos/checkout/buscar-sucursales/?todas=1');
     const data = await response.json();
 
     loading.style.display = 'none';
-    btnBuscarSucursales.disabled = false;
 
     if (!data.success) {
       mostrarErrorSucursales(data.error || 'No se pudieron cargar las sucursales');
@@ -2066,78 +2030,137 @@ async function buscarSucursales() {
     }
 
     if (!data.sucursales || data.sucursales.length === 0) {
-      mostrarErrorSucursales('No encontramos sucursales para el codigo postal ' + codigoPostal + '. Proba con otro cercano.');
+      mostrarErrorSucursales('No hay sucursales disponibles en este momento');
       return;
     }
 
-    mostrarSucursales(data.sucursales, codigoPostal);
+    todasLasSucursales = data.sucursales;
+    sucursalesCargadas = true;
+    mostrarSucursalesEnMapa(todasLasSucursales);
+    mostrarListaSucursales(todasLasSucursales);
 
   } catch (err) {
     loading.style.display = 'none';
-    btnBuscarSucursales.disabled = false;
-    console.error('Error buscando sucursales:', err);
-    mostrarErrorSucursales('Error de conexion. Intenta de nuevo.');
+    console.error('Error cargando sucursales:', err);
+    mostrarErrorSucursales('Error de conexion. Recarga la pagina e intenta de nuevo.');
   }
 }
 
-function mostrarSucursales(sucursales, codigoPostal) {
+function mostrarSucursalesEnMapa(sucursales) {
   const mapaContainer = document.getElementById('sucursales-mapa');
+  const conCoordenadas = sucursales.filter(s => s.latitud && s.longitud);
+
+  if (conCoordenadas.length === 0) return;
+
+  mapaContainer.style.display = 'block';
+
+  if (mapaLeaflet) {
+    mapaLeaflet.remove();
+  }
+
+  mapaLeaflet = L.map('sucursales-mapa').setView([-34.6, -58.4], 5);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap'
+  }).addTo(mapaLeaflet);
+
+  marcadores = [];
+  const bounds = [];
+
+  conCoordenadas.forEach(s => {
+    const lat = parseFloat(s.latitud);
+    const lng = parseFloat(s.longitud);
+    if (isNaN(lat) || isNaN(lng)) return;
+
+    bounds.push([lat, lng]);
+
+    const marker = L.marker([lat, lng]).addTo(mapaLeaflet);
+    marker.sucursalData = s;
+
+    const popupContent = `
+      <div class="popup-sucursal-nombre">${s.nombre}</div>
+      <div class="popup-sucursal-direccion">${s.direccion}, ${s.ciudad}</div>
+      <button type="button" class="popup-btn-seleccionar" onclick="seleccionarSucursalDesdePopup('${s.id}')">
+        Seleccionar esta sucursal
+      </button>
+    `;
+    marker.bindPopup(popupContent);
+    marcadores.push(marker);
+  });
+
+  if (bounds.length > 0) {
+    mapaLeaflet.fitBounds(bounds, { padding: [30, 30], maxZoom: 12 });
+  }
+
+  setTimeout(() => mapaLeaflet.invalidateSize(), 100);
+}
+
+function mostrarListaSucursales(sucursales) {
   const listaContainer = document.getElementById('sucursales-lista');
 
-  const conCoordenadas = sucursales.filter(s => s.latitud && s.longitud);
-  const sinCoordenadas = sucursales.filter(s => !s.latitud || !s.longitud);
-
-  if (conCoordenadas.length > 0) {
-    mapaContainer.style.display = 'block';
-
-    if (mapaLeaflet) {
-      mapaLeaflet.remove();
-    }
-
-    mapaLeaflet = L.map('sucursales-mapa').setView([-34.6, -58.4], 12);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap'
-    }).addTo(mapaLeaflet);
-
-    marcadores = [];
-    const bounds = [];
-
-    conCoordenadas.forEach(s => {
-      const lat = parseFloat(s.latitud);
-      const lng = parseFloat(s.longitud);
-      bounds.push([lat, lng]);
-
-      const marker = L.marker([lat, lng]).addTo(mapaLeaflet);
-      const popupContent = `
-        <div class="popup-sucursal-nombre">${s.nombre}</div>
-        <div class="popup-sucursal-direccion">${s.direccion}, ${s.ciudad}</div>
-        <button type="button" class="popup-btn-seleccionar" onclick="seleccionarSucursal('${s.id}', '${s.nombre.replace(/'/g, "\\'")}', '${s.codigo_postal || codigoPostal}')">
-          Seleccionar
-        </button>
-      `;
-      marker.bindPopup(popupContent);
-      marcadores.push(marker);
-    });
-
-    if (bounds.length > 0) {
-      mapaLeaflet.fitBounds(bounds, { padding: [30, 30] });
-    }
-
-    setTimeout(() => mapaLeaflet.invalidateSize(), 100);
+  if (sucursales.length === 0) {
+    listaContainer.innerHTML = '<div style="padding:1rem; text-align:center; color:var(--muted);">No se encontraron sucursales</div>';
+    listaContainer.style.display = 'block';
+    return;
   }
 
   let listaHtml = '';
   sucursales.forEach(s => {
+    const escapedNombre = s.nombre.replace(/'/g, "\\'").replace(/"/g, '&quot;');
     listaHtml += `
-      <div class="sucursal-item" onclick="seleccionarSucursal('${s.id}', '${s.nombre.replace(/'/g, "\\'")}', '${s.codigo_postal || codigoPostal}')">
+      <div class="sucursal-item" data-id="${s.id}" onclick="seleccionarSucursal('${s.id}', '${escapedNombre}', '${s.codigo_postal || ''}')">
         <div class="sucursal-item-nombre">${s.nombre}</div>
-        <div class="sucursal-item-direccion">${s.direccion}, ${s.ciudad} (${s.codigo_postal || codigoPostal})</div>
+        <div class="sucursal-item-direccion">${s.direccion || ''}, ${s.ciudad || ''} ${s.codigo_postal ? '(' + s.codigo_postal + ')' : ''}</div>
       </div>
     `;
   });
 
   listaContainer.innerHTML = listaHtml;
   listaContainer.style.display = 'block';
+}
+
+filtroSucursal?.addEventListener('input', function() {
+  const filtro = this.value.toLowerCase().trim();
+
+  if (!filtro) {
+    mostrarListaSucursales(todasLasSucursales);
+    actualizarMarcadoresFiltrados(todasLasSucursales);
+    return;
+  }
+
+  const filtradas = todasLasSucursales.filter(s => {
+    const texto = `${s.nombre} ${s.ciudad} ${s.direccion} ${s.codigo_postal}`.toLowerCase();
+    return texto.includes(filtro);
+  });
+
+  mostrarListaSucursales(filtradas);
+  actualizarMarcadoresFiltrados(filtradas);
+});
+
+function actualizarMarcadoresFiltrados(sucursalesFiltradas) {
+  if (!mapaLeaflet) return;
+
+  const idsFiltrados = new Set(sucursalesFiltradas.map(s => s.id));
+
+  marcadores.forEach(marker => {
+    if (idsFiltrados.has(marker.sucursalData?.id)) {
+      marker.setOpacity(1);
+    } else {
+      marker.setOpacity(0.2);
+    }
+  });
+
+  const conCoordenadas = sucursalesFiltradas.filter(s => s.latitud && s.longitud);
+  if (conCoordenadas.length > 0 && conCoordenadas.length <= 20) {
+    const bounds = conCoordenadas.map(s => [parseFloat(s.latitud), parseFloat(s.longitud)]);
+    mapaLeaflet.fitBounds(bounds, { padding: [30, 30], maxZoom: 14 });
+  }
+}
+
+function seleccionarSucursalDesdePopup(id) {
+  const sucursal = todasLasSucursales.find(s => s.id === id);
+  if (sucursal) {
+    seleccionarSucursal(sucursal.id, sucursal.nombre, sucursal.codigo_postal || '');
+  }
 }
 
 function seleccionarSucursal(id, nombre, codigoPostal) {
@@ -2148,8 +2171,9 @@ function seleccionarSucursal(id, nombre, codigoPostal) {
   document.getElementById('sucursal-seleccionada-nombre').textContent = nombre;
   document.getElementById('sucursal-seleccionada').style.display = 'block';
 
-  document.querySelectorAll('.sucursal-item').forEach(item => item.classList.remove('selected'));
-  event.target.closest('.sucursal-item')?.classList.add('selected');
+  document.querySelectorAll('.sucursal-item').forEach(item => {
+    item.classList.toggle('selected', item.dataset.id === id);
+  });
 
   if (mapaLeaflet) {
     mapaLeaflet.closePopup();

@@ -1107,17 +1107,20 @@ def cotizar_correo_argentino_checkout(request):
 @login_required
 def buscar_sucursales_correo(request):
     from pedidos.servicios_envio import buscar_sucursales_paqar
+    todas = request.GET.get('todas', '').strip()
     codigo_postal = request.GET.get('codigo_postal', '').strip()
     localidad = request.GET.get('localidad', '').strip()
 
-    if not codigo_postal and not localidad:
-        return JsonResponse({'success': False, 'error': 'Indica un codigo postal o localidad.'}, status=400)
-
     try:
-        sucursales = buscar_sucursales_paqar(
-            codigo_postal=codigo_postal if codigo_postal else None,
-            localidad=localidad if localidad else None
-        )
+        if todas == '1':
+            sucursales = buscar_sucursales_paqar()
+        else:
+            if not codigo_postal and not localidad:
+                return JsonResponse({'success': False, 'error': 'Indica un codigo postal o localidad.'}, status=400)
+            sucursales = buscar_sucursales_paqar(
+                codigo_postal=codigo_postal if codigo_postal else None,
+                localidad=localidad if localidad else None
+            )
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=400)
 
