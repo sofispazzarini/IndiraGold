@@ -497,75 +497,40 @@ def buscar_sucursales_paqar(codigo_postal=None, provincia=None, localidad=None):
 
     sucursales = []
     for agencia in agencias:
-        # Intentar múltiples nombres de campos
-        direccion = agencia.get('address', {}) if isinstance(agencia.get('address'), dict) else {}
+        # La ubicación está en 'location'
+        location = agencia.get('location', {}) or {}
+        geolocation = location.get('geolocation', {}) or {}
 
-        # Campos del nombre
-        nombre = (
-            agencia.get('name') or
-            agencia.get('nombre') or
-            agencia.get('agencyName') or
-            agencia.get('description') or
-            ''
-        )
+        # ID y nombre
+        agency_id = agencia.get('agency_id') or agencia.get('agencyId') or ''
+        nombre = agencia.get('agency_name') or agencia.get('agencyName') or agencia.get('name') or ''
 
-        # Campos de dirección
-        calle = (
-            direccion.get('streetName') or
-            direccion.get('street') or
-            direccion.get('calle') or
-            agencia.get('street') or
-            agencia.get('address') if isinstance(agencia.get('address'), str) else ''
-        )
-        numero = direccion.get('streetNumber') or direccion.get('number') or ''
-        dir_completa = f"{calle} {numero}".strip() if calle else ''
+        # Dirección desde location
+        calle = location.get('street_name') or location.get('streetName') or ''
+        numero = location.get('street_number') or location.get('streetNumber') or ''
+        dir_completa = f"{calle} {numero}".strip()
 
-        # Campos de ciudad
-        ciudad = (
-            direccion.get('cityName') or
-            direccion.get('city') or
-            direccion.get('ciudad') or
-            agencia.get('city') or
-            agencia.get('ciudad') or
-            ''
-        )
+        # Ciudad y provincia
+        ciudad = location.get('city_name') or location.get('cityName') or ''
+        provincia = location.get('state_name') or location.get('stateName') or ''
 
-        # Campos de código postal
-        cp = (
-            direccion.get('zipCode') or
-            direccion.get('postalCode') or
-            direccion.get('cp') or
-            agencia.get('zipCode') or
-            agencia.get('postalCode') or
-            ''
-        )
+        # Código postal
+        cp = location.get('zip_code') or location.get('zipCode') or ''
 
-        # Campos de coordenadas
-        lat = (
-            agencia.get('latitude') or
-            agencia.get('lat') or
-            direccion.get('latitude') or
-            direccion.get('lat')
-        )
-        lng = (
-            agencia.get('longitude') or
-            agencia.get('lng') or
-            agencia.get('lon') or
-            direccion.get('longitude') or
-            direccion.get('lng')
-        )
+        # Coordenadas desde geolocation
+        lat = geolocation.get('latitude') or geolocation.get('lat')
+        lng = geolocation.get('longitude') or geolocation.get('lng') or geolocation.get('lon')
 
         sucursales.append({
-            'id': str(agencia.get('agencyId') or agencia.get('id') or agencia.get('codigo') or ''),
+            'id': str(agency_id),
             'nombre': nombre,
             'direccion': dir_completa,
             'ciudad': ciudad,
-            'provincia': direccion.get('state') or agencia.get('state') or agencia.get('provincia') or '',
+            'provincia': provincia,
             'codigo_postal': str(cp) if cp else '',
             'latitud': lat,
             'longitud': lng,
-            'horario': agencia.get('schedule') or agencia.get('horario') or '',
-            '_raw': agencia,  # Para debug
+            'horario': agencia.get('schedule') or '',
         })
 
     return sucursales

@@ -1126,11 +1126,6 @@ def buscar_sucursales_correo(request):
         import traceback
         return JsonResponse({'success': False, 'error': str(e), 'traceback': traceback.format_exc()}, status=400)
 
-    # Quitar _raw de la respuesta a menos que sea debug
-    if debug != '1':
-        for s in sucursales:
-            s.pop('_raw', None)
-
     return JsonResponse({
         'success': True,
         'sucursales': sucursales,
