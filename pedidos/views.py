@@ -1107,28 +1107,41 @@ def cotizar_correo_argentino_checkout(request):
 @login_required
 def buscar_sucursales_correo(request):
     from pedidos.servicios_envio import buscar_sucursales_paqar
+    busqueda = request.GET.get('busqueda', '').strip().lower()
     todas = request.GET.get('todas', '').strip()
     codigo_postal = request.GET.get('codigo_postal', '').strip()
     localidad = request.GET.get('localidad', '').strip()
-    debug = request.GET.get('debug', '').strip()
 
     try:
-        if todas == '1':
-            sucursales = buscar_sucursales_paqar()
+        # Cargar todas las sucursales desde la API
+        todas_sucursales = buscar_sucursales_paqar()
+
+        # Si hay búsqueda, filtrar por nombre o ciudad
+        if busqueda:
+            sucursales = [
+                s for s in todas_sucursales
+                if busqueda in s.get('nombre', '').lower()
+                or busqueda in s.get('ciudad', '').lower()
+                or busqueda in s.get('provincia', '').lower()
+                or busqueda in s.get('codigo_postal', '').lower()
+            ]
+        elif todas == '1':
+            sucursales = todas_sucursales
+        elif codigo_postal or localidad:
+            sucursales = [
+                s for s in todas_sucursales
+                if (codigo_postal and codigo_postal in s.get('codigo_postal', ''))
+                or (localidad and localidad.lower() in s.get('ciudad', '').lower())
+            ]
         else:
-            if not codigo_postal and not localidad:
-                return JsonResponse({'success': False, 'error': 'Indica un codigo postal o localidad.'}, status=400)
-            sucursales = buscar_sucursales_paqar(
-                codigo_postal=codigo_postal if codigo_postal else None,
-                localidad=localidad if localidad else None
-            )
+            return JsonResponse({'success': False, 'error': 'Indica un termino de busqueda.'}, status=400)
+
     except Exception as e:
-        import traceback
-        return JsonResponse({'success': False, 'error': str(e), 'traceback': traceback.format_exc()}, status=400)
+        return JsonResponse({'success': False, 'error': str(e)}, status=400)
 
     return JsonResponse({
         'success': True,
-        'sucursales': sucursales,
+        'sucursales': sucursales[:50],  # Limitar a 50 resultados
         'count': len(sucursales),
     })
 
