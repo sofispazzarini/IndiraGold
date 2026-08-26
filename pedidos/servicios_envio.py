@@ -484,22 +484,88 @@ def buscar_sucursales_paqar(codigo_postal=None, provincia=None, localidad=None):
     except ErrorEnvio:
         return []
 
-    if not respuesta or not isinstance(respuesta, list):
+    if not respuesta:
+        return []
+
+    # La respuesta puede venir como lista directa o dentro de un objeto
+    if isinstance(respuesta, dict):
+        agencias = respuesta.get('agencies') or respuesta.get('data') or respuesta.get('items') or []
+    elif isinstance(respuesta, list):
+        agencias = respuesta
+    else:
         return []
 
     sucursales = []
-    for agencia in respuesta:
-        direccion = agencia.get('address', {})
+    for agencia in agencias:
+        # Intentar múltiples nombres de campos
+        direccion = agencia.get('address', {}) if isinstance(agencia.get('address'), dict) else {}
+
+        # Campos del nombre
+        nombre = (
+            agencia.get('name') or
+            agencia.get('nombre') or
+            agencia.get('agencyName') or
+            agencia.get('description') or
+            ''
+        )
+
+        # Campos de dirección
+        calle = (
+            direccion.get('streetName') or
+            direccion.get('street') or
+            direccion.get('calle') or
+            agencia.get('street') or
+            agencia.get('address') if isinstance(agencia.get('address'), str) else ''
+        )
+        numero = direccion.get('streetNumber') or direccion.get('number') or ''
+        dir_completa = f"{calle} {numero}".strip() if calle else ''
+
+        # Campos de ciudad
+        ciudad = (
+            direccion.get('cityName') or
+            direccion.get('city') or
+            direccion.get('ciudad') or
+            agencia.get('city') or
+            agencia.get('ciudad') or
+            ''
+        )
+
+        # Campos de código postal
+        cp = (
+            direccion.get('zipCode') or
+            direccion.get('postalCode') or
+            direccion.get('cp') or
+            agencia.get('zipCode') or
+            agencia.get('postalCode') or
+            ''
+        )
+
+        # Campos de coordenadas
+        lat = (
+            agencia.get('latitude') or
+            agencia.get('lat') or
+            direccion.get('latitude') or
+            direccion.get('lat')
+        )
+        lng = (
+            agencia.get('longitude') or
+            agencia.get('lng') or
+            agencia.get('lon') or
+            direccion.get('longitude') or
+            direccion.get('lng')
+        )
+
         sucursales.append({
-            'id': agencia.get('agencyId') or agencia.get('id', ''),
-            'nombre': agencia.get('name', ''),
-            'direccion': f"{direccion.get('streetName', '')} {direccion.get('streetNumber', '')}".strip(),
-            'ciudad': direccion.get('cityName', ''),
-            'provincia': direccion.get('state', ''),
-            'codigo_postal': direccion.get('zipCode', ''),
-            'latitud': agencia.get('latitude') or agencia.get('lat'),
-            'longitud': agencia.get('longitude') or agencia.get('lng') or agencia.get('lon'),
-            'horario': agencia.get('schedule', ''),
+            'id': str(agencia.get('agencyId') or agencia.get('id') or agencia.get('codigo') or ''),
+            'nombre': nombre,
+            'direccion': dir_completa,
+            'ciudad': ciudad,
+            'provincia': direccion.get('state') or agencia.get('state') or agencia.get('provincia') or '',
+            'codigo_postal': str(cp) if cp else '',
+            'latitud': lat,
+            'longitud': lng,
+            'horario': agencia.get('schedule') or agencia.get('horario') or '',
+            '_raw': agencia,  # Para debug
         })
 
     return sucursales

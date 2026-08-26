@@ -1110,6 +1110,7 @@ def buscar_sucursales_correo(request):
     todas = request.GET.get('todas', '').strip()
     codigo_postal = request.GET.get('codigo_postal', '').strip()
     localidad = request.GET.get('localidad', '').strip()
+    debug = request.GET.get('debug', '').strip()
 
     try:
         if todas == '1':
@@ -1122,11 +1123,18 @@ def buscar_sucursales_correo(request):
                 localidad=localidad if localidad else None
             )
     except Exception as e:
-        return JsonResponse({'success': False, 'error': str(e)}, status=400)
+        import traceback
+        return JsonResponse({'success': False, 'error': str(e), 'traceback': traceback.format_exc()}, status=400)
+
+    # Quitar _raw de la respuesta a menos que sea debug
+    if debug != '1':
+        for s in sucursales:
+            s.pop('_raw', None)
 
     return JsonResponse({
         'success': True,
         'sucursales': sucursales,
+        'count': len(sucursales),
     })
 
 
