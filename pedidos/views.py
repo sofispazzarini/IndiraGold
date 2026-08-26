@@ -1069,22 +1069,28 @@ def cotizar_correo_argentino_checkout(request):
     tipo_entrega = request.POST.get('tipo_correo') or 'domicilio'
     codigo_postal = request.POST.get('codigo_postal', '').strip()
 
+    print(f"DEBUG cotizar: tipo={tipo_entrega}, cp_post={codigo_postal}, dir_id={request.POST.get('direccion_correo_id')}")
+
     if tipo_entrega == 'domicilio':
         direccion = Direccion.objects.filter(
             id=request.POST.get('direccion_correo_id'),
             cliente=cliente
         ).first()
         if not direccion:
+            print(f"DEBUG: No se encontro direccion para cliente {cliente.id}")
             return JsonResponse({'success': False, 'error': 'Selecciona una direccion.'}, status=400)
         codigo_postal = direccion.codigo_postal
+        print(f"DEBUG: Direccion encontrada, cp={codigo_postal}")
 
     if not codigo_postal:
+        print("DEBUG: codigo_postal vacio")
         return JsonResponse({'success': False, 'error': 'Indica un codigo postal.'}, status=400)
 
     # Extraer solo los 4 digitos del codigo postal (ej: "B1900AVW" -> "1900")
     numeros = re.findall(r'\d+', codigo_postal)
     if numeros:
         codigo_postal = numeros[0][:4]
+    print(f"DEBUG: codigo_postal final={codigo_postal}")
 
     paquete = calcular_paquete_envio(items)
 

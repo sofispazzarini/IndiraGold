@@ -1737,6 +1737,7 @@ async function cotizarCorreo() {
       headers: { 'X-Requested-With': 'XMLHttpRequest' }
     });
     const result = await response.json();
+    console.log('Respuesta cotizacion:', result);
     if (!response.ok || !result.success) throw new Error(result.error || 'No se pudo cotizar.');
 
     costoCorreo = parseFloat(result.importe) || 0;
