@@ -731,7 +731,78 @@
       padding: 0.85rem;
     }
   }
+
+  /* Sucursales con mapa */
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+  .spin {
+    display: inline-block;
+    animation: spin 1s linear infinite;
+  }
+  .sucursal-item {
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: 0.5rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: #fff;
+  }
+  .sucursal-item:hover {
+    border-color: var(--gold);
+    background: var(--gold-faint);
+  }
+  .sucursal-item.selected {
+    border-color: var(--burgundy);
+    background: rgba(110, 14, 46, 0.05);
+  }
+  .sucursal-item-nombre {
+    font-weight: 600;
+    color: var(--dark);
+    margin-bottom: 0.25rem;
+  }
+  .sucursal-item-direccion {
+    font-size: 0.85rem;
+    color: var(--muted);
+  }
+  .alert-success {
+    background: rgba(40, 167, 69, 0.1);
+    border: 1px solid rgba(40, 167, 69, 0.3);
+    color: #155724;
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    font-size: 0.9rem;
+  }
+  .leaflet-popup-content {
+    margin: 10px 12px;
+  }
+  .popup-sucursal-nombre {
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+  .popup-sucursal-direccion {
+    font-size: 0.85rem;
+    color: #666;
+    margin-bottom: 8px;
+  }
+  .popup-btn-seleccionar {
+    background: var(--burgundy);
+    color: #fff;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    width: 100%;
+  }
+  .popup-btn-seleccionar:hover {
+    background: #8a1239;
+  }
 </style>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 {% endblock %}
 
 {% block content %}
@@ -1080,23 +1151,36 @@
                 <!-- SUCURSAL -->
                 <div class="form-group" id="correo-sucursal-box">
 
-                <label>Sucursal</label>
+                <label>Buscar sucursales por codigo postal</label>
 
-                <input
-                    type="text"
-                    name="sucursal_correo"
-                    class="form-control"
-                    placeholder="Ej: Sucursal La Plata Centro"
-                >
+                <div style="display:flex; gap:0.5rem; margin-bottom:1rem;">
+                    <input
+                        type="text"
+                        id="buscar-cp-sucursal"
+                        class="form-control"
+                        placeholder="Ej: 1900"
+                        style="flex:1;"
+                    >
+                    <button type="button" class="btn-checkout-primary" id="btn-buscar-sucursales" style="white-space:nowrap;">
+                        <i class="bi bi-search"></i> Buscar
+                    </button>
+                </div>
 
-                <label style="margin-top:.75rem;">Codigo postal</label>
+                <div id="sucursales-loading" style="display:none; text-align:center; padding:1rem;">
+                    <i class="bi bi-arrow-repeat spin"></i> Buscando sucursales...
+                </div>
 
-                <input
-                    type="text"
-                    name="codigo_postal_sucursal"
-                    class="form-control"
-                    placeholder="Ej: 1900"
-                >
+                <div id="sucursales-mapa" style="height:300px; border-radius:8px; margin-bottom:1rem; display:none;"></div>
+
+                <div id="sucursales-lista" style="max-height:250px; overflow-y:auto; display:none;"></div>
+
+                <div id="sucursal-seleccionada" class="alert-success" style="display:none; margin-top:0.5rem;">
+                    <i class="bi bi-check-circle"></i> <span id="sucursal-seleccionada-nombre"></span>
+                </div>
+
+                <input type="hidden" name="sucursal_correo" id="sucursal_correo_hidden">
+                <input type="hidden" name="sucursal_correo_id" id="sucursal_correo_id_hidden">
+                <input type="hidden" name="codigo_postal_sucursal" id="codigo_postal_sucursal_hidden">
 
                 </div>
 
@@ -1574,7 +1658,8 @@ async function cotizarCorreo() {
 
   const tipoCorreo = valorSeleccionado('tipo_correo') || 'domicilio';
   const direccionId = valorSeleccionado('direccion_correo_id');
-  const cpSucursal = valorCampo('input[name="codigo_postal_sucursal"]').trim();
+  const cpSucursal = document.getElementById('codigo_postal_sucursal_hidden')?.value?.trim() || '';
+  const sucursalNombre = document.getElementById('sucursal_correo_hidden')?.value?.trim() || '';
 
   if (tipoCorreo === 'domicilio' && !direccionId) {
     if (correoCotizacionBox) {
@@ -1584,10 +1669,10 @@ async function cotizarCorreo() {
     return;
   }
 
-  if (tipoCorreo === 'sucursal' && !cpSucursal) {
+  if (tipoCorreo === 'sucursal' && !sucursalNombre) {
     if (correoCotizacionBox) {
       correoCotizacionBox.style.display = 'block';
-      correoCotizacionBox.textContent = 'Ingresa el codigo postal para cotizar Correo Argentino.';
+      correoCotizacionBox.textContent = 'Busca y selecciona una sucursal para cotizar Correo Argentino.';
     }
     return;
   }
@@ -1642,12 +1727,8 @@ function enviarCheckout() {
       alert('Selecciona una direccion para el envio por correo.');
       return;
     }
-    if (tipoCorreo === 'sucursal' && !valorCampo('input[name="sucursal_correo"]').trim()) {
-      alert('Indica la sucursal para retirar el envio.');
-      return;
-    }
-    if (proveedor === 'correo_argentino' && tipoCorreo === 'sucursal' && !valorCampo('input[name="codigo_postal_sucursal"]').trim()) {
-      alert('Indica el codigo postal para cotizar Correo Argentino.');
+    if (tipoCorreo === 'sucursal' && !(document.getElementById('sucursal_correo_hidden')?.value?.trim())) {
+      alert('Busca y selecciona una sucursal para retirar el envio.');
       return;
     }
     if (proveedor === 'correo_argentino' && costoCorreo <= 0) {
@@ -1670,8 +1751,9 @@ function enviarCheckout() {
   agregarCampo(form, 'direccion_correo_id', valorSeleccionado('direccion_correo_id'));
   agregarCampo(form, 'correo', valorCampo('select[name="correo"]'));
   agregarCampo(form, 'tipo_correo', valorSeleccionado('tipo_correo'));
-  agregarCampo(form, 'sucursal_correo', valorCampo('input[name="sucursal_correo"]'));
-  agregarCampo(form, 'codigo_postal_sucursal', valorCampo('input[name="codigo_postal_sucursal"]'));
+  agregarCampo(form, 'sucursal_correo', document.getElementById('sucursal_correo_hidden')?.value || '');
+  agregarCampo(form, 'sucursal_correo_id', document.getElementById('sucursal_correo_id_hidden')?.value || '');
+  agregarCampo(form, 'codigo_postal_sucursal', document.getElementById('codigo_postal_sucursal_hidden')?.value || '');
   agregarCampo(form, 'codigo_descuento', couponHidden ? couponHidden.value : '');
   if (document.getElementById('es-regalo-check')?.checked) {
     agregarCampo(form, 'es_regalo', '1');
@@ -1880,6 +1962,139 @@ document.querySelectorAll('.btn-eliminar-item').forEach(btn => {
     }
   });
 });
+
+// ========== BUSCAR SUCURSALES ==========
+let mapaLeaflet = null;
+let marcadores = [];
+
+document.getElementById('btn-buscar-sucursales')?.addEventListener('click', buscarSucursales);
+document.getElementById('buscar-cp-sucursal')?.addEventListener('keypress', function(e) {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    buscarSucursales();
+  }
+});
+
+async function buscarSucursales() {
+  const codigoPostal = document.getElementById('buscar-cp-sucursal').value.trim();
+  if (!codigoPostal) {
+    alert('Ingresá un código postal para buscar sucursales.');
+    return;
+  }
+
+  const loading = document.getElementById('sucursales-loading');
+  const mapaContainer = document.getElementById('sucursales-mapa');
+  const listaContainer = document.getElementById('sucursales-lista');
+  const seleccionada = document.getElementById('sucursal-seleccionada');
+
+  loading.style.display = 'block';
+  mapaContainer.style.display = 'none';
+  listaContainer.style.display = 'none';
+  seleccionada.style.display = 'none';
+
+  try {
+    const response = await fetch(`/pedidos/checkout/buscar-sucursales/?codigo_postal=${encodeURIComponent(codigoPostal)}`);
+    const data = await response.json();
+
+    loading.style.display = 'none';
+
+    if (!data.success) {
+      alert(data.error || 'Error al buscar sucursales.');
+      return;
+    }
+
+    if (!data.sucursales || data.sucursales.length === 0) {
+      listaContainer.innerHTML = '<div class="alert-warning"><i class="bi bi-exclamation-triangle"></i> No se encontraron sucursales para ese código postal.</div>';
+      listaContainer.style.display = 'block';
+      return;
+    }
+
+    mostrarSucursales(data.sucursales, codigoPostal);
+
+  } catch (err) {
+    loading.style.display = 'none';
+    console.error('Error buscando sucursales:', err);
+    alert('Error de conexión al buscar sucursales.');
+  }
+}
+
+function mostrarSucursales(sucursales, codigoPostal) {
+  const mapaContainer = document.getElementById('sucursales-mapa');
+  const listaContainer = document.getElementById('sucursales-lista');
+
+  const conCoordenadas = sucursales.filter(s => s.latitud && s.longitud);
+  const sinCoordenadas = sucursales.filter(s => !s.latitud || !s.longitud);
+
+  if (conCoordenadas.length > 0) {
+    mapaContainer.style.display = 'block';
+
+    if (mapaLeaflet) {
+      mapaLeaflet.remove();
+    }
+
+    mapaLeaflet = L.map('sucursales-mapa').setView([-34.6, -58.4], 12);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap'
+    }).addTo(mapaLeaflet);
+
+    marcadores = [];
+    const bounds = [];
+
+    conCoordenadas.forEach(s => {
+      const lat = parseFloat(s.latitud);
+      const lng = parseFloat(s.longitud);
+      bounds.push([lat, lng]);
+
+      const marker = L.marker([lat, lng]).addTo(mapaLeaflet);
+      const popupContent = `
+        <div class="popup-sucursal-nombre">${s.nombre}</div>
+        <div class="popup-sucursal-direccion">${s.direccion}, ${s.ciudad}</div>
+        <button type="button" class="popup-btn-seleccionar" onclick="seleccionarSucursal('${s.id}', '${s.nombre.replace(/'/g, "\\'")}', '${s.codigo_postal || codigoPostal}')">
+          Seleccionar
+        </button>
+      `;
+      marker.bindPopup(popupContent);
+      marcadores.push(marker);
+    });
+
+    if (bounds.length > 0) {
+      mapaLeaflet.fitBounds(bounds, { padding: [30, 30] });
+    }
+
+    setTimeout(() => mapaLeaflet.invalidateSize(), 100);
+  }
+
+  let listaHtml = '';
+  sucursales.forEach(s => {
+    listaHtml += `
+      <div class="sucursal-item" onclick="seleccionarSucursal('${s.id}', '${s.nombre.replace(/'/g, "\\'")}', '${s.codigo_postal || codigoPostal}')">
+        <div class="sucursal-item-nombre">${s.nombre}</div>
+        <div class="sucursal-item-direccion">${s.direccion}, ${s.ciudad} (${s.codigo_postal || codigoPostal})</div>
+      </div>
+    `;
+  });
+
+  listaContainer.innerHTML = listaHtml;
+  listaContainer.style.display = 'block';
+}
+
+function seleccionarSucursal(id, nombre, codigoPostal) {
+  document.getElementById('sucursal_correo_hidden').value = nombre;
+  document.getElementById('sucursal_correo_id_hidden').value = id;
+  document.getElementById('codigo_postal_sucursal_hidden').value = codigoPostal;
+
+  document.getElementById('sucursal-seleccionada-nombre').textContent = nombre;
+  document.getElementById('sucursal-seleccionada').style.display = 'block';
+
+  document.querySelectorAll('.sucursal-item').forEach(item => item.classList.remove('selected'));
+  event.target.closest('.sucursal-item')?.classList.add('selected');
+
+  if (mapaLeaflet) {
+    mapaLeaflet.closePopup();
+  }
+
+  cotizarCorreo();
+}
 
 </script>
 {% endblock %}

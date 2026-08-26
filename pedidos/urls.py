@@ -23,6 +23,7 @@ urlpatterns = [
     path('checkout/validar-codigo/', views.validar_codigo_descuento, name='validar_codigo_descuento'),
     path('checkout/quitar-codigo/', views.quitar_codigo_descuento, name='quitar_codigo_descuento'),
     path('checkout/cotizar-correo/', views.cotizar_correo_argentino_checkout, name='cotizar_correo_argentino'),
+    path('checkout/buscar-sucursales/', views.buscar_sucursales_correo, name='buscar_sucursales_correo'),
     path('crear-pago/', views.crear_pago, name='crear_pago'),
     path('pago-exitoso/', views.pago_exitoso, name='pago_exitoso'),
     path('estado/<int:pedido_id>/',views.estado_pedido, name='estado_pedido'),

@@ -460,6 +460,51 @@ def obtener_etiqueta_paqar(tracking):
     return base64.b64decode(file_base64)
 
 
+def buscar_sucursales_paqar(codigo_postal=None, provincia=None, localidad=None):
+    cfg = config_paqar()
+    if not paqar_configurado():
+        raise ErrorEnvio('Falta configurar PAQ.AR 2.0.')
+
+    params = []
+    if codigo_postal:
+        params.append(f'zipCode={codigo_postal}')
+    if provincia:
+        codigo_prov = normalizar_provincia(provincia)
+        params.append(f'state={codigo_prov}')
+    if localidad:
+        params.append(f'city={localidad}')
+
+    query = '&'.join(params) if params else ''
+    url = f"{cfg['base_url']}/agencies"
+    if query:
+        url = f"{url}?{query}"
+
+    try:
+        respuesta = request_paqar('GET', url, cfg['api_key'], cfg['agreement'])
+    except ErrorEnvio:
+        return []
+
+    if not respuesta or not isinstance(respuesta, list):
+        return []
+
+    sucursales = []
+    for agencia in respuesta:
+        direccion = agencia.get('address', {})
+        sucursales.append({
+            'id': agencia.get('agencyId') or agencia.get('id', ''),
+            'nombre': agencia.get('name', ''),
+            'direccion': f"{direccion.get('streetName', '')} {direccion.get('streetNumber', '')}".strip(),
+            'ciudad': direccion.get('cityName', ''),
+            'provincia': direccion.get('state', ''),
+            'codigo_postal': direccion.get('zipCode', ''),
+            'latitud': agencia.get('latitude') or agencia.get('lat'),
+            'longitud': agencia.get('longitude') or agencia.get('lng') or agencia.get('lon'),
+            'horario': agencia.get('schedule', ''),
+        })
+
+    return sucursales
+
+
 def generar_etiqueta(envio):
     if envio.proveedor == 'flex':
         raise ErrorEnvio('Envio Flex no genera etiqueta de Correo Argentino.')
