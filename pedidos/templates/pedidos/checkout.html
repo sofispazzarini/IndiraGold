@@ -1191,7 +1191,7 @@
                 <div class="form-group" id="correo-sucursal-box">
 
                 <p style="font-size:0.85rem; color:var(--muted); margin-bottom:1rem;">
-                    Busca la sucursal donde queres retirar tu pedido
+                    Ingresa tu ciudad para ver las sucursales cercanas
                 </p>
 
                 <div class="sucursal-buscador">
@@ -1200,8 +1200,11 @@
                         type="text"
                         id="filtro-sucursal"
                         class="form-control"
-                        placeholder="Filtrar por nombre o ciudad..."
+                        placeholder="Ej: La Plata, Quilmes, Rosario..."
                     >
+                    <button type="button" class="btn-buscar-sucursal" id="btn-buscar-sucursales">
+                        Buscar
+                    </button>
                 </div>
 
                 <div id="sucursales-loading" style="display:none; text-align:center; padding:1.5rem; color:var(--muted);">
@@ -2027,34 +2030,49 @@ function ocultarErrorSucursales() {
   if (errorSucursales) errorSucursales.style.display = 'none';
 }
 
-// Cargar sucursales cuando se selecciona "Retiro en sucursal"
-document.querySelectorAll('input[name="tipo_correo"]').forEach(radio => {
-  radio.addEventListener('change', function() {
-    if (this.value === 'sucursal' && !sucursalesCargadas) {
-      cargarTodasLasSucursales();
-    }
-  });
+// Buscar sucursales al hacer click en el boton
+const btnBuscarSucursales = document.getElementById('btn-buscar-sucursales');
+
+btnBuscarSucursales?.addEventListener('click', buscarSucursales);
+
+filtroSucursal?.addEventListener('keypress', function(e) {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    buscarSucursales();
+  }
 });
 
-// Filtrar mientras escribe
-filtroSucursal?.addEventListener('input', function() {
-  if (!sucursalesCargadas) return;
-  filtrarSucursales(this.value.trim().toLowerCase());
-});
+async function buscarSucursales() {
+  const busqueda = filtroSucursal?.value.trim();
 
-async function cargarTodasLasSucursales() {
+  if (!busqueda) {
+    mostrarErrorSucursales('Ingresa una ciudad para buscar sucursales');
+    filtroSucursal?.focus();
+    return;
+  }
+
   const loading = document.getElementById('sucursales-loading');
   const mapaContainer = document.getElementById('sucursales-mapa');
   const listaContainer = document.getElementById('sucursales-lista');
 
   ocultarErrorSucursales();
+  if (btnBuscarSucursales) {
+    btnBuscarSucursales.disabled = true;
+    btnBuscarSucursales.textContent = 'Buscando...';
+  }
   loading.style.display = 'block';
+  mapaContainer.style.display = 'none';
+  listaContainer.style.display = 'none';
 
   try {
-    const response = await fetch('/pedidos/checkout/buscar-sucursales/?todas=1');
+    const response = await fetch(`/pedidos/checkout/buscar-sucursales/?busqueda=${encodeURIComponent(busqueda)}`);
     const data = await response.json();
 
     loading.style.display = 'none';
+    if (btnBuscarSucursales) {
+      btnBuscarSucursales.disabled = false;
+      btnBuscarSucursales.textContent = 'Buscar';
+    }
 
     if (!data.success) {
       mostrarErrorSucursales(data.error || 'No se pudieron cargar las sucursales');
@@ -2062,7 +2080,7 @@ async function cargarTodasLasSucursales() {
     }
 
     if (!data.sucursales || data.sucursales.length === 0) {
-      mostrarErrorSucursales('No hay sucursales disponibles');
+      mostrarErrorSucursales('No encontramos sucursales en "' + busqueda + '". Probá con otra ciudad.');
       return;
     }
 
@@ -2074,23 +2092,25 @@ async function cargarTodasLasSucursales() {
 
   } catch (err) {
     loading.style.display = 'none';
-    console.error('Error cargando sucursales:', err);
-    mostrarErrorSucursales('Error de conexion. Recarga la pagina.');
+    if (btnBuscarSucursales) {
+      btnBuscarSucursales.disabled = false;
+      btnBuscarSucursales.textContent = 'Buscar';
+    }
+    console.error('Error buscando sucursales:', err);
+    mostrarErrorSucursales('Error de conexion. Intenta de nuevo.');
   }
 }
 
-function filtrarSucursales(filtro) {
+function filtrarSucursalesLocal(filtro) {
   ocultarErrorSucursales();
 
-  if (!filtro) {
-    mostrarListaSucursales(todasLasSucursales);
-    mostrarSucursalesEnMapa(todasLasSucursales);
+  if (!filtro || !todasLasSucursales.length) {
     return;
   }
 
   const filtradas = todasLasSucursales.filter(s => {
     const texto = `${s.nombre} ${s.ciudad} ${s.provincia} ${s.codigo_postal}`.toLowerCase();
-    return texto.includes(filtro);
+    return texto.includes(filtro.toLowerCase());
   });
 
   if (filtradas.length === 0) {
