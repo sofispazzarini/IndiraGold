@@ -785,7 +785,7 @@ def checkout_view(request):
         'codigo_descuento': cupon.codigo if cupon else '',
         'descuento_porcentaje': cupon.descuento if cupon else 0,
         'descuento_monto': descuento_monto,
-        'cart_expires_in': get_cart_seconds_left(request.session),
+        'cart_expires_in': get_cart_seconds_left(request.session, carrito),
     })
 # pedidos/views.py
 

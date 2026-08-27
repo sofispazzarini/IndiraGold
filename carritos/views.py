@@ -567,11 +567,13 @@ def _build_home_context(request):
 	items = []
 	total_qty = 0
 	total_price = 0
+	carrito_db = None  # Para calcular tiempo restante
 
 	# Si el usuario está autenticado, SIEMPRE obtener desde BD
 	if request.user.is_authenticated:
 		try:
 			carrito = get_or_create_cart(request)
+			carrito_db = carrito  # Guardar referencia para el timer
 			if carrito is not None:
 				for item_db in carrito.items.all().select_related('variante__producto'):
 					color_hex = _resolve_item_color_hex(item_db)
@@ -685,7 +687,7 @@ def _build_home_context(request):
 		"cart_items": items,
 		"cart_count": total_qty,
 		"cart_total": total_price,
-		"cart_expires_in": get_cart_seconds_left(request.session),
+		"cart_expires_in": get_cart_seconds_left(request.session, carrito_db),
 	}
 
 

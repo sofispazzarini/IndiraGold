@@ -163,10 +163,14 @@ def detalle_producto(request, producto_id):
     cart_items = []
     cart_count = 0
     cart_total = 0
+    carrito_db = None  # Para calcular tiempo restante
 
     if request.user.is_authenticated:
         try:
             carrito = get_or_create_cart(request)
+            carrito_db = carrito  # Guardar para el timer
+            if carrito is None:
+                raise Exception("Admin user")
             for item_db in carrito.items.all().select_related('variante__producto'):
                 color_hex = _normalize_hex(getattr(item_db, 'color_hex', None))
                 if not color_hex and item_db.color_nombre:
@@ -285,7 +289,7 @@ def detalle_producto(request, producto_id):
         'cart_items': cart_items,
         'cart_count': cart_count,
         'cart_total': cart_total,
-        'cart_expires_in': get_cart_seconds_left(request.session),
+        'cart_expires_in': get_cart_seconds_left(request.session, carrito_db),
     }
 
     return render(request, 'productos/producto_detalle.html', context)

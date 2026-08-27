@@ -92,7 +92,20 @@ def clear_cart_session(session) -> None:
     session.modified = True
 
 
-def get_cart_seconds_left(session) -> int:
+def get_cart_seconds_left(session, carrito_db=None) -> int:
+    """
+    Calcula segundos restantes del carrito.
+    Si hay un carrito de BD, usa su expires_at.
+    Si no, usa la sesión.
+    """
+    # Si hay carrito en BD, usar su expires_at
+    if carrito_db is not None and hasattr(carrito_db, 'expires_at') and carrito_db.expires_at:
+        now = timezone.now()
+        if carrito_db.expires_at > now:
+            return int((carrito_db.expires_at - now).total_seconds())
+        return 0
+
+    # Fallback a sesión para usuarios no logueados
     cart = session.get(SESSION_CART_KEY)
     if not isinstance(cart, dict) or not cart:
         return 0

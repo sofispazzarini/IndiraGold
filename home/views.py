@@ -93,6 +93,7 @@ class HomePublicaView(TemplateView):
         items = []
         total_qty = 0
         total_price = 0
+        carrito_db = None  # Para calcular tiempo restante
 
         if self.request.user.is_authenticated:
             try:
@@ -100,6 +101,9 @@ class HomePublicaView(TemplateView):
                 from carritos.views import _resolve_item_color_hex
 
                 carrito = get_or_create_cart(self.request)
+                carrito_db = carrito  # Guardar para el timer
+                if carrito is None:
+                    raise Exception("Admin user")
                 for item_db in carrito.items.all().select_related('variante__producto'):
                     color_hex = _resolve_item_color_hex(item_db)
                     item_key = _make_cart_item_key(item_db.variante.id, item_db.color_nombre, item_db.color_hex)
@@ -193,7 +197,7 @@ class HomePublicaView(TemplateView):
         ctx['cart_items'] = items
         ctx['cart_count'] = total_qty
         ctx['cart_total'] = total_price
-        ctx['cart_expires_in'] = get_cart_seconds_left(self.request.session)
+        ctx['cart_expires_in'] = get_cart_seconds_left(self.request.session, carrito_db)
         temas_con_faqs = TemaConsulta.objects.filter(
             activo=True,
             consultas__activa=True
