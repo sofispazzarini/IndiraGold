@@ -97,17 +97,27 @@ def get_cart_seconds_left(session, carrito_db=None) -> int:
     Calcula segundos restantes del carrito.
     Si hay un carrito de BD, usa su expires_at.
     Si no, usa la sesión.
+    Retorna 0 si el carrito está vacío.
     """
     # Si hay carrito en BD, usar su expires_at
-    if carrito_db is not None and hasattr(carrito_db, 'expires_at') and carrito_db.expires_at:
-        now = timezone.now()
-        if carrito_db.expires_at > now:
-            return int((carrito_db.expires_at - now).total_seconds())
-        return 0
+    if carrito_db is not None:
+        # Si el carrito está vacío, no hay tiempo restante
+        if not hasattr(carrito_db, 'items') or carrito_db.items.count() == 0:
+            return 0
+        if hasattr(carrito_db, 'expires_at') and carrito_db.expires_at:
+            now = timezone.now()
+            if carrito_db.expires_at > now:
+                return int((carrito_db.expires_at - now).total_seconds())
+            return 0
 
     # Fallback a sesión para usuarios no logueados
     cart = session.get(SESSION_CART_KEY)
     if not isinstance(cart, dict) or not cart:
+        return 0
+
+    # Verificar que haya items con cantidad > 0
+    total_items = sum(int(v) for v in cart.values() if isinstance(v, (int, str)) and str(v).isdigit())
+    if total_items == 0:
         return 0
 
     started_at = get_cart_started_at(session)

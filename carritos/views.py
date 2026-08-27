@@ -7,6 +7,7 @@ from django.db import transaction
 from django.http import HttpRequest
 from django.shortcuts import render, redirect
 from django.urls import resolve, reverse
+from django.utils import timezone
 from django.views.decorators.http import require_POST
 from carritos.utils import vincular_carrito_con_usuario, get_or_create_cart
 
@@ -188,6 +189,14 @@ def agregar_producto(request):
 
 			from .models import CarritoItem
 			from decimal import Decimal
+			from django.utils import timezone
+			from datetime import timedelta
+
+			# Si el carrito estaba vacío, reiniciar el cronómetro
+			carrito_estaba_vacio = carrito.items.count() == 0
+			if carrito_estaba_vacio:
+				carrito.expires_at = timezone.now() + timedelta(hours=1)
+				carrito.save()
 
 			# Calcular precio con descuento si hay oferta activa
 			precio_base = variante.precio or producto.precio
@@ -251,6 +260,9 @@ def agregar_producto(request):
 	# USUARIO INVITADO
 	# =========================
 	else:
+		# Si el carrito estaba vacío, reiniciar el cronómetro
+		carrito_estaba_vacio = len(cart) == 0 or sum(cart.values()) == 0
+
 		cart[key] = new_qty_this_key
 		cart_colors = request.session.get(SESSION_CART_COLORS_KEY)
 		if not isinstance(cart_colors, dict):
@@ -260,7 +272,12 @@ def agregar_producto(request):
 			"hex": color_hex or None,
 		}
 
-		set_cart_started_at_if_missing(request.session)
+		if carrito_estaba_vacio:
+			# Reiniciar cronómetro cuando se agrega el primer producto
+			from .utils import SESSION_CART_STARTED_AT_KEY
+			request.session[SESSION_CART_STARTED_AT_KEY] = int(timezone.now().timestamp())
+		else:
+			set_cart_started_at_if_missing(request.session)
 
 		request.session["carrito"] = cart
 		request.session[SESSION_CART_COLORS_KEY] = cart_colors
@@ -328,6 +345,11 @@ def eliminar_producto(request):
 					for item_db in carrito.items.all()
 				}
 				request.session.modified = True
+
+				# Si el carrito quedó vacío, limpiar el timer
+				if carrito.items.count() == 0:
+					clear_cart_session(request.session)
+
 				messages.success(request, "Producto eliminado del carrito.")
 			else:
 				messages.info(request, "Ese producto no está en tu carrito.")
