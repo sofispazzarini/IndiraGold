@@ -24,7 +24,23 @@ from django.http import JsonResponse
 from django.contrib.auth.models import User
 # --- LOGOUT VIEW ---
 def logout_view(request):
-    # Limpiar carrito de sesión antes de cerrar sesión
+    # Vaciar carrito de la base de datos antes de cerrar sesión
+    if request.user.is_authenticated and not request.user.is_superuser:
+        try:
+            from carritos.models import Carrito
+            from users.models import Cliente
+            cliente = Cliente.objects.filter(user=request.user).first()
+            if cliente:
+                # Vaciar todos los carritos activos del usuario
+                carritos_activos = Carrito.objects.filter(cliente=cliente, activo=True)
+                for carrito in carritos_activos:
+                    carrito.items.all().delete()
+                    carrito.activo = False
+                    carrito.save()
+        except Exception:
+            pass
+
+    # Limpiar carrito de sesión
     if 'carrito' in request.session:
         del request.session['carrito']
     if 'carrito_colores' in request.session:
