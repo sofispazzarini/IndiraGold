@@ -1227,6 +1227,12 @@ function scrollCatOrden{{ cat_orden.id }}(dir) {
   }
 
   function saveCartToLocal() {
+    // Si el usuario está autenticado, no guardar en localStorage
+    // El carrito está en la BD y persiste entre sesiones
+    if (isAuthenticated) {
+      clearLocalCart();
+      return;
+    }
     if (!isLocalStorageAvailable()) return;
     const cartItems = document.getElementById('cartItems');
     if (!cartItems) return;
