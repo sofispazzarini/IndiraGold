@@ -461,8 +461,10 @@
   // El carrito está en la BD, no necesitamos backup local
   {% if request.user.is_authenticated %}
   try {
+    console.log('[BASE] Usuario autenticado, limpiando localStorage');
     localStorage.removeItem(CART_STORAGE_KEY);
-  } catch (e) {}
+    console.log('[BASE] localStorage limpiado:', localStorage.getItem(CART_STORAGE_KEY));
+  } catch (e) { console.error('[BASE] Error:', e); }
   {% endif %}
 
   document.querySelectorAll('.alert-success[data-message]').forEach(function(alert) {
