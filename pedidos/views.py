@@ -65,6 +65,17 @@ def monto_decimal(valor):
     return Decimal(valor).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
 
 
+def vaciar_carrito_completo(request, carrito):
+    """Vacía el carrito de la BD y la sesión completamente."""
+    carrito.items.all().delete()
+    carrito.activo = False
+    carrito.save()
+    clear_cart_session(request.session)
+    request.session.pop('codigo_descuento', None)
+    request.session.pop('descuento_monto', None)
+    request.session.modified = True
+
+
 def obtener_cupon_activo(codigo):
     codigo_normalizado = (codigo or '').strip().upper()
     if not codigo_normalizado:
@@ -251,9 +262,7 @@ def enviar_email_confirmacion_pedido(pedido):
 def enviar_comprobante_transferencia(request, pedido_id):
     pedido = get_object_or_404(Pedido, pk=pedido_id, cliente__user=request.user)
     carrito = get_or_create_cart(request)
-    carrito.items.all().delete()
-    request.session.pop('codigo_descuento', None)
-    request.session.pop('descuento_monto', None)
+    vaciar_carrito_completo(request, carrito)
     return redirect(whatsapp_transferencia_url(pedido))
 
 
@@ -868,12 +877,7 @@ def confirmar_pedido(request):
             descontar_stock_variante(item.variante, item.cantidad)
 
         # 4. Limpieza final
-        carrito.activo = False # Cerramos el carrito actual
-        carrito.save()
-        clear_cart_session(request.session)
-        request.session.pop('codigo_descuento', None)
-        request.session.pop('descuento_monto', None)
-        request.session.modified = True
+        vaciar_carrito_completo(request, carrito)
 
         messages.success(request, f"¡Pedido #{pedido.id} realizado con éxito!")
         return redirect("pedidos:detalle_pedido", pedido_id=pedido.id)
@@ -1424,9 +1428,7 @@ def crear_pago(request):
         enviar_email_confirmacion_pedido(pedido)
 
         if metodo_pago == 'mercado_pago_qr':
-            carrito.items.all().delete()
-            request.session.pop('codigo_descuento', None)
-            request.session.pop('descuento_monto', None)
+            vaciar_carrito_completo(request, carrito)
             return render(request, 'pedidos/pago_qr_pendiente.html', {
                 'pedido': pedido,
                 'qr_image_url': qr_pago['qr_image'],
@@ -1436,9 +1438,7 @@ def crear_pago(request):
             })
 
         if metodo_pago == 'transferencia':
-            carrito.items.all().delete()
-            request.session.pop('codigo_descuento', None)
-            request.session.pop('descuento_monto', None)
+            vaciar_carrito_completo(request, carrito)
             return render(request, 'pedidos/pago_transferencia_pendiente.html', {
                 'pedido': pedido,
                 'configuracion_pago': configuracion_pago,
@@ -1446,9 +1446,7 @@ def crear_pago(request):
                 'whatsapp_numero': '+54 9 221 637 5660',
             })
 
-        carrito.items.all().delete()
-        request.session.pop('codigo_descuento', None)
-        request.session.pop('descuento_monto', None)
+        vaciar_carrito_completo(request, carrito)
         messages.success(request, f'Pedido #{pedido.id} creado para pagar en efectivo al retirar.')
         return redirect('pedidos:mis_pedidos')
 
@@ -1858,10 +1856,7 @@ def pago_exitoso(request):
         )
 
     # VACIAR CARRITO
-    carrito.items.all().delete()
-    request.session.pop('codigo_descuento', None)
-    request.session.pop('descuento_monto', None)
-    request.session.modified = True
+    vaciar_carrito_completo(request, carrito)
 
     messages.success(
         request,
