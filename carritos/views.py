@@ -187,9 +187,15 @@ def agregar_producto(request):
 		try:
 			carrito = get_or_create_cart(request)
 
+			# Los administradores no tienen carrito
+			if carrito is None:
+				messages.error(request, "Los administradores no pueden agregar productos al carrito.")
+				if _is_ajax(request):
+					return _render_cart_fragment(request)
+				return _render_next(request, next_url)
+
 			from .models import CarritoItem
 			from decimal import Decimal
-			from django.utils import timezone
 			from datetime import timedelta
 
 			# Si el carrito estaba vacío, reiniciar el cronómetro
