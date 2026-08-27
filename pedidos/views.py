@@ -390,6 +390,7 @@ def crear_envio_pedido(pedido):
                 'proveedor': pedido.correo or 'correo_argentino',
                 'tipo_entrega': pedido.tipo_correo or 'domicilio',
                 'sucursal': pedido.sucursal_correo,
+                'sucursal_id': pedido.sucursal_correo_id,
                 'costo': pedido.costo_envio,
             }
         )[0]
@@ -858,6 +859,7 @@ def confirmar_pedido(request):
             correo=request.POST.get('correo'),
             tipo_correo=request.POST.get('tipo_correo'),
             sucursal_correo=request.POST.get('sucursal_correo'),
+            sucursal_correo_id=request.POST.get('sucursal_correo_id'),
             tipo_venta='online',
             estado='pendiente',
             es_regalo=es_regalo,
@@ -1299,6 +1301,7 @@ def crear_pago(request):
     request.session['correo'] = request.POST.get('correo')
     request.session['tipo_correo'] = request.POST.get('tipo_correo')
     request.session['sucursal_correo'] = request.POST.get('sucursal_correo')
+    request.session['sucursal_correo_id'] = request.POST.get('sucursal_correo_id')
     request.session['codigo_postal_sucursal'] = request.POST.get('codigo_postal_sucursal')
     request.session['es_regalo'] = request.POST.get('es_regalo') == '1'
 
@@ -1407,6 +1410,7 @@ def crear_pago(request):
             correo=request.session.get('correo'),
             tipo_correo=request.session.get('tipo_correo'),
             sucursal_correo=request.session.get('sucursal_correo'),
+            sucursal_correo_id=request.session.get('sucursal_correo_id'),
             metodo_pago=metodo_pago,
             monto_pagado=Decimal('0.00'),
             deuda=total_pedido,
@@ -1576,6 +1580,7 @@ def pago_exitoso(request):
         correo=request.session.get('correo'),
         tipo_correo=request.session.get('tipo_correo'),
         sucursal_correo=request.session.get('sucursal_correo'),
+        sucursal_correo_id=request.session.get('sucursal_correo_id'),
         tipo_venta='online',
         estado='aceptado',
         es_regalo=bool(request.session.get('es_regalo')),

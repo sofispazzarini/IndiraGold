@@ -114,6 +114,13 @@ class Pedido(models.Model):
         null=True
     )
 
+    sucursal_correo_id = models.CharField(
+        max_length=50,
+        blank=True,
+        null=True,
+        help_text='ID de la sucursal para PAQ.AR'
+    )
+
     direccion = models.ForeignKey(
         'users.Direccion',
         on_delete=models.SET_NULL,
@@ -415,6 +422,7 @@ class EnvioPedido(models.Model):
     costo = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     tracking = models.CharField(max_length=120, blank=True, null=True)
     sucursal = models.CharField(max_length=255, blank=True, null=True)
+    sucursal_id = models.CharField(max_length=50, blank=True, null=True, help_text='ID de sucursal para PAQ.AR')
     etiqueta = models.FileField(upload_to='etiquetas_envio/', blank=True, null=True)
     respuesta_api = models.JSONField(default=dict, blank=True)
     error = models.TextField(blank=True)

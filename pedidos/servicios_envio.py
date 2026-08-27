@@ -397,15 +397,15 @@ def crear_envio_paqar(envio):
                 'areaCodeCellphone': '',
                 'cellphoneNumber': telefono_cliente,
                 'email': email_cliente,
-                'observation': f'Pedido #{pedido.id}',
+                'observation': f'Pedido #{pedido.id}' + (f' - Sucursal: {envio.sucursal}' if envio.sucursal else ''),
                 'address': {
-                    'streetName': direccion.calle if direccion else '',
+                    'streetName': direccion.calle if direccion else (pedido.calle_numero or ''),
                     'streetNumber': direccion.numero if direccion else '',
-                    'cityName': direccion.ciudad if direccion else '',
+                    'cityName': direccion.ciudad if direccion else (pedido.localidad or ''),
                     'floor': '',
                     'department': '',
                     'state': provincia_destino,
-                    'zipCode': direccion.codigo_postal if direccion else '',
+                    'zipCode': direccion.codigo_postal if direccion else (pedido.codigo_postal or ''),
                 }
             },
             'parcels': [{
@@ -419,7 +419,7 @@ def crear_envio_paqar(envio):
                 'declaredValue': str(int(pedido.total)),
             }],
             'deliveryType': tipo_entrega,
-            'agencyId': envio.sucursal or '',
+            'agencyId': envio.sucursal_id or '',
             'saleDate': fecha_venta,
             'serviceType': 'CP',
             'shipmentClientId': str(pedido.id),

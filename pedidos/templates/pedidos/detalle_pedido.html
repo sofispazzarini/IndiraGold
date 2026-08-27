@@ -472,7 +472,12 @@
                 {% elif pedido.envio.proveedor == 'correo_argentino' %}
                 <div class="payment-row">
                     <span class="detail-lbl">Etiqueta</span>
-                    <span class="detail-val" style="color:#9c8c7c;">Se emite desde MiCorreo</span>
+                    <a href="{% url 'pedidos:generar_etiqueta_pedido' pedido.id %}"
+                       class="btn-act btn-hist"
+                       style="font-size:0.75rem; padding:0.4rem 0.8rem;"
+                       onclick="return confirm('¿Generar etiqueta de Correo Argentino? Esto creará el envío en PAQ.AR.')">
+                        <i class="bi bi-printer"></i> Generar Etiqueta
+                    </a>
                 </div>
                 {% endif %}
                 {% endif %}
