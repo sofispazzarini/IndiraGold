@@ -72,8 +72,11 @@ def calcular_paquete_envio(items):
     if paquete['weight'] <= 0:
         return dict(PAQUETES_ENVIO['mediano'])
 
-    paquete['weight'] = min(paquete['weight'], 25000)
-    paquete['height'] = max(paquete['height'], 1)
+    # Limites maximos para Correo Argentino
+    paquete['weight'] = min(paquete['weight'], 25000)  # Max 25 kg
+    paquete['height'] = min(max(paquete['height'], 1), 100)  # Max 100 cm
+    paquete['width'] = min(paquete['width'], 100)  # Max 100 cm
+    paquete['length'] = min(paquete['length'], 100)  # Max 100 cm
     return paquete
 
 
