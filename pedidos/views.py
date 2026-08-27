@@ -1104,6 +1104,7 @@ def cotizar_correo_argentino_checkout(request):
                 'codigo_postal': codigo_postal,
                 'tipo_entrega': tipo_entrega,
                 'items_count': items.count() if hasattr(items, 'count') else len(items),
+                'paquete': paquete,
             }
         }, status=400)
 
