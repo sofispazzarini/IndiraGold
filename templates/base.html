@@ -336,7 +336,7 @@
   <nav class="sidebar__nav">
     {% block sidebar_menu %}
       {% if user.is_authenticated %}
-        <a href="{% url 'users:logout' %}" class="nav-link logout-link" data-logout-url="{% url 'users:logout' %}">Salir</a>
+        <a href="{% url 'users:logout' %}" class="nav-link">Salir</a>
       {% else %}
         <a href="{% url 'users:login' %}" class="nav-link">Ingresar</a>
       {% endif %}
@@ -373,7 +373,7 @@
             <li><a class="dropdown-item" href="{% url 'users:perfil' %}"><i class="bi bi-person me-2"></i>Mi perfil</a></li>
             <li><hr class="dropdown-divider"></li>
             {% endif %}
-            <li><a class="dropdown-item text-danger fw-bold logout-link" href="{% url 'users:logout' %}" data-logout-url="{% url 'users:logout' %}">Cerrar sesión</a></li>
+            <li><a class="dropdown-item text-danger fw-bold" href="{% url 'users:logout' %}">Cerrar sesión</a></li>
           </ul>
         </div>
       </div>
@@ -465,163 +465,6 @@
       } catch (e) {}
     }
   });
-
-  // Logout confirmation if cart has items
-
-  function hasCartItems() {
-    try {
-      const backup = localStorage.getItem(CART_STORAGE_KEY);
-      if (!backup) return false;
-      const data = JSON.parse(backup);
-      return data.items && data.items.length > 0;
-    } catch (e) {
-      return false;
-    }
-  }
-
-  document.querySelectorAll('.logout-link').forEach(function(link) {
-    link.addEventListener('click', function(e) {
-      if (hasCartItems()) {
-        e.preventDefault();
-        const logoutUrl = this.dataset.logoutUrl || this.href;
-        showLogoutModal(logoutUrl);
-      } else {
-        // Clear localStorage even if cart appears empty
-        try { localStorage.removeItem(CART_STORAGE_KEY); } catch (e) {}
-      }
-    });
-  });
-
-  function showLogoutModal(logoutUrl) {
-    let modal = document.getElementById('logoutConfirmModal');
-    if (!modal) {
-      modal = document.createElement('div');
-      modal.id = 'logoutConfirmModal';
-      modal.innerHTML = `
-        <div class="logout-modal-overlay"></div>
-        <div class="logout-modal-content">
-          <div class="logout-modal-icon">
-            <i class="bi bi-cart-x"></i>
-          </div>
-          <h3>¿Cerrar sesión?</h3>
-          <p>Tenés productos en tu carrito. Si cerrás sesión, se van a perder.</p>
-          <div class="logout-modal-actions">
-            <button type="button" class="btn-cancel" onclick="closeLogoutModal()">Cancelar</button>
-            <a href="" class="btn-confirm" id="confirmLogoutBtn" onclick="clearCartOnLogout()">Sí, cerrar sesión</a>
-          </div>
-        </div>
-      `;
-      document.body.appendChild(modal);
-
-      modal.querySelector('.logout-modal-overlay').addEventListener('click', closeLogoutModal);
-    }
-
-    document.getElementById('confirmLogoutBtn').href = logoutUrl;
-    modal.classList.add('active');
-    document.body.style.overflow = 'hidden';
-  }
-
-  function closeLogoutModal() {
-    const modal = document.getElementById('logoutConfirmModal');
-    if (modal) {
-      modal.classList.remove('active');
-      document.body.style.overflow = '';
-    }
-  }
-  window.closeLogoutModal = closeLogoutModal;
-
-  function clearCartOnLogout() {
-    try {
-      localStorage.removeItem(CART_STORAGE_KEY);
-    } catch (e) {}
-  }
-  window.clearCartOnLogout = clearCartOnLogout;
 })();
-</script>
-
-<style>
-#logoutConfirmModal {
-  display: none;
-  position: fixed;
-  inset: 0;
-  z-index: 9999;
-}
-#logoutConfirmModal.active {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.logout-modal-overlay {
-  position: absolute;
-  inset: 0;
-  background: rgba(0,0,0,0.5);
-}
-.logout-modal-content {
-  position: relative;
-  background: #fff;
-  border-radius: 16px;
-  padding: 2rem;
-  max-width: 380px;
-  width: 90%;
-  text-align: center;
-  box-shadow: 0 20px 40px rgba(0,0,0,0.15);
-}
-.logout-modal-icon {
-  width: 64px;
-  height: 64px;
-  background: #fef2f2;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto 1rem;
-}
-.logout-modal-icon i {
-  font-size: 28px;
-  color: #dc2626;
-}
-.logout-modal-content h3 {
-  font-size: 1.25rem;
-  color: #1a1612;
-  margin: 0 0 0.5rem;
-}
-.logout-modal-content p {
-  font-size: 0.9rem;
-  color: #786b60;
-  margin: 0 0 1.5rem;
-}
-.logout-modal-actions {
-  display: flex;
-  gap: 0.75rem;
-  justify-content: center;
-}
-.logout-modal-actions .btn-cancel {
-  padding: 0.65rem 1.25rem;
-  border: 1px solid #e8dfd4;
-  background: #fff;
-  color: #3d342a;
-  border-radius: 8px;
-  font-size: 0.85rem;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-.logout-modal-actions .btn-cancel:hover {
-  background: #f5f2ed;
-}
-.logout-modal-actions .btn-confirm {
-  padding: 0.65rem 1.25rem;
-  background: #dc2626;
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  font-size: 0.85rem;
-  text-decoration: none;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-.logout-modal-actions .btn-confirm:hover {
-  background: #b91c1c;
-}
-</style>
 </body>
 </html>
