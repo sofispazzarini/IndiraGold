@@ -122,10 +122,14 @@ def expire_cart_if_needed(session) -> bool:
 def get_or_create_cart(request):
     """
     Busca el carrito actual del usuario (ya sea logueado o anónimo).
+    Retorna None para administradores.
     """
-    
+
     # USUARIO LOGUEADO
     if request.user.is_authenticated:
+        # Los administradores no tienen carrito
+        if request.user.is_superuser or request.user.is_staff:
+            return None
 
         cliente, _ = Cliente.objects.get_or_create(user=request.user)
 
@@ -134,7 +138,7 @@ def get_or_create_cart(request):
             activo=True
         )
 
-        
+
         return carrito
 
     # USUARIO INVITADO

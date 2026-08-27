@@ -723,7 +723,16 @@ def editar_pedido(request, pedido_id):
 
 @login_required
 def checkout_view(request):
+    # Administradores no pueden hacer checkout
+    if request.user.is_superuser or request.user.is_staff:
+        messages.error(request, "Los administradores no pueden realizar compras.")
+        return redirect("home:home")
+
     carrito = get_or_create_cart(request)
+    if carrito is None:
+        messages.error(request, "No se pudo acceder al carrito.")
+        return redirect("home:home")
+
     # Traemos los items con sus variantes y fotos
     items = carrito.items.all().select_related('variante__producto', 'variante__talle')
     configuracion_envio = ConfiguracionEnvio.actual()

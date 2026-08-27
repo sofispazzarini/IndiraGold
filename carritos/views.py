@@ -572,36 +572,37 @@ def _build_home_context(request):
 	if request.user.is_authenticated:
 		try:
 			carrito = get_or_create_cart(request)
-			for item_db in carrito.items.all().select_related('variante__producto'):
-				color_hex = _resolve_item_color_hex(item_db)
-				item_key = _make_cart_item_key(item_db.variante.id, item_db.color_nombre, item_db.color_hex)
-				items.append({
-					"id": item_db.variante.producto.id,  # Usar ID del producto para eliminar
-					"variante_id": item_db.variante.id,
-					"cart_key": item_key,
-					"nombre": item_db.variante.producto.nombre,
-					"precio": item_db.precio_unitario,
-					"cantidad": item_db.cantidad,
-					"subtotal": item_db.precio_total,
-					"color_nombre": item_db.color_nombre,
-					"color_hex": color_hex,
-				})
-				total_qty += item_db.cantidad
-				total_price += item_db.precio_total
-			
-			# Sincronizar sesión con BD para consistencia
-			carrito_sincronizado = {}
-			colores_sincronizados = {}
-			for item_db in carrito.items.all():
-				item_key = _make_cart_item_key(item_db.variante.id, item_db.color_nombre, item_db.color_hex)
-				carrito_sincronizado[item_key] = item_db.cantidad
-				colores_sincronizados[item_key] = {
-					"nombre": item_db.color_nombre,
-					"hex": item_db.color_hex,
-				}
-			request.session['carrito'] = carrito_sincronizado
-			request.session[SESSION_CART_COLORS_KEY] = colores_sincronizados
-			request.session.modified = True
+			if carrito is not None:
+				for item_db in carrito.items.all().select_related('variante__producto'):
+					color_hex = _resolve_item_color_hex(item_db)
+					item_key = _make_cart_item_key(item_db.variante.id, item_db.color_nombre, item_db.color_hex)
+					items.append({
+						"id": item_db.variante.producto.id,
+						"variante_id": item_db.variante.id,
+						"cart_key": item_key,
+						"nombre": item_db.variante.producto.nombre,
+						"precio": item_db.precio_unitario,
+						"cantidad": item_db.cantidad,
+						"subtotal": item_db.precio_total,
+						"color_nombre": item_db.color_nombre,
+						"color_hex": color_hex,
+					})
+					total_qty += item_db.cantidad
+					total_price += item_db.precio_total
+
+				# Sincronizar sesión con BD para consistencia
+				carrito_sincronizado = {}
+				colores_sincronizados = {}
+				for item_db in carrito.items.all():
+					item_key = _make_cart_item_key(item_db.variante.id, item_db.color_nombre, item_db.color_hex)
+					carrito_sincronizado[item_key] = item_db.cantidad
+					colores_sincronizados[item_key] = {
+						"nombre": item_db.color_nombre,
+						"hex": item_db.color_hex,
+					}
+				request.session['carrito'] = carrito_sincronizado
+				request.session[SESSION_CART_COLORS_KEY] = colores_sincronizados
+				request.session.modified = True
 		except Exception as e:
 			# Si hay error, continuar sin items
 			pass
