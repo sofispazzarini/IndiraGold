@@ -384,7 +384,7 @@ def crear_envio_pedido(pedido):
         )[0]
 
     if pedido.metodo_entrega == 'correo':
-        return EnvioPedido.objects.get_or_create(
+        envio, created = EnvioPedido.objects.get_or_create(
             pedido=pedido,
             defaults={
                 'proveedor': pedido.correo or 'correo_argentino',
@@ -393,7 +393,19 @@ def crear_envio_pedido(pedido):
                 'sucursal_id': pedido.sucursal_correo_id,
                 'costo': pedido.costo_envio,
             }
-        )[0]
+        )
+
+        # Generar etiqueta automáticamente para Correo Argentino
+        if created and envio.proveedor == 'correo_argentino':
+            try:
+                from pedidos.servicios_envio import generar_etiqueta
+                generar_etiqueta(envio)
+            except Exception as e:
+                envio.estado = 'error'
+                envio.error = f'Error generando etiqueta: {str(e)}'
+                envio.save(update_fields=['estado', 'error', 'updated_at'])
+
+        return envio
 
     return None
 
