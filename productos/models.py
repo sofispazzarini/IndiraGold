@@ -43,9 +43,9 @@ class Proveedor(models.Model):
 
 class Producto(models.Model):
     TAMANOS_PAQUETE = (
-        ('chico', 'Chico'),
-        ('mediano', 'Mediano'),
-        ('grande', 'Grande'),
+        ('chico', 'Chico - accesorios, remeras, tops'),
+        ('mediano', 'Mediano - buzos, pantalones, vestidos'),
+        ('grande', 'Grande - camperas, zapatillas, abrigos'),
     )
 
     codigo = models.CharField(max_length=50, unique=True)

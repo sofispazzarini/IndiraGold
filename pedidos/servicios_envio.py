@@ -14,9 +14,9 @@ class ErrorEnvio(Exception):
 
 
 PAQUETES_ENVIO = {
-    'chico': {'weight': 300, 'height': 4, 'width': 20, 'length': 25},
-    'mediano': {'weight': 700, 'height': 8, 'width': 25, 'length': 35},
-    'grande': {'weight': 1200, 'height': 12, 'width': 35, 'length': 45},
+    'chico': {'weight': 200, 'height': 3, 'width': 20, 'length': 25},      # Accesorios, remeras
+    'mediano': {'weight': 400, 'height': 5, 'width': 25, 'length': 35},    # Buzos, pantalones
+    'grande': {'weight': 800, 'height': 10, 'width': 35, 'length': 45},    # Camperas, zapatillas
 }
 
 
