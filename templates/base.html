@@ -457,6 +457,14 @@
   // Clear cart backup when purchase is successful
   const CART_STORAGE_KEY = 'indira_cart_backup';
 
+  // Si el usuario está autenticado, limpiar localStorage del carrito
+  // El carrito está en la BD, no necesitamos backup local
+  {% if request.user.is_authenticated %}
+  try {
+    localStorage.removeItem(CART_STORAGE_KEY);
+  } catch (e) {}
+  {% endif %}
+
   document.querySelectorAll('.alert-success[data-message]').forEach(function(alert) {
     const msg = (alert.dataset.message || '').toLowerCase();
     if (msg.includes('pedido') && (msg.includes('realizado') || msg.includes('confirmado') || msg.includes('éxito'))) {
