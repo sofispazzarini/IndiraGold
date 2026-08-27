@@ -382,9 +382,9 @@
 
   <main class="main">
     {% if messages %}
-    <div class="messages">
+    <div class="messages" id="django-messages">
       {% for message in messages %}
-        <div class="alert alert-{{ message.tags }}">
+        <div class="alert alert-{{ message.tags }}" data-message="{{ message }}">
           <span>{{ message }}</span>
           <button type="button" class="alert-close" onclick="this.parentElement.classList.add('hiding'); setTimeout(() => this.parentElement.remove(), 300);">&times;</button>
         </div>
@@ -454,8 +454,19 @@
     }, 10000);
   });
 
-  // Logout confirmation if cart has items
+  // Clear cart backup when purchase is successful
   const CART_STORAGE_KEY = 'indira_cart_backup';
+
+  document.querySelectorAll('.alert-success[data-message]').forEach(function(alert) {
+    const msg = (alert.dataset.message || '').toLowerCase();
+    if (msg.includes('pedido') && (msg.includes('realizado') || msg.includes('confirmado') || msg.includes('éxito'))) {
+      try {
+        localStorage.removeItem(CART_STORAGE_KEY);
+      } catch (e) {}
+    }
+  });
+
+  // Logout confirmation if cart has items
 
   function hasCartItems() {
     try {
