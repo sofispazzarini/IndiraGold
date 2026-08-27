@@ -485,6 +485,9 @@
         e.preventDefault();
         const logoutUrl = this.dataset.logoutUrl || this.href;
         showLogoutModal(logoutUrl);
+      } else {
+        // Clear localStorage even if cart appears empty
+        try { localStorage.removeItem(CART_STORAGE_KEY); } catch (e) {}
       }
     });
   });
@@ -504,7 +507,7 @@
           <p>Tenés productos en tu carrito. Si cerrás sesión, se van a perder.</p>
           <div class="logout-modal-actions">
             <button type="button" class="btn-cancel" onclick="closeLogoutModal()">Cancelar</button>
-            <a href="" class="btn-confirm" id="confirmLogoutBtn">Sí, cerrar sesión</a>
+            <a href="" class="btn-confirm" id="confirmLogoutBtn" onclick="clearCartOnLogout()">Sí, cerrar sesión</a>
           </div>
         </div>
       `;
@@ -526,6 +529,13 @@
     }
   }
   window.closeLogoutModal = closeLogoutModal;
+
+  function clearCartOnLogout() {
+    try {
+      localStorage.removeItem(CART_STORAGE_KEY);
+    } catch (e) {}
+  }
+  window.clearCartOnLogout = clearCartOnLogout;
 })();
 </script>
 
