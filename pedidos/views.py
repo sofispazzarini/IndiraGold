@@ -1097,7 +1097,15 @@ def cotizar_correo_argentino_checkout(request):
     try:
         importe, detalle = cotizar_correo_argentino(codigo_postal, tipo_entrega, items)
     except ErrorEnvio as error:
-        return JsonResponse({'success': False, 'error': str(error)}, status=400)
+        return JsonResponse({
+            'success': False,
+            'error': str(error),
+            'debug': {
+                'codigo_postal': codigo_postal,
+                'tipo_entrega': tipo_entrega,
+                'items_count': items.count() if hasattr(items, 'count') else len(items),
+            }
+        }, status=400)
 
     request.session['correo_cotizacion'] = {
         'importe': str(importe),
