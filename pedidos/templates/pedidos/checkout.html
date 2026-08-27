@@ -100,6 +100,35 @@
     font-size: 0.7rem;
   }
 
+  .checkout-timer {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    background: #fef9e7;
+    border: 1px solid #f5d779;
+    border-radius: 10px;
+    margin-bottom: 1rem;
+    font-size: 0.85rem;
+    color: #92400e;
+  }
+
+  .checkout-timer i {
+    font-size: 1rem;
+  }
+
+  .checkout-timer-value {
+    font-weight: 700;
+    font-family: monospace;
+    font-size: 0.95rem;
+  }
+
+  .checkout-timer.expired {
+    background: #fef2f2;
+    border-color: #fca5a5;
+    color: #dc2626;
+  }
+
   /* Product Item */
   .product-item {
     display: grid;
@@ -862,6 +891,14 @@
         <!-- Productos -->
         <div class="checkout-card">
           <h3 class="card-title"><span>1</span> Resumen de productos</h3>
+
+          {% if cart_expires_in and cart_expires_in > 0 %}
+          <div class="checkout-timer" id="checkoutTimer">
+            <i class="bi bi-clock"></i>
+            <span>Tu carrito expira en</span>
+            <span class="checkout-timer-value" id="checkoutTimerValue">--:--</span>
+          </div>
+          {% endif %}
 
           {% if items %}
             {% for item in items %}
@@ -2276,6 +2313,70 @@ function seleccionarSucursal(id, nombre, codigoPostal) {
   }
 
   cotizarCorreo();
+}
+
+// Timer del carrito
+let checkoutExpiresIn = parseInt('{{ cart_expires_in|default:0 }}', 10) || 0;
+let checkoutExpireTimer = null;
+
+function formatCheckoutCountdown(seconds) {
+  const safe = Math.max(0, parseInt(seconds || 0, 10));
+  const mm = String(Math.floor((safe % 3600) / 60)).padStart(2, '0');
+  const ss = String(safe % 60).padStart(2, '0');
+  return `${mm}:${ss}`;
+}
+
+function updateCheckoutTimer() {
+  const timerEl = document.getElementById('checkoutTimer');
+  const timerValue = document.getElementById('checkoutTimerValue');
+  if (!timerEl || !timerValue) return;
+
+  if (checkoutExpiresIn > 0) {
+    timerValue.textContent = formatCheckoutCountdown(checkoutExpiresIn);
+    timerEl.classList.remove('expired');
+  } else {
+    timerValue.textContent = '00:00';
+    timerEl.classList.add('expired');
+  }
+}
+
+function startCheckoutTimer() {
+  if (checkoutExpireTimer) clearInterval(checkoutExpireTimer);
+  updateCheckoutTimer();
+
+  checkoutExpireTimer = setInterval(() => {
+    if (checkoutExpiresIn > 0) {
+      checkoutExpiresIn--;
+      updateCheckoutTimer();
+    }
+    if (checkoutExpiresIn <= 0) {
+      clearInterval(checkoutExpireTimer);
+      expireCheckoutCart();
+    }
+  }, 1000);
+}
+
+async function expireCheckoutCart() {
+  try {
+    const response = await fetch('/carritos/expirar/', {
+      method: 'POST',
+      headers: {
+        'X-Requested-With': 'XMLHttpRequest',
+        'X-CSRFToken': csrfToken
+      }
+    });
+    if (response.ok) {
+      alert('Tu carrito expiró. Serás redirigido a la tienda.');
+      window.location.href = '{% url "home:home" %}';
+    }
+  } catch (err) {
+    console.error('Error expirando carrito:', err);
+    window.location.href = '{% url "home:home" %}';
+  }
+}
+
+if (checkoutExpiresIn > 0) {
+  startCheckoutTimer();
 }
 
 </script>

@@ -26,7 +26,7 @@ from .forms import GastoForm, ConfiguracionEnvioForm, ConfiguracionPagoForm
 from pedidos.forms import GastoForm, ConfiguracionEnvioForm, ConfiguracionPagoForm
 from .models import Gasto, Pedido, PedidoItem
 from carritos.models import Carrito, CarritoItem
-from carritos.utils import clear_cart_session, get_or_create_cart, vincular_carrito_con_usuario
+from carritos.utils import clear_cart_session, get_or_create_cart, vincular_carrito_con_usuario, get_cart_seconds_left
 from users.models import Cliente, Direccion, direcciones_sin_duplicados
 from productos.models import Variante, Oferta
 import mercadopago
@@ -763,6 +763,7 @@ def checkout_view(request):
         'codigo_descuento': cupon.codigo if cupon else '',
         'descuento_porcentaje': cupon.descuento if cupon else 0,
         'descuento_monto': descuento_monto,
+        'cart_expires_in': get_cart_seconds_left(request.session),
     })
 # pedidos/views.py
 
