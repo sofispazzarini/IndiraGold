@@ -377,6 +377,7 @@ def agregar_producto(request, subcat_id):
                             nombre_color,
                             c.get('colorHex') or '#888888'
                         )
+                        stock_color = int(c.get('stock', 0))
                         if nombre_color:
                             color_obj, created = Color.objects.get_or_create(
                                 nombre=nombre_color,
@@ -386,10 +387,12 @@ def agregar_producto(request, subcat_id):
                                 color_obj.codigo_hex = codigo_hex
                                 color_obj.save()
                             nueva_variante.colores.add(color_obj)
-                            VarianteColor.objects.get_or_create(
+                            vc, _ = VarianteColor.objects.get_or_create(
                                 variante=nueva_variante,
                                 color=color_obj,
                             )
+                            vc.stock = stock_color
+                            vc.save()
                     
                     # 4. VINCULAR MEDIDAS
                     medidas_data = v.get('medidas', [])

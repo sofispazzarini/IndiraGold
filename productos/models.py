@@ -212,9 +212,10 @@ class CategoriaOrdenProducto(models.Model):
 
 
 class VarianteColor(models.Model):
-    """Combinación única de Variante (producto+talle) + Color, con código QR para identificación física."""
+    """Combinación única de Variante (producto+talle) + Color, con código QR y stock individual."""
     variante = models.ForeignKey(Variante, on_delete=models.CASCADE, related_name='variante_colores')
     color = models.ForeignKey(Color, on_delete=models.CASCADE)
+    stock = models.PositiveIntegerField(default=0)
     qr_code = models.CharField(max_length=100, unique=True, blank=True)
     activo = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
