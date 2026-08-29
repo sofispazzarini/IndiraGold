@@ -49,7 +49,7 @@ from django.views.decorators.http import require_POST
 from django.db import transaction
 from django.utils.html import escape
 from django.utils import timezone
-from .servicios_envio import ErrorEnvio, calcular_paquete_envio, cotizar_correo_argentino
+from .servicios_envio import ErrorEnvio, calcular_paquete_envio, cotizar_correo_argentino, cotizar_correo_argentino_todas_tarifas
 print("===== PEDIDOS VIEWS CARGADO =====")
 print("TOKEN MP:", settings.MERCADO_PAGO_ACCESS_TOKEN)
 # Decorador para verificar que es administrador
@@ -370,6 +370,38 @@ def costo_envio_checkout(metodo_entrega, configuracion_envio):
 def costo_correo_argentino_desde_sesion(request, codigo_postal, tipo_entrega, items=None):
     cotizacion = request.session.get('correo_cotizacion') or {}
     paquete = calcular_paquete_envio(items or [])
+
+    # Verificar si hay una tarifa seleccionada en la sesión
+    tarifa_id = request.session.get('tarifa_correo_id')
+    tarifa_precio = request.session.get('tarifa_correo_precio')
+
+    # Si tenemos tarifa seleccionada y coincide con la cotización actual
+    if (
+        cotizacion.get('codigo_postal') == codigo_postal
+        and cotizacion.get('tipo_entrega') == tipo_entrega
+        and cotizacion.get('paquete') == paquete
+        and cotizacion.get('tarifas')
+        and tarifa_id
+        and tarifa_precio
+    ):
+        # Validar que la tarifa exista en las opciones cotizadas
+        for tarifa in cotizacion.get('tarifas', []):
+            if str(tarifa.get('id')) == str(tarifa_id):
+                return monto_decimal(Decimal(str(tarifa_precio)))
+        raise ErrorEnvio('La tarifa seleccionada no es válida. Vuelve a cotizar.')
+
+    # Si tenemos cotización con tarifas pero no tarifa seleccionada
+    if (
+        cotizacion.get('codigo_postal') == codigo_postal
+        and cotizacion.get('tipo_entrega') == tipo_entrega
+        and cotizacion.get('paquete') == paquete
+        and cotizacion.get('tarifas')
+    ):
+        # Usar la primera tarifa por defecto
+        primera = cotizacion['tarifas'][0]
+        return monto_decimal(Decimal(str(primera['precio'])))
+
+    # Compatibilidad: si hay importe directo (formato antiguo)
     if (
         cotizacion.get('codigo_postal') == codigo_postal
         and cotizacion.get('tipo_entrega') == tipo_entrega
@@ -378,16 +410,20 @@ def costo_correo_argentino_desde_sesion(request, codigo_postal, tipo_entrega, it
     ):
         return monto_decimal(Decimal(str(cotizacion['importe'])))
 
-    importe, detalle = cotizar_correo_argentino(codigo_postal, tipo_entrega, items)
+    # Cotizar de nuevo si no hay datos válidos
+    tarifas = cotizar_correo_argentino_todas_tarifas(codigo_postal, tipo_entrega, items)
+    tarifas_serializables = [
+        {'id': t['id'], 'nombre': t['nombre'], 'precio': float(t['precio']), 'dias': t['dias']}
+        for t in tarifas
+    ]
     request.session['correo_cotizacion'] = {
-        'importe': str(importe),
+        'tarifas': tarifas_serializables,
         'codigo_postal': codigo_postal,
         'tipo_entrega': tipo_entrega,
         'paquete': paquete,
-        'detalle': detalle,
     }
     request.session.modified = True
-    return importe
+    return monto_decimal(tarifas[0]['precio'])
 
 
 def crear_envio_pedido(pedido):
@@ -1197,7 +1233,7 @@ def cotizar_correo_argentino_checkout(request):
     paquete = calcular_paquete_envio(items)
 
     try:
-        importe, detalle = cotizar_correo_argentino(codigo_postal, tipo_entrega, items)
+        tarifas = cotizar_correo_argentino_todas_tarifas(codigo_postal, tipo_entrega, items)
     except ErrorEnvio as error:
         return JsonResponse({
             'success': False,
@@ -1210,18 +1246,28 @@ def cotizar_correo_argentino_checkout(request):
             }
         }, status=400)
 
+    # Convertir Decimal a float para serialización JSON
+    tarifas_serializables = []
+    for tarifa in tarifas:
+        tarifas_serializables.append({
+            'id': tarifa['id'],
+            'nombre': tarifa['nombre'],
+            'precio': float(tarifa['precio']),
+            'dias': tarifa['dias'],
+        })
+
+    # Guardar todas las tarifas en sesión para validar al crear pedido
     request.session['correo_cotizacion'] = {
-        'importe': str(importe),
+        'tarifas': tarifas_serializables,
         'codigo_postal': codigo_postal,
         'tipo_entrega': tipo_entrega,
         'paquete': paquete,
-        'detalle': detalle,
     }
     request.session.modified = True
 
     return JsonResponse({
         'success': True,
-        'importe': float(importe),
+        'tarifas': tarifas_serializables,
         'codigo_postal': codigo_postal,
         'paquete': paquete,
     })
@@ -1395,6 +1441,9 @@ def crear_pago(request):
     request.session['direccion_correo_id'] = request.POST.get('direccion_correo_id')
     request.session['correo'] = request.POST.get('correo')
     request.session['tipo_correo'] = request.POST.get('tipo_correo')
+    request.session['tarifa_correo_id'] = request.POST.get('tarifa_correo_id')
+    request.session['tarifa_correo_precio'] = request.POST.get('tarifa_correo_precio')
+    request.session['tarifa_correo_nombre'] = request.POST.get('tarifa_correo_nombre')
     request.session['sucursal_correo'] = request.POST.get('sucursal_correo')
     request.session['sucursal_correo_id'] = request.POST.get('sucursal_correo_id')
     request.session['codigo_postal_sucursal'] = request.POST.get('codigo_postal_sucursal')
@@ -1520,6 +1569,7 @@ def crear_pago(request):
             calle_numero=f'{(direccion_flex or direccion_correo).calle} {(direccion_flex or direccion_correo).numero}' if (direccion_flex or direccion_correo) else None,
             correo=request.session.get('correo'),
             tipo_correo=request.session.get('tipo_correo'),
+            tarifa_correo_nombre=request.session.get('tarifa_correo_nombre'),
             sucursal_correo=request.session.get('sucursal_correo'),
             sucursal_correo_id=request.session.get('sucursal_correo_id'),
             metodo_pago=metodo_pago,
@@ -1694,6 +1744,7 @@ def pago_exitoso(request):
         calle_numero=f'{direccion.calle} {direccion.numero}' if direccion else request.session.get('calle_numero'),
         correo=request.session.get('correo'),
         tipo_correo=request.session.get('tipo_correo'),
+        tarifa_correo_nombre=request.session.get('tarifa_correo_nombre'),
         sucursal_correo=request.session.get('sucursal_correo'),
         sucursal_correo_id=request.session.get('sucursal_correo_id'),
         tipo_venta='online',

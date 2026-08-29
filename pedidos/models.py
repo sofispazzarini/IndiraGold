@@ -109,6 +109,13 @@ class Pedido(models.Model):
         null=True
     )
 
+    tarifa_correo_nombre = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True,
+        help_text='Nombre del servicio de envío seleccionado'
+    )
+
     sucursal_correo = models.CharField(
         max_length=255,
         blank=True,

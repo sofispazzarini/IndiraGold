@@ -269,6 +269,53 @@ def extraer_importe_cotizacion(respuesta):
     raise ErrorEnvio('La API cotizo, pero no devolvio un importe reconocible.')
 
 
+def extraer_todas_las_tarifas(respuesta):
+    """Extrae todas las tarifas disponibles de la respuesta de cotización."""
+    if isinstance(respuesta, dict) and respuesta.get('rates') == []:
+        raise ErrorEnvio('Correo Argentino no tiene tarifas para esta ruta.')
+
+    rates = respuesta.get('rates', []) if isinstance(respuesta, dict) else []
+    if not rates:
+        # Si no hay rates, intentar con la respuesta directa
+        importe = extraer_importe_cotizacion(respuesta)
+        return [{'id': 'standard', 'nombre': 'Envío Estándar', 'precio': importe, 'dias': None}]
+
+    tarifas = []
+    for rate in rates:
+        if not isinstance(rate, dict):
+            continue
+        # Extraer precio
+        precio = None
+        for clave in ['total', 'amount', 'price', 'precio', 'importe', 'valor', 'shipping_cost']:
+            valor = rate.get(clave)
+            if valor not in [None, '']:
+                precio = Decimal(str(valor)).quantize(Decimal('0.01'))
+                break
+        if precio is None:
+            continue
+
+        # Extraer nombre del servicio
+        nombre = rate.get('serviceName') or rate.get('name') or rate.get('service') or rate.get('description') or 'Envío'
+        # Extraer ID del servicio
+        service_id = rate.get('serviceId') or rate.get('id') or rate.get('code') or nombre.lower().replace(' ', '_')
+        # Extraer días de entrega
+        dias = rate.get('deliveryTime') or rate.get('days') or rate.get('transitDays')
+
+        tarifas.append({
+            'id': str(service_id),
+            'nombre': nombre,
+            'precio': precio,
+            'dias': dias,
+        })
+
+    if not tarifas:
+        raise ErrorEnvio('No se encontraron tarifas en la respuesta.')
+
+    # Ordenar por precio
+    tarifas.sort(key=lambda x: x['precio'])
+    return tarifas
+
+
 def cotizar_correo_argentino(codigo_postal, tipo_entrega='domicilio', items=None):
     config = config_proveedor('correo_argentino')
     if not (config.base_url and config.cotizar_endpoint and config.customer_id and config.postal_code_origin and (config.token or (config.usuario and config.password and config.auth_endpoint))):
@@ -287,6 +334,27 @@ def cotizar_correo_argentino(codigo_postal, tipo_entrega='domicilio', items=None
     }
     respuesta = request_json('POST', url, token, payload)
     return extraer_importe_cotizacion(respuesta), respuesta
+
+
+def cotizar_correo_argentino_todas_tarifas(codigo_postal, tipo_entrega='domicilio', items=None):
+    """Cotiza y devuelve todas las tarifas disponibles."""
+    config = config_proveedor('correo_argentino')
+    if not (config.base_url and config.cotizar_endpoint and config.customer_id and config.postal_code_origin and (config.token or (config.usuario and config.password and config.auth_endpoint))):
+        raise ErrorEnvio('Falta configurar la cotizacion de Correo Argentino MiCorreo.')
+
+    token = obtener_token(config)
+    url = f'{config.base_url}{config.cotizar_endpoint}'
+    delivered_type = 'S' if tipo_entrega == 'sucursal' else 'D'
+    dimensiones = calcular_paquete_envio(items or [])
+    payload = {
+        'customerId': config.customer_id,
+        'postalCodeOrigin': config.postal_code_origin,
+        'postalCodeDestination': codigo_postal,
+        'deliveredType': delivered_type,
+        'dimensions': dimensiones,
+    }
+    respuesta = request_json('POST', url, token, payload)
+    return extraer_todas_las_tarifas(respuesta)
 
 
 CODIGOS_PROVINCIA = {
