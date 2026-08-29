@@ -2448,7 +2448,7 @@ def actualizar_estado_pedido(request, pedido_id):
 @admin_required
 @require_POST
 def actualizar_tracking_envio(request, pedido_id):
-    pedido = get_object_or_404(Pedido.objects.select_related('envio'), id=pedido_id)
+    pedido = get_object_or_404(Pedido.objects.select_related('envio', 'cliente__user'), id=pedido_id)
     envio = getattr(pedido, 'envio', None) or crear_envio_pedido(pedido)
 
     if not envio:
@@ -2456,12 +2456,115 @@ def actualizar_tracking_envio(request, pedido_id):
         return redirect('pedidos:detalle_pedido', pedido_id=pedido.id)
 
     tracking = (request.POST.get('tracking') or '').strip()
+    tracking_anterior = envio.tracking
     envio.tracking = tracking or None
     envio.error = ''
     envio.save(update_fields=['tracking', 'error', 'updated_at'])
 
+    # Enviar mail al cliente cuando se agrega un nuevo tracking
+    if tracking and tracking != tracking_anterior and pedido.cliente.user.email:
+        nombre_cliente = pedido.cliente.user.first_name or pedido.cliente.user.username
+
+        # Determinar tipo de entrega
+        tipo_entrega = 'Retiro en sucursal' if envio.tipo_entrega == 'sucursal' else 'Envío a domicilio'
+        sucursal_info = f'<br>Sucursal: {envio.sucursal}' if envio.sucursal else ''
+
+        html_tracking = f"""
+<!DOCTYPE html>
+<html lang="es">
+  <head><meta charset="UTF-8"></head>
+  <body style="margin:0;padding:0;background:#f5f2ed;font-family:'Segoe UI',Arial,sans-serif;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f5f2ed;">
+      <tr>
+        <td align="center" style="padding:36px 18px;">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:640px;background:#ffffff;border-radius:18px;box-shadow:0 4px 24px rgba(0,0,0,.06);">
+            <tr>
+              <td style="padding:34px 34px 0;text-align:center;border-bottom:1px solid #ebe6df;">
+                <h1 style="margin:0 0 8px;font-family:Georgia,serif;font-size:28px;color:#6e0e2e;font-weight:600;">
+                  ¡Tu pedido fue despachado!
+                </h1>
+                <p style="margin:0 0 24px;font-size:15px;color:#786b60;">
+                  Pedido #{pedido.id}
+                </p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:28px 34px;">
+                <p style="margin:0 0 20px;font-size:16px;color:#1f1712;line-height:1.6;">
+                  Hola <strong>{nombre_cliente}</strong>,
+                </p>
+                <p style="margin:0 0 24px;font-size:15px;color:#786b60;line-height:1.6;">
+                  Tu pedido ya está en camino. Podés rastrear el estado de tu envío con el siguiente código:
+                </p>
+
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#faf7f2;border-radius:14px;border:1px solid #ebe6df;">
+                  <tr>
+                    <td style="padding:24px;text-align:center;">
+                      <p style="margin:0 0 8px;font-size:13px;text-transform:uppercase;letter-spacing:.12em;color:#9b8978;">
+                        Código de seguimiento
+                      </p>
+                      <p style="margin:0;font-size:24px;font-weight:700;color:#6e0e2e;font-family:monospace;letter-spacing:.05em;">
+                        {tracking}
+                      </p>
+                    </td>
+                  </tr>
+                </table>
+
+                <div style="margin:24px 0;padding:20px;background:#fff8df;border-radius:14px;border:1px solid #ead082;">
+                  <p style="margin:0 0 8px;font-size:14px;color:#1f1712;">
+                    <strong>Tipo de entrega:</strong> {tipo_entrega}{sucursal_info}
+                  </p>
+                </div>
+
+                <div style="text-align:center;margin:28px 0;">
+                  <a href="https://www.correoargentino.com.ar/formularios/ondnc"
+                     style="display:inline-block;padding:14px 32px;background:#6e0e2e;color:#ffffff;text-decoration:none;border-radius:8px;font-size:14px;font-weight:600;letter-spacing:.03em;">
+                    Rastrear mi envío
+                  </a>
+                </div>
+
+                <p style="margin:24px 0 0;font-size:14px;line-height:1.6;color:#786b60;">
+                  Ingresá el código de seguimiento en la página de Correo Argentino para ver el estado actualizado de tu paquete.
+                </p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:24px 34px 34px;text-align:center;border-top:1px solid #ebe6df;">
+                <p style="margin:0;font-size:13px;color:#786b60;">
+                  ¿Tenés dudas? Escribinos por WhatsApp al +54 9 221 637 5660
+                </p>
+              </td>
+            </tr>
+          </table>
+          <div style="max-width:640px;margin-top:16px;font-size:12px;color:#9b8978;text-align:center;">
+            IndiraGold
+          </div>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
+"""
+
+        send_mail(
+            subject=f'¡Tu pedido #{pedido.id} fue despachado! - IndiraGold',
+            message=(
+                f'Hola {nombre_cliente},\n\n'
+                f'Tu pedido #{pedido.id} fue despachado.\n\n'
+                f'Código de seguimiento: {tracking}\n\n'
+                f'Tipo de entrega: {tipo_entrega}\n'
+                f'{f"Sucursal: {envio.sucursal}" if envio.sucursal else ""}\n\n'
+                f'Podés rastrear tu envío en: https://www.correoargentino.com.ar/formularios/ondnc\n\n'
+                f'Gracias por comprar en IndiraGold.'
+            ),
+            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', None),
+            recipient_list=[pedido.cliente.user.email],
+            fail_silently=True,
+            html_message=html_tracking
+        )
+
     if tracking:
-        messages.success(request, 'Codigo de seguimiento guardado.')
+        messages.success(request, 'Codigo de seguimiento guardado y mail enviado al cliente.')
     else:
         messages.success(request, 'Codigo de seguimiento eliminado.')
 
