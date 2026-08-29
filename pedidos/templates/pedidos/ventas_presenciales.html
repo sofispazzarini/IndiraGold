@@ -1601,7 +1601,7 @@ const direccionEnvioBox = document.getElementById(
     'direccion-envio-box'
 )
 
-const PRECIO_FLEX = {{ precio_flex|default:0 }};
+const PRECIO_FLEX = parseFloat('{{ precio_flex|default:0 }}') || 0;
 
 const direccionEnvioSelect = document.getElementById(
     'direccion-envio'
