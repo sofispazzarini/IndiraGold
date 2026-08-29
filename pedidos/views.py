@@ -1055,12 +1055,33 @@ def validar_codigo_descuento(request):
         return JsonResponse({'success': False, 'error': 'El carrito esta vacio.'}, status=400)
 
     codigo = request.POST.get('codigo_descuento', '')
-    cupon, descuento_monto = calcular_descuento_cupon(subtotal, codigo)
+    codigo_normalizado = (codigo or '').strip().upper()
 
-    if not cupon:
+    # Buscar el cupón sin validar límites primero
+    cupon_raw = Oferta.objects.filter(
+        codigo__iexact=codigo_normalizado,
+        es_cupon=True
+    ).first()
+
+    if not cupon_raw:
         request.session.pop('codigo_descuento', None)
         request.session.modified = True
-        return JsonResponse({'success': False, 'error': 'El codigo no existe o no esta activo.'}, status=404)
+        return JsonResponse({'success': False, 'error': 'El código no existe.'}, status=404)
+
+    if not cupon_raw.activa:
+        request.session.pop('codigo_descuento', None)
+        request.session.modified = True
+        return JsonResponse({'success': False, 'error': 'El código no está activo.'}, status=404)
+
+    # Verificar límites específicos
+    puede_usar, razon = cupon_raw.puede_usarse()
+    if not puede_usar:
+        request.session.pop('codigo_descuento', None)
+        request.session.modified = True
+        return JsonResponse({'success': False, 'error': razon}, status=404)
+
+    # El cupón es válido, calcular descuento
+    cupon, descuento_monto = calcular_descuento_cupon(subtotal, codigo)
 
     request.session['codigo_descuento'] = cupon.codigo
     request.session.modified = True
