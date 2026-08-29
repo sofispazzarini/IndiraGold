@@ -105,7 +105,7 @@ def agregar_producto(request):
 
 	# Buscar variante
 	try:
-		from productos.models import Variante
+		from productos.models import Variante, VarianteColor
 
 		variante = Variante.objects.select_related("producto").get(
 			pk=variante_id_int,
@@ -114,16 +114,28 @@ def agregar_producto(request):
 		colores_variante = list(variante.colores.all())
 		colores_validos = {color.nombre.lower(): color for color in colores_variante}
 		color_hex = None
+		variante_color = None
 		if color_nombre:
 			color_obj = colores_validos.get(color_nombre.lower())
 			if color_obj:
 				color_nombre = color_obj.nombre
 				color_hex = color_obj.codigo_hex
+				# Buscar VarianteColor para obtener stock específico
+				variante_color = VarianteColor.objects.filter(
+					variante=variante,
+					color=color_obj,
+					activo=True
+				).first()
 			else:
 				color_nombre = ''
 		elif len(colores_variante) == 1:
 			color_nombre = colores_variante[0].nombre
 			color_hex = colores_variante[0].codigo_hex
+			variante_color = VarianteColor.objects.filter(
+				variante=variante,
+				color=colores_variante[0],
+				activo=True
+			).first()
 
 		# Normalizar formato HEX (asegurar leading '#')
 		if color_hex:
@@ -141,9 +153,12 @@ def agregar_producto(request):
 
 		return _render_next(request, next_url)
 
-	# Validar stock de variante
-	if variante.stock <= 0:
-		messages.error(request, "Este producto no tiene stock.")
+	# Determinar stock disponible (por color si existe, sino por variante)
+	stock_disponible = variante_color.stock if variante_color else variante.stock
+
+	# Validar stock
+	if stock_disponible <= 0:
+		messages.error(request, "Este producto no tiene stock en este color.")
 
 		if _is_ajax(request):
 			return _render_cart_fragment(request)
@@ -166,18 +181,33 @@ def agregar_producto(request):
 	new_qty_this_key = current_qty_this_key + cantidad_int
 	new_total_qty = total_variante_qty + cantidad_int
 
-	# Validar stock suficiente (considerando TODAS las entradas de esta variante)
-	if new_total_qty > variante.stock:
-		disponibles = variante.stock - total_variante_qty
-		if disponibles <= 0:
-			messages.error(request, f"Ya tenés el máximo disponible en tu carrito ({variante.stock} unidades)")
-		else:
-			messages.error(request, f"Solo podés agregar {disponibles} más (hay {variante.stock} en stock)")
+	# Validar stock suficiente (considerando stock por color)
+	if variante_color:
+		# Contar solo items del mismo color en el carrito
+		total_color_qty = int(cart.get(key, 0))
+		new_color_qty = total_color_qty + cantidad_int
+		if new_color_qty > stock_disponible:
+			disponibles = stock_disponible - total_color_qty
+			if disponibles <= 0:
+				messages.error(request, f"Ya tenés el máximo disponible de este color ({stock_disponible} unidades)")
+			else:
+				messages.error(request, f"Solo podés agregar {disponibles} más de este color (hay {stock_disponible} en stock)")
 
-		if _is_ajax(request):
-			return _render_cart_fragment(request)
+			if _is_ajax(request):
+				return _render_cart_fragment(request)
+			return _render_next(request, next_url)
+	else:
+		# Fallback: validar contra stock total de variante
+		if new_total_qty > variante.stock:
+			disponibles = variante.stock - total_variante_qty
+			if disponibles <= 0:
+				messages.error(request, f"Ya tenés el máximo disponible en tu carrito ({variante.stock} unidades)")
+			else:
+				messages.error(request, f"Solo podés agregar {disponibles} más (hay {variante.stock} en stock)")
 
-		return _render_next(request, next_url)
+			if _is_ajax(request):
+				return _render_cart_fragment(request)
+			return _render_next(request, next_url)
 
 	# =========================
 	# USUARIO AUTENTICADO
@@ -471,6 +501,17 @@ def confirmar_compra(request):
 				precio_unitario=precio_unitario,
 				precio_total=precio_total,
 			)
+			# Descontar stock por color si existe
+			if color_nombre:
+				from productos.models import VarianteColor
+				vc = VarianteColor.objects.filter(
+					variante=variante,
+					color__nombre__iexact=color_nombre,
+					activo=True
+				).first()
+				if vc:
+					vc.stock -= cantidad
+					vc.save(update_fields=["stock"])
 			producto.stock -= cantidad
 			producto.save(update_fields=["stock"])
 			variante.stock -= cantidad

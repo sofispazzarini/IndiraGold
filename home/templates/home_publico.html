@@ -569,6 +569,7 @@ function scrollCatOrden{{ cat_orden.id }}(dir) {
       <div id="modalColoresContainer" style="display:none;">
         <label style="display:block; margin-bottom:.5rem; font-size:.9rem; font-weight:600; color:#3d342a;">Selecciona tu color</label>
         <div id="modalColoresGrid" style="display:flex; flex-wrap:wrap; gap:.55rem;"></div>
+        <small id="modalStockColor" style="display:block; margin-top:.5rem; color:#b8922a; font-weight:600;"></small>
       </div>
       <div>
         <label for="modalCantidadInput" style="display:block; margin-bottom:.5rem; font-size:.9rem; font-weight:600; color:#3d342a;">Cantidad</label>
@@ -1665,40 +1666,54 @@ function scrollCatOrden{{ cat_orden.id }}(dir) {
     return valor.startsWith('#') ? valor : `#${valor}`;
   }
 
+  let coloresModalActuales = [];
+
   function renderizarColoresModal(varianteId) {
     const container = document.getElementById('modalColoresContainer');
     const grid = document.getElementById('modalColoresGrid');
     const hiddenColor = document.getElementById('modalCantidadColorNombre');
+    const stockColorLabel = document.getElementById('modalStockColor');
     const variante = modalVariantesActuales.find(v => Number(v.id) === Number(varianteId));
     const colores = variante && Array.isArray(variante.colores) ? variante.colores : [];
+    coloresModalActuales = colores;
 
     if (!colores.length) {
       container.style.display = 'none';
       colorSeleccionadoModal = '';
       hiddenColor.value = '';
+      stockColorLabel.textContent = '';
       return;
     }
+
+    // Seleccionar el primer color con stock disponible
+    const primerConStock = colores.findIndex(c => c.stock > 0);
+    const indexSeleccionado = primerConStock >= 0 ? primerConStock : 0;
 
     container.style.display = 'block';
     grid.innerHTML = colores.map((color, index) => {
       const nombre = color.nombre || 'Color';
       const hex = normalizarHexColor(color.codigo_hex || color.hex || '#888888');
-      if (index === 0) colorSeleccionadoModal = nombre;
+      const stockColor = color.stock || 0;
+      const sinStock = stockColor <= 0;
+      if (index === indexSeleccionado) colorSeleccionadoModal = nombre;
       return `
         <button type="button"
-                class="color-circle-btn ${index === 0 ? 'seleccionado' : ''}"
+                class="color-circle-btn ${index === indexSeleccionado ? 'seleccionado' : ''} ${sinStock ? 'sin-stock' : ''}"
                 data-color-name="${nombre}"
-                title="${nombre}"
+                data-stock="${stockColor}"
+                title="${nombre} (${stockColor} disponibles)"
                 aria-label="${nombre}"
-                style="width: 32px; height: 32px; border-radius: 50%; border: 2px solid ${index === 0 ? '#1a1612' : '#e8dfd4'}; background: ${hex}; box-shadow: inset 0 0 0 2px rgba(255,255,255,.9); cursor:pointer; padding:0; transition:all .15s ease;"
-                onclick="seleccionarColorModal(this)"></button>
+                style="width: 32px; height: 32px; border-radius: 50%; border: 2px solid ${index === indexSeleccionado ? '#1a1612' : '#e8dfd4'}; background: ${hex}; box-shadow: inset 0 0 0 2px rgba(255,255,255,.9); cursor:${sinStock ? 'not-allowed' : 'pointer'}; padding:0; transition:all .15s ease; opacity:${sinStock ? '0.4' : '1'};"
+                onclick="seleccionarColorModal(this)" ${sinStock ? 'disabled' : ''}></button>
       `;
     }).join('');
 
     hiddenColor.value = colorSeleccionadoModal;
+    actualizarStockColorModal(colores[indexSeleccionado]);
   }
 
   function seleccionarColorModal(btn) {
+    if (btn.disabled) return;
     document.querySelectorAll('#modalColoresGrid .color-circle-btn').forEach(el => {
       el.style.borderColor = '#e8dfd4';
       el.style.transform = 'scale(1)';
@@ -1707,6 +1722,24 @@ function scrollCatOrden{{ cat_orden.id }}(dir) {
     btn.style.transform = 'scale(1.08)';
     colorSeleccionadoModal = btn.dataset.colorName || '';
     document.getElementById('modalCantidadColorNombre').value = colorSeleccionadoModal;
+
+    const colorData = coloresModalActuales.find(c => c.nombre === colorSeleccionadoModal);
+    actualizarStockColorModal(colorData);
+  }
+
+  function actualizarStockColorModal(colorData) {
+    const stockColorLabel = document.getElementById('modalStockColor');
+    const input = document.getElementById('modalCantidadInput');
+
+    if (colorData && colorData.stock !== undefined) {
+      stockColorLabel.textContent = `Stock de este color: ${colorData.stock}`;
+      input.max = colorData.stock;
+      if (parseInt(input.value) > colorData.stock) {
+        input.value = colorData.stock > 0 ? 1 : 0;
+      }
+    } else {
+      stockColorLabel.textContent = '';
+    }
   }
 
   function abrirModalCantidad(btn) {

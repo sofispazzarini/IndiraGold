@@ -428,18 +428,45 @@ def url_seguimiento_envio(envio):
 
 
 def descontar_stock_pedido(pedido):
+    from productos.models import VarianteColor
+
     for item in pedido.items.select_related('variante'):
-        if item.variante.stock < item.cantidad:
+        # Verificar stock por color si tiene color_nombre
+        if item.color_nombre:
+            vc = VarianteColor.objects.filter(
+                variante=item.variante,
+                color__nombre__iexact=item.color_nombre,
+                activo=True
+            ).first()
+            stock_disponible = vc.stock if vc else item.variante.stock
+        else:
+            stock_disponible = item.variante.stock
+
+        if stock_disponible < item.cantidad:
             raise ValueError(
                 f'No hay stock suficiente para {item.variante.producto.nombre}. '
-                f'Disponible: {item.variante.stock}, pedido: {item.cantidad}'
+                f'Disponible: {stock_disponible}, pedido: {item.cantidad}'
             )
 
     for item in pedido.items.select_related('variante'):
-        descontar_stock_variante(item.variante, item.cantidad)
+        descontar_stock_variante(item.variante, item.cantidad, item.color_nombre)
 
 
-def descontar_stock_variante(variante, cantidad):
+def descontar_stock_variante(variante, cantidad, color_nombre=None):
+    from productos.models import VarianteColor
+
+    # Descontar del stock por color si existe
+    if color_nombre:
+        vc = VarianteColor.objects.filter(
+            variante=variante,
+            color__nombre__iexact=color_nombre,
+            activo=True
+        ).first()
+        if vc:
+            vc.stock -= cantidad
+            vc.save(update_fields=['stock'])
+
+    # También descontar del stock de la variante
     variante.stock -= cantidad
     variante.save(update_fields=['stock'])
     producto = variante.producto

@@ -26,18 +26,19 @@ class HomePublicaView(TemplateView):
 
         for producto in productos:
             variantes_data = []
-            for v in producto.variantes.filter(activa=True).select_related('talle').prefetch_related('colores'):
+            for v in producto.variantes.filter(activa=True).select_related('talle').prefetch_related('colores', 'variante_colores__color'):
+                colores_con_stock = []
+                for vc in v.variante_colores.filter(activo=True):
+                    colores_con_stock.append({
+                        'nombre': vc.color.nombre,
+                        'codigo_hex': vc.color.codigo_hex or '#888888',
+                        'stock': vc.stock,
+                    })
                 variantes_data.append({
                     'id': v.id,
                     'talle': v.talle.nombre,
                     'stock': v.stock,
-                    'colores': [
-                        {
-                            'nombre': color.nombre,
-                            'codigo_hex': color.codigo_hex or '#888888',
-                        }
-                        for color in v.colores.all()
-                    ],
+                    'colores': colores_con_stock,
                 })
             producto.variantes_json = json.dumps(variantes_data)
 
@@ -218,18 +219,19 @@ class HomePublicaView(TemplateView):
                 producto = rel.producto
                 if not hasattr(producto, 'variantes_json') or not producto.variantes_json:
                     variantes_data = []
-                    for v in producto.variantes.filter(activa=True):
+                    for v in producto.variantes.filter(activa=True).prefetch_related('variante_colores__color'):
+                        colores_con_stock = []
+                        for vc in v.variante_colores.filter(activo=True):
+                            colores_con_stock.append({
+                                'nombre': vc.color.nombre,
+                                'codigo_hex': vc.color.codigo_hex or '#888888',
+                                'stock': vc.stock,
+                            })
                         variantes_data.append({
                             'id': v.id,
                             'talle': v.talle.nombre,
                             'stock': v.stock,
-                            'colores': [
-                                {
-                                    'nombre': color.nombre,
-                                    'codigo_hex': color.codigo_hex or '#888888',
-                                }
-                                for color in v.colores.all()
-                            ],
+                            'colores': colores_con_stock,
                         })
                     producto.variantes_json = json.dumps(variantes_data)
         ctx['categorias_orden'] = categorias_orden
