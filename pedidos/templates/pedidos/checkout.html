@@ -2573,8 +2573,7 @@ async function expireCheckoutCart() {
       }
     });
     if (response.ok) {
-      alert('Tu carrito expiró. Serás redirigido a la tienda.');
-      window.location.href = '{% url "home:home" %}';
+      showExpiredModal();
     }
   } catch (err) {
     console.error('Error expirando carrito:', err);
@@ -2582,9 +2581,137 @@ async function expireCheckoutCart() {
   }
 }
 
+function showExpiredModal() {
+  document.getElementById('cart-expired-modal').style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+
+function redirectToStore() {
+  window.location.href = '{% url "home:home" %}';
+}
+
 if (checkoutExpiresIn > 0) {
   startCheckoutTimer();
 }
 
 </script>
+
+<!-- Modal Carrito Expirado -->
+<div id="cart-expired-modal" class="expired-modal-overlay">
+  <div class="expired-modal">
+    <div class="expired-modal-icon">
+      <i class="bi bi-clock-history"></i>
+    </div>
+    <h3 class="expired-modal-title">Tu carrito ha expirado</h3>
+    <p class="expired-modal-text">
+      El tiempo de reserva de tus productos terminó.<br>
+      No te preocupes, podés volver a agregarlos.
+    </p>
+    <button onclick="redirectToStore()" class="expired-modal-btn">
+      <i class="bi bi-shop"></i>
+      Volver a la tienda
+    </button>
+  </div>
+</div>
+
+<style>
+.expired-modal-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(26, 22, 18, 0.85);
+  backdrop-filter: blur(4px);
+  z-index: 9999;
+  justify-content: center;
+  align-items: center;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.expired-modal {
+  background: #fff;
+  border-radius: 20px;
+  padding: 2.5rem 2rem;
+  max-width: 400px;
+  width: 90%;
+  text-align: center;
+  box-shadow: 0 25px 60px rgba(0,0,0,0.3);
+  animation: slideUp 0.4s ease;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.expired-modal-icon {
+  width: 80px;
+  height: 80px;
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1.5rem;
+}
+
+.expired-modal-icon i {
+  font-size: 2.5rem;
+  color: #b8922a;
+}
+
+.expired-modal-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.75rem;
+  color: #1a1612;
+  margin: 0 0 0.75rem;
+  font-weight: 600;
+}
+
+.expired-modal-text {
+  color: #6b5c4c;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  margin: 0 0 1.75rem;
+}
+
+.expired-modal-btn {
+  background: linear-gradient(135deg, #6E0E2E 0%, #8a1239 100%);
+  color: #fff;
+  border: none;
+  padding: 1rem 2rem;
+  border-radius: 50px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(110, 14, 46, 0.3);
+}
+
+.expired-modal-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(110, 14, 46, 0.4);
+}
+
+.expired-modal-btn i {
+  font-size: 1.1rem;
+}
+</style>
+
 {% endblock %}
