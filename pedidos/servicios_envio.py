@@ -361,26 +361,33 @@ def extraer_todas_las_tarifas(respuesta):
 
     # Asignar nombres descriptivos y tiempos estimados si no tienen
     for i, tarifa in enumerate(tarifas):
-        if not tarifa['nombre'] or tarifa['nombre'].lower() in ['envío', 'envio', 'shipping']:
+        nombre_lower = (tarifa['nombre'] or '').lower()
+
+        # Asignar días según el tipo de servicio
+        if not tarifa['dias']:
+            if 'expres' in nombre_lower or 'express' in nombre_lower or 'priorit' in nombre_lower or 'rapido' in nombre_lower or 'rápido' in nombre_lower:
+                tarifa['dias'] = '3 a 5 días hábiles'
+            elif 'clasic' in nombre_lower or 'clásic' in nombre_lower or 'estandar' in nombre_lower or 'estándar' in nombre_lower or 'standard' in nombre_lower:
+                tarifa['dias'] = '7 a 12 días hábiles'
+            elif i == len(tarifas) - 1 and len(tarifas) > 1:
+                # El más caro suele ser el más rápido
+                tarifa['dias'] = '3 a 5 días hábiles'
+            elif i == 0 and len(tarifas) > 1:
+                # El más barato suele ser el más lento
+                tarifa['dias'] = '7 a 12 días hábiles'
+            else:
+                tarifa['dias'] = '5 a 10 días hábiles'
+
+        # Si no tiene nombre, asignar uno descriptivo
+        if not tarifa['nombre'] or nombre_lower in ['envío', 'envio', 'shipping']:
             if len(tarifas) == 1:
                 tarifa['nombre'] = 'Envío Estándar'
-                if not tarifa['dias']:
-                    tarifa['dias'] = '5 a 10 días hábiles'
             elif i == 0:
                 tarifa['nombre'] = 'Envío Económico'
-                if not tarifa['dias']:
-                    tarifa['dias'] = '7 a 12 días hábiles'
             elif i == len(tarifas) - 1:
                 tarifa['nombre'] = 'Envío Express'
-                if not tarifa['dias']:
-                    tarifa['dias'] = '3 a 5 días hábiles'
             else:
                 tarifa['nombre'] = 'Envío Estándar'
-                if not tarifa['dias']:
-                    tarifa['dias'] = '5 a 10 días hábiles'
-        elif not tarifa['dias']:
-            # Si tiene nombre pero no días, asignar estimado genérico
-            tarifa['dias'] = '5 a 10 días hábiles'
 
     return tarifas
 
