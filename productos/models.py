@@ -278,7 +278,37 @@ class Oferta(models.Model):
     fecha_inicio = models.DateTimeField(null=True, blank=True)
     fecha_fin = models.DateTimeField(null=True, blank=True)
 
+    # Límite de usos del código
+    limite_usos = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        help_text='Cantidad máxima de veces que se puede usar el código. Dejar vacío para ilimitado.'
+    )
+    usos_actuales = models.PositiveIntegerField(default=0)
+
     created_at = models.DateTimeField(auto_now_add=True)
+
+    def puede_usarse(self):
+        """Verifica si el código todavía puede usarse."""
+        from django.utils import timezone
+
+        if not self.activa:
+            return False, 'El código no está activo'
+
+        # Verificar fecha límite
+        if self.fecha_fin and timezone.now() > self.fecha_fin:
+            return False, 'El código ha expirado'
+
+        # Verificar límite de usos
+        if self.limite_usos is not None and self.usos_actuales >= self.limite_usos:
+            return False, 'El código ha alcanzado el límite de usos'
+
+        return True, None
+
+    def registrar_uso(self):
+        """Incrementa el contador de usos."""
+        self.usos_actuales += 1
+        self.save(update_fields=['usos_actuales'])
 
     def save(self, *args, **kwargs):
         self.codigo = self.codigo.strip().upper() if self.codigo else None

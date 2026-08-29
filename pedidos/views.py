@@ -80,11 +80,18 @@ def obtener_cupon_activo(codigo):
     codigo_normalizado = (codigo or '').strip().upper()
     if not codigo_normalizado:
         return None
-    return Oferta.objects.filter(
+    cupon = Oferta.objects.filter(
         codigo__iexact=codigo_normalizado,
         es_cupon=True,
         activa=True
     ).first()
+    if not cupon:
+        return None
+    # Verificar si el cupón puede usarse (límites de uso y fecha)
+    puede_usar, _ = cupon.puede_usarse()
+    if not puede_usar:
+        return None
+    return cupon
 
 
 def calcular_descuento_cupon(subtotal, codigo):
@@ -93,6 +100,18 @@ def calcular_descuento_cupon(subtotal, codigo):
         return None, Decimal('0.00')
     descuento = monto_decimal(Decimal(subtotal) * Decimal(cupon.descuento) / Decimal(100))
     return cupon, min(descuento, Decimal(subtotal))
+
+
+def registrar_uso_cupon(codigo):
+    """Registra el uso de un cupón cuando se completa una compra."""
+    if not codigo:
+        return
+    cupon = Oferta.objects.filter(
+        codigo__iexact=codigo.strip().upper(),
+        es_cupon=True
+    ).first()
+    if cupon:
+        cupon.registrar_uso()
 
 
 def whatsapp_comprobante_url(pedido):
@@ -877,6 +896,10 @@ def confirmar_pedido(request):
         )
         crear_envio_pedido(pedido)
 
+        # Registrar uso del cupón si se usó uno
+        if pedido.codigo_descuento:
+            registrar_uso_cupon(pedido.codigo_descuento)
+
         # 3. Movemos los productos al pedido y bajamos el stock
         for item in items_del_carrito:
             PedidoItem.objects.create(
@@ -1431,6 +1454,10 @@ def crear_pago(request):
         )
         crear_envio_pedido(pedido)
 
+        # Registrar uso del cupón si se usó uno
+        if pedido.codigo_descuento:
+            registrar_uso_cupon(pedido.codigo_descuento)
+
         for item in items:
             PedidoItem.objects.create(
                 pedido=pedido,
@@ -1608,6 +1635,10 @@ def pago_exitoso(request):
         detalle_mercado_pago=mercado_pago['detalle'],
     )
     crear_envio_pedido(pedido)
+
+    # Registrar uso del cupón si se usó uno
+    if pedido.codigo_descuento:
+        registrar_uso_cupon(pedido.codigo_descuento)
 
     # CREAR ITEMS Y DESCONTAR STOCK
     for item in items:

@@ -756,7 +756,29 @@
                 </div>
             </div>
 
-            <div class="ofertas-actions" style="margin-top: 1rem;">
+            <p style="color: var(--muted); margin: 1rem 0 0.75rem; font-size: 0.85rem; font-style: italic;">
+                Opcional: limitar el uso del código (una opción o la otra)
+            </p>
+
+            <div class="form-grid" style="grid-template-columns: 1fr 1fr;">
+                <div class="form-group">
+                    <label>Cantidad de usos <span class="char-limit">opcional</span></label>
+                    <input type="number" name="limite_usos" min="1" placeholder="Ej: 5 (vacío = ilimitado)">
+                    <div style="font-size: 0.75rem; color: var(--muted); margin-top: 0.25rem;">
+                        Cuántos clientes pueden usarlo
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Fecha límite <span class="char-limit">opcional</span></label>
+                    <input type="date" name="fecha_fin">
+                    <div style="font-size: 0.75rem; color: var(--muted); margin-top: 0.25rem;">
+                        Hasta cuándo se puede usar
+                    </div>
+                </div>
+            </div>
+
+            <div class="ofertas-actions" style="margin-top: 1.5rem;">
                 <button type="submit" class="btn-primary">
                     Crear código
                 </button>
@@ -777,6 +799,7 @@
                     <th>CODIGO</th>
                     <th>DESCUENTO</th>
                     <th>APLICA A</th>
+                    <th>LIMITE</th>
                     <th>ESTADO</th>
                     <th>ACCIONES</th>
                 </tr>
@@ -819,6 +842,20 @@
                             Productos seleccionados
                         {% endif %}
 
+                    </td>
+
+                    <td style="font-size: 0.8rem;">
+                        {% if oferta.es_cupon %}
+                            {% if oferta.limite_usos %}
+                                <span style="color: var(--burgundy);">{{ oferta.usos_actuales }}/{{ oferta.limite_usos }} usos</span>
+                            {% elif oferta.fecha_fin %}
+                                <span>Hasta {{ oferta.fecha_fin|date:"d/m/Y" }}</span>
+                            {% else %}
+                                <span style="color: var(--muted);">Sin límite</span>
+                            {% endif %}
+                        {% else %}
+                            -
+                        {% endif %}
                     </td>
 
                     <td>
