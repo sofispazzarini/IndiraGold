@@ -359,17 +359,28 @@ def extraer_todas_las_tarifas(respuesta):
     # Ordenar por precio (más barato primero)
     tarifas.sort(key=lambda x: x['precio'])
 
-    # Asignar nombres descriptivos si no tienen nombre o son genéricos
+    # Asignar nombres descriptivos y tiempos estimados si no tienen
     for i, tarifa in enumerate(tarifas):
         if not tarifa['nombre'] or tarifa['nombre'].lower() in ['envío', 'envio', 'shipping']:
             if len(tarifas) == 1:
                 tarifa['nombre'] = 'Envío Estándar'
+                if not tarifa['dias']:
+                    tarifa['dias'] = '5 a 10 días hábiles'
             elif i == 0:
                 tarifa['nombre'] = 'Envío Económico'
+                if not tarifa['dias']:
+                    tarifa['dias'] = '7 a 12 días hábiles'
             elif i == len(tarifas) - 1:
                 tarifa['nombre'] = 'Envío Express'
+                if not tarifa['dias']:
+                    tarifa['dias'] = '3 a 5 días hábiles'
             else:
-                tarifa['nombre'] = f'Envío Estándar'
+                tarifa['nombre'] = 'Envío Estándar'
+                if not tarifa['dias']:
+                    tarifa['dias'] = '5 a 10 días hábiles'
+        elif not tarifa['dias']:
+            # Si tiene nombre pero no días, asignar estimado genérico
+            tarifa['dias'] = '5 a 10 días hábiles'
 
     return tarifas
 
