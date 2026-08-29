@@ -773,13 +773,31 @@ def sumar_producto(request):
 		messages.error(request, "Producto inválido.")
 		return redirect(next_url)
 
+	# Obtener variante y stock por color
+	from productos.models import Variante, VarianteColor
+	variante = Variante.objects.filter(id=variante_id_int, activa=True).first()
+	if not variante:
+		messages.error(request, "Producto no disponible.")
+		return redirect(next_url or reverse("home:home"))
+
+	color_data = request.session.get(SESSION_CART_COLORS_KEY, {}).get(str(cart_key), {})
+	if isinstance(color_data, str):
+		color_data = {"nombre": color_data, "hex": None}
+	color_nombre = color_data.get("nombre")
+	color_hex = color_data.get("hex")
+
+	# Determinar stock disponible por color
+	variante_color = None
+	if color_nombre:
+		variante_color = VarianteColor.objects.filter(
+			variante=variante,
+			color__nombre__iexact=color_nombre,
+			activo=True
+		).first()
+	stock_disponible = variante_color.stock if variante_color else variante.stock
+
 	if request.user.is_authenticated:
 		carrito = get_or_create_cart(request)
-		color_data = request.session.get(SESSION_CART_COLORS_KEY, {}).get(str(cart_key), {})
-		if isinstance(color_data, str):
-			color_data = {"nombre": color_data, "hex": None}
-		color_nombre = color_data.get("nombre")
-		color_hex = color_data.get("hex")
 
 		item = carrito.items.filter(
 			variante_id=variante_id_int,
@@ -788,21 +806,25 @@ def sumar_producto(request):
 		).first()
 
 		if item:
+			# Validar stock antes de aumentar
+			if item.cantidad + 1 > stock_disponible:
+				messages.error(request, f"No hay más stock disponible de este color ({stock_disponible} máx.)")
+				return redirect(next_url or reverse("home:home"))
 			item.cantidad += 1
 			item.save()
 		else:
-			from productos.models import Variante
-
-			variante = Variante.objects.filter(id=variante_id_int).first()
-			if variante:
-				carrito.items.create(
-					variante_id=variante_id_int,
-					cantidad=1,
-					color_nombre=color_nombre,
-					color_hex=color_hex,
-					precio_unitario=variante.precio,
-					precio_total=variante.precio,
-				)
+			# Validar stock antes de crear
+			if stock_disponible < 1:
+				messages.error(request, "No hay stock disponible de este color.")
+				return redirect(next_url or reverse("home:home"))
+			carrito.items.create(
+				variante_id=variante_id_int,
+				cantidad=1,
+				color_nombre=color_nombre,
+				color_hex=color_hex,
+				precio_unitario=variante.precio,
+				precio_total=variante.precio,
+			)
 
 		# Sincronizar sesión con BD
 		carrito_final = {}
@@ -823,8 +845,14 @@ def sumar_producto(request):
 	else:
 		cart = _get_session_cart(request.session)
 		key = str(cart_key)
+		current_qty = cart.get(key, 0)
 
-		cart[key] = cart.get(key, 0) + 1
+		# Validar stock por color para usuario invitado
+		if current_qty + 1 > stock_disponible:
+			messages.error(request, f"No hay más stock disponible de este color ({stock_disponible} máx.)")
+			return redirect(next_url or reverse("home:home"))
+
+		cart[key] = current_qty + 1
 		request.session["carrito"] = cart
 		request.session.modified = True
 

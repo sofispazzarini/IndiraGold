@@ -2296,6 +2296,7 @@ def mis_pedidos(request):
 @login_required
 @require_POST
 def aumentar_cantidad(request, variante_id):
+    from productos.models import VarianteColor
 
     carrito = get_or_create_cart(request)
 
@@ -2305,16 +2306,24 @@ def aumentar_cantidad(request, variante_id):
         variante_id=variante_id
     )
 
-    if item.cantidad < item.variante.stock:
+    # Determinar stock disponible por color
+    stock_disponible = item.variante.stock
+    if item.color_nombre:
+        vc = VarianteColor.objects.filter(
+            variante=item.variante,
+            color__nombre__iexact=item.color_nombre,
+            activo=True
+        ).first()
+        if vc:
+            stock_disponible = vc.stock
 
+    if item.cantidad < stock_disponible:
         item.cantidad += 1
         item.save()
-
     else:
-
         messages.error(
             request,
-            'No hay más stock disponible.'
+            f'No hay más stock disponible de este color ({stock_disponible} máx.)'
         )
 
     return redirect('pedidos:checkout')
