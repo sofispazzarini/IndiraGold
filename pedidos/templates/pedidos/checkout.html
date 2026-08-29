@@ -1931,12 +1931,16 @@ async function cotizarCorreo() {
       result.tarifas.forEach((tarifa, index) => {
         const div = document.createElement('div');
         div.className = 'tarifa-option';
-        const diasTexto = tarifa.dias ? ` (${tarifa.dias} días)` : '';
+        const diasTexto = tarifa.dias ? `<span style="color:var(--muted); font-size:0.85rem; margin-left:0.5rem;">${tarifa.dias}</span>` : '';
         div.innerHTML = `
           <input type="radio" name="tarifa_correo" value="${tarifa.id}" data-precio="${tarifa.precio}" data-nombre="${tarifa.nombre}" id="tarifa_${tarifa.id}" ${index === 0 ? 'checked' : ''}>
           <label for="tarifa_${tarifa.id}" style="flex:1; cursor:pointer; margin:0;">
-            <strong>${tarifa.nombre}</strong>${diasTexto}
-            <span style="float:right; color:var(--burgundy); font-weight:700;">${formatearPesos(tarifa.precio)}</span>
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <div>
+                <strong>${tarifa.nombre}</strong>${diasTexto}
+              </div>
+              <span style="color:var(--burgundy); font-weight:700;">${formatearPesos(tarifa.precio)}</span>
+            </div>
           </label>
         `;
         div.addEventListener('click', () => {

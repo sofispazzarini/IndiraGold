@@ -275,6 +275,10 @@ def extraer_todas_las_tarifas(respuesta):
         raise ErrorEnvio('Correo Argentino no tiene tarifas para esta ruta.')
 
     rates = respuesta.get('rates', []) if isinstance(respuesta, dict) else []
+
+    # Debug: ver qué devuelve la API
+    print(f"DEBUG extraer_todas_las_tarifas: rates={rates}")
+
     if not rates:
         # Si no hay rates, intentar con la respuesta directa
         importe = extraer_importe_cotizacion(respuesta)
@@ -284,6 +288,10 @@ def extraer_todas_las_tarifas(respuesta):
     for rate in rates:
         if not isinstance(rate, dict):
             continue
+
+        # Debug: ver campos de cada rate
+        print(f"DEBUG rate keys: {rate.keys()}")
+
         # Extraer precio
         precio = None
         for clave in ['total', 'amount', 'price', 'precio', 'importe', 'valor', 'shipping_cost']:
@@ -294,15 +302,52 @@ def extraer_todas_las_tarifas(respuesta):
         if precio is None:
             continue
 
-        # Extraer nombre del servicio
-        nombre = rate.get('serviceName') or rate.get('name') or rate.get('service') or rate.get('description') or 'Envío'
+        # Extraer nombre del servicio - buscar en más campos
+        nombre = (
+            rate.get('serviceName') or
+            rate.get('serviceDescription') or
+            rate.get('name') or
+            rate.get('service') or
+            rate.get('description') or
+            rate.get('productName') or
+            rate.get('product') or
+            rate.get('tipo') or
+            rate.get('type') or
+            None
+        )
+
         # Extraer ID del servicio
-        service_id = rate.get('serviceId') or rate.get('id') or rate.get('code') or nombre.lower().replace(' ', '_')
-        # Extraer días de entrega
-        dias = rate.get('deliveryTime') or rate.get('days') or rate.get('transitDays')
+        service_id = (
+            rate.get('serviceId') or
+            rate.get('serviceCode') or
+            rate.get('id') or
+            rate.get('code') or
+            rate.get('productId') or
+            None
+        )
+
+        # Extraer días de entrega - buscar en más campos
+        dias = (
+            rate.get('deliveryTime') or
+            rate.get('deliveryDays') or
+            rate.get('transitDays') or
+            rate.get('days') or
+            rate.get('diasEntrega') or
+            rate.get('estimatedDays') or
+            rate.get('tiempoEntrega') or
+            None
+        )
+
+        # Convertir días a texto si es número
+        if dias is not None:
+            try:
+                dias_num = int(dias)
+                dias = f"{dias_num} día{'s' if dias_num != 1 else ''}"
+            except (ValueError, TypeError):
+                dias = str(dias)
 
         tarifas.append({
-            'id': str(service_id),
+            'id': str(service_id) if service_id else f'rate_{len(tarifas)}',
             'nombre': nombre,
             'precio': precio,
             'dias': dias,
@@ -311,8 +356,21 @@ def extraer_todas_las_tarifas(respuesta):
     if not tarifas:
         raise ErrorEnvio('No se encontraron tarifas en la respuesta.')
 
-    # Ordenar por precio
+    # Ordenar por precio (más barato primero)
     tarifas.sort(key=lambda x: x['precio'])
+
+    # Asignar nombres descriptivos si no tienen nombre o son genéricos
+    for i, tarifa in enumerate(tarifas):
+        if not tarifa['nombre'] or tarifa['nombre'].lower() in ['envío', 'envio', 'shipping']:
+            if len(tarifas) == 1:
+                tarifa['nombre'] = 'Envío Estándar'
+            elif i == 0:
+                tarifa['nombre'] = 'Envío Económico'
+            elif i == len(tarifas) - 1:
+                tarifa['nombre'] = 'Envío Express'
+            else:
+                tarifa['nombre'] = f'Envío Estándar'
+
     return tarifas
 
 
