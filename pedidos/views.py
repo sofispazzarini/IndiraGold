@@ -49,7 +49,7 @@ from django.views.decorators.http import require_POST
 from django.db import transaction
 from django.utils.html import escape
 from django.utils import timezone
-from .servicios_envio import ErrorEnvio, calcular_paquete_envio, cotizar_correo_argentino, generar_etiqueta
+from .servicios_envio import ErrorEnvio, calcular_paquete_envio, cotizar_correo_argentino
 print("===== PEDIDOS VIEWS CARGADO =====")
 print("TOKEN MP:", settings.MERCADO_PAGO_ACCESS_TOKEN)
 # Decorador para verificar que es administrador
@@ -394,16 +394,6 @@ def crear_envio_pedido(pedido):
                 'costo': pedido.costo_envio,
             }
         )
-
-        # Generar etiqueta automáticamente para Correo Argentino
-        if created and envio.proveedor == 'correo_argentino':
-            try:
-                from pedidos.servicios_envio import generar_etiqueta
-                generar_etiqueta(envio)
-            except Exception as e:
-                envio.estado = 'error'
-                envio.error = f'Error generando etiqueta: {str(e)}'
-                envio.save(update_fields=['estado', 'error', 'updated_at'])
 
         return envio
 
@@ -2474,29 +2464,6 @@ def actualizar_tracking_envio(request, pedido_id):
         messages.success(request, 'Codigo de seguimiento guardado.')
     else:
         messages.success(request, 'Codigo de seguimiento eliminado.')
-
-    return redirect('pedidos:detalle_pedido', pedido_id=pedido.id)
-
-
-@admin_required
-@require_POST
-def generar_etiqueta_pedido(request, pedido_id):
-    pedido = get_object_or_404(Pedido.objects.select_related('envio'), id=pedido_id)
-    envio = getattr(pedido, 'envio', None)
-
-    if not envio:
-        messages.error(request, 'Este pedido no tiene un envio asociado.')
-        return redirect('pedidos:detalle_pedido', pedido_id=pedido.id)
-
-    try:
-        generar_etiqueta(envio)
-    except ErrorEnvio as error:
-        envio.estado = 'error'
-        envio.error = str(error)
-        envio.save(update_fields=['estado', 'error', 'updated_at'])
-        messages.error(request, str(error))
-    else:
-        messages.success(request, 'Etiqueta generada correctamente.')
 
     return redirect('pedidos:detalle_pedido', pedido_id=pedido.id)
 

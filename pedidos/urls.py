@@ -15,7 +15,6 @@ urlpatterns = [
     path('<int:pedido_id>/ticket-cambio/', views.ticket_cambio_pedido, name='ticket_cambio_pedido'),
     path('<int:pedido_id>/ticket-envio/', views.ticket_envio_pedido, name='ticket_envio_pedido'),
     path('<int:pedido_id>/tracking/', views.actualizar_tracking_envio, name='actualizar_tracking_envio'),
-    path('<int:pedido_id>/generar-etiqueta/', views.generar_etiqueta_pedido, name='generar_etiqueta_pedido'),
     path('<int:pedido_id>/editar/', views.editar_pedido, name='editar_pedido'),
     path('checkout/', views.checkout_view, name='checkout'),
     path('confirmar/', views.confirmar_pedido, name='confirmar_pedido'),
