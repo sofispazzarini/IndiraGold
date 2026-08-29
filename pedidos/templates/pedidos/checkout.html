@@ -974,8 +974,36 @@
                 </label>
                 </div>
 
-                <!-- FLEX -->
-                {% if configuracion_envio.flex_activo %}
+                <!-- FLEX GRATIS -->
+                {% if configuracion_envio.flex_gratis_activo and zonas_flex_gratis %}
+                <div class="entrega-option">
+                <input
+                    type="radio"
+                    name="metodo_entrega"
+                    id="flex_gratis"
+                    value="flex_gratis"
+                >
+
+                <label for="flex_gratis" class="entrega-label">
+                    <i class="bi bi-gift"></i>
+
+                    <span class="label-title">
+                    Envio Flex Gratis
+                    </span>
+
+                    <span class="label-sub" style="color: #166534;">
+                    Gratis
+                    </span>
+
+                    <span class="label-zonas">
+                    Llega a: {{ zonas_flex_gratis|join:", " }}
+                    </span>
+                </label>
+                </div>
+                {% endif %}
+
+                <!-- FLEX CON PRECIO -->
+                {% if configuracion_envio.flex_activo and zonas_flex %}
                 <div class="entrega-option">
                 <input
                     type="radio"
@@ -988,23 +1016,15 @@
                     <i class="bi bi-lightning-charge"></i>
 
                     <span class="label-title">
-                    Envío Flex
+                    Envio Flex
                     </span>
 
                     <span class="label-sub">
-                    {% if configuracion_envio.flex_gratis %}
-                    Gratis
-                    {% else %}
                     ${{ precio_flex }}
-                    {% endif %}
                     </span>
 
                     <span class="label-zonas">
-                    {% if zonas_flex %}
                     Llega a: {{ zonas_flex|join:", " }}
-                    {% else %}
-                    Zonas a confirmar
-                    {% endif %}
                     </span>
                 </label>
                 </div>
@@ -1060,7 +1080,89 @@
 
             </div>
 
-            <!-- FLEX -->
+            <!-- FLEX GRATIS -->
+            <div
+                class="direcciones-wrap"
+                id="campos-flex_gratis"
+                style="display:none;"
+            >
+
+                <div class="direccion-info">
+                <i class="bi bi-gift"></i>
+
+                <div class="direccion-info-text">
+                    <h6>Envio Flex Gratis</h6>
+                    <small style="color: #166534;">Gratis</small>
+                </div>
+                </div>
+
+                {% if zonas_flex_gratis %}
+                <div class="alert-warning" style="margin-bottom: 1rem; background: #dcfce7; border-color: #86efac;">
+                <i class="bi bi-geo-alt" style="color: #166534;"></i>
+                <span style="color: #166534;">Llega a: {{ zonas_flex_gratis|join:", " }}.</span>
+                </div>
+                {% endif %}
+
+                <p style="font-size: 0.82rem; color: var(--muted); margin-bottom: 1rem;">
+                Selecciona la direccion donde queres recibir tu pedido.
+                </p>
+
+                <select
+                    class="form-select direccion-filter"
+                    data-target="flex_gratis"
+                    style="margin-bottom:1rem;"
+                >
+                    <option value="">Todas las etiquetas</option>
+                    {% for etiqueta in etiquetas_flex_gratis %}
+                    <option value="{{ etiqueta|lower }}">{{ etiqueta|title }}</option>
+                    {% endfor %}
+                </select>
+
+                <button type="button" class="btn-checkout-add-address" data-bs-toggle="modal" data-bs-target="#modalNuevaDireccionCheckout">
+                    <i class="bi bi-plus-circle"></i> Agregar direccion
+                </button>
+
+                {% for direccion in direcciones_flex_gratis %}
+                <label class="direccion-card" data-address-group="flex_gratis" data-etiqueta="{{ direccion.etiqueta|lower }}">
+
+                <input
+                    type="radio"
+                    name="direccion_id"
+                    value="{{ direccion.id }}"
+                >
+
+                <div class="direccion-content">
+
+                    <div>
+                    <div class="direccion-alias">
+                        {{ direccion.etiqueta|title }}
+                    </div>
+
+                    <div class="direccion-detail">
+                        {{ direccion.calle|title }} {{ direccion.numero }}<br>
+                        {{ direccion.ciudad|title }}, {{ direccion.provincia|title }}
+                        ({{ direccion.codigo_postal }})
+                        {% if direccion.referencia %}<br>Ref: {{ direccion.referencia|title }}{% endif %}
+                    </div>
+                    </div>
+
+                    <i class="bi bi-geo-alt"></i>
+
+                </div>
+
+                </label>
+                {% empty %}
+
+                <div class="alert-warning">
+                <i class="bi bi-exclamation-triangle"></i>
+                No tenes direcciones registradas para esta zona. Usa el boton Agregar direccion para cargar una nueva.
+                </div>
+
+                {% endfor %}
+
+            </div>
+
+            <!-- FLEX CON PRECIO -->
             <div
                 class="direcciones-wrap"
                 id="campos-flex"
@@ -1071,15 +1173,8 @@
                 <i class="bi bi-lightning-charge"></i>
 
                 <div class="direccion-info-text">
-                    <h6>Envío Flex</h6>
-
-                    <small>
-                    {% if configuracion_envio.flex_gratis %}
-                    Gratis
-                    {% else %}
-                    Costo: ${{ precio_flex }}
-                    {% endif %}
-                    </small>
+                    <h6>Envio Flex</h6>
+                    <small>Costo: ${{ precio_flex }}</small>
                 </div>
                 </div>
 
@@ -1088,15 +1183,10 @@
                 <i class="bi bi-geo-alt"></i>
                 Llega a: {{ zonas_flex|join:", " }}.
                 </div>
-                {% else %}
-                <div class="alert-warning" style="margin-bottom: 1rem;">
-                <i class="bi bi-exclamation-triangle"></i>
-                Todavía no hay zonas Flex cargadas.
-                </div>
                 {% endif %}
 
                 <p style="font-size: 0.82rem; color: var(--muted); margin-bottom: 1rem;">
-                Seleccioná la dirección donde querés recibir tu pedido.
+                Selecciona la direccion donde queres recibir tu pedido.
                 </p>
 
                 <select
@@ -1147,7 +1237,7 @@
 
                 <div class="alert-warning">
                 <i class="bi bi-exclamation-triangle"></i>
-                No tenés direcciones registradas para esta zona. Usá el botón Agregar direccion para cargar una nueva.
+                No tenes direcciones registradas para esta zona. Usa el boton Agregar direccion para cargar una nueva.
                 </div>
 
                 {% endfor %}
@@ -1583,6 +1673,7 @@ const radiosEntrega = document.querySelectorAll(
 );
 
 const camposFlex = document.getElementById('campos-flex');
+const camposFlexGratis = document.getElementById('campos-flex_gratis');
 const camposCorreo = document.getElementById('campos-correo');
 const camposLocal = document.getElementById('campos-local');
 const envioTexto = document.getElementById('envio-label');
@@ -1621,12 +1712,18 @@ function actualizarEntrega() {
 
   if (camposLocal) camposLocal.style.display = metodo === 'local' ? 'block' : 'none';
   if (camposFlex) camposFlex.style.display = 'none';
+  if (camposFlexGratis) camposFlexGratis.style.display = 'none';
   if (camposCorreo) camposCorreo.style.display = 'none';
   let costoEnvio = 0;
 
   if (metodo === 'flex') {
     camposFlex.style.display = 'block';
     costoEnvio = costoFlex;
+  }
+
+  if (metodo === 'flex_gratis') {
+    if (camposFlexGratis) camposFlexGratis.style.display = 'block';
+    costoEnvio = 0;
   }
 
   if (metodo === 'correo' && camposCorreo) {

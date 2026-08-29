@@ -50,73 +50,51 @@
     border-radius: 16px;
     padding: 1.5rem;
     box-shadow: 0 16px 42px rgba(26,22,18,.05);
+    margin-bottom: 1.5rem;
   }
 
-  .envio-section {
-    padding: 1.25rem 0;
-    border-bottom: 1px solid #f0e8de;
-  }
-
-  .envio-section:first-of-type {
-    padding-top: 0;
-  }
-
-  .envio-section:last-of-type {
-    border-bottom: 0;
-    padding-bottom: 0;
-  }
-
-  .envio-section-title {
+  .envio-card-title {
     display: flex;
     align-items: center;
     gap: .65rem;
     color: #6E0E2E;
     font-weight: 800;
-    font-size: 1rem;
-    margin-bottom: .95rem;
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid #f0e8de;
   }
 
-  .envio-section-title i {
+  .envio-card-title i {
     color: #b8922a;
-  }
-
-  .envio-choice {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: .85rem;
-  }
-
-  .envio-option {
-    border: 1px solid #e8dfd4;
-    border-radius: 12px;
-    padding: 1rem;
-    background: #faf7f0;
-  }
-
-  .envio-option strong {
-    display: block;
-    color: #1a1612;
-    margin-bottom: .2rem;
-    font-size: 0.95rem;
-  }
-
-  .envio-option span {
-    color: #8c7e70;
-    font-size: 0.95rem;
+    font-size: 1.2rem;
   }
 
   .envio-checkline {
     display: flex;
     align-items: flex-start;
     gap: .7rem;
+    padding: 1rem;
+    border: 1px solid #e8dfd4;
+    border-radius: 12px;
+    background: #faf7f0;
+    margin-bottom: 1rem;
   }
 
   .envio-checkline input {
     margin-top: .25rem;
   }
 
-  .envio-choice > .envio-option:not(.envio-checkline) {
-    display: none;
+  .envio-checkline strong {
+    display: block;
+    color: #1a1612;
+    margin-bottom: .2rem;
+    font-size: 0.95rem;
+  }
+
+  .envio-checkline span {
+    color: #8c7e70;
+    font-size: 0.9rem;
   }
 
   .envio-input,
@@ -137,25 +115,30 @@
     box-shadow: 0 0 0 .2rem rgba(184,146,42,.12);
   }
 
-  .envio-price-row {
-    display: grid;
-    grid-template-columns: minmax(220px, 320px) 1fr;
-    gap: 1rem;
-    align-items: center;
+  .envio-field-group {
+    margin-bottom: 1rem;
+  }
+
+  .envio-field-label {
+    font-weight: 600;
+    color: #3d342a;
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+    display: block;
   }
 
   .envio-help {
     color: #8c7e70;
-    font-size: 0.95rem;
+    font-size: 0.85rem;
     line-height: 1.55;
-    margin: 0;
+    margin-top: 0.4rem;
   }
 
   .zonas-preview {
     display: flex;
     flex-wrap: wrap;
     gap: .5rem;
-    margin-top: .9rem;
+    margin-top: .75rem;
   }
 
   .zona-pill {
@@ -163,9 +146,15 @@
     background: #faf7f0;
     color: #6E0E2E;
     border-radius: 999px;
-    padding: .4rem .8rem;
-    font-size: 0.95rem;
-    font-weight: 700;
+    padding: .35rem .75rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+
+  .zona-pill.gratis {
+    background: #dcfce7;
+    border-color: #86efac;
+    color: #166534;
   }
 
   .envio-actions {
@@ -181,6 +170,7 @@
     color: #fff;
     padding: .85rem 1.4rem;
     font-weight: 800;
+    cursor: pointer;
   }
 
   .envio-save:hover {
@@ -197,14 +187,15 @@
     font-weight: 700;
   }
 
+  .disabled-section {
+    opacity: 0.5;
+    pointer-events: none;
+  }
+
   @media (max-width: 1000px) {
     .envios-page {
       margin-left: 0;
       padding: 2rem 1rem 4rem;
-    }
-    .envio-choice,
-    .envio-price-row {
-      grid-template-columns: 1fr;
     }
   }
 
@@ -216,7 +207,7 @@
       font-size: 2rem;
     }
     .envio-card {
-      padding: 1.5rem;
+      padding: 1.25rem;
       border-radius: 14px;
     }
   }
@@ -228,257 +219,168 @@
     .envios-title {
       font-size: 1.6rem;
     }
-    .envios-subtitle {
-      font-size: 0.85rem;
-    }
     .envio-card {
       padding: 1rem;
       border-radius: 12px;
     }
-    .envio-section-title {
-      font-size: 1rem;
-    }
-    .envio-option {
-      padding: 0.75rem;
-    }
-    .envio-input {
-      height: 42px;
-      font-size: 0.9rem;
-    }
-    .envio-btn {
-      padding: 0.75rem 1.5rem;
-      font-size: 0.9rem;
-    }
   }
 
-  /* Character counter */
-  .char-counter { font-size: 0.8rem; color: #8c7e70; text-align: right; margin-top: 0.35rem; }
+  .char-counter { font-size: 0.75rem; color: #8c7e70; text-align: right; margin-top: 0.25rem; }
   .char-counter.warning { color: #d97706; }
   .char-counter.limit { color: #dc2626; font-weight: 600; }
-  .char-toast {
-    position: fixed; bottom: 2rem; left: 50%;
-    transform: translateX(-50%) translateY(100px);
-    background: #dc2626; color: #fff;
-    padding: 0.75rem 1.5rem; border-radius: 8px;
-    font-size: 0.85rem; font-weight: 500; z-index: 9999;
-    opacity: 0; transition: all 0.3s ease;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
-  }
-  .char-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="envios-page">
   <section class="envios-header">
-    <div class="envios-eyebrow">Envios</div>
-    <h1 class="envios-title">Configurar envios</h1>
+    <div class="envios-eyebrow">Configuracion</div>
+    <h1 class="envios-title">Metodos de envio</h1>
     <p class="envios-subtitle">
-      Flex siempre aparece como opción en el checkout. Desde acá definís si se cobra o es gratis, y cargás las zonas donde llega.
+      Configura los metodos de envio disponibles para tus clientes.
     </p>
   </section>
 
-  
+  {% if messages %}
+    {% for message in messages %}
+      <div class="envio-alert">{{ message }}</div>
+    {% endfor %}
+  {% endif %}
 
-  <form method="post" class="envio-card">
+  <form method="post">
     {% csrf_token %}
 
-    <section class="envio-section">
-      <div class="envio-section-title">
-        <i class="bi bi-cash-coin"></i>
-        Envio Flex
+    <!-- ENVIO FLEX CON PRECIO -->
+    <div class="envio-card">
+      <div class="envio-card-title">
+        <i class="bi bi-truck"></i>
+        Envio Flex (con precio)
       </div>
 
-      <div class="envio-choice">
-        <label class="envio-option envio-checkline">
-          {{ form.flex_activo }}
-          <span>
-            <strong>Mostrar Envio Flex</strong>
-            <span>Permite que la clienta elija Envio Flex en el checkout.</span>
-          </span>
-        </label>
+      <label class="envio-checkline">
+        {{ form.flex_activo }}
+        <span>
+          <strong>Activar Envio Flex</strong>
+          <span>Permite que la cliente elija Envio Flex con costo en el checkout.</span>
+        </span>
+      </label>
 
-        <label class="envio-option envio-checkline">
-          {{ form.flex_gratis }}
-          <span>
-            <strong>Envio Flex gratis</strong>
-            <span>El cliente verá “Gratis” en la cajita de envio Flex.</span>
-          </span>
-        </label>
+      <div id="flex-precio-fields">
+        <div class="envio-field-group">
+          <label class="envio-field-label">Precio del envio</label>
+          {{ form.precio_flex }}
+          <p class="envio-help">Carga solo el numero, sin signo pesos. Ej: 2500</p>
+        </div>
 
-        <div class="envio-option">
-          <strong>Envio Flex con costo</strong>
-          <span>Si no marcás gratis, se usará el precio que cargues abajo.</span>
+        <div class="envio-field-group">
+          <label class="envio-field-label">Zonas donde llega</label>
+          {{ form.zonas_flex }}
+          <p class="envio-help">Separa las zonas con coma. Ej: Berazategui, Quilmes, Florencio Varela</p>
+          {% if zonas_flex %}
+          <div class="zonas-preview">
+            {% for zona in zonas_flex %}
+              <span class="zona-pill">{{ zona }}</span>
+            {% endfor %}
+          </div>
+          {% endif %}
         </div>
       </div>
-    </section>
+    </div>
 
-    <section class="envio-section">
-      <div class="envio-section-title">
+    <!-- ENVIO FLEX GRATIS -->
+    <div class="envio-card">
+      <div class="envio-card-title">
+        <i class="bi bi-gift"></i>
+        Envio Flex Gratis
+      </div>
+
+      <label class="envio-checkline">
+        {{ form.flex_gratis_activo }}
+        <span>
+          <strong>Activar Envio Flex Gratis</strong>
+          <span>Permite que la cliente elija Envio Flex sin costo en el checkout.</span>
+        </span>
+      </label>
+
+      <div id="flex-gratis-fields">
+        <div class="envio-field-group">
+          <label class="envio-field-label">Zonas con envio gratis</label>
+          {{ form.zonas_flex_gratis }}
+          <p class="envio-help">Separa las zonas con coma. Ej: La Plata, City Bell, Gonnet</p>
+          {% if zonas_flex_gratis %}
+          <div class="zonas-preview">
+            {% for zona in zonas_flex_gratis %}
+              <span class="zona-pill gratis">{{ zona }}</span>
+            {% endfor %}
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- CORREO ARGENTINO -->
+    <div class="envio-card">
+      <div class="envio-card-title">
         <i class="bi bi-box-seam"></i>
         Correo Argentino
       </div>
 
-      <div class="envio-choice">
-        <label class="envio-option envio-checkline">
-          {{ form.correo_activo }}
-          <span>
-            <strong>Mostrar envio por correo</strong>
-            <span>Permite que la clienta elija Correo Argentino en el checkout.</span>
-          </span>
-        </label>
+      <label class="envio-checkline">
+        {{ form.correo_activo }}
+        <span>
+          <strong>Activar Correo Argentino</strong>
+          <span>Permite que la cliente elija Correo Argentino. El precio se calcula automaticamente.</span>
+        </span>
+      </label>
 
-        <label class="envio-option envio-checkline">
-          {{ form.correo_gratis }}
-          <span>
-            <strong>Correo gratis</strong>
-            <span>Si esta marcado, no se suma costo de correo al pedido.</span>
-          </span>
-        </label>
-
-        <label class="envio-option envio-checkline">
-          {{ form.correo_a_coordinar }}
-          <span>
-            <strong>A coordinar</strong>
-            <span>Muestra "A coordinar" en lugar de un precio fijo. El costo se acuerda por separado.</span>
-          </span>
-        </label>
-      </div>
-    </section>
-
-    <section class="envio-section" id="precio-correo-section">
-      <div class="envio-section-title">
-        <i class="bi bi-tag"></i>
-        Precio de correo
-      </div>
-
-      <div class="envio-price-row">
-        <div>
-          {{ form.precio_correo }}
-        </div>
-        <p class="envio-help">
-          Este costo se suma cuando la clienta elige Correo Argentino. Cuando conectemos la API, este valor puede reemplazarse por cotizacion automatica.
-        </p>
-      </div>
-    </section>
-
-    <section class="envio-section" id="precio-flex-section">
-      <div class="envio-section-title">
-        <i class="bi bi-tag"></i>
-        Precio
-      </div>
-
-      <div class="envio-price-row">
-        <div>
-          {{ form.precio_flex }}
-        </div>
-        <p class="envio-help">
-          Cargá solo el número, sin signo pesos. Por ejemplo: <strong>2500</strong>.
-          Si el envio es gratis, este valor no se le suma al cliente.
-        </p>
-      </div>
-    </section>
-
-    <section class="envio-section">
-      <div class="envio-section-title">
-        <i class="bi bi-geo-alt"></i>
-        Zonas donde llega <span style="font-weight: 400; color: #8c7e70; font-size: 0.7rem; margin-left: 0.5rem;">máx. 1000</span>
-      </div>
-
-      {{ form.zonas_flex }}
-      <div class="char-counter" id="zonasCounter"><span id="zonasCount">0</span>/1000</div>
-      <p class="envio-help mt-2">
-        Escribí las zonas separadas por coma. Ejemplo: <strong>CABA, La Plata, Quilmes</strong>.
-        Eso mismo se muestra en la cajita de Envio Flex del checkout.
+      <p class="envio-help" style="margin-top: 0;">
+        <i class="bi bi-info-circle"></i>
+        El costo del envio se cotiza automaticamente con la API de MiCorreo segun el destino y peso del paquete.
       </p>
-
-      {% if zonas_flex %}
-      <div class="zonas-preview">
-        {% for zona in zonas_flex %}
-          <span class="zona-pill">{{ zona }}</span>
-        {% endfor %}
-      </div>
-      {% endif %}
-    </section>
+    </div>
 
     {% if form.errors %}
       <div class="alert alert-danger mt-3">
-        Revisá los datos ingresados.
+        Revisa los datos ingresados.
       </div>
     {% endif %}
 
     <div class="envio-actions">
       <button type="submit" class="envio-save">
         <i class="bi bi-check-lg me-1"></i>
-        Guardar configuración
+        Guardar configuracion
       </button>
     </div>
   </form>
 </div>
 
 <script>
-  const gratisCheckbox = document.getElementById('id_flex_gratis');
-  const correoGratisCheckbox = document.getElementById('id_correo_gratis');
-  const precioSection = document.getElementById('precio-flex-section');
-  const precioCorreoSection = document.getElementById('precio-correo-section');
+  // Toggle sections based on checkboxes
+  const flexActivoCheckbox = document.getElementById('id_flex_activo');
+  const flexGratisActivoCheckbox = document.getElementById('id_flex_gratis_activo');
+  const flexPrecioFields = document.getElementById('flex-precio-fields');
+  const flexGratisFields = document.getElementById('flex-gratis-fields');
 
-  function actualizarPrecioFlex() {
-    if (!gratisCheckbox || !precioSection) return;
-    precioSection.style.opacity = gratisCheckbox.checked ? '.45' : '1';
-  }
-
-  function actualizarPrecioCorreo() {
-    if (!correoGratisCheckbox || !precioCorreoSection) return;
-    precioCorreoSection.style.opacity = correoGratisCheckbox.checked ? '.45' : '1';
-  }
-
-  if (gratisCheckbox) {
-    gratisCheckbox.addEventListener('change', actualizarPrecioFlex);
-    actualizarPrecioFlex();
-  }
-  if (correoGratisCheckbox) {
-    correoGratisCheckbox.addEventListener('change', actualizarPrecioCorreo);
-    actualizarPrecioCorreo();
-  }
-
-  // Character counter for zonas
-  const zonasTextarea = document.getElementById('id_zonas_flex');
-  const zonasCounter = document.getElementById('zonasCounter');
-  const zonasCount = document.getElementById('zonasCount');
-  const maxZonas = 1000;
-
-  // Toast
-  const charToast = document.createElement('div');
-  charToast.className = 'char-toast';
-  charToast.textContent = 'Llegaste al límite de caracteres';
-  document.body.appendChild(charToast);
-  let toastTimeout = null;
-
-  function showCharToast() {
-    charToast.classList.add('show');
-    if (toastTimeout) clearTimeout(toastTimeout);
-    toastTimeout = setTimeout(() => charToast.classList.remove('show'), 5000);
-  }
-
-  function updateZonasCounter() {
-    if (!zonasTextarea || !zonasCounter || !zonasCount) return;
-    const len = zonasTextarea.value.length;
-    zonasCount.textContent = len;
-    zonasCounter.classList.remove('warning', 'limit');
-    if (len >= maxZonas) {
-      zonasCounter.classList.add('limit');
-    } else if (len >= maxZonas * 0.8) {
-      zonasCounter.classList.add('warning');
+  function toggleFlexPrecio() {
+    if (flexPrecioFields) {
+      flexPrecioFields.classList.toggle('disabled-section', !flexActivoCheckbox.checked);
     }
   }
 
-  if (zonasTextarea) {
-    zonasTextarea.setAttribute('maxlength', maxZonas);
-    updateZonasCounter();
-    zonasTextarea.addEventListener('input', function() {
-      updateZonasCounter();
-      if (this.value.length >= maxZonas) showCharToast();
-    });
+  function toggleFlexGratis() {
+    if (flexGratisFields) {
+      flexGratisFields.classList.toggle('disabled-section', !flexGratisActivoCheckbox.checked);
+    }
+  }
+
+  if (flexActivoCheckbox) {
+    flexActivoCheckbox.addEventListener('change', toggleFlexPrecio);
+    toggleFlexPrecio();
+  }
+
+  if (flexGratisActivoCheckbox) {
+    flexGratisActivoCheckbox.addEventListener('change', toggleFlexGratis);
+    toggleFlexGratis();
   }
 </script>
 {% endblock %}

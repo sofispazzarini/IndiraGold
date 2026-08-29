@@ -59,6 +59,7 @@ class Pedido(models.Model):
     )
     METODOS_ENTREGA = (
         ('local', 'Retiro en Local (Gratis)'),
+        ('flex_gratis', 'Envio Flex Gratis'),
         ('flex', 'Envio Flex'),
         ('correo', 'Envio por Correo'),
     )
@@ -318,41 +319,42 @@ class PagoVentaLocal(models.Model):
 
     fecha = models.DateTimeField(auto_now_add=True)
 class ConfiguracionEnvio(models.Model):
+    # Envío Flex con precio
     flex_activo = models.BooleanField(
         default=True,
-        help_text='Mostrar Envio Flex como opcion en el checkout'
+        help_text='Mostrar Envío Flex (con precio) en el checkout'
     )
-    correo_activo = models.BooleanField(
-        default=False,
-        help_text='Mostrar Correo Argentino como opcion en el checkout'
-    )
-
     precio_flex = models.DecimalField(
         max_digits=10,
         decimal_places=2,
         default=0
     )
-
-    flex_gratis = models.BooleanField(
-        default=False
-    )
-    correo_gratis = models.BooleanField(
-        default=False
-    )
-    correo_a_coordinar = models.BooleanField(
-        default=False,
-        help_text='Mostrar "A coordinar" en lugar de precio fijo para envío por correo'
-    )
-
     zonas_flex = models.TextField(
         blank=True,
-        help_text='Separar zonas con coma. Ej: CABA, La Plata, Quilmes'
+        help_text='Zonas para Envío Flex con precio. Separar con coma.'
     )
-    precio_correo = models.DecimalField(
-        max_digits=10,
-        decimal_places=2,
-        default=0
+
+    # Envío Flex Gratis
+    flex_gratis_activo = models.BooleanField(
+        default=False,
+        help_text='Mostrar Envío Flex Gratis en el checkout'
     )
+    zonas_flex_gratis = models.TextField(
+        blank=True,
+        help_text='Zonas para Envío Flex Gratis. Separar con coma.'
+    )
+
+    # Correo Argentino (precio automático via API)
+    correo_activo = models.BooleanField(
+        default=False,
+        help_text='Mostrar Correo Argentino en el checkout (precio automático)'
+    )
+
+    # Campos legacy (mantener por compatibilidad, no se usan)
+    flex_gratis = models.BooleanField(default=False)
+    correo_gratis = models.BooleanField(default=False)
+    correo_a_coordinar = models.BooleanField(default=False)
+    precio_correo = models.DecimalField(max_digits=10, decimal_places=2, default=0)
 
     def __str__(self):
         return "Configuracion de Envios"
@@ -364,31 +366,21 @@ class ConfiguracionEnvio(models.Model):
 
     @property
     def costo_flex(self):
-        if self.flex_gratis:
-            return 0
         return self.precio_flex
-
-    @property
-    def costo_correo(self):
-        if self.correo_gratis:
-            return 0
-        if self.correo_a_coordinar:
-            return None
-        return self.precio_correo
-
-    @property
-    def texto_costo_correo(self):
-        if self.correo_gratis:
-            return 'Gratis'
-        if self.correo_a_coordinar:
-            return 'A coordinar'
-        return f'${self.precio_correo}'
 
     @property
     def zonas_flex_lista(self):
         return [
             zona.strip()
             for zona in self.zonas_flex.split(',')
+            if zona.strip()
+        ]
+
+    @property
+    def zonas_flex_gratis_lista(self):
+        return [
+            zona.strip()
+            for zona in self.zonas_flex_gratis.split(',')
             if zona.strip()
         ]
 

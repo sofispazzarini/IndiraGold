@@ -19,36 +19,31 @@ class ConfiguracionEnvioForm(forms.ModelForm):
         model = ConfiguracionEnvio
         fields = [
             'flex_activo',
-            'flex_gratis',
             'precio_flex',
             'zonas_flex',
+            'flex_gratis_activo',
+            'zonas_flex_gratis',
             'correo_activo',
-            'correo_gratis',
-            'correo_a_coordinar',
-            'precio_correo',
         ]
         widgets = {
             'flex_activo': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
-            'flex_gratis': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'flex_gratis_activo': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'correo_activo': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
-            'correo_gratis': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
-            'correo_a_coordinar': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'precio_flex': forms.NumberInput(attrs={
                 'class': 'envio-input',
                 'step': '0.01',
                 'min': '0',
                 'placeholder': 'Ej: 2500',
             }),
-            'precio_correo': forms.NumberInput(attrs={
-                'class': 'envio-input',
-                'step': '0.01',
-                'min': '0',
-                'placeholder': 'Ej: 6500',
-            }),
             'zonas_flex': forms.Textarea(attrs={
                 'class': 'envio-textarea',
-                'rows': 7,
-                'placeholder': 'Ej: CABA, La Plata, Quilmes, Berazategui',
+                'rows': 4,
+                'placeholder': 'Ej: Berazategui, Quilmes, Florencio Varela',
+            }),
+            'zonas_flex_gratis': forms.Textarea(attrs={
+                'class': 'envio-textarea',
+                'rows': 4,
+                'placeholder': 'Ej: La Plata, City Bell, Gonnet',
             }),
         }
 

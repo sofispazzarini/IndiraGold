@@ -360,8 +360,10 @@ def direccion_en_zona_flex(direccion, zonas_flex):
 def costo_envio_checkout(metodo_entrega, configuracion_envio):
     if metodo_entrega == 'flex' and configuracion_envio.flex_activo:
         return Decimal(configuracion_envio.costo_flex)
+    if metodo_entrega == 'flex_gratis' and configuracion_envio.flex_gratis_activo:
+        return Decimal('0')
     if metodo_entrega == 'correo' and configuracion_envio.correo_activo:
-        return Decimal(configuracion_envio.costo_correo)
+        return Decimal('0')  # Precio automático via API
     return Decimal('0')
 
 
@@ -392,7 +394,7 @@ def crear_envio_pedido(pedido):
     if pedido.metodo_entrega == 'local':
         return None
 
-    if pedido.metodo_entrega == 'flex':
+    if pedido.metodo_entrega in ('flex', 'flex_gratis'):
         return EnvioPedido.objects.get_or_create(
             pedido=pedido,
             defaults={
@@ -789,14 +791,23 @@ def checkout_view(request):
     cliente, _ = Cliente.objects.get_or_create(user=request.user)
     direcciones = direcciones_sin_duplicados(cliente.direcciones.all().order_by('etiqueta', 'calle', 'numero'))
     zonas_flex = configuracion_envio.zonas_flex_lista
+    zonas_flex_gratis = configuracion_envio.zonas_flex_gratis_lista
+    # Direcciones en zona Flex con precio
     direcciones_flex = [
         direccion
         for direccion in direcciones
         if direccion_en_zona_flex(direccion, zonas_flex)
     ]
+    # Direcciones en zona Flex gratis
+    direcciones_flex_gratis = [
+        direccion
+        for direccion in direcciones
+        if direccion_en_zona_flex(direccion, zonas_flex_gratis)
+    ]
     etiquetas_direcciones = sorted({direccion.etiqueta for direccion in direcciones}, key=str.casefold)
     etiquetas_flex = sorted({direccion.etiqueta for direccion in direcciones_flex}, key=str.casefold)
-    
+    etiquetas_flex_gratis = sorted({direccion.etiqueta for direccion in direcciones_flex_gratis}, key=str.casefold)
+
     subtotal = sum(
         item.subtotal for item in items
     )
@@ -812,12 +823,14 @@ def checkout_view(request):
         'configuracion_pago': configuracion_pago,
         'planes_cuotas': planes_cuotas,
         'precio_flex': configuracion_envio.costo_flex,
-        'precio_correo': configuracion_envio.costo_correo,
         'zonas_flex': zonas_flex,
+        'zonas_flex_gratis': zonas_flex_gratis,
         'direcciones': direcciones,
         'direcciones_flex': direcciones_flex,
+        'direcciones_flex_gratis': direcciones_flex_gratis,
         'etiquetas_direcciones': etiquetas_direcciones,
         'etiquetas_flex': etiquetas_flex,
+        'etiquetas_flex_gratis': etiquetas_flex_gratis,
         'codigo_descuento': cupon.codigo if cupon else '',
         'descuento_porcentaje': cupon.descuento if cupon else 0,
         'descuento_monto': descuento_monto,
@@ -1396,6 +1409,10 @@ def crear_pago(request):
         messages.error(request, 'El Envio Flex no esta disponible en este momento.')
         return redirect('pedidos:checkout')
 
+    if request.session['metodo_entrega'] == 'flex_gratis' and not configuracion_envio.flex_gratis_activo:
+        messages.error(request, 'El Envio Flex Gratis no esta disponible en este momento.')
+        return redirect('pedidos:checkout')
+
     if request.session['metodo_entrega'] == 'correo' and not configuracion_envio.correo_activo:
         messages.error(request, 'El envio por correo no esta disponible en este momento.')
         return redirect('pedidos:checkout')
@@ -1409,7 +1426,19 @@ def crear_pago(request):
             messages.error(request, 'Selecciona una direccion para Envio Flex.')
             return redirect('pedidos:checkout')
         if not direccion_en_zona_flex(direccion_flex, configuracion_envio.zonas_flex_lista):
-            messages.error(request, 'La dirección seleccionada no está dentro de las zonas de Envío Flex.')
+            messages.error(request, 'La direccion seleccionada no esta dentro de las zonas de Envio Flex.')
+            return redirect('pedidos:checkout')
+
+    if request.session['metodo_entrega'] == 'flex_gratis':
+        direccion_flex = Direccion.objects.filter(
+            id=request.session.get('direccion_id'),
+            cliente=cliente
+        ).first()
+        if not direccion_flex:
+            messages.error(request, 'Selecciona una direccion para Envio Flex Gratis.')
+            return redirect('pedidos:checkout')
+        if not direccion_en_zona_flex(direccion_flex, configuracion_envio.zonas_flex_gratis_lista):
+            messages.error(request, 'La direccion seleccionada no esta dentro de las zonas de Envio Flex Gratis.')
             return redirect('pedidos:checkout')
 
     if request.session['metodo_entrega'] == 'correo':
@@ -3328,6 +3357,7 @@ def configurar_envios(request):
         'form': form,
         'configuracion': configuracion,
         'zonas_flex': configuracion.zonas_flex_lista,
+        'zonas_flex_gratis': configuracion.zonas_flex_gratis_lista,
     })
 
 
