@@ -2802,6 +2802,8 @@ def ventas_presenciales(request):
         page_number
     )
 
+    configuracion_envio = ConfiguracionEnvio.actual()
+
     return render(
         request,
         'pedidos/ventas_presenciales.html',
@@ -2812,6 +2814,8 @@ def ventas_presenciales(request):
             'dia': dia,
             'mes': mes,
             'anio': anio,
+            'configuracion_envio': configuracion_envio,
+            'precio_flex': configuracion_envio.precio_flex,
         }
     )
 @require_POST

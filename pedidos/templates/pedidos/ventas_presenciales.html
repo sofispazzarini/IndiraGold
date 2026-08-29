@@ -1268,8 +1268,12 @@
                                 </label>
                             </div>
 
+                            <!-- Desglose envío -->
+                            <div id="envio-info" style="display:none; border-top:1px dashed var(--border); padding-top:0.75rem; margin-bottom:0.75rem;"></div>
+
                             <div
                                 class="d-flex justify-content-between align-items-end mb-4"
+                                style="border-top:1px solid var(--border); padding-top:0.75rem;"
                             >
 
                                 <span class="h5 mb-0">
@@ -1470,54 +1474,61 @@
     </div>
 </div>
 <div class="modal fade" id="modalNuevaDireccionVenta" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 rounded-5">
-            <div class="modal-header border-0 px-4 pt-4">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-lg" style="border-radius:20px; overflow:hidden;">
+            <div class="modal-header border-0 px-4 pt-4 pb-0">
                 <div>
-                    <h4 class="fw-bold mb-1" style="color:#6E0E2E;">Nueva dirección</h4>
-                    <p class="text-muted mb-0 small">Se guarda en la ficha de la clienta seleccionada.</p>
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <div style="width:40px; height:40px; background:linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-radius:50%; display:flex; align-items:center; justify-content:center;">
+                            <i class="bi bi-geo-alt-fill" style="color:#b8922a; font-size:1.2rem;"></i>
+                        </div>
+                        <h4 class="fw-bold mb-0" style="color:#6E0E2E; font-family:'Cormorant Garamond',serif; font-size:1.5rem;">Nueva dirección</h4>
+                    </div>
+                    <p class="text-muted mb-0 small ps-5" style="margin-left:8px;">Se guarda en la ficha de la clienta seleccionada.</p>
                 </div>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" style="position:absolute; top:1rem; right:1rem;"></button>
             </div>
             <form id="formNuevaDireccionVenta">
                 {% csrf_token %}
                 <input type="hidden" name="cliente_id" id="direccion-cliente-id">
-                <div class="modal-body px-4">
-                    <div id="nuevaDireccionError" class="alert alert-danger d-none small"></div>
+                <div class="modal-body px-4 pt-4">
+                    <div id="nuevaDireccionError" class="alert alert-danger d-none small rounded-3"></div>
                     <div class="row g-3">
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold">Etiqueta (ej: casa, trabajo, etc)</label>
-                            <input type="text" name="etiqueta" class="form-control rounded-4" placeholder="Casa, Trabajo..." required>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold text-muted">ETIQUETA</label>
+                            <input type="text" name="etiqueta" class="form-control" style="border-radius:12px; padding:0.75rem 1rem; border-color:#e8dfd4;" placeholder="Casa, Trabajo..." required>
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold">Calle</label>
-                            <input type="text" name="calle" class="form-control rounded-4" required>
+                        <div class="col-md-5">
+                            <label class="form-label small fw-semibold text-muted">CALLE</label>
+                            <input type="text" name="calle" class="form-control" style="border-radius:12px; padding:0.75rem 1rem; border-color:#e8dfd4;" required>
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold">Número</label>
-                            <input type="text" name="numero" class="form-control rounded-4" required>
+                        <div class="col-md-3">
+                            <label class="form-label small fw-semibold text-muted">NÚMERO</label>
+                            <input type="text" name="numero" class="form-control" style="border-radius:12px; padding:0.75rem 1rem; border-color:#e8dfd4;" required>
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold">Ciudad</label>
-                            <input type="text" name="ciudad" class="form-control rounded-4" required>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold text-muted">CIUDAD</label>
+                            <input type="text" name="ciudad" class="form-control" style="border-radius:12px; padding:0.75rem 1rem; border-color:#e8dfd4;" required>
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold">Provincia</label>
-                            <input type="text" name="provincia" class="form-control rounded-4" required>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold text-muted">PROVINCIA</label>
+                            <input type="text" name="provincia" class="form-control" style="border-radius:12px; padding:0.75rem 1rem; border-color:#e8dfd4;" required>
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold">Código postal</label>
-                            <input type="text" name="codigo_postal" class="form-control rounded-4" required>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold text-muted">CÓDIGO POSTAL</label>
+                            <input type="text" name="codigo_postal" class="form-control" style="border-radius:12px; padding:0.75rem 1rem; border-color:#e8dfd4;" required>
                         </div>
                         <div class="col-12">
-                            <label class="form-label fw-bold">Referencia opcional</label>
-                            <input type="text" name="referencia" class="form-control rounded-4" placeholder="Ej: portón verde, timbre roto">
+                            <label class="form-label small fw-semibold text-muted">REFERENCIA (opcional)</label>
+                            <input type="text" name="referencia" class="form-control" style="border-radius:12px; padding:0.75rem 1rem; border-color:#e8dfd4;" placeholder="Ej: portón verde, timbre roto, entre calles...">
                         </div>
                     </div>
                 </div>
-                <div class="modal-footer border-0 px-4 pb-4">
-                    <button type="button" class="btn btn-soft" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-gold">Guardar dirección</button>
+                <div class="modal-footer border-0 px-4 pb-4 pt-3" style="background:#faf7f0;">
+                    <button type="button" class="btn px-4" data-bs-dismiss="modal" style="border-radius:50px; border:1px solid #d9d0c4; color:#6b5c4c;">Cancelar</button>
+                    <button type="submit" class="btn px-4" style="border-radius:50px; background:linear-gradient(135deg, #6E0E2E 0%, #8a1239 100%); color:#fff; font-weight:600;">
+                        <i class="bi bi-check-lg me-1"></i>Guardar dirección
+                    </button>
                 </div>
             </form>
         </div>
@@ -1590,6 +1601,8 @@ const direccionEnvioBox = document.getElementById(
     'direccion-envio-box'
 )
 
+const PRECIO_FLEX = {{ precio_flex|default:0 }};
+
 const direccionEnvioSelect = document.getElementById(
     'direccion-envio'
 )
@@ -1635,6 +1648,7 @@ metodoEntregaSelect.addEventListener(
     function(){
         direccionEnvioBox.style.display =
             this.value === 'envio' ? 'block' : 'none'
+        renderProductosVenta()
     }
 )
 
@@ -2518,11 +2532,11 @@ function renderProductosVenta(){
 
     const container = document.getElementById('lista-productos')
     container.innerHTML = ''
-    let total = 0
+    let subtotalProductos = 0
 
     productosVenta.forEach((producto, index) => {
 
-        total += producto.subtotal
+        subtotalProductos += producto.subtotal
 
         container.innerHTML += `
             <div class="border rounded-4 p-3 mb-3 position-relative">
@@ -2552,9 +2566,34 @@ function renderProductosVenta(){
         `
     })
 
+    // Calcular envío si está seleccionado "Con envío"
+    const metodoEntrega = metodoEntregaSelect.value
+    const costoEnvio = metodoEntrega === 'envio' ? PRECIO_FLEX : 0
+    const total = subtotalProductos + costoEnvio
+
+    // Mostrar desglose de envío
+    const envioInfoEl = document.getElementById('envio-info')
+    if (envioInfoEl) {
+        if (metodoEntrega === 'envio' && costoEnvio > 0) {
+            envioInfoEl.innerHTML = `
+                <div class="d-flex justify-content-between text-muted small mb-2">
+                    <span>Subtotal productos</span>
+                    <span>$${subtotalProductos.toLocaleString('es-AR')}</span>
+                </div>
+                <div class="d-flex justify-content-between small mb-2" style="color: var(--burgundy);">
+                    <span><i class="bi bi-truck me-1"></i>Envío Flex</span>
+                    <span>$${costoEnvio.toLocaleString('es-AR')}</span>
+                </div>
+            `
+            envioInfoEl.style.display = 'block'
+        } else {
+            envioInfoEl.style.display = 'none'
+        }
+    }
+
     document.getElementById(
         'total-venta'
-    ).innerText = `$${total}`
+    ).innerText = `$${total.toLocaleString('es-AR')}`
     const nuevaDeuda = parseFloat(
 
         document.getElementById(
