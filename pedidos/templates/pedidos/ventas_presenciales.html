@@ -19,6 +19,13 @@
         --surface:#ffffff;
     }
 
+    /* Modal backdrop blur */
+    .modal-backdrop.show {
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        background-color: rgba(26, 22, 18, 0.6);
+    }
+
     .ventas-wrapper{
         min-height:100vh;
         width:100%;
@@ -1602,6 +1609,9 @@ const direccionEnvioBox = document.getElementById(
 )
 
 const PRECIO_FLEX = parseFloat('{{ precio_flex|default:0 }}') || 0;
+const ZONAS_FLEX = [{% for zona in zonas_flex %}'{{ zona|lower }}'{% if not forloop.last %}, {% endif %}{% endfor %}];
+const ZONAS_FLEX_GRATIS = [{% for zona in zonas_flex_gratis %}'{{ zona|lower }}'{% if not forloop.last %}, {% endif %}{% endfor %}];
+let direccionSeleccionadaCiudad = '';
 
 const direccionEnvioSelect = document.getElementById(
     'direccion-envio'
@@ -1611,14 +1621,16 @@ const direccionEnvioHelp = document.getElementById(
     'direccion-envio-help'
 )
 
-function renderDireccionesVenta(direcciones){
+let direccionesClienteData = [];
 
+function renderDireccionesVenta(direcciones){
+    direccionesClienteData = direcciones;
     direccionEnvioSelect.innerHTML =
         '<option value="">Seleccionar dirección</option>'
 
     direcciones.forEach(direccion => {
         direccionEnvioSelect.innerHTML += `
-            <option value="${direccion.id}">
+            <option value="${direccion.id}" data-ciudad="${direccion.ciudad}">
                 ${direccion.texto}
             </option>
         `
@@ -1627,7 +1639,18 @@ function renderDireccionesVenta(direcciones){
     direccionEnvioHelp.innerText = direcciones.length
         ? 'Elegí una dirección guardada de la clienta.'
         : 'La clienta no tiene direcciones guardadas. Agregá una para usar envío.'
+
+    // Reset ciudad seleccionada
+    direccionSeleccionadaCiudad = '';
+    renderProductosVenta();
 }
+
+// Cuando cambia la dirección seleccionada
+direccionEnvioSelect.addEventListener('change', function() {
+    const selectedOption = this.options[this.selectedIndex];
+    direccionSeleccionadaCiudad = selectedOption ? (selectedOption.dataset.ciudad || '') : '';
+    renderProductosVenta();
+});
 
 async function cargarDireccionesCliente(clienteId){
 
@@ -2568,21 +2591,56 @@ function renderProductosVenta(){
 
     // Calcular envío si está seleccionado "Con envío"
     const metodoEntrega = metodoEntregaSelect.value
-    const costoEnvio = metodoEntrega === 'envio' ? PRECIO_FLEX : 0
+    let costoEnvio = 0;
+    let envioGratis = false;
+    let envioTexto = '';
+    let ciudadNormalizada = direccionSeleccionadaCiudad.toLowerCase().trim();
+
+    if (metodoEntrega === 'envio' && ciudadNormalizada) {
+        // Verificar si está en zona gratis
+        const enZonaGratis = ZONAS_FLEX_GRATIS.some(zona =>
+            ciudadNormalizada.includes(zona) || zona.includes(ciudadNormalizada)
+        );
+        // Verificar si está en zona con precio
+        const enZonaPago = ZONAS_FLEX.some(zona =>
+            ciudadNormalizada.includes(zona) || zona.includes(ciudadNormalizada)
+        );
+
+        if (enZonaGratis) {
+            costoEnvio = 0;
+            envioGratis = true;
+            envioTexto = 'Envío Flex Gratis';
+        } else if (enZonaPago) {
+            costoEnvio = PRECIO_FLEX;
+            envioTexto = 'Envío Flex';
+        } else {
+            // No está en ninguna zona configurada
+            costoEnvio = PRECIO_FLEX;
+            envioTexto = 'Envío Flex';
+        }
+    }
+
     const total = subtotalProductos + costoEnvio
 
     // Mostrar desglose de envío
     const envioInfoEl = document.getElementById('envio-info')
     if (envioInfoEl) {
-        if (metodoEntrega === 'envio' && costoEnvio > 0) {
+        if (metodoEntrega === 'envio' && direccionSeleccionadaCiudad) {
             envioInfoEl.innerHTML = `
                 <div class="d-flex justify-content-between text-muted small mb-2">
                     <span>Subtotal productos</span>
                     <span>$${subtotalProductos.toLocaleString('es-AR')}</span>
                 </div>
-                <div class="d-flex justify-content-between small mb-2" style="color: var(--burgundy);">
-                    <span><i class="bi bi-truck me-1"></i>Envío Flex</span>
-                    <span>$${costoEnvio.toLocaleString('es-AR')}</span>
+                <div class="d-flex justify-content-between small mb-2" style="color: ${envioGratis ? '#166534' : 'var(--burgundy)'};">
+                    <span><i class="bi bi-truck me-1"></i>${envioTexto}</span>
+                    <span>${envioGratis ? 'Gratis' : '$' + costoEnvio.toLocaleString('es-AR')}</span>
+                </div>
+            `
+            envioInfoEl.style.display = 'block'
+        } else if (metodoEntrega === 'envio' && !direccionSeleccionadaCiudad) {
+            envioInfoEl.innerHTML = `
+                <div class="small text-muted mb-2">
+                    <i class="bi bi-info-circle me-1"></i>Seleccioná una dirección para calcular el envío
                 </div>
             `
             envioInfoEl.style.display = 'block'

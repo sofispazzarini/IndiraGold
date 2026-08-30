@@ -2816,6 +2816,8 @@ def ventas_presenciales(request):
             'anio': anio,
             'configuracion_envio': configuracion_envio,
             'precio_flex': configuracion_envio.precio_flex,
+            'zonas_flex': configuracion_envio.zonas_flex_lista,
+            'zonas_flex_gratis': configuracion_envio.zonas_flex_gratis_lista,
         }
     )
 @require_POST
