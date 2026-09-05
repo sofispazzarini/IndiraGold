@@ -2065,8 +2065,8 @@ def estadisticas_ventas(request):
         or Decimal('0.00')
     )
 
-    # Retenciones de MercadoPago en el período
-    total_retenciones = (
+    # Retenciones de MercadoPago en pedidos online
+    retenciones_mp = (
         Pago.objects.filter(
             pedido__in=pedidos
         ).aggregate(total=Sum('retencion_mercado_pago'))['total']
@@ -2095,6 +2095,15 @@ def estadisticas_ventas(request):
         or Decimal('0.00')
     )
 
+    # Retenciones de ventas presenciales (tarjeta/MP)
+    retenciones_presenciales = (
+        ventas_locales.aggregate(total=Sum('retencion'))['total']
+        or Decimal('0.00')
+    )
+
+    # Total retenciones = MP online + tarjeta presencial
+    total_retenciones = retenciones_mp + retenciones_presenciales
+
     # Total con deudas (ventas totales incluyendo lo que falta cobrar)
     total_con_deudas = total_ventas + total_ventas_locales
 
@@ -2105,8 +2114,8 @@ def estadisticas_ventas(request):
     )
     ingresos_brutos = cobrado_pedidos + cobrado_ventas_locales
 
-    # Neto negocio = lo cobrado - gastos
-    neto_negocio = ingresos_brutos - total_gastos
+    # Neto negocio = subtotal ventas - gastos - retenciones
+    neto_negocio = total_con_deudas - total_gastos - total_retenciones
 
     context = {
         'total_ventas': total_ventas,
@@ -2699,6 +2708,12 @@ def registrar_venta_local(request):
         venta.saldo_pendiente = saldo_pendiente
         venta.estado_pago = estado_pago
 
+        # Calcular retención si pago con tarjeta/MP
+        if metodo_pago in ['tarjeta', 'mercado_pago', 'mercado_pago_qr'] and monto_pagado > 0:
+            config = ConfiguracionPago.actual()
+            porcentaje = config.retencion_tarjeta_porcentaje or Decimal('0')
+            venta.retencion = (monto_pagado * porcentaje) / Decimal('100')
+
         venta.save()
         if saldo_pendiente > 0:
             cliente.deuda_total += saldo_pendiente
@@ -3148,6 +3163,15 @@ def configurar_pagos(request):
         form = ConfiguracionPagoForm(request.POST, instance=configuracion)
         if form.is_valid():
             configuracion = form.save()
+
+            # Guardar porcentaje de retención de tarjeta
+            retencion_tarjeta = request.POST.get('retencion_tarjeta_porcentaje', '0')
+            try:
+                configuracion.retencion_tarjeta_porcentaje = Decimal(str(retencion_tarjeta).replace(',', '.'))
+            except Exception:
+                configuracion.retencion_tarjeta_porcentaje = Decimal('0')
+            configuracion.save()
+
             configuracion.planes_cuotas.all().delete()
 
             cuotas = request.POST.getlist('cuotas[]')

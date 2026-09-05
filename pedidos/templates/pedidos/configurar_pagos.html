@@ -283,6 +283,16 @@
     </section>
 
     <section class="pago-section">
+      <div class="pago-section-title"><i class="bi bi-credit-card-2-front"></i> Retención por tarjeta/posnet</div>
+      <p class="pago-help">Porcentaje que se descuenta en ventas presenciales pagadas con tarjeta o posnet.</p>
+      <div style="display:flex; align-items:center; gap:0.5rem; margin-top:0.5rem;">
+        <input type="number" name="retencion_tarjeta_porcentaje" class="envio-input" style="width:100px;"
+               value="{{ configuracion.retencion_tarjeta_porcentaje|default:0 }}" min="0" max="100" step="0.01">
+        <span>%</span>
+      </div>
+    </section>
+
+    <section class="pago-section">
       <div class="pago-section-title"><i class="bi bi-credit-card"></i> Mercado Pago y cuotas</div>
       <label class="field-label">Texto para Mercado Pago</label>
       {{ form.texto_mercado_pago }}

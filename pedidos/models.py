@@ -263,7 +263,13 @@ class VentaLocal(models.Model):
     )
 
     es_regalo = models.BooleanField(default=False)
-    
+    retencion = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=0,
+        help_text="Monto retenido por pago con tarjeta/MP"
+    )
+
     def __str__(self):
 
         return f"Venta #{self.id}"
@@ -447,6 +453,12 @@ class ConfiguracionPago(models.Model):
     texto_transferencia = models.CharField(
         max_length=255,
         default='Transferi el monto exacto y envianos el comprobante por WhatsApp.'
+    )
+    retencion_tarjeta_porcentaje = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=0,
+        help_text="Porcentaje de retención para pagos con tarjeta/posnet"
     )
 
     def __str__(self):
