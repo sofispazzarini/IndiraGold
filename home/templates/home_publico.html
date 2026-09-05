@@ -79,6 +79,21 @@
 </section>
 {% endif %}
 
+{% if plan_cuotas_mejor %}
+<div class="cuotas-banner">
+  <div class="cuotas-banner-content">
+    <svg width="24" height="24" fill="currentColor" viewBox="0 0 16 16">
+      <path d="M0 4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V4zm2-1a1 1 0 0 0-1 1v1h14V4a1 1 0 0 0-1-1H2zm13 4H1v5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V7z"/>
+      <path d="M2 10a1 1 0 0 1 1-1h1a1 1 0 0 1 1 1v1a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1v-1z"/>
+    </svg>
+    <span>
+      <strong>¡Pagá en cuotas!</strong>
+      Hasta {{ plan_cuotas_mejor.cuotas }} cuotas{% if plan_cuotas_mejor.sin_interes %} sin interés{% endif %} con Mercado Pago
+    </span>
+  </div>
+</div>
+{% endif %}
+
 <!-- CATEGORÍAS DE ORDEN (Secciones Destacadas) -->
 {% for cat_orden in categorias_orden %}
 {% if cat_orden.categoriaordenproducto_set.all %}
@@ -584,6 +599,23 @@ function scrollCatOrden{{ cat_orden.id }}(dir) {
 </div>
 
 <style>
+  /* BANNER DE CUOTAS */
+  .cuotas-banner {
+    background: linear-gradient(135deg, #3d6e2a 0%, #4a8033 100%);
+    padding: 0.75rem 1rem;
+    text-align: center;
+  }
+  .cuotas-banner-content {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: white;
+    font-size: 0.95rem;
+  }
+  .cuotas-banner svg {
+    flex-shrink: 0;
+  }
+
   /* SELECTOR DE TALLES EN MODAL */
   #modalTallesGrid {
     display: grid;

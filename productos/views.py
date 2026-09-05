@@ -15,6 +15,7 @@ from .models import (
     Variante, Proveedor, ImagenProducto, Categoria, TipoMedida,
     VarianteColor, CategoriaOrden, CategoriaOrdenProducto, Oferta
 )
+from pedidos.models import ConfiguracionPago
 from .forms import (
     ProductoForm, SubcategoriaForm, CategoriaForm,
     TipoMedidaForm, ProveedorForm, SubcategoriaSoloNombreForm,
@@ -262,6 +263,20 @@ def detalle_producto(request, producto_id):
         if vid:
             cart_qty_by_variante[vid] = cart_qty_by_variante.get(vid, 0) + item.get('cantidad', 0)
 
+    # Obtener planes de cuotas para mostrar en el detalle
+    planes_cuotas = []
+    monto_cuota = None
+    plan_cuotas_mejor = None
+    try:
+        config_pago = ConfiguracionPago.objects.first()
+        if config_pago and config_pago.mercado_pago_activo:
+            planes_cuotas = list(config_pago.planes_cuotas.filter(activo=True).order_by('-cuotas'))
+            if planes_cuotas:
+                plan_cuotas_mejor = next((p for p in planes_cuotas if p.sin_interes), planes_cuotas[0])
+                monto_cuota = round(producto.precio_final / plan_cuotas_mejor.cuotas, 2)
+    except Exception:
+        pass
+
     context = {
         'producto': producto,
         'variantes': variantes,
@@ -290,6 +305,9 @@ def detalle_producto(request, producto_id):
         'cart_count': cart_count,
         'cart_total': cart_total,
         'cart_expires_in': get_cart_seconds_left(request.session, carrito_db),
+        'planes_cuotas': planes_cuotas,
+        'monto_cuota': monto_cuota,
+        'plan_cuotas_mejor': plan_cuotas_mejor,
     }
 
     return render(request, 'productos/producto_detalle.html', context)

@@ -26,6 +26,34 @@
     font-size:.85rem;
     font-weight:700;
     }
+
+    .cuotas-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      background: linear-gradient(135deg, rgba(61, 110, 42, 0.12) 0%, rgba(61, 110, 42, 0.05) 100%);
+      border: 1px solid rgba(61, 110, 42, 0.25);
+      border-radius: 8px;
+      font-size: 0.85rem;
+      color: #3d6e2a;
+      font-weight: 500;
+      margin-bottom: 1rem;
+    }
+
+    .cuota-info {
+      display: inline-block;
+      margin-left: 0.75rem;
+      padding: 0.25rem 0.75rem;
+      background: rgba(61, 110, 42, 0.1);
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: #3d6e2a;
+      text-transform: none;
+      letter-spacing: 0;
+      vertical-align: middle;
+    }
     .back-link-btn {
         display: inline-flex;
         align-items: center;
@@ -928,6 +956,16 @@
 
             </div>
 
+            {% if plan_cuotas_mejor %}
+            <div class="cuotas-badge">
+              <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                <path d="M0 4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V4zm2-1a1 1 0 0 0-1 1v1h14V4a1 1 0 0 0-1-1H2zm13 4H1v5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V7z"/>
+                <path d="M2 10a1 1 0 0 1 1-1h1a1 1 0 0 1 1 1v1a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1v-1z"/>
+              </svg>
+              Hasta {{ plan_cuotas_mejor.cuotas }} cuotas{% if plan_cuotas_mejor.sin_interes %} sin interés{% endif %}
+            </div>
+            {% endif %}
+
             {% if producto.descripcion %}
                 <div class="descripcion-section">
                     <div class="descripcion-titulo">Descripción</div>
@@ -937,7 +975,12 @@
 
             {% if variantes %}
                 <div class="variantes-section">
-                    <div class="variantes-titulo">Selecciona tu talle</div>
+                    <div class="variantes-titulo">
+                      Selecciona tu talle
+                      {% if monto_cuota and plan_cuotas_mejor %}
+                      <span class="cuota-info">{{ plan_cuotas_mejor.cuotas }}x ${{ monto_cuota|floatformat:0 }}{% if plan_cuotas_mejor.sin_interes %} sin interés{% endif %}</span>
+                      {% endif %}
+                    </div>
                     <div class="talles-grid">
                         {% for variante in variantes %}
                             <button class="talle-btn {% if forloop.first %}seleccionado{% endif %}"

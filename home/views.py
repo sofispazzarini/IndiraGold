@@ -13,6 +13,7 @@ from carritos.utils import (
     SESSION_CART_COLORS_KEY,
 )
 from consultas.models import TemaConsulta
+from pedidos.models import ConfiguracionPago
 from .models import SlideCarrousel, ConfiguracionHero
 from .forms import SlideCarrouselForm
 
@@ -233,6 +234,21 @@ class HomePublicaView(TemplateView):
                         })
                     producto.variantes_json = json.dumps(variantes_data)
         ctx['categorias_orden'] = categorias_orden
+
+        # Obtener planes de cuotas para el banner
+        planes_cuotas = []
+        plan_cuotas_mejor = None
+        try:
+            config_pago = ConfiguracionPago.objects.first()
+            if config_pago and config_pago.mercado_pago_activo:
+                planes_cuotas = list(config_pago.planes_cuotas.filter(activo=True).order_by('-cuotas'))
+                if planes_cuotas:
+                    plan_cuotas_mejor = next((p for p in planes_cuotas if p.sin_interes), planes_cuotas[0])
+        except Exception:
+            pass
+        ctx['planes_cuotas'] = planes_cuotas
+        ctx['plan_cuotas_mejor'] = plan_cuotas_mejor
+
         return ctx
 
 
