@@ -71,6 +71,13 @@ class Pedido(models.Model):
     )
     metodo_entrega = models.CharField(max_length=20, choices=METODOS_ENTREGA, default='local')
     costo_envio = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    opcion_flex = models.ForeignKey(
+        'OpcionEnvioFlex',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        help_text='Opción de Flex seleccionada'
+    )
     codigo_postal = models.CharField(max_length=10, blank=True, null=True)
     localidad = models.CharField(max_length=100, blank=True, null=True)
     calle_numero = models.CharField(max_length=255, blank=True, null=True)
@@ -397,6 +404,52 @@ class ConfiguracionEnvio(models.Model):
             for zona in self.zonas_flex.split(',')
             if zona.strip()
         ]
+
+
+class OpcionEnvioFlex(models.Model):
+    nombre = models.CharField(max_length=100, unique=True)
+    activo = models.BooleanField(default=True)
+    es_gratis = models.BooleanField(default=False)
+    precio = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    zonas = models.TextField(
+        blank=True,
+        help_text='Separar zonas con coma. Ej: CABA, La Plata, Quilmes'
+    )
+    orden = models.PositiveIntegerField(default=0, help_text='Para ordenar en checkout')
+
+    class Meta:
+        ordering = ['orden', 'nombre']
+        verbose_name = 'Opción de Envío Flex'
+        verbose_name_plural = 'Opciones de Envío Flex'
+
+    def __str__(self):
+        return self.nombre
+
+    @property
+    def costo_actual(self):
+        from decimal import Decimal
+        return Decimal('0') if self.es_gratis else self.precio
+
+    @property
+    def zonas_lista(self):
+        return [z.strip() for z in self.zonas.split(',') if z.strip()]
+
+    @property
+    def texto_costo(self):
+        if self.es_gratis:
+            return 'Gratis'
+        return f'${self.precio:,.0f}'.replace(',', '.')
+
+    def incluye_direccion(self, direccion):
+        if not direccion or not self.zonas_lista:
+            return False
+        import unicodedata
+        def normalizar(valor):
+            texto = unicodedata.normalize('NFKD', str(valor or ''))
+            texto = ''.join(c for c in texto if not unicodedata.combining(c))
+            return ' '.join(texto.casefold().split())
+        ubicacion = normalizar(f'{direccion.ciudad} {direccion.provincia} {direccion.codigo_postal}')
+        return any(normalizar(zona) in ubicacion for zona in self.zonas_lista)
 
 
 class EnvioPedido(models.Model):

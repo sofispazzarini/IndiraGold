@@ -1,5 +1,6 @@
 from django import forms
-from .models import Gasto, ConfiguracionEnvio, ConfiguracionPago
+from django.forms import modelformset_factory
+from .models import Gasto, ConfiguracionEnvio, ConfiguracionPago, OpcionEnvioFlex
 
 
 class GastoForm(forms.ModelForm):
@@ -23,27 +24,16 @@ class ConfiguracionEnvioForm(forms.ModelForm):
             'precio_flex',
             'zonas_flex',
             'correo_activo',
-            'correo_gratis',
-            'correo_a_coordinar',
-            'precio_correo',
         ]
         widgets = {
             'flex_activo': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'flex_gratis': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'correo_activo': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
-            'correo_gratis': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
-            'correo_a_coordinar': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'precio_flex': forms.NumberInput(attrs={
                 'class': 'envio-input',
                 'step': '0.01',
                 'min': '0',
                 'placeholder': 'Ej: 2500',
-            }),
-            'precio_correo': forms.NumberInput(attrs={
-                'class': 'envio-input',
-                'step': '0.01',
-                'min': '0',
-                'placeholder': 'Ej: 6500',
             }),
             'zonas_flex': forms.Textarea(attrs={
                 'class': 'envio-textarea',
@@ -76,3 +66,41 @@ class ConfiguracionPagoForm(forms.ModelForm):
             'texto_mercado_pago': forms.TextInput(attrs={'class': 'envio-input'}),
             'texto_transferencia': forms.TextInput(attrs={'class': 'envio-input'}),
         }
+
+
+class OpcionEnvioFlexForm(forms.ModelForm):
+    class Meta:
+        model = OpcionEnvioFlex
+        fields = ['nombre', 'activo', 'es_gratis', 'precio', 'zonas', 'orden']
+        widgets = {
+            'nombre': forms.TextInput(attrs={
+                'class': 'envio-input',
+                'placeholder': 'Ej: Flex Gratis CABA',
+            }),
+            'activo': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'es_gratis': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'precio': forms.NumberInput(attrs={
+                'class': 'envio-input',
+                'step': '1',
+                'min': '0',
+                'placeholder': 'Ej: 2500',
+            }),
+            'zonas': forms.Textarea(attrs={
+                'class': 'envio-textarea',
+                'rows': 3,
+                'placeholder': 'Ej: CABA, Quilmes, Berazategui',
+            }),
+            'orden': forms.NumberInput(attrs={
+                'class': 'envio-input envio-input-sm',
+                'min': '0',
+                'placeholder': '0',
+            }),
+        }
+
+
+OpcionEnvioFlexFormSet = modelformset_factory(
+    OpcionEnvioFlex,
+    form=OpcionEnvioFlexForm,
+    extra=1,
+    can_delete=True,
+)

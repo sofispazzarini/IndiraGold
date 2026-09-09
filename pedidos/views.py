@@ -17,6 +17,7 @@ from .models import (
     ConfiguracionEnvio,
     ConfiguracionPago,
     PlanCuotasMercadoPago,
+    OpcionEnvioFlex,
 )
 from carritos.models import Carrito, CarritoItem
 from carritos.utils import get_or_create_cart, vincular_carrito_con_usuario
@@ -742,6 +743,11 @@ def checkout_view(request):
     planes_cuotas = configuracion_pago.planes_cuotas.filter(activo=True)
     cliente, _ = Cliente.objects.get_or_create(user=request.user)
     direcciones = direcciones_sin_duplicados(cliente.direcciones.all().order_by('etiqueta', 'calle', 'numero'))
+
+    # Opciones de Flex múltiples
+    opciones_flex = OpcionEnvioFlex.objects.filter(activo=True)
+
+    # Para compatibilidad con código existente
     zonas_flex = configuracion_envio.zonas_flex_lista
     direcciones_flex = [
         direccion
@@ -772,6 +778,7 @@ def checkout_view(request):
         'direcciones_flex': direcciones_flex,
         'etiquetas_direcciones': etiquetas_direcciones,
         'etiquetas_flex': etiquetas_flex,
+        'opciones_flex': opciones_flex,
         'codigo_descuento': cupon.codigo if cupon else '',
         'descuento_porcentaje': cupon.descuento if cupon else 0,
         'descuento_monto': descuento_monto,
@@ -797,7 +804,9 @@ def confirmar_pedido(request):
         metodo = request.POST.get('metodo_entrega')
         es_regalo = request.POST.get('es_regalo') == '1'
         configuracion_envio = ConfiguracionEnvio.actual()
-        costo_envio = costo_envio_checkout(metodo, configuracion_envio)
+        opcion_flex_id = request.POST.get('opcion_flex_id')
+        opcion_flex = None
+        costo_envio = Decimal('0')
 
         cliente, _ = Cliente.objects.get_or_create(user=request.user)
         subtotal_productos = sum(item.precio_total for item in items_del_carrito)
@@ -811,9 +820,24 @@ def confirmar_pedido(request):
                 id=request.POST.get('direccion_id'),
                 cliente=cliente
             ).first()
-            if not direccion_en_zona_flex(direccion, configuracion_envio.zonas_flex_lista):
-                messages.error(request, 'La dirección seleccionada no está dentro de las zonas de Envío Flex.')
-                return redirect("pedidos:checkout")
+
+            # Validar con opción Flex específica si existe
+            if opcion_flex_id:
+                try:
+                    opcion_flex = OpcionEnvioFlex.objects.get(id=opcion_flex_id, activo=True)
+                    if not opcion_flex.incluye_direccion(direccion):
+                        messages.error(request, f'La dirección seleccionada no está dentro de las zonas de {opcion_flex.nombre}.')
+                        return redirect("pedidos:checkout")
+                    costo_envio = opcion_flex.costo_actual
+                except OpcionEnvioFlex.DoesNotExist:
+                    messages.error(request, 'La opción de envío seleccionada no es válida.')
+                    return redirect("pedidos:checkout")
+            else:
+                # Fallback a configuración legacy
+                if not direccion_en_zona_flex(direccion, configuracion_envio.zonas_flex_lista):
+                    messages.error(request, 'La dirección seleccionada no está dentro de las zonas de Envío Flex.')
+                    return redirect("pedidos:checkout")
+                costo_envio = costo_envio_checkout(metodo, configuracion_envio)
         elif metodo == 'correo':
             if not configuracion_envio.correo_activo:
                 messages.error(request, 'El envio por correo no esta disponible en este momento.')
@@ -859,6 +883,7 @@ def confirmar_pedido(request):
             cliente=cliente,
             total=total_productos_con_descuento + costo_envio,
             costo_envio=costo_envio,
+            opcion_flex=opcion_flex,
             codigo_descuento=cupon.codigo if cupon else None,
             descuento_porcentaje=cupon.descuento if cupon else 0,
             descuento_monto=descuento_monto,
@@ -3137,21 +3162,29 @@ def registrar_pago_pedido(request, pedido_id):
 
 @admin_required
 def configurar_envios(request):
+    from .forms import OpcionEnvioFlexFormSet
+    from .models import OpcionEnvioFlex
+
     configuracion = ConfiguracionEnvio.actual()
 
     if request.method == 'POST':
         form = ConfiguracionEnvioForm(request.POST, instance=configuracion)
-        if form.is_valid():
-            configuracion = form.save()
+        formset = OpcionEnvioFlexFormSet(request.POST, prefix='flex')
+
+        if form.is_valid() and formset.is_valid():
+            form.save()
+            formset.save()
             messages.success(request, 'Configuración de envíos actualizada correctamente.')
             return redirect('pedidos:configurar_envios')
     else:
         form = ConfiguracionEnvioForm(instance=configuracion)
+        formset = OpcionEnvioFlexFormSet(queryset=OpcionEnvioFlex.objects.all(), prefix='flex')
 
     return render(request, 'pedidos/configurar_envios.html', {
         'form': form,
+        'formset': formset,
         'configuracion': configuracion,
-        'zonas_flex': configuracion.zonas_flex_lista,
+        'opciones_flex': OpcionEnvioFlex.objects.filter(activo=True),
     })
 
 

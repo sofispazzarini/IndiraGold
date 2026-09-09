@@ -62,12 +62,13 @@ class RegistroManualClienteForm(forms.ModelForm):
 
 class EditarClienteForm(forms.ModelForm):
     nombre = forms.CharField(label='Nombre completo', max_length=150)
-    email = forms.EmailField(label='Correo electrónico', disabled=True)
+    email = forms.EmailField(label='Correo electrónico')
     telefono = forms.CharField(label='Teléfono', max_length=20)
+    dni = forms.CharField(label='DNI', max_length=8, required=False)
 
     class Meta:
         model = Cliente
-        fields = ['telefono']
+        fields = ['telefono', 'dni']
 
     def __init__(self, *args, **kwargs):
         user_instance = kwargs.pop('user_instance', None)
@@ -75,9 +76,12 @@ class EditarClienteForm(forms.ModelForm):
         if user_instance:
             self.fields['nombre'].initial = user_instance.first_name
             self.fields['email'].initial = user_instance.email
+        if self.instance and self.instance.pk:
+            self.fields['dni'].initial = self.instance.dni
         self.fields['nombre'].widget.attrs['class'] = 'form-control'
         self.fields['email'].widget.attrs['class'] = 'form-control'
         self.fields['telefono'].widget.attrs['class'] = 'form-control'
+        self.fields['dni'].widget.attrs['class'] = 'form-control'
 
     def clean_email(self):
         email = self.cleaned_data['email']
@@ -87,6 +91,21 @@ class EditarClienteForm(forms.ModelForm):
         if user_qs.exists():
             raise ValidationError('Ya existe un usuario con este correo.')
         return email
+
+    def clean_dni(self):
+        dni = self.cleaned_data.get('dni', '').strip()
+        if not dni:
+            return dni
+        if not dni.isdigit():
+            raise ValidationError('El DNI debe contener solo números.')
+        if len(dni) not in [7, 8]:
+            raise ValidationError('El DNI debe tener 7 u 8 dígitos.')
+        cliente_qs = Cliente.objects.filter(dni=dni)
+        if self.instance and self.instance.pk:
+            cliente_qs = cliente_qs.exclude(pk=self.instance.pk)
+        if cliente_qs.exists():
+            raise ValidationError('Ya existe un cliente con este DNI.')
+        return dni
 
 
 class NuevaDireccionForm(forms.ModelForm):

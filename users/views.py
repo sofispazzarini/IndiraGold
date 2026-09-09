@@ -100,6 +100,7 @@ def perfil(request):
             nombre = request.POST.get('nombre', '').strip()
             apellido = request.POST.get('apellido', '').strip()
             telefono = request.POST.get('telefono', '').strip()
+            email = request.POST.get('email', '').strip()
 
             if nombre:
                 request.user.first_name = capitalizar_texto(nombre)
@@ -108,6 +109,17 @@ def perfil(request):
             if telefono:
                 cliente.telefono = telefono
 
+            # Validar y actualizar email
+            email_error = False
+            if email and email != request.user.email:
+                from django.contrib.auth.models import User
+                if User.objects.filter(email=email).exclude(pk=request.user.pk).exists():
+                    mensaje = 'Ya existe otro usuario con este correo electrónico.'
+                    mensaje_tipo = 'danger'
+                    email_error = True
+                else:
+                    request.user.email = email
+
             if 'foto_perfil' in request.FILES:
                 cliente.foto_perfil = request.FILES['foto_perfil']
 
@@ -115,10 +127,11 @@ def perfil(request):
                 cliente.foto_perfil.delete(save=False)
                 cliente.foto_perfil = None
 
-            request.user.save()
-            cliente.save()
-            mensaje = 'Perfil actualizado correctamente.'
-            mensaje_tipo = 'success'
+            if not email_error:
+                request.user.save()
+                cliente.save()
+                mensaje = 'Perfil actualizado correctamente.'
+                mensaje_tipo = 'success'
             direccion_form = NuevaDireccionForm(initial={'cliente': cliente})
     else:
         direccion_form = NuevaDireccionForm(initial={'cliente': cliente})
@@ -234,6 +247,8 @@ def editar_cliente(request, cliente_id):
             user.email = form.cleaned_data['email']
             user.save()
             cliente.telefono = form.cleaned_data['telefono']
+            if form.cleaned_data.get('dni'):
+                cliente.dni = form.cleaned_data['dni']
             cliente.save()
             mensaje = 'Datos actualizados correctamente.'
         else:

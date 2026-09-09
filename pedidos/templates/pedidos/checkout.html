@@ -883,6 +883,7 @@
 
   <form action="{% url 'pedidos:crear_pago' %}" method="POST" id="checkout-form">
     {% csrf_token %}
+    <input type="hidden" name="opcion_flex_id" id="opcion_flex_id" value="">
 
     <div class="checkout-grid">
 
@@ -974,8 +975,43 @@
                 </label>
                 </div>
 
-                <!-- FLEX -->
-                {% if configuracion_envio.flex_activo %}
+                <!-- FLEX - MÚLTIPLES OPCIONES -->
+                {% for opcion in opciones_flex %}
+                <div class="entrega-option">
+                <input
+                    type="radio"
+                    name="metodo_entrega"
+                    id="flex_{{ opcion.id }}"
+                    value="flex"
+                    data-opcion-flex-id="{{ opcion.id }}"
+                    data-precio="{{ opcion.precio }}"
+                    data-es-gratis="{{ opcion.es_gratis|yesno:'true,false' }}"
+                >
+
+                <label for="flex_{{ opcion.id }}" class="entrega-label">
+                    <i class="bi bi-lightning-charge"></i>
+
+                    <span class="label-title">
+                    {{ opcion.nombre }}
+                    </span>
+
+                    <span class="label-sub">
+                    {{ opcion.texto_costo }}
+                    </span>
+
+                    <span class="label-zonas">
+                    {% if opcion.zonas_lista %}
+                    Llega a: {{ opcion.zonas_lista|join:", " }}
+                    {% else %}
+                    Zonas a confirmar
+                    {% endif %}
+                    </span>
+                </label>
+                </div>
+                {% endfor %}
+
+                <!-- FLEX LEGACY (si no hay opciones nuevas pero está activo el viejo) -->
+                {% if not opciones_flex and configuracion_envio.flex_activo %}
                 <div class="entrega-option">
                 <input
                     type="radio"
@@ -1581,6 +1617,18 @@ const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
 const radiosEntrega = document.querySelectorAll(
   'input[name="metodo_entrega"]'
 );
+
+// Manejar selección de opciones Flex múltiples
+const opcionFlexIdInput = document.getElementById('opcion_flex_id');
+radiosEntrega.forEach(radio => {
+  radio.addEventListener('change', function() {
+    if (this.value === 'flex' && this.dataset.opcionFlexId) {
+      opcionFlexIdInput.value = this.dataset.opcionFlexId;
+    } else {
+      opcionFlexIdInput.value = '';
+    }
+  });
+});
 
 const camposFlex = document.getElementById('campos-flex');
 const camposCorreo = document.getElementById('campos-correo');
