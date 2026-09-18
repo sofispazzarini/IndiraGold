@@ -1,9 +1,30 @@
 from django.contrib import admin
-from .models import Pedido, PedidoItem, Pago, Gasto
+from .models import Pedido, PedidoItem, Pago, Gasto, Cambio, NotaCredito
 from .models import VentaLocal, VentaLocalItem, ConfiguracionEnvio, ConfiguracionPago, PlanCuotasMercadoPago, EnvioPedido
 
-admin.site.register(VentaLocal)
 admin.site.register(VentaLocalItem)
+
+
+class CambioInlineVentaLocal(admin.TabularInline):
+    model = Cambio
+    extra = 0
+    fk_name = 'venta_local'
+    fields = ('producto_devuelto', 'variante_devuelta', 'cantidad_devuelta',
+              'producto_entregado', 'variante_entregada', 'cantidad_entregada', 'motivo', 'fecha')
+    readonly_fields = ('fecha',)
+
+
+class NotaCreditoInlineVentaLocal(admin.TabularInline):
+    model = NotaCredito
+    extra = 0
+    fk_name = 'venta_local'
+    fields = ('monto', 'motivo', 'estado', 'pedido_uso', 'fecha_uso', 'fecha_creacion')
+    readonly_fields = ('fecha_creacion',)
+
+
+@admin.register(VentaLocal)
+class VentaLocalAdmin(admin.ModelAdmin):
+    inlines = [CambioInlineVentaLocal, NotaCreditoInlineVentaLocal]
 
 
 @admin.register(ConfiguracionEnvio)
@@ -37,6 +58,23 @@ class ConfiguracionPagoAdmin(admin.ModelAdmin):
         if ConfiguracionPago.objects.exists():
             return False
         return super().has_add_permission(request)
+class CambioInlinePedido(admin.TabularInline):
+    model = Cambio
+    extra = 0
+    fk_name = 'pedido'
+    fields = ('producto_devuelto', 'variante_devuelta', 'cantidad_devuelta',
+              'producto_entregado', 'variante_entregada', 'cantidad_entregada', 'motivo', 'fecha')
+    readonly_fields = ('fecha',)
+
+
+class NotaCreditoInlinePedido(admin.TabularInline):
+    model = NotaCredito
+    extra = 0
+    fk_name = 'pedido'
+    fields = ('monto', 'motivo', 'estado', 'pedido_uso', 'fecha_uso', 'fecha_creacion')
+    readonly_fields = ('fecha_creacion',)
+
+
 @admin.register(Pedido)
 class PedidoAdmin(admin.ModelAdmin):
     list_display = ('id', 'cliente', 'total', 'tipo_venta', 'estado', 'created_at')
@@ -44,6 +82,7 @@ class PedidoAdmin(admin.ModelAdmin):
     search_fields = ('id', 'cliente__dni', 'cliente__user__username', 'cliente__user__first_name')
     readonly_fields = ('created_at',)
     ordering = ('-created_at',)
+    inlines = [CambioInlinePedido, NotaCreditoInlinePedido]
 
 
 @admin.register(PedidoItem)

@@ -541,3 +541,112 @@ class PlanCuotasMercadoPago(models.Model):
     def __str__(self):
         tipo = "sin interes" if self.sin_interes else "con interes"
         return f"Hasta {self.cuotas} cuotas {tipo}"
+
+
+class Cambio(models.Model):
+    pedido = models.ForeignKey(
+        'Pedido',
+        on_delete=models.CASCADE,
+        related_name='cambios',
+        null=True,
+        blank=True
+    )
+    venta_local = models.ForeignKey(
+        'VentaLocal',
+        on_delete=models.CASCADE,
+        related_name='cambios',
+        null=True,
+        blank=True
+    )
+
+    producto_devuelto = models.ForeignKey(
+        Producto,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='cambios_devueltos',
+        verbose_name='Producto devuelto'
+    )
+    variante_devuelta = models.ForeignKey(
+        Variante,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='cambios_devueltos',
+        verbose_name='Variante devuelta'
+    )
+    cantidad_devuelta = models.PositiveIntegerField(default=1)
+
+    producto_entregado = models.ForeignKey(
+        Producto,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='cambios_entregados',
+        verbose_name='Producto entregado'
+    )
+    variante_entregada = models.ForeignKey(
+        Variante,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='cambios_entregados',
+        verbose_name='Variante entregada'
+    )
+    cantidad_entregada = models.PositiveIntegerField(default=1)
+
+    motivo = models.TextField(blank=True)
+    fecha = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Cambio'
+        verbose_name_plural = 'Cambios'
+
+    def __str__(self):
+        return f"Cambio #{self.pk} - {self.fecha.strftime('%d/%m/%Y')}"
+
+
+class NotaCredito(models.Model):
+    ESTADO_CHOICES = [
+        ('vigente', 'Vigente'),
+        ('usada', 'Usada'),
+        ('vencida', 'Vencida'),
+    ]
+
+    pedido = models.ForeignKey(
+        'Pedido',
+        on_delete=models.CASCADE,
+        related_name='notas_credito',
+        null=True,
+        blank=True,
+        verbose_name='Pedido de origen'
+    )
+    venta_local = models.ForeignKey(
+        'VentaLocal',
+        on_delete=models.CASCADE,
+        related_name='notas_credito',
+        null=True,
+        blank=True,
+        verbose_name='Venta local de origen'
+    )
+
+    monto = models.DecimalField(max_digits=12, decimal_places=2)
+    motivo = models.TextField(blank=True)
+    estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='vigente')
+
+    pedido_uso = models.ForeignKey(
+        'Pedido',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='notas_credito_usadas',
+        verbose_name='Pedido donde se usó'
+    )
+    fecha_uso = models.DateTimeField(null=True, blank=True)
+
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Nota de Crédito'
+        verbose_name_plural = 'Notas de Crédito'
+
+    def __str__(self):
+        return f"NC #{self.pk} - ${self.monto} ({self.estado})"

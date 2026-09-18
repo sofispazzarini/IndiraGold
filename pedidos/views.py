@@ -18,6 +18,8 @@ from .models import (
     ConfiguracionPago,
     PlanCuotasMercadoPago,
     OpcionEnvioFlex,
+    Cambio,
+    NotaCredito,
 )
 from carritos.models import Carrito, CarritoItem
 from carritos.utils import get_or_create_cart, vincular_carrito_con_usuario
@@ -595,12 +597,19 @@ def detalle_pedido(request, pedido_id):
     """
     Muestra el detalle completo de un pedido.
     """
+    from productos.models import Variante
+
     pedido = get_object_or_404(
         Pedido.objects.select_related('cliente', 'cliente__user', 'envio').prefetch_related(
             'items__variante__producto',
             'items__variante__talle',
             'items__variante__colores',
             'pagos_registrados',
+            'cambios__producto_devuelto',
+            'cambios__producto_entregado',
+            'cambios__variante_devuelta__talle',
+            'cambios__variante_entregada__talle',
+            'notas_credito',
         ),
         pk=pedido_id,
     )
@@ -608,12 +617,19 @@ def detalle_pedido(request, pedido_id):
     pagos_registrados = pedido.pagos_registrados.all()
     saldo_pendiente = pedido.total - pedido.monto_pagado
 
+    # Variantes disponibles con stock para cambios
+    variantes_disponibles = Variante.objects.filter(
+        activa=True,
+        stock__gt=0
+    ).select_related('producto', 'talle').order_by('producto__nombre', 'talle__nombre')
+
     context = {
         'pedido': pedido,
         'pago': pago,
         'pagos_registrados': pagos_registrados,
         'saldo_pendiente': saldo_pendiente,
         'items': pedido.items.all(),
+        'variantes_disponibles': variantes_disponibles,
     }
     return render(request, 'pedidos/detalle_pedido.html', context)
 
@@ -3249,3 +3265,83 @@ def configurar_pagos(request):
         'configuracion': configuracion,
         'planes_cuotas': configuracion.planes_cuotas.all(),
     })
+
+
+@admin_required
+def registrar_cambio(request, pedido_id):
+    """Registra un cambio de producto en un pedido y actualiza el stock."""
+    from productos.models import Variante
+
+    pedido = get_object_or_404(Pedido, pk=pedido_id)
+
+    if request.method == 'POST':
+        variante_devuelta_id = request.POST.get('variante_devuelta')
+        variante_entregada_id = request.POST.get('variante_entregada')
+        motivo = request.POST.get('motivo', '')
+
+        if variante_devuelta_id and variante_entregada_id:
+            variante_devuelta = get_object_or_404(Variante, pk=variante_devuelta_id)
+            variante_entregada = get_object_or_404(Variante, pk=variante_entregada_id)
+
+            # Validar stock de variante entregada
+            if variante_entregada.stock < 1:
+                messages.error(request, f'No hay stock disponible de {variante_entregada.producto.nombre} - Talle {variante_entregada.talle.nombre}')
+                return redirect('pedidos:detalle_pedido', pedido_id=pedido.id)
+
+            with transaction.atomic():
+                # Sumar stock al producto devuelto
+                variante_devuelta.stock += 1
+                variante_devuelta.save(update_fields=['stock'])
+                variante_devuelta.producto.stock = variante_devuelta.producto.stock_total
+                variante_devuelta.producto.save(update_fields=['stock'])
+
+                # Restar stock al producto entregado
+                variante_entregada.stock -= 1
+                variante_entregada.save(update_fields=['stock'])
+                variante_entregada.producto.stock = variante_entregada.producto.stock_total
+                variante_entregada.producto.save(update_fields=['stock'])
+
+                # Crear registro de cambio
+                Cambio.objects.create(
+                    pedido=pedido,
+                    variante_devuelta=variante_devuelta,
+                    producto_devuelto=variante_devuelta.producto,
+                    variante_entregada=variante_entregada,
+                    producto_entregado=variante_entregada.producto,
+                    motivo=motivo,
+                )
+
+            messages.success(request, 'Cambio registrado y stock actualizado.')
+        else:
+            messages.error(request, 'Debes seleccionar ambas variantes.')
+
+    return redirect('pedidos:detalle_pedido', pedido_id=pedido.id)
+
+
+@admin_required
+def crear_nota_credito(request, pedido_id):
+    """Crea una nota de crédito para un pedido."""
+    pedido = get_object_or_404(Pedido, pk=pedido_id)
+
+    if request.method == 'POST':
+        monto = request.POST.get('monto')
+        motivo = request.POST.get('motivo', '')
+
+        if monto:
+            try:
+                monto_decimal = Decimal(monto)
+                if monto_decimal > 0:
+                    NotaCredito.objects.create(
+                        pedido=pedido,
+                        monto=monto_decimal,
+                        motivo=motivo,
+                    )
+                    messages.success(request, f'Nota de crédito por ${monto_decimal} creada correctamente.')
+                else:
+                    messages.error(request, 'El monto debe ser mayor a 0.')
+            except:
+                messages.error(request, 'Monto inválido.')
+        else:
+            messages.error(request, 'Debes ingresar un monto.')
+
+    return redirect('pedidos:detalle_pedido', pedido_id=pedido.id)

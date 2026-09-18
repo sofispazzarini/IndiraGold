@@ -561,6 +561,155 @@
             </div>
             {% endif %}
         </div>
+
+        <!-- CAMBIOS -->
+        <div class="side-card">
+            <div class="card-head">
+                <i class="bi bi-arrow-left-right"></i>
+                <span class="card-head-title">Cambios</span>
+            </div>
+            <div class="payment-info">
+                {% if pedido.cambios.all %}
+                    {% for cambio in pedido.cambios.all %}
+                    <div style="padding:0.75rem 0; border-bottom:1px dashed #e8dfd4;">
+                        <div style="font-size:0.75rem; color:#9c8c7c; margin-bottom:0.3rem;">{{ cambio.fecha|date:"d/m/Y H:i" }}</div>
+                        <div style="display:flex; align-items:center; gap:0.5rem; font-size:0.85rem; flex-wrap:wrap;">
+                            <span style="color:#6E0E2E;">{{ cambio.producto_devuelto.nombre }}{% if cambio.variante_devuelta %} ({{ cambio.variante_devuelta.talle.nombre }}){% endif %}</span>
+                            <i class="bi bi-arrow-right" style="color:#b8922a;"></i>
+                            <span style="color:#2f6b38;">{{ cambio.producto_entregado.nombre }}{% if cambio.variante_entregada %} ({{ cambio.variante_entregada.talle.nombre }}){% endif %}</span>
+                        </div>
+                        {% if cambio.motivo %}
+                        <div style="font-size:0.7rem; color:#9c8c7c; margin-top:0.3rem; font-style:italic;">{{ cambio.motivo }}</div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                {% else %}
+                <div style="text-align:center; padding:1rem; color:#9c8c7c; font-size:0.85rem;">
+                    Sin cambios registrados
+                </div>
+                {% endif %}
+            </div>
+            <div style="padding:1rem; border-top:1px solid #e8dfd4;">
+                <button type="button" class="btn-act btn-hist" style="width:100%; justify-content:center;" data-bs-toggle="modal" data-bs-target="#modalCambio">
+                    <i class="bi bi-plus-circle"></i> Registrar cambio
+                </button>
+            </div>
+        </div>
+
+        <!-- NOTAS DE CRÉDITO -->
+        <div class="side-card">
+            <div class="card-head">
+                <i class="bi bi-receipt"></i>
+                <span class="card-head-title">Notas de Crédito</span>
+            </div>
+            <div class="payment-info">
+                {% if pedido.notas_credito.all %}
+                    {% for nc in pedido.notas_credito.all %}
+                    <div style="padding:0.75rem 0; border-bottom:1px dashed #e8dfd4;">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <div>
+                                <div style="font-size:0.75rem; color:#9c8c7c;">{{ nc.fecha_creacion|date:"d/m/Y" }}</div>
+                                <div style="font-size:1.1rem; font-weight:700; color:#2f6b38;">${{ nc.monto }}</div>
+                            </div>
+                            <span style="padding:0.25rem 0.6rem; border-radius:50px; font-size:0.65rem; font-weight:600;
+                                {% if nc.estado == 'vigente' %}background:#e8f5e9; color:#2f6b38;
+                                {% elif nc.estado == 'usada' %}background:#e3f2fd; color:#1976d2;
+                                {% else %}background:#fce4ec; color:#c62828;{% endif %}">
+                                {{ nc.get_estado_display }}
+                            </span>
+                        </div>
+                        {% if nc.motivo %}
+                        <div style="font-size:0.7rem; color:#9c8c7c; margin-top:0.3rem; font-style:italic;">{{ nc.motivo }}</div>
+                        {% endif %}
+                        {% if nc.pedido_uso %}
+                        <div style="font-size:0.7rem; color:#1976d2; margin-top:0.3rem;">Usada en pedido #{{ nc.pedido_uso.id }}</div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                {% else %}
+                <div style="text-align:center; padding:1rem; color:#9c8c7c; font-size:0.85rem;">
+                    Sin notas de crédito
+                </div>
+                {% endif %}
+            </div>
+            <div style="padding:1rem; border-top:1px solid #e8dfd4;">
+                <button type="button" class="btn-act btn-hist" style="width:100%; justify-content:center;" data-bs-toggle="modal" data-bs-target="#modalNotaCredito">
+                    <i class="bi bi-plus-circle"></i> Crear nota de crédito
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Cambio -->
+<div class="modal fade" id="modalCambio" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content" style="border-radius:14px;">
+            <div class="modal-header" style="border-bottom:1px solid #e8dfd4;">
+                <h5 class="modal-title" style="font-family:'Cormorant Garamond',serif; font-weight:600;">Registrar Cambio</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{% url 'pedidos:registrar_cambio' pedido.id %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label" style="font-size:0.8rem; font-weight:600;">Producto devuelto (del pedido)</label>
+                        <select name="variante_devuelta" class="form-select" required style="border-radius:8px;">
+                            <option value="">Seleccionar...</option>
+                            {% for item in items %}
+                            <option value="{{ item.variante.id }}">{{ item.variante.producto.nombre }} - Talle {{ item.variante.talle.nombre }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" style="font-size:0.8rem; font-weight:600;">Producto entregado (con stock)</label>
+                        <select name="variante_entregada" class="form-select" required style="border-radius:8px;">
+                            <option value="">Seleccionar...</option>
+                            {% for var in variantes_disponibles %}
+                            <option value="{{ var.id }}">{{ var.producto.nombre }} - Talle {{ var.talle.nombre }} (Stock: {{ var.stock }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" style="font-size:0.8rem; font-weight:600;">Motivo (opcional)</label>
+                        <textarea name="motivo" class="form-control" rows="2" style="border-radius:8px;"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer" style="border-top:1px solid #e8dfd4;">
+                    <button type="button" class="btn-act btn-hist" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn-act btn-edit">Guardar cambio</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Nota de Crédito -->
+<div class="modal fade" id="modalNotaCredito" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content" style="border-radius:14px;">
+            <div class="modal-header" style="border-bottom:1px solid #e8dfd4;">
+                <h5 class="modal-title" style="font-family:'Cormorant Garamond',serif; font-weight:600;">Crear Nota de Crédito</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{% url 'pedidos:crear_nota_credito' pedido.id %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label" style="font-size:0.8rem; font-weight:600;">Monto</label>
+                        <input type="number" name="monto" class="form-control" step="0.01" min="0.01" required style="border-radius:8px;">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" style="font-size:0.8rem; font-weight:600;">Motivo (opcional)</label>
+                        <textarea name="motivo" class="form-control" rows="2" style="border-radius:8px;"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer" style="border-top:1px solid #e8dfd4;">
+                    <button type="button" class="btn-act btn-hist" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn-act btn-edit">Crear nota</button>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
 
