@@ -395,6 +395,7 @@ def agregar_producto(request, subcat_id):
                             nombre_color,
                             c.get('colorHex') or '#888888'
                         )
+                        stock_color = int(c.get('stock', 0))
                         if nombre_color:
                             color_obj, created = Color.objects.get_or_create(
                                 nombre=nombre_color,
@@ -404,10 +405,12 @@ def agregar_producto(request, subcat_id):
                                 color_obj.codigo_hex = codigo_hex
                                 color_obj.save()
                             nueva_variante.colores.add(color_obj)
-                            VarianteColor.objects.get_or_create(
+                            vc, _ = VarianteColor.objects.get_or_create(
                                 variante=nueva_variante,
                                 color=color_obj,
                             )
+                            vc.stock = stock_color
+                            vc.save()
                     
                     # 4. VINCULAR MEDIDAS
                     medidas_data = v.get('medidas', [])
@@ -1356,12 +1359,36 @@ def admin_ofertas(request):
                 messages.error(request, 'Ya existe una oferta con ese codigo.')
                 return redirect('productos:admin_ofertas')
 
+            # Procesar límite de usos
+            limite_usos = request.POST.get('limite_usos', '').strip()
+            limite_usos_valor = None
+            if limite_usos:
+                try:
+                    limite_usos_valor = int(limite_usos)
+                    if limite_usos_valor < 1:
+                        limite_usos_valor = None
+                except (TypeError, ValueError):
+                    limite_usos_valor = None
+
+            # Procesar fecha límite
+            fecha_fin = request.POST.get('fecha_fin', '').strip()
+            fecha_fin_valor = None
+            if fecha_fin:
+                try:
+                    from datetime import datetime
+                    from django.utils import timezone
+                    fecha_fin_valor = timezone.make_aware(datetime.strptime(fecha_fin, '%Y-%m-%d'))
+                except (TypeError, ValueError):
+                    fecha_fin_valor = None
+
             Oferta.objects.create(
                 nombre=nombre,
                 descuento=descuento_numero,
                 codigo=codigo,
                 es_cupon=True,
-                activa=True
+                activa=True,
+                limite_usos=limite_usos_valor,
+                fecha_fin=fecha_fin_valor
             )
 
             messages.success(request, 'Codigo de descuento creado correctamente.')

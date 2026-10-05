@@ -464,10 +464,27 @@
             let picker = document.getElementById('colorPickerModal').value;
             let nombre = document.getElementById('colorNombreModal').value.trim() || picker;
             let ninguno = document.getElementById('colorNingunoModal').checked;
-            
-            tempColores.push({ colorNombre: ninguno ? 'Sin color' : nombre, colorHex: ninguno ? null : picker, colorNinguno: ninguno });
+            let stockColor = parseInt(document.getElementById('colorStockModal').value || '0', 10);
+
+            if (!ninguno && !nombre) {
+                alert('Ingresá un nombre para el color.');
+                return;
+            }
+            if (stockColor <= 0 || Number.isNaN(stockColor)) {
+                alert('Ingresá un stock válido para este color.');
+                return;
+            }
+
+            tempColores.push({
+                colorNombre: ninguno ? 'Sin color' : nombre,
+                colorHex: ninguno ? null : picker,
+                colorNinguno: ninguno,
+                stock: stockColor
+            });
             renderTempColores();
+            actualizarStockVariante();
             document.getElementById('colorNombreModal').value = '';
+            document.getElementById('colorStockModal').value = '';
         };
 
         // Botón Agregar Medida (DENTRO DEL MODAL)
@@ -488,8 +505,13 @@
             try {
                 let talle = document.getElementById('inputTalleLibre').value.trim();
                 let stock = parseInt(document.getElementById('inputStockVariante').value || '0', 10);
-                if (Number.isNaN(stock) || stock < 0) {
-                    alert('Ingresá un stock válido para esta variante.');
+
+                if (tempColores.length === 0) {
+                    alert('Agregá al menos un color con stock.');
+                    return;
+                }
+                if (Number.isNaN(stock) || stock <= 0) {
+                    alert('El stock total debe ser mayor a 0. Agregá colores con stock.');
                     return;
                 }
                 variantes.push({ talle, colores: [...tempColores], medidas: [...tempMedidas], stock, precio: 0 });
@@ -509,6 +531,7 @@
                 tempColores = []; tempMedidas = [];
                 e.target.reset();
                 renderTempColores(); renderTempMedidas();
+                document.getElementById('stockVarianteTotal').textContent = '0';
             } catch(err) {
                 console.error('Error al guardar variante:', err);
                 alert('Error: ' + err.message);
@@ -627,16 +650,29 @@
             contenedor.classList.add('d-none');
         }
 
-        // Solo círculo de color con botón de eliminar
         contenedor.innerHTML = tempColores.map((c, i) => `
-            <span class="d-inline-flex align-items-center me-2 mb-1 px-2 py-1 rounded" style="background: #333;" title="${c.colorNombre || 'Sin color'}">
+            <span class="d-inline-flex align-items-center me-2 mb-2 px-2 py-1 rounded" style="background: #333;" title="${c.colorNombre || 'Sin color'}">
                 ${c.colorNinguno
                     ? '<span class="text-white small">Sin color</span>'
                     : `<span style="display:inline-block; width:20px; height:20px; background-color:${c.colorHex}; border-radius:50%; border:2px solid #fff;"></span>`
                 }
-                <button type="button" class="btn-close btn-close-white ms-1" style="font-size:0.45rem" onclick="tempColores.splice(${i},1); renderTempColores()"></button>
+                <span class="text-white small ms-1">${c.colorNombre}</span>
+                <span class="badge bg-warning text-dark ms-1">${c.stock}</span>
+                <button type="button" class="btn-close btn-close-white ms-1" style="font-size:0.45rem" onclick="eliminarColor(${i})"></button>
             </span>
         `).join('');
+    }
+
+    function eliminarColor(index) {
+        tempColores.splice(index, 1);
+        renderTempColores();
+        actualizarStockVariante();
+    }
+
+    function actualizarStockVariante() {
+        const total = tempColores.reduce((sum, c) => sum + (c.stock || 0), 0);
+        document.getElementById('stockVarianteTotal').textContent = total;
+        document.getElementById('inputStockVariante').value = total;
     }
 
     function renderTempMedidas() {
@@ -659,9 +695,9 @@
     function actualizarUI() {
         // Listado en la página (Las tarjetas blancas de abajo)
         document.getElementById('listadoVariantesGlobal').innerHTML = variantes.map((v, i) => {
-            let coloresHtml = v.colores.map(c => 
-                c.colorNinguno ? '<span class="badge bg-secondary ms-1">Sin color</span>' : 
-                `<span class="badge bg-dark ms-1 d-inline-flex align-items-center"><span style="display:inline-block; width:10px; height:10px; background-color:${c.colorHex}; border-radius:50%; margin-right:4px; border:1px solid #fff;"></span>${c.colorNombre}</span>`
+            let coloresHtml = v.colores.map(c =>
+                c.colorNinguno ? '<span class="badge bg-secondary ms-1">Sin color</span>' :
+                `<span class="badge bg-dark ms-1 d-inline-flex align-items-center"><span style="display:inline-block; width:10px; height:10px; background-color:${c.colorHex}; border-radius:50%; margin-right:4px; border:1px solid #fff;"></span>${c.colorNombre} <span class="badge bg-warning text-dark ms-1" style="font-size:0.65rem;">${c.stock || 0}</span></span>`
             ).join('');
             
             let medidasHtml = v.medidas.map((m, j) => 
@@ -692,10 +728,10 @@
             let talleName = v.talle ? v.talle.toUpperCase() : 'SIN TALLE';
             
             // Filtramos los colores (ignorando "Sin color") y armamos HTML y Texto
-            let colHtml = v.colores.filter(c => !c.colorNinguno).map(c => 
-                `<span class="d-inline-flex align-items-center me-2"><span style="display:inline-block; width:10px; height:10px; background-color:${c.colorHex}; border-radius:50%; border:1px solid #ccc; margin-right:4px;"></span>${c.colorNombre}</span>`
+            let colHtml = v.colores.filter(c => !c.colorNinguno).map(c =>
+                `<span class="d-inline-flex align-items-center me-2"><span style="display:inline-block; width:10px; height:10px; background-color:${c.colorHex}; border-radius:50%; border:1px solid #ccc; margin-right:4px;"></span>${c.colorNombre} (${c.stock || 0})</span>`
             ).join('');
-            let colText = v.colores.filter(c => !c.colorNinguno).map(c => c.colorNombre).join(', ');
+            let colText = v.colores.filter(c => !c.colorNinguno).map(c => `${c.colorNombre}: ${c.stock || 0}`).join(', ');
 
             // Armamos Medidas
             let medList = v.medidas.map(m => `A:${m.alto||'-'} An:${m.ancho||'-'} L:${m.largo||'-'} T:${m.tiro||'-'}`);

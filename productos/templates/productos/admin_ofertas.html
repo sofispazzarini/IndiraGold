@@ -421,6 +421,11 @@
     transform: translateX(-50%) translateY(0);
 }
 
+.form-group input:disabled {
+    background: #f5f5f5;
+    cursor: not-allowed;
+}
+
 /* Tablet grande / laptop pequeña */
 @media(max-width:1100px){
     .ofertas-page{
@@ -756,7 +761,25 @@
                 </div>
             </div>
 
-            <div class="ofertas-actions" style="margin-top: 1rem;">
+            <div class="form-grid" style="grid-template-columns: 1fr 1fr; margin-top: 1rem;">
+                <div class="form-group" id="limiteUsosGroup">
+                    <label>Cantidad de usos <span class="char-limit">opcional</span></label>
+                    <input type="number" name="limite_usos" id="limiteUsosInput" min="1" placeholder="Ej: 5">
+                    <div style="font-size: 0.75rem; color: var(--muted); margin-top: 0.25rem;">
+                        Cuántos clientes pueden usarlo
+                    </div>
+                </div>
+
+                <div class="form-group" id="fechaFinGroup">
+                    <label>Fecha límite <span class="char-limit">opcional</span></label>
+                    <input type="date" name="fecha_fin" id="fechaFinInput">
+                    <div style="font-size: 0.75rem; color: var(--muted); margin-top: 0.25rem;">
+                        Hasta cuándo se puede usar
+                    </div>
+                </div>
+            </div>
+
+            <div class="ofertas-actions" style="margin-top: 1.5rem;">
                 <button type="submit" class="btn-primary">
                     Crear código
                 </button>
@@ -777,6 +800,7 @@
                     <th>CODIGO</th>
                     <th>DESCUENTO</th>
                     <th>APLICA A</th>
+                    <th>LIMITE</th>
                     <th>ESTADO</th>
                     <th>ACCIONES</th>
                 </tr>
@@ -819,6 +843,20 @@
                             Productos seleccionados
                         {% endif %}
 
+                    </td>
+
+                    <td style="font-size: 0.8rem;">
+                        {% if oferta.es_cupon %}
+                            {% if oferta.limite_usos %}
+                                <span style="color: var(--burgundy);">{{ oferta.usos_actuales }}/{{ oferta.limite_usos }} usos</span>
+                            {% elif oferta.fecha_fin %}
+                                <span>Hasta {{ oferta.fecha_fin|date:"d/m/Y" }}</span>
+                            {% else %}
+                                <span style="color: var(--muted);">Sin límite</span>
+                            {% endif %}
+                        {% else %}
+                            -
+                        {% endif %}
                     </td>
 
                     <td>
@@ -985,6 +1023,40 @@ document.querySelectorAll('.char-input').forEach(input => {
         }
     });
 });
+
+// Campos mutuamente excluyentes: limite_usos y fecha_fin
+const limiteUsosInput = document.getElementById('limiteUsosInput');
+const fechaFinInput = document.getElementById('fechaFinInput');
+const limiteUsosGroup = document.getElementById('limiteUsosGroup');
+const fechaFinGroup = document.getElementById('fechaFinGroup');
+
+function updateLimiteExclusivo() {
+    if (limiteUsosInput.value) {
+        fechaFinInput.disabled = true;
+        fechaFinInput.value = '';
+        fechaFinGroup.style.opacity = '0.5';
+    } else {
+        fechaFinInput.disabled = false;
+        fechaFinGroup.style.opacity = '1';
+    }
+}
+
+function updateFechaExclusivo() {
+    if (fechaFinInput.value) {
+        limiteUsosInput.disabled = true;
+        limiteUsosInput.value = '';
+        limiteUsosGroup.style.opacity = '0.5';
+    } else {
+        limiteUsosInput.disabled = false;
+        limiteUsosGroup.style.opacity = '1';
+    }
+}
+
+if (limiteUsosInput && fechaFinInput) {
+    limiteUsosInput.addEventListener('input', updateLimiteExclusivo);
+    fechaFinInput.addEventListener('input', updateFechaExclusivo);
+    fechaFinInput.addEventListener('change', updateFechaExclusivo);
+}
 
 </script>
 

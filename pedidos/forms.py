@@ -20,14 +20,15 @@ class ConfiguracionEnvioForm(forms.ModelForm):
         model = ConfiguracionEnvio
         fields = [
             'flex_activo',
-            'flex_gratis',
             'precio_flex',
             'zonas_flex',
+            'flex_gratis_activo',
+            'zonas_flex_gratis',
             'correo_activo',
         ]
         widgets = {
             'flex_activo': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
-            'flex_gratis': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'flex_gratis_activo': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'correo_activo': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'precio_flex': forms.NumberInput(attrs={
                 'class': 'envio-input',
@@ -37,8 +38,13 @@ class ConfiguracionEnvioForm(forms.ModelForm):
             }),
             'zonas_flex': forms.Textarea(attrs={
                 'class': 'envio-textarea',
-                'rows': 7,
-                'placeholder': 'Ej: CABA, La Plata, Quilmes, Berazategui',
+                'rows': 4,
+                'placeholder': 'Ej: Berazategui, Quilmes, Florencio Varela',
+            }),
+            'zonas_flex_gratis': forms.Textarea(attrs={
+                'class': 'envio-textarea',
+                'rows': 4,
+                'placeholder': 'Ej: La Plata, City Bell, Gonnet',
             }),
         }
 

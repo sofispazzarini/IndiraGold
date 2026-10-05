@@ -269,6 +269,129 @@ def extraer_importe_cotizacion(respuesta):
     raise ErrorEnvio('La API cotizo, pero no devolvio un importe reconocible.')
 
 
+def extraer_todas_las_tarifas(respuesta):
+    """Extrae todas las tarifas disponibles de la respuesta de cotización."""
+    if isinstance(respuesta, dict) and respuesta.get('rates') == []:
+        raise ErrorEnvio('Correo Argentino no tiene tarifas para esta ruta.')
+
+    rates = respuesta.get('rates', []) if isinstance(respuesta, dict) else []
+
+    # Debug: ver qué devuelve la API
+    print(f"DEBUG extraer_todas_las_tarifas: rates={rates}")
+
+    if not rates:
+        # Si no hay rates, intentar con la respuesta directa
+        importe = extraer_importe_cotizacion(respuesta)
+        return [{'id': 'standard', 'nombre': 'Envío Estándar', 'precio': importe, 'dias': None}]
+
+    tarifas = []
+    for rate in rates:
+        if not isinstance(rate, dict):
+            continue
+
+        # Debug: ver campos de cada rate
+        print(f"DEBUG rate keys: {rate.keys()}")
+
+        # Extraer precio
+        precio = None
+        for clave in ['total', 'amount', 'price', 'precio', 'importe', 'valor', 'shipping_cost']:
+            valor = rate.get(clave)
+            if valor not in [None, '']:
+                precio = Decimal(str(valor)).quantize(Decimal('0.01'))
+                break
+        if precio is None:
+            continue
+
+        # Extraer nombre del servicio - buscar en más campos
+        nombre = (
+            rate.get('serviceName') or
+            rate.get('serviceDescription') or
+            rate.get('name') or
+            rate.get('service') or
+            rate.get('description') or
+            rate.get('productName') or
+            rate.get('product') or
+            rate.get('tipo') or
+            rate.get('type') or
+            None
+        )
+
+        # Extraer ID del servicio
+        service_id = (
+            rate.get('serviceId') or
+            rate.get('serviceCode') or
+            rate.get('id') or
+            rate.get('code') or
+            rate.get('productId') or
+            None
+        )
+
+        # Extraer días de entrega - buscar en más campos
+        dias = (
+            rate.get('deliveryTime') or
+            rate.get('deliveryDays') or
+            rate.get('transitDays') or
+            rate.get('days') or
+            rate.get('diasEntrega') or
+            rate.get('estimatedDays') or
+            rate.get('tiempoEntrega') or
+            None
+        )
+
+        # Convertir días a texto si es número
+        if dias is not None:
+            try:
+                dias_num = int(dias)
+                dias = f"{dias_num} día{'s' if dias_num != 1 else ''}"
+            except (ValueError, TypeError):
+                dias = str(dias)
+
+        tarifas.append({
+            'id': str(service_id) if service_id else f'rate_{len(tarifas)}',
+            'nombre': nombre,
+            'precio': precio,
+            'dias': dias,
+        })
+
+    if not tarifas:
+        raise ErrorEnvio('No se encontraron tarifas en la respuesta.')
+
+    # Ordenar por precio (más barato primero)
+    tarifas.sort(key=lambda x: x['precio'])
+
+    # Asignar nombres descriptivos y tiempos estimados si no tienen
+    for i, tarifa in enumerate(tarifas):
+        nombre_lower = (tarifa['nombre'] or '').lower()
+
+        # Asignar días según el tipo de servicio
+        if not tarifa['dias']:
+            if 'expres' in nombre_lower or 'express' in nombre_lower or 'priorit' in nombre_lower or 'rapido' in nombre_lower or 'rápido' in nombre_lower:
+                tarifa['dias'] = '3 a 5 días hábiles'
+            elif 'clasic' in nombre_lower or 'clásic' in nombre_lower or 'estandar' in nombre_lower or 'estándar' in nombre_lower or 'standard' in nombre_lower:
+                tarifa['dias'] = '7 a 12 días hábiles'
+            elif i == len(tarifas) - 1 and len(tarifas) > 1:
+                # El más caro suele ser el más rápido
+                tarifa['dias'] = '3 a 5 días hábiles'
+            elif i == 0 and len(tarifas) > 1:
+                # El más barato suele ser el más lento
+                tarifa['dias'] = '7 a 12 días hábiles'
+            else:
+                tarifa['dias'] = '5 a 10 días hábiles'
+
+        # Si no tiene nombre, asignar uno descriptivo
+        if not tarifa['nombre'] or nombre_lower in ['envío', 'envio', 'shipping']:
+            if len(tarifas) == 1:
+                tarifa['nombre'] = 'Envío Estándar'
+            elif i == 0:
+                tarifa['nombre'] = 'Envío Económico'
+            elif i == len(tarifas) - 1:
+                tarifa['nombre'] = 'Envío Express'
+            else:
+                tarifa['nombre'] = 'Envío Estándar'
+
+    return tarifas
+
+
 def cotizar_correo_argentino(codigo_postal, tipo_entrega='domicilio', items=None):
     config = config_proveedor('correo_argentino')
     if not (config.base_url and config.cotizar_endpoint and config.customer_id and config.postal_code_origin and (config.token or (config.usuario and config.password and config.auth_endpoint))):
@@ -287,6 +410,27 @@ def cotizar_correo_argentino(codigo_postal, tipo_entrega='domicilio', items=None
     }
     respuesta = request_json('POST', url, token, payload)
     return extraer_importe_cotizacion(respuesta), respuesta
+
+
+def cotizar_correo_argentino_todas_tarifas(codigo_postal, tipo_entrega='domicilio', items=None):
+    """Cotiza y devuelve todas las tarifas disponibles."""
+    config = config_proveedor('correo_argentino')
+    if not (config.base_url and config.cotizar_endpoint and config.customer_id and config.postal_code_origin and (config.token or (config.usuario and config.password and config.auth_endpoint))):
+        raise ErrorEnvio('Falta configurar la cotizacion de Correo Argentino MiCorreo.')
+
+    token = obtener_token(config)
+    url = f'{config.base_url}{config.cotizar_endpoint}'
+    delivered_type = 'S' if tipo_entrega == 'sucursal' else 'D'
+    dimensiones = calcular_paquete_envio(items or [])
+    payload = {
+        'customerId': config.customer_id,
+        'postalCodeOrigin': config.postal_code_origin,
+        'postalCodeDestination': codigo_postal,
+        'deliveredType': delivered_type,
+        'dimensions': dimensiones,
+    }
+    respuesta = request_json('POST', url, token, payload)
+    return extraer_todas_las_tarifas(respuesta)
 
 
 CODIGOS_PROVINCIA = {
