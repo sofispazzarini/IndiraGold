@@ -8,7 +8,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('pedidos', '0032_add_opcion_envio_flex'),
-        ('productos', '0030_alter_categoria_id_alter_categoriaorden_id_and_more'),
+        ('productos', '0029_alter_categoria_id_alter_categoriaorden_id_and_more'),
     ]
 
     operations = [
