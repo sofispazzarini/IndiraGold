@@ -3192,6 +3192,12 @@ def configurar_envios(request):
             formset.save()
             messages.success(request, 'Configuración de envíos actualizada correctamente.')
             return redirect('pedidos:configurar_envios')
+        else:
+            for error in formset.errors:
+                if error:
+                    messages.error(request, f'Error en opción Flex: {error}')
+            if formset.non_form_errors():
+                messages.error(request, f'Error: {formset.non_form_errors()}')
     else:
         form = ConfiguracionEnvioForm(instance=configuracion)
         formset = OpcionEnvioFlexFormSet(queryset=OpcionEnvioFlex.objects.all(), prefix='flex')

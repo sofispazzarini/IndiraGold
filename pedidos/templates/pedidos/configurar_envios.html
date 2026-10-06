@@ -258,6 +258,27 @@
     color: var(--wine);
   }
 
+  .btn-add-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 20px;
+    background: var(--cream);
+    border: 1px dashed var(--gold);
+    border-radius: 12px;
+    color: var(--ink);
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-top: 16px;
+  }
+
+  .btn-add-option:hover {
+    background: var(--gold-soft);
+    border-style: solid;
+  }
+
   @media (max-width: 640px) {
     .wrap {
       padding: 24px 16px;
@@ -297,6 +318,14 @@
       {% for flex_form in formset %}
       <div class="opcion-flex-card {% if not flex_form.instance.pk %}nueva{% endif %}">
         {{ flex_form.id }}
+
+        {% if flex_form.errors %}
+        <div class="form-errors" style="background: #fee; border: 1px solid #c00; padding: 12px; border-radius: 8px; margin-bottom: 16px; color: #900;">
+          {% for field, errors in flex_form.errors.items %}
+            <strong>{{ field }}:</strong> {{ errors|join:", " }}<br>
+          {% endfor %}
+        </div>
+        {% endif %}
 
         {% if not flex_form.instance.pk %}
         <div class="callout">
@@ -349,6 +378,56 @@
       </div>
       {% endfor %}
 
+      <!-- Template para agregar nuevas opciones -->
+      <div id="empty-form-template" style="display: none;">
+        <div class="opcion-flex-card nueva">
+          {{ formset.empty_form.id }}
+
+          <div class="callout">
+            <span class="dot"></span>
+            <strong>Nueva opción</strong>
+            <span>Completá los campos para agregar</span>
+          </div>
+
+          <div class="field">
+            <label class="field-label">Nombre</label>
+            {{ formset.empty_form.nombre }}
+          </div>
+
+          <div class="row-2">
+            <div class="field">
+              <label class="field-label">Orden</label>
+              {{ formset.empty_form.orden }}
+            </div>
+            <div class="field">
+              <label class="field-label">Precio $</label>
+              {{ formset.empty_form.precio }}
+            </div>
+          </div>
+
+          <div class="toggles">
+            <label class="checkbox-row">
+              {{ formset.empty_form.activo }}
+              <span class="label-text"><strong>Activo</strong> <span>Se muestra en checkout</span></span>
+            </label>
+            <label class="checkbox-row">
+              {{ formset.empty_form.es_gratis }}
+              <span class="label-text"><strong>Gratis</strong> <span>Sin costo para el cliente</span></span>
+            </label>
+          </div>
+
+          <div class="field" style="margin-bottom:0;">
+            <label class="field-label">Zonas donde llega (separadas por coma)</label>
+            {{ formset.empty_form.zonas }}
+          </div>
+        </div>
+      </div>
+
+      <button type="button" id="add-flex-option" class="btn-add-option">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        Agregar otra opción Flex
+      </button>
+
       <div class="divider"></div>
 
       <div class="sub-title">Correo Argentino</div>
@@ -367,4 +446,24 @@
   </form>
 
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const addBtn = document.getElementById('add-flex-option');
+  const template = document.getElementById('empty-form-template');
+  const totalForms = document.querySelector('[name="flex-TOTAL_FORMS"]');
+
+  addBtn.addEventListener('click', function() {
+    const formCount = parseInt(totalForms.value);
+    const newForm = template.innerHTML.replace(/__prefix__/g, formCount);
+
+    const wrapper = document.createElement('div');
+    wrapper.innerHTML = newForm;
+    const newCard = wrapper.firstElementChild;
+
+    addBtn.parentNode.insertBefore(newCard, addBtn);
+    totalForms.value = formCount + 1;
+  });
+});
+</script>
 {% endblock %}
