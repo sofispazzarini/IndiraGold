@@ -3193,9 +3193,14 @@ def configurar_envios(request):
             messages.success(request, 'Configuración de envíos actualizada correctamente.')
             return redirect('pedidos:configurar_envios')
         else:
-            for error in formset.errors:
+            # Mostrar errores del formulario principal
+            if form.errors:
+                for field, errors in form.errors.items():
+                    messages.error(request, f'Error en {field}: {", ".join(errors)}')
+            # Mostrar errores del formset
+            for i, error in enumerate(formset.errors):
                 if error:
-                    messages.error(request, f'Error en opción Flex: {error}')
+                    messages.error(request, f'Error en opción Flex #{i+1}: {error}')
             if formset.non_form_errors():
                 messages.error(request, f'Error: {formset.non_form_errors()}')
     else:
