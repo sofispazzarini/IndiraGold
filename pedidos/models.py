@@ -424,6 +424,14 @@ class OpcionEnvioFlex(models.Model):
     def __str__(self):
         return self.nombre
 
+    def save(self, *args, **kwargs):
+        # Capitalizar nombre y zonas automáticamente
+        if self.nombre:
+            self.nombre = self.nombre.strip().title()
+        if self.zonas:
+            self.zonas = ', '.join([z.strip().title() for z in self.zonas.split(',') if z.strip()])
+        super().save(*args, **kwargs)
+
     @property
     def costo_actual(self):
         from decimal import Decimal
