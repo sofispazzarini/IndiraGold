@@ -431,7 +431,7 @@ class OpcionEnvioFlex(models.Model):
 
     @property
     def zonas_lista(self):
-        return [z.strip() for z in self.zonas.split(',') if z.strip()]
+        return [z.strip().title() for z in self.zonas.split(',') if z.strip()]
 
     @property
     def texto_costo(self):
