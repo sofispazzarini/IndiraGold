@@ -345,7 +345,7 @@ def costo_envio_checkout(metodo_entrega, configuracion_envio):
     if metodo_entrega == 'flex' and configuracion_envio.flex_activo:
         return Decimal(configuracion_envio.costo_flex)
     if metodo_entrega == 'correo' and configuracion_envio.correo_activo:
-        return Decimal(configuracion_envio.costo_correo)
+        return Decimal('0')  # Se cotiza con la API de Correo Argentino
     return Decimal('0')
 
 
@@ -788,7 +788,7 @@ def checkout_view(request):
         'configuracion_pago': configuracion_pago,
         'planes_cuotas': planes_cuotas,
         'precio_flex': configuracion_envio.costo_flex,
-        'precio_correo': configuracion_envio.costo_correo,
+        'precio_correo': None,  # Se cotiza con la API
         'zonas_flex': zonas_flex,
         'direcciones': direcciones,
         'direcciones_flex': direcciones_flex,
