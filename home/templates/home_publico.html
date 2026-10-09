@@ -932,10 +932,10 @@ function scrollOfertas(dir) {
     position: fixed; top: 0; right: -420px; bottom: 0; width: 420px;
     background: #fff; z-index: 120;
     display: flex; flex-direction: column;
-    box-shadow: -8px 0 40px rgba(0,0,0,.12);
+    box-shadow: none; /* la sombra solo con el panel abierto (cerrado se veía una franja gris a la derecha) */
     transition: right .3s ease;
   }
-  .cart-panel.open { right: 0; }
+  .cart-panel.open { right: 0; box-shadow: -8px 0 40px rgba(0,0,0,.12); }
   .cart-panel__header { display: flex; justify-content: space-between; align-items: center; padding: 1.5rem; border-bottom: 1px solid #e8dfd4; }
   .cart-panel__header h3 { font-family: 'Cormorant Garamond', serif; font-size: 1.3rem; font-weight: 700; color: #1a1612; }
   .cart-close { background: none; border: none; font-size: 1.1rem; cursor: pointer; color: #8c7e70; padding: .25rem; }

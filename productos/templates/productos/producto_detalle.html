@@ -669,10 +669,11 @@
         z-index: 1150;
         display: flex;
         flex-direction: column;
-        box-shadow: -4px 0 24px rgba(0,0,0,0.15);
+        box-shadow: none; /* sombra solo abierto */
         transition: right 0.3s ease;
     }
     .cart-panel.open {
+        box-shadow: -4px 0 24px rgba(0,0,0,0.15);
         right: 0;
     }
     .cart-panel__header {
