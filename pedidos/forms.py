@@ -16,6 +16,19 @@ class GastoForm(forms.ModelForm):
             'observaciones': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }
 
+    def clean_monto(self):
+        monto = self.cleaned_data.get('monto')
+        if monto is None or monto <= 0:
+            raise forms.ValidationError('El monto tiene que ser mayor a 0.')
+        return monto
+
+    def clean_fecha(self):
+        from django.utils import timezone
+        fecha = self.cleaned_data.get('fecha')
+        if fecha and fecha > timezone.localdate():
+            raise forms.ValidationError('La fecha no puede ser futura.')
+        return fecha
+
 class ConfiguracionEnvioForm(forms.ModelForm):
     class Meta:
         model = ConfiguracionEnvio
