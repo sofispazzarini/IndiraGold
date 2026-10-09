@@ -931,14 +931,14 @@
                 </div>
 
                 <div class="product-price-old">
-                ${{ producto.precio }}
+                {{ producto.precio|pesos }}
                 </div>
 
                 <div class="product-price">
 
                 <span class="currency">$</span>
 
-                {{ producto.precio_final }}
+                {{ producto.precio_final|pesos_numero }}
 
                 </div>
 
@@ -948,7 +948,7 @@
 
                 <span class="currency">$</span>
 
-                {{ producto.precio }}
+                {{ producto.precio|pesos_numero }}
 
                 </div>
 
@@ -978,7 +978,7 @@
                     <div class="variantes-titulo">
                       Selecciona tu talle
                       {% if monto_cuota and plan_cuotas_mejor %}
-                      <span class="cuota-info">{{ plan_cuotas_mejor.cuotas }}x ${{ monto_cuota|floatformat:0 }}{% if plan_cuotas_mejor.sin_interes %} sin interés{% endif %}</span>
+                      <span class="cuota-info">{{ plan_cuotas_mejor.cuotas }}x {{ monto_cuota|pesos }}{% if plan_cuotas_mejor.sin_interes %} sin interés{% endif %}</span>
                       {% endif %}
                     </div>
                     <div class="talles-grid">
@@ -1051,7 +1051,7 @@
                     </div>
                     <div class="relacionado-body">
                         <div class="relacionado-nombre">{{ prod.nombre }}</div>
-                        <div class="relacionado-precio">${{ prod.precio }}</div>
+                        <div class="relacionado-precio">{{ prod.precio|pesos }}</div>
                     </div>
                 </a>
             {% endfor %}
@@ -1119,7 +1119,7 @@
     </div>
     <div class="cart-total">
       <span>Total</span>
-      <span id="cartTotal">${{ cart_total|default:"0" }}</span>
+      <span id="cartTotal">{{ cart_total|default:"0"|pesos }}</span>
     </div>
     <button class="cart-checkout" type="button" onclick="checkout()">Confirmar pedido</button>
   </div>

@@ -435,7 +435,7 @@
       <i class="bi bi-exclamation-triangle"></i>
       Total deudas pendientes
     </div>
-    <div class="total-value">${{ total_deudas|floatformat:0 }}</div>
+    <div class="total-value">{{ total_deudas|pesos }}</div>
   </div>
 
   <div class="search-bar">
@@ -461,13 +461,13 @@
         </div>
         <div class="deuda-meta">
           <span><i class="bi bi-calendar3"></i> {{ deuda.fecha|date:"d/m/Y" }}</span>
-          <span><i class="bi bi-cash"></i> Pagado: ${{ deuda.pagado|floatformat:0 }}</span>
+          <span><i class="bi bi-cash"></i> Pagado: {{ deuda.pagado|pesos }}</span>
         </div>
       </div>
       <div class="deuda-monto">
         <div class="deuda-total-label">Total</div>
-        <div class="deuda-total-value">${{ deuda.total|floatformat:0 }}</div>
-        <div class="deuda-pendiente">-${{ deuda.pendiente|floatformat:0 }}</div>
+        <div class="deuda-total-value">{{ deuda.total|pesos }}</div>
+        <div class="deuda-pendiente">-{{ deuda.pendiente|pesos }}</div>
       </div>
       <div class="deuda-actions">
         <a href="{{ deuda.url }}" class="btn-action" title="Ver {{ deuda.tipo|lower }} y registrar pago">

@@ -313,8 +313,8 @@
                             <td>
                                 <input type="number" name="cantidad_{{ item.id }}" value="{{ item.cantidad }}" min="1" class="modern-input">
                             </td>
-                            <td class="item-price">${{ item.precio_unitario }}</td>
-                            <td class="item-subtotal">${{ item.precio_total }}</td>
+                            <td class="item-price">{{ item.precio_unitario|pesos }}</td>
+                            <td class="item-subtotal">{{ item.precio_total|pesos }}</td>
                             <td>
                                 <label class="delete-label">
                                     <input type="checkbox" name="eliminar_item" value="{{ item.id }}" class="delete-check">
@@ -392,7 +392,7 @@
                     </div>
                     <div class="detail-row">
                         <span class="detail-lbl">Total</span>
-                        <span class="detail-val total">${{ pedido.total }}</span>
+                        <span class="detail-val total">{{ pedido.total|pesos }}</span>
                     </div>
                 </div>
             </div>

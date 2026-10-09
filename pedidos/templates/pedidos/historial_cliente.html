@@ -32,7 +32,7 @@
                         {% for pedido in pedidos %}
                             <tr>
                                 <td><strong>#{{ pedido.id }}</strong></td>
-                                <td><strong>${{ pedido.total }}</strong></td>
+                                <td><strong>{{ pedido.total|pesos }}</strong></td>
                                 <td>{{ pedido.get_tipo_venta_display }}</td>
                                 <td>{{ pedido.get_estado_display }}</td>
                                 <td><small>{{ pedido.created_at|date:"d/m/Y H:i" }}</small></td>

@@ -1,3 +1,4 @@
+from pedidos.templatetags.moneda import pesos
 from django.shortcuts import render, get_object_or_404, redirect
 from django.urls import reverse
 from django.contrib.auth.decorators import login_required, user_passes_test
@@ -65,7 +66,7 @@ def admin_required(view_func):
 
 
 def formato_pesos(valor):
-    return f"${int(valor):,}".replace(",", ".")
+    return pesos(valor)
 
 
 def leer_monto(valor):
@@ -135,7 +136,7 @@ def whatsapp_comprobante_url(pedido):
         f'Hola IndiraGold, te envio el comprobante del pedido #{pedido.id}.\n\n'
         f'Cliente: {nombre_completo}\n'
         f'Email: {email}\n'
-        f'Total: ${pedido.total}'
+        f'Total: {pesos(pedido.total)}'
     )
     return f'https://wa.me/{numero}?text={quote(mensaje)}'
 
@@ -149,7 +150,7 @@ def whatsapp_transferencia_url(pedido):
         f'Hola IndiraGold, te envio el comprobante de transferencia del pedido #{pedido.id}.\n\n'
         f'Cliente: {nombre_completo}\n'
         f'Email: {email}\n'
-        f'Total: ${pedido.total}'
+        f'Total: {pesos(pedido.total)}'
     )
     return f'https://wa.me/{numero}?text={quote(mensaje)}'
 
@@ -180,7 +181,7 @@ def enviar_email_confirmacion_pedido(pedido):
             f'{item.cantidad}'
             f'</td>'
             f'<td align="right" style="padding:14px 0;border-bottom:1px solid #efe7dc;color:#1f1712;font-weight:700;">'
-            f'${item.precio_total}'
+            f'{pesos(item.precio_total)}'
             f'</td>'
             '</tr>'
         )
@@ -258,7 +259,7 @@ def enviar_email_confirmacion_pedido(pedido):
 
                 <div style="border-top:2px solid #1f1712;margin-top:20px;padding-top:16px;text-align:right;">
                   <span style="font-size:14px;color:#786b60;">Total:</span>
-                  <span style="font-size:24px;font-weight:700;color:#6e0e2e;margin-left:12px;">${pedido.total}</span>
+                  <span style="font-size:24px;font-weight:700;color:#6e0e2e;margin-left:12px;">{pesos(pedido.total)}</span>
                 </div>
               </td>
             </tr>
@@ -281,7 +282,7 @@ def enviar_email_confirmacion_pedido(pedido):
     if pedido.cliente.user.email:
         send_mail(
             subject=f'Pedido #{pedido.id} - IndiraGold',
-            message=f'Recibimos tu pedido #{pedido.id}. Total: ${pedido.total}. Método de pago: {metodo_pago_display}.',
+            message=f'Recibimos tu pedido #{pedido.id}. Total: {pesos(pedido.total)}. Método de pago: {metodo_pago_display}.',
             from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', admin_email),
             recipient_list=[pedido.cliente.user.email],
             fail_silently=True,
@@ -1919,7 +1920,7 @@ def pago_exitoso(request):
         productos_texto.append(
             f'- {item.variante.producto.nombre} '
             f'(Talle: {talle}{detalle_color}) '
-            f'x{item.cantidad} - ${item.precio_total}'
+            f'x{item.cantidad} - {pesos(item.precio_total)}'
         )
         productos_html.append(
             '<tr>'
@@ -1933,7 +1934,7 @@ def pago_exitoso(request):
             f'{item.cantidad}'
             f'</td>'
             f'<td align="right" style="padding:14px 0;border-bottom:1px solid #efe7dc;color:#1f1712;font-weight:700;">'
-            f'${item.precio_total}'
+            f'{pesos(item.precio_total)}'
             f'</td>'
             '</tr>'
         )
@@ -2024,7 +2025,7 @@ def pago_exitoso(request):
                 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#fff8df;border-radius:14px;border:1px solid #ead082;">
                   <tr>
                     <td style="padding:18px 20px;font-size:15px;color:#786b60;">Total abonado</td>
-                    <td align="right" style="padding:18px 20px;font-size:22px;font-weight:800;color:#6e0e2e;">${pedido.total}</td>
+                    <td align="right" style="padding:18px 20px;font-size:22px;font-weight:800;color:#6e0e2e;">{pesos(pedido.total)}</td>
                   </tr>
                 </table>
                 <p style="margin:22px 0 0;font-size:14px;line-height:1.6;color:#786b60;">
@@ -2095,7 +2096,7 @@ def pago_exitoso(request):
                 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#fff8df;border-radius:14px;border:1px solid #ead082;">
                   <tr>
                     <td style="padding:18px 20px;font-size:15px;color:#786b60;">Total cobrado</td>
-                    <td align="right" style="padding:18px 20px;font-size:22px;font-weight:800;color:#6e0e2e;">${pedido.total}</td>
+                    <td align="right" style="padding:18px 20px;font-size:22px;font-weight:800;color:#6e0e2e;">{pesos(pedido.total)}</td>
                   </tr>
                 </table>
               </td>
@@ -2117,7 +2118,7 @@ def pago_exitoso(request):
                 f'Entrega: {entrega_label}\n'
                 f'{direccion_envio}\n\n'
                 f'Productos:\n{productos_texto_markup}\n\n'
-                f'Total abonado: ${pedido.total}\n\n'
+                f'Total abonado: {pesos(pedido.total)}\n\n'
                 f'Gracias por comprar en IndiraGold.'
             ),
             from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', None),
@@ -2139,7 +2140,7 @@ def pago_exitoso(request):
                 f'Envio: {entrega_label}\n'
                 f'{direccion_envio}\n\n'
                 f'Productos:\n{productos_texto_markup}\n\n'
-                f'Total cobrado: ${pedido.total}'
+                f'Total cobrado: {pesos(pedido.total)}'
             ),
             from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', None),
             recipient_list=[admin_email],
@@ -2641,7 +2642,7 @@ def actualizar_estado_pedido(request, pedido_id):
                 productos.append(
                     f'- {item.variante.producto.nombre} '
                     f'(Talle: {talle}{detalle_color}) '
-                    f'x{item.cantidad} - ${item.precio_total}'
+                    f'x{item.cantidad} - {pesos(item.precio_total)}'
                 )
                 productos_html.append(
                     '<tr>'
@@ -2655,7 +2656,7 @@ def actualizar_estado_pedido(request, pedido_id):
                     f'{item.cantidad}'
                     f'</td>'
                     f'<td align="right" style="padding:14px 0;border-bottom:1px solid #efe7dc;color:#1f1712;font-weight:700;">'
-                    f'${item.precio_total}'
+                    f'{pesos(item.precio_total)}'
                     f'</td>'
                     '</tr>'
                 )
@@ -2721,7 +2722,7 @@ def actualizar_estado_pedido(request, pedido_id):
                 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#faf7f2;border-radius:14px;">
                   <tr>
                     <td style="padding:18px 20px;font-size:15px;color:#786b60;">Total del pedido</td>
-                    <td align="right" style="padding:18px 20px;font-size:22px;font-weight:800;color:#6e0e2e;">${pedido.total}</td>
+                    <td align="right" style="padding:18px 20px;font-size:22px;font-weight:800;color:#6e0e2e;">{pesos(pedido.total)}</td>
                   </tr>
                 </table>
                 <p style="margin:22px 0 0;font-size:14px;line-height:1.6;color:#786b60;">
@@ -2750,7 +2751,7 @@ def actualizar_estado_pedido(request, pedido_id):
                     f'Estado nuevo: {estado_nuevo_label}\n\n'
                     f'Productos comprados:\n'
                     f'{chr(10).join(productos)}\n\n'
-                    f'Total del pedido: ${pedido.total}\n\n'
+                    f'Total del pedido: {pesos(pedido.total)}\n\n'
                     f'Gracias por comprar en IndiraGold.'
                 ),
                 from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', None),
@@ -3087,7 +3088,7 @@ def registrar_venta_local(request):
 
             'success': True,
             'venta_id': venta.id,
-            'mensaje': f'Venta registrada. Deuda: ${saldo_pendiente}' if saldo_pendiente > 0 else 'Venta completada'
+            'mensaje': f'Venta registrada. Deuda: {pesos(saldo_pendiente)}' if saldo_pendiente > 0 else 'Venta completada'
 
         })
     
@@ -3381,7 +3382,7 @@ def registrar_pago_venta(request, venta_id):
     if monto > saldo_actual:
         return JsonResponse({
             'success': False,
-            'error': f'El monto no puede superar el saldo pendiente (${saldo_actual}).'
+            'error': f'El monto no puede superar el saldo pendiente ({pesos(saldo_actual)}).'
         }, status=400)
 
     venta.monto_pagado += monto
@@ -3420,7 +3421,7 @@ def registrar_pago_venta(request, venta_id):
             <span>Total</span>
 
             <span class="fw-bold">
-                ${venta.total}
+                {pesos(venta.total)}
             </span>
 
         </div>
@@ -3430,7 +3431,7 @@ def registrar_pago_venta(request, venta_id):
             <span>Pagado</span>
 
             <span class="fw-bold text-success">
-                ${venta.monto_pagado}
+                {pesos(venta.monto_pagado)}
             </span>
 
         </div>
@@ -3440,7 +3441,7 @@ def registrar_pago_venta(request, venta_id):
             <span>Pendiente</span>
 
             <span class="fw-bold text-danger">
-                ${venta.saldo_pendiente}
+                {pesos(venta.saldo_pendiente)}
             </span>
 
         </div>
@@ -3515,7 +3516,7 @@ def registrar_pago_pedido(request, pedido_id):
         <div class="pago-item">
             <div class="pago-fecha">{p.fecha.strftime('%d/%m/%Y %H:%M')}</div>
             <div class="pago-metodo">{p.get_metodo_pago_display()}</div>
-            <div class="pago-monto">${p.monto}</div>
+            <div class="pago-monto">{pesos(p.monto)}</div>
         </div>
         """
 
@@ -3678,7 +3679,7 @@ def registrar_cambio(request, pedido_id):
                         pedido.total += diferencia
                         pedido.deuda = max(pedido.total - pedido.monto_pagado, Decimal('0.00'))
                         pedido.save(update_fields=['total', 'deuda'])
-                        detalle_diferencia = f' El cliente debe abonar ${diferencia} de diferencia (quedó en el saldo del pedido).'
+                        detalle_diferencia = f' El cliente debe abonar {pesos(diferencia)} de diferencia (quedó en el saldo del pedido).'
                     elif diferencia < 0:
                         # A favor del cliente: queda como nota de crédito vigente
                         NotaCredito.objects.create(
@@ -3686,7 +3687,7 @@ def registrar_cambio(request, pedido_id):
                             monto=-diferencia,
                             motivo=f'Diferencia a favor por cambio de {variante_devuelta.producto.nombre} por {variante_entregada.producto.nombre}',
                         )
-                        detalle_diferencia = f' Se generó una nota de crédito por ${-diferencia} a favor del cliente.'
+                        detalle_diferencia = f' Se generó una nota de crédito por {pesos(-diferencia)} a favor del cliente.'
 
                     # Crear registro de cambio
                     Cambio.objects.create(
@@ -3760,7 +3761,7 @@ def crear_nota_credito(request, pedido_id):
     if monto_nota > disponible:
         messages.error(
             request,
-            f'El monto no puede superar ${disponible} '
+            f'El monto no puede superar {pesos(disponible)} '
             '(total del pedido menos las notas de crédito ya emitidas).'
         )
         return redirect('pedidos:detalle_pedido', pedido_id=pedido.id)
@@ -3795,7 +3796,7 @@ def crear_nota_credito(request, pedido_id):
             reponer_stock(item.variante, cantidad, item.color_nombre)
 
     detalle_stock = f' Se devolvieron {sum(c for _, c in devoluciones)} unidad(es) al stock.' if devoluciones else ''
-    messages.success(request, f'Nota de crédito por ${nota.monto} creada correctamente.{detalle_stock}')
+    messages.success(request, f'Nota de crédito por {pesos(nota.monto)} creada correctamente.{detalle_stock}')
     return redirect('pedidos:detalle_pedido', pedido_id=pedido.id)
 
 

@@ -788,7 +788,7 @@
 
                                 <span class="badge-total">
 
-                                    ${{ venta.total }}
+                                    {{ venta.total|pesos }}
 
                                 </span>
 
@@ -796,13 +796,13 @@
 
                             <td>
 
-                                ${{ venta.monto_pagado }}
+                                {{ venta.monto_pagado|pesos }}
 
                             </td>
 
                             <td>
 
-                                ${{ venta.saldo_pendiente }}
+                                {{ venta.saldo_pendiente|pesos }}
 
                             </td>
 
@@ -1590,6 +1590,12 @@
     </div>
 </div>
 <script>
+// Formato de moneda argentino ($1.062.500 / $16.149,99), igual al filtro |pesos de los templates
+function formatoPesos(valor){
+    const numero = Number(String(valor ?? 0).replace(',', '.')) || 0
+    return '$' + numero.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 2 })
+}
+
 // Escapa texto antes de insertarlo con innerHTML (nombres, direcciones, etc. cargados por usuarios)
 function escHtml(valor){
     return String(valor ?? '')
@@ -2763,7 +2769,7 @@ function renderProductosVenta(){
                     </div>
                     <div class="text-end">
                         <div class="fw-bold">x${producto.cantidad}</div>
-                        <small>$${producto.subtotal.toLocaleString('es-AR')}</small>
+                        <small>${formatoPesos(producto.subtotal)}</small>
                     </div>
                 </div>
             </div>
@@ -2793,7 +2799,7 @@ function renderProductosVenta(){
             envioInfoEl.innerHTML = `
                 <div class="d-flex justify-content-between text-muted small mb-2">
                     <span>Subtotal productos</span>
-                    <span>$${subtotalProductos.toLocaleString('es-AR')}</span>
+                    <span>${formatoPesos(subtotalProductos)}</span>
                 </div>
                 <div class="d-flex justify-content-between small mb-2" style="color: ${envioGratis ? '#166534' : 'var(--burgundy)'};">
                     <span><i class="bi bi-truck me-1"></i>${envioTexto}</span>
@@ -2815,7 +2821,7 @@ function renderProductosVenta(){
 
     document.getElementById(
         'total-venta'
-    ).innerText = `$${total.toLocaleString('es-AR')}`
+    ).innerText = formatoPesos(total)
     const nuevaDeuda = parseFloat(
 
         document.getElementById(
@@ -2831,7 +2837,7 @@ function renderProductosVenta(){
 
     document.getElementById(
         'saldo-pendiente'
-    ).innerText = `$${saldoPendiente}`
+    ).innerText = formatoPesos(saldoPendiente)
 
     const totalProductos =
         productosVenta.reduce(
@@ -3084,7 +3090,7 @@ async function abrirDetalleVenta(ventaId){
 
                                 <small>
 
-                                    $${p.subtotal}
+                                    ${formatoPesos(p.subtotal)}
 
                                 </small>
 
@@ -3109,7 +3115,7 @@ async function abrirDetalleVenta(ventaId){
 
                         <span class="fw-bold">
 
-                            $${data.total}
+                            ${formatoPesos(data.total)}
 
                         </span>
 
@@ -3121,7 +3127,7 @@ async function abrirDetalleVenta(ventaId){
 
                         <span class="fw-bold text-success">
 
-                            $${data.pagado}
+                            ${formatoPesos(data.pagado)}
 
                         </span>
 
@@ -3133,7 +3139,7 @@ async function abrirDetalleVenta(ventaId){
 
                         <span class="fw-bold text-danger">
 
-                            $${data.pendiente}
+                            ${formatoPesos(data.pendiente)}
 
                         </span>
 

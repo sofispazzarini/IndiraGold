@@ -216,7 +216,7 @@
                     {% endif %}
                     <div class="producto-info">
                         <div class="producto-nombre">{{ rel.producto.nombre }}</div>
-                        <div class="producto-meta">{{ rel.producto.codigo }} - ${{ rel.producto.precio }}</div>
+                        <div class="producto-meta">{{ rel.producto.codigo }} - {{ rel.producto.precio|pesos }}</div>
                     </div>
                     <form method="post" class="d-inline">
                         {% csrf_token %}
@@ -258,7 +258,7 @@
                     {% endif %}
                     <div class="producto-info">
                         <div class="producto-nombre">{{ producto.nombre }}</div>
-                        <div class="producto-meta">{{ producto.codigo }} - ${{ producto.precio }}</div>
+                        <div class="producto-meta">{{ producto.codigo }} - {{ producto.precio|pesos }}</div>
                     </div>
                     <form method="post" class="d-inline">
                         {% csrf_token %}

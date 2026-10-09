@@ -151,17 +151,17 @@
                     {% if producto.obtener_oferta_activa %}
 
                       <span class="product-price-old">
-                        ${{ producto.precio }}
+                        {{ producto.precio|pesos }}
                       </span>
 
                       <span class="product-price-new">
-                        ${{ producto.precio_final }}
+                        {{ producto.precio_final|pesos }}
                       </span>
 
                     {% else %}
 
                       <span class="product-card__price">
-                        ${{ producto.precio }}
+                        {{ producto.precio|pesos }}
                       </span>
 
                     {% endif %}
@@ -278,11 +278,11 @@ function scrollCatOrden{{ cat_orden.id }}(dir) {
               <div>
 
                 <span class="product-price-old">
-                  ${{ producto.precio }}
+                  {{ producto.precio|pesos }}
                 </span>
 
                 <span class="product-price-new">
-                  ${{ producto.precio_final }}
+                  {{ producto.precio_final|pesos }}
                 </span>
 
               </div>
@@ -392,17 +392,17 @@ function scrollCatOrden{{ cat_orden.id }}(dir) {
     {% if producto.obtener_oferta_activa %}
 
       <span class="product-price-old">
-        ${{ producto.precio }}
+        {{ producto.precio|pesos }}
       </span>
 
       <span class="product-price-new">
-        ${{ producto.precio_final }}
+        {{ producto.precio_final|pesos }}
       </span>
 
     {% else %}
 
       <span class="product-card__price">
-        ${{ producto.precio }}
+        {{ producto.precio|pesos }}
       </span>
 
     {% endif %}
@@ -555,7 +555,7 @@ function scrollCatOrden{{ cat_orden.id }}(dir) {
     </div>
     <div class="cart-total">
       <span>Total</span>
-      <span id="cartTotal">${{ cart_total|default:"0" }}</span>
+      <span id="cartTotal">{{ cart_total|default:"0"|pesos }}</span>
     </div>
     <button class="cart-checkout" type="button" onclick="checkout()">Confirmar pedido</button>
   </div>

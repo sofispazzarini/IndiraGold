@@ -133,7 +133,7 @@ class Producto(models.Model):
 
         descuento = Decimal(oferta.descuento) / Decimal(100)
 
-        return self.precio * (1 - descuento)
+        return (self.precio * (1 - descuento)).quantize(Decimal('0.01'))
 class ImagenProducto(models.Model):
     producto = models.ForeignKey(Producto, related_name='imagenes', on_delete=models.CASCADE)
     imagen = models.ImageField(upload_to='productos/')

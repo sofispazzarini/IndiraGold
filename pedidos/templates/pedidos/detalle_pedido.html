@@ -374,7 +374,7 @@
                 </div>
             </div>
             <div class="item-amount">
-                <div class="item-subtotal">${{ item.precio_total }}</div>
+                <div class="item-subtotal">{{ item.precio_total|pesos }}</div>
                 <div class="item-qty-label">× {{ item.cantidad }} unidad{% if item.cantidad != 1 %}es{% endif %}</div>
             </div>
         </div>
@@ -389,17 +389,17 @@
         <div class="side-card">
             <div class="total-block">
                 <div class="total-eyebrow">Total del pedido</div>
-                <div class="total-amount">${{ pedido.total }}</div>
+                <div class="total-amount">{{ pedido.total|pesos }}</div>
             </div>
             <div class="detail-rows">
                 <div class="detail-row">
                     <span class="detail-lbl">Subtotal productos</span>
-                    <span class="detail-val">${{ subtotal_items }}</span>
+                    <span class="detail-val">{{ subtotal_items|pesos }}</span>
                 </div>
                 {% if pedido.descuento_monto > 0 %}
                 <div class="detail-row">
                     <span class="detail-lbl">Descuento{% if pedido.codigo_descuento %} ({{ pedido.codigo_descuento }}{% if pedido.descuento_porcentaje %} · {{ pedido.descuento_porcentaje }}%{% endif %}){% endif %}</span>
-                    <span class="detail-val" style="color:#2f6b38;">-${{ pedido.descuento_monto }}</span>
+                    <span class="detail-val" style="color:#2f6b38;">-{{ pedido.descuento_monto|pesos }}</span>
                 </div>
                 {% endif %}
                 <div class="detail-row">
@@ -407,7 +407,7 @@
                     {% if pedido.metodo_entrega == 'local' %}
                     <span class="detail-val" style="color:#9c8c7c;font-weight:400;">Retiro en local</span>
                     {% elif pedido.costo_envio > 0 %}
-                    <span class="detail-val">${{ pedido.costo_envio }}</span>
+                    <span class="detail-val">{{ pedido.costo_envio|pesos }}</span>
                     {% else %}
                     <span class="detail-val" style="color:#2f6b38;">Gratis</span>
                     {% endif %}
@@ -506,15 +506,15 @@
             <div class="payment-info">
                 <div class="payment-row">
                     <span class="detail-lbl">Total pedido</span>
-                    <span class="detail-val">${{ pedido.total }}</span>
+                    <span class="detail-val">{{ pedido.total|pesos }}</span>
                 </div>
                 <div class="payment-row">
                     <span class="detail-lbl">Pagado</span>
-                    <span class="detail-val" id="monto-pagado" style="color:#2f6b38;">${{ pedido.monto_pagado }}</span>
+                    <span class="detail-val" id="monto-pagado" style="color:#2f6b38;">{{ pedido.monto_pagado|pesos }}</span>
                 </div>
                 <div class="payment-row">
                     <span class="detail-lbl">Pendiente</span>
-                    <span class="detail-val" id="saldo-pendiente" style="color:{% if saldo_pendiente > 0 %}#6E0E2E{% else %}#2f6b38{% endif %};">${{ saldo_pendiente }}</span>
+                    <span class="detail-val" id="saldo-pendiente" style="color:{% if saldo_pendiente > 0 %}#6E0E2E{% else %}#2f6b38{% endif %};">{{ saldo_pendiente|pesos }}</span>
                 </div>
             </div>
 
@@ -526,7 +526,7 @@
                 </div>
                 <div class="payment-row">
                     <span class="detail-lbl">Monto</span>
-                    <span class="detail-val">${{ pago.monto }}</span>
+                    <span class="detail-val">{{ pago.monto|pesos }}</span>
                 </div>
                 <div class="payment-row">
                     <span class="detail-lbl">Fecha</span>
@@ -546,7 +546,7 @@
                         <div style="font-size:0.7rem; color:#9c8c7c;">{{ p.fecha|date:"d/m/Y H:i" }}</div>
                         {% if p.observaciones %}<div style="font-size:0.7rem; color:#9c8c7c; font-style:italic;">{{ p.observaciones }}</div>{% endif %}
                     </div>
-                    <div style="font-weight:700; color:#2f6b38;">${{ p.monto }}</div>
+                    <div style="font-weight:700; color:#2f6b38;">{{ p.monto|pesos }}</div>
                 </div>
                 {% endfor %}
                 </div>
@@ -630,7 +630,7 @@
                         <div style="display:flex; justify-content:space-between; align-items:center;">
                             <div>
                                 <div style="font-size:0.75rem; color:#9c8c7c;">{{ nc.fecha_creacion|date:"d/m/Y" }}</div>
-                                <div style="font-size:1.1rem; font-weight:700; color:#2f6b38;">${{ nc.monto }}</div>
+                                <div style="font-size:1.1rem; font-weight:700; color:#2f6b38;">{{ nc.monto|pesos }}</div>
                             </div>
                             <span style="padding:0.25rem 0.6rem; border-radius:50px; font-size:0.65rem; font-weight:600;
                                 {% if nc.estado == 'vigente' %}background:#e8f5e9; color:#2f6b38;
@@ -697,7 +697,7 @@
                         <select name="item_devuelto" class="form-select" required style="border-radius:8px;">
                             <option value="">Seleccionar...</option>
                             {% for item, disponibles in items_cambiables %}
-                            <option value="{{ item.id }}" {% if not disponibles %}disabled{% endif %}>{{ item.variante.producto.nombre }} - Talle {{ item.variante.talle.nombre }}{% if item.color_nombre %} - {{ item.color_nombre }}{% endif %} · ${{ item.precio_unitario }} ({{ disponibles }} para cambiar)</option>
+                            <option value="{{ item.id }}" {% if not disponibles %}disabled{% endif %}>{{ item.variante.producto.nombre }} - Talle {{ item.variante.talle.nombre }}{% if item.color_nombre %} - {{ item.color_nombre }}{% endif %} · {{ item.precio_unitario|pesos }} ({{ disponibles }} para cambiar)</option>
                             {% endfor %}
                         </select>
                         <small style="color:#9c8c7c;">Si el producto entregado vale distinto, la diferencia se suma al saldo del pedido o queda como nota de crédito.</small>
@@ -740,7 +740,7 @@
                         <label class="form-label" style="font-size:0.8rem; font-weight:600;">Unidades devueltas (vuelven al stock)</label>
                         {% for item, maximo in items_devolvibles %}
                         <div style="display:flex; align-items:center; justify-content:space-between; gap:.75rem; padding:.35rem 0; border-bottom:1px dashed #eee;">
-                            <span style="font-size:.8rem; min-width:0;">{{ item.variante.producto.nombre }} · talle {{ item.variante.talle.nombre }}{% if item.color_nombre %} · {{ item.color_nombre }}{% endif %}<br><small style="color:#9c8c7c;">${{ item.precio_unitario }} c/u · se pueden devolver {{ maximo }}</small></span>
+                            <span style="font-size:.8rem; min-width:0;">{{ item.variante.producto.nombre }} · talle {{ item.variante.talle.nombre }}{% if item.color_nombre %} · {{ item.color_nombre }}{% endif %}<br><small style="color:#9c8c7c;">{{ item.precio_unitario|pesos }} c/u · se pueden devolver {{ maximo }}</small></span>
                             <input type="number" name="devolver_{{ item.id }}" class="form-control nc-devolver" data-precio="{{ item.precio_unitario|stringformat:'s' }}" min="0" max="{{ maximo }}" value="0" style="width:80px; border-radius:8px;" {% if not maximo %}disabled{% endif %}>
                         </div>
                         {% endfor %}

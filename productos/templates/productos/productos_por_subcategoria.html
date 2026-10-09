@@ -461,7 +461,7 @@
         <span class="product-sku">{{ producto.codigo }}</span>
         <h3 class="product-name">{{ producto.nombre }}</h3>
         <div class="product-footer">
-          <span class="product-price">$ {{ producto.precio }}</span>
+          <span class="product-price">{{ producto.precio|pesos }}</span>
           <span class="product-link">Ver detalle <i class="bi bi-chevron-right"></i></span>
         </div>
       </div>

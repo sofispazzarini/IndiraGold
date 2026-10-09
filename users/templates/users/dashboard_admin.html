@@ -559,7 +559,7 @@
           <i class="bi bi-exclamation-triangle" style="color:var(--burgundy);font-size:0.95rem;"></i>
           <span>Pedidos con deuda</span>
         </div>
-        <span class="deudas-total">Total: ${{ total_deudas|floatformat:0 }}</span>
+        <span class="deudas-total">Total: {{ total_deudas|pesos }}</span>
       </div>
 
       <table class="deudas-table">
@@ -583,8 +583,8 @@
                 <em style="color: var(--muted);">Sin cliente</em>
               {% endif %}
             </td>
-            <td>${{ pedido.total|floatformat:0 }}</td>
-            <td class="deuda-monto">${{ pedido.deuda|floatformat:0 }}</td>
+            <td>{{ pedido.total|pesos }}</td>
+            <td class="deuda-monto">{{ pedido.deuda|pesos }}</td>
             <td>
               <a href="{% url 'pedidos:detalle_pedido' pedido.id %}" class="deudas-ver-link">
                 Ver <i class="bi bi-arrow-right"></i>

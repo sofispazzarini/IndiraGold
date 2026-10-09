@@ -269,7 +269,7 @@
         <div class="pedido-fecha">{{ pedido.created_at|date:"d/m/Y H:i" }}</div>
         <span class="pedido-estado estado-{{ pedido.estado }}">{{ pedido.get_estado_display }}</span>
       </div>
-      <span class="pedido-total">${{ pedido.total }}</span>
+      <span class="pedido-total">{{ pedido.total|pesos }}</span>
       <div class="pedido-action">
         <a href="{% url 'pedidos:estado_pedido' pedido.id %}" class="btn-ver">
           Ver seguimiento <i class="bi bi-chevron-right"></i>

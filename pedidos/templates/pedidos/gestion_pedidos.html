@@ -783,7 +783,7 @@
                                     </small>
 
                                 </td>
-                                <td><strong class='badge-tipo'>${{ pedido.total }}</strong></td>
+                                <td><strong class='badge-tipo'>{{ pedido.total|pesos }}</strong></td>
                                 <td class="col-entrega">
                                     {% if pedido.metodo_entrega == 'local' %}
                                         <span class="badge-tipo">Retiro local</span>

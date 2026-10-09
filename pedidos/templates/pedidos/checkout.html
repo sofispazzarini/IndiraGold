@@ -923,10 +923,10 @@
                   <span class="cantidad-num">{{ item.cantidad }}</span>
                   <button type="button" class="cantidad-btn btn-cantidad" data-action="aumentar" data-variante="{{ item.variante.id }}" data-item="{{ item.id }}">+</button>
                 </div>
-                <div class="product-precio-unit">Precio unit: ${{ item.precio_unitario }}</div>
+                <div class="product-precio-unit">Precio unit: {{ item.precio_unitario|pesos }}</div>
               </div>
               <div class="product-subtotal">
-                <div class="subtotal-price">${{ item.subtotal }}</div>
+                <div class="subtotal-price">{{ item.subtotal|pesos }}</div>
                 <button type="button" class="btn-quitar btn-eliminar-item" data-variante="{{ item.variante.id }}" data-item="{{ item.id }}">
                   <i class="bi bi-x-circle"></i> Quitar
                 </button>
@@ -1032,7 +1032,7 @@
                     {% if configuracion_envio.flex_gratis %}
                     Gratis
                     {% else %}
-                    ${{ precio_flex }}
+                    {{ precio_flex|pesos }}
                     {% endif %}
                     </span>
 
@@ -1070,7 +1070,7 @@
                     {% elif configuracion_envio.correo_a_coordinar %}
                     A coordinar
                     {% elif precio_correo and precio_correo > 0 %}
-                    ${{ precio_correo }}
+                    {{ precio_correo|pesos }}
                     {% endif %}
                     </span>
                 </label>
@@ -1115,7 +1115,7 @@
                     {% if configuracion_envio.flex_gratis %}
                     Gratis
                     {% else %}
-                    Costo: ${{ precio_flex }}
+                    Costo: {{ precio_flex|pesos }}
                     {% endif %}
                     </small>
                 </div>
@@ -1493,7 +1493,7 @@
 
           <div class="resumen-row">
             <span class="label">Subtotal</span>
-            <span class="value">${{ subtotal }}</span>
+            <span class="value">{{ subtotal|pesos }}</span>
           </div>
 
           <div class="resumen-row" id="envio-row" style="display:none;">
@@ -1524,14 +1524,14 @@
 
           <div class="resumen-row" id="descuento-row" {% if not descuento_monto %}style="display:none;"{% endif %}>
             <span class="label">Descuento <span id="descuento-codigo-label">{% if codigo_descuento %}({{ codigo_descuento }}){% endif %}</span></span>
-            <span class="value discount" id="descuento-label">- ${{ descuento_monto }}</span>
+            <span class="value discount" id="descuento-label">- {{ descuento_monto|pesos }}</span>
           </div>
 
           <div class="resumen-divider"></div>
 
           <div class="resumen-total">
             <span class="label">Total</span>
-            <span class="value" id="total-final-display">${{ total }}</span>
+            <span class="value" id="total-final-display">{{ total|pesos }}</span>
           </div>
 
           <button type="button" class="btn-pagar" id="checkout-submit-btn">
@@ -1611,7 +1611,7 @@ let costoCorreo = costoCorreoBase;
 let descuentoAplicado = parseFloat("{{ descuento_monto|floatformat:'2' }}".replace(',', '.')) || 0;
 
 function formatearPesos(valor) {
-  return '$' + valor.toLocaleString('es-AR');
+  return '$' + valor.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
 }
 </script>
 <script>

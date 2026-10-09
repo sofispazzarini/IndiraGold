@@ -434,20 +434,20 @@
   <div class="kpi-grid">
     <div class="kpi-card">
       <div class="kpi-label"><i class="bi bi-cash-coin"></i> Subtotal Ventas</div>
-      <div class="kpi-value"><span class="currency">$</span>{{ total_con_deudas|floatformat:0 }}</div>
-      {% if total_notas_credito %}<div style="font-size:.72rem; color:var(--muted); margin-top:.25rem;">Ya descuenta ${{ total_notas_credito|floatformat:0 }} de notas de crédito</div>{% endif %}
+      <div class="kpi-value"><span class="currency">$</span>{{ total_con_deudas|pesos_numero }}</div>
+      {% if total_notas_credito %}<div style="font-size:.72rem; color:var(--muted); margin-top:.25rem;">Ya descuenta {{ total_notas_credito|pesos }} de notas de crédito</div>{% endif %}
     </div>
     <div class="kpi-card">
       <div class="kpi-label"><i class="bi bi-wallet2"></i> Ingresos Brutos</div>
-      <div class="kpi-value"><span class="currency">$</span>{{ ingresos_brutos|floatformat:0 }}</div>
+      <div class="kpi-value"><span class="currency">$</span>{{ ingresos_brutos|pesos_numero }}</div>
     </div>
     <div class="kpi-card">
       <div class="kpi-label"><i class="bi bi-graph-down-arrow"></i> Gastos</div>
-      <div class="kpi-value" style="color: var(--burgundy);"><span class="currency">$</span>{{ total_gastos|floatformat:0 }}</div>
+      <div class="kpi-value" style="color: var(--burgundy);"><span class="currency">$</span>{{ total_gastos|pesos_numero }}</div>
     </div>
     <div class="kpi-card">
       <div class="kpi-label"><i class="bi bi-building"></i> Neto Negocio</div>
-      <div class="kpi-value"><span class="currency">$</span>{{ neto_negocio|floatformat:0 }}</div>
+      <div class="kpi-value"><span class="currency">$</span>{{ neto_negocio|pesos_numero }}</div>
     </div>
   </div>
 
@@ -456,19 +456,19 @@
     <div class="kpi-card">
       <div class="kpi-label"><i class="bi bi-bag-check"></i> Pedidos confirmados</div>
       <div class="kpi-value">{{ cantidad_pedidos }}</div>
-      {% if pendientes_cantidad %}<div style="font-size:.72rem; color:var(--muted); margin-top:.25rem;">+ {{ pendientes_cantidad }} pendiente{{ pendientes_cantidad|pluralize }} de confirmar (${{ pendientes_total|floatformat:0 }}), no incluidos</div>{% endif %}
+      {% if pendientes_cantidad %}<div style="font-size:.72rem; color:var(--muted); margin-top:.25rem;">+ {{ pendientes_cantidad }} pendiente{{ pendientes_cantidad|pluralize }} de confirmar ({{ pendientes_total|pesos }}), no incluidos</div>{% endif %}
     </div>
     <div class="kpi-card">
       <div class="kpi-label"><i class="bi bi-calculator"></i> Promedio/Pedido</div>
-      <div class="kpi-value"><span class="currency">$</span>{{ promedio_por_pedido|floatformat:0 }}</div>
+      <div class="kpi-value"><span class="currency">$</span>{{ promedio_por_pedido|pesos_numero }}</div>
     </div>
     <div class="kpi-card">
       <div class="kpi-label"><i class="bi bi-exclamation-triangle"></i> Deudas</div>
-      <div class="kpi-value" style="color: var(--burgundy);"><span class="currency">$</span>{{ total_deudas|floatformat:0 }}</div>
+      <div class="kpi-value" style="color: var(--burgundy);"><span class="currency">$</span>{{ total_deudas|pesos_numero }}</div>
     </div>
     <div class="kpi-card">
       <div class="kpi-label"><i class="bi bi-credit-card"></i> Retenciones</div>
-      <div class="kpi-value" style="color: var(--muted);"><span class="currency">$</span>{{ total_retenciones|floatformat:0 }}</div>
+      <div class="kpi-value" style="color: var(--muted);"><span class="currency">$</span>{{ total_retenciones|pesos_numero }}</div>
     </div>
   </div>
 
@@ -490,7 +490,7 @@
             <tr>
               <td><strong>{{ item.estado_label }}</strong></td>
               <td><span class="cantidad-badge">{{ item.cantidad }}</span></td>
-              <td>${{ item.total|floatformat:2 }}</td>
+              <td>{{ item.total|pesos }}</td>
             </tr>
             {% empty %}
             <tr class="empty-row">
@@ -519,7 +519,7 @@
             <tr>
               <td><strong>{{ item.tipo_label }}</strong></td>
               <td><span class="cantidad-badge">{{ item.cantidad }}</span></td>
-              <td>${{ item.total|floatformat:2 }}</td>
+              <td>{{ item.total|pesos }}</td>
             </tr>
             {% empty %}
             <tr class="empty-row">
