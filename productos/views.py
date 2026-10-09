@@ -130,7 +130,7 @@ def detalle_producto(request, producto_id):
     expire_cart_if_needed(request.session)
 
     producto = get_object_or_404(Producto, id=producto_id, activo=True)
-    variantes = producto.variantes.filter(activa=True).select_related('talle').prefetch_related('colores', 'medidas')
+    variantes = producto.variantes.filter(activa=True).select_related('talle').prefetch_related('colores', 'medidas', 'variante_colores__color')
 
     # Si no hay variantes activas, mostrar que ha sido descontinuado
     if not variantes.exists():
@@ -258,12 +258,41 @@ def detalle_producto(request, producto_id):
             except (TypeError, ValueError):
                 continue
 
-    # Calcular cantidades en carrito por variante para limitar el máximo
+    # Calcular cantidades en carrito por variante (y por color) para limitar el máximo
     cart_qty_by_variante = {}
+    cart_qty_by_color = {}
     for item in cart_items:
         vid = item.get('variante_id')
         if vid:
             cart_qty_by_variante[vid] = cart_qty_by_variante.get(vid, 0) + item.get('cantidad', 0)
+            color_key = (vid, (item.get('color_nombre') or '').strip().lower())
+            cart_qty_by_color[color_key] = cart_qty_by_color.get(color_key, 0) + item.get('cantidad', 0)
+
+    def colores_de_variante(variante):
+        colores_stock = [vc for vc in variante.variante_colores.all() if vc.activo]
+        if colores_stock:
+            return [
+                {
+                    'id': vc.color.id,
+                    'nombre': vc.color.nombre,
+                    'codigo_hex': normalizar_hex_color(vc.color.nombre, vc.color.codigo_hex),
+                    'hex': normalizar_hex_color(vc.color.nombre, vc.color.codigo_hex),
+                    'stock': vc.stock,
+                    'en_carrito': cart_qty_by_color.get((variante.id, vc.color.nombre.strip().lower()), 0),
+                }
+                for vc in colores_stock
+            ]
+        return [
+            {
+                'id': color.id,
+                'nombre': color.nombre,
+                'codigo_hex': normalizar_hex_color(color.nombre, color.codigo_hex),
+                'hex': normalizar_hex_color(color.nombre, color.codigo_hex),
+                'stock': None,
+                'en_carrito': 0,
+            }
+            for color in variante.colores.all()
+        ]
 
     # Obtener planes de cuotas para mostrar en el detalle
     planes_cuotas = []
@@ -279,26 +308,21 @@ def detalle_producto(request, producto_id):
     except Exception:
         pass
 
+    variantes_data = []
+    for variante in variantes:
+        colores = colores_de_variante(variante)
+        con_stock_color = [c for c in colores if c['stock'] is not None]
+        variantes_data.append({
+            'id': variante.id,
+            'stock': sum(c['stock'] for c in con_stock_color) if con_stock_color else variante.stock,
+            'en_carrito': cart_qty_by_variante.get(variante.id, 0),
+            'colores': colores,
+        })
+
     context = {
         'producto': producto,
         'variantes': variantes,
-        'variantes_data': [
-            {
-                'id': variante.id,
-                'stock': variante.stock,
-                'en_carrito': cart_qty_by_variante.get(variante.id, 0),
-                'colores': [
-                    {
-                        'id': color.id,
-                        'nombre': color.nombre,
-                        'codigo_hex': normalizar_hex_color(color.nombre, color.codigo_hex),
-                        'hex': normalizar_hex_color(color.nombre, color.codigo_hex),
-                    }
-                    for color in variante.colores.all()
-                ],
-            }
-            for variante in variantes
-        ],
+        'variantes_data': variantes_data,
         'productos_relacionados': productos_relacionados,
         'talles_disponibles': [v.talle for v in variantes],
         'producto_anterior': producto_anterior,

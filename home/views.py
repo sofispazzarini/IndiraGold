@@ -39,7 +39,8 @@ class HomePublicaView(TemplateView):
                 variantes_data.append({
                     'id': v.id,
                     'talle': v.talle.nombre,
-                    'stock': v.stock,
+                    # Con stock por color, el disponible del talle es la suma de sus colores
+                    'stock': sum(c['stock'] for c in colores_con_stock) if colores_con_stock else v.stock,
                     'colores': colores_con_stock,
                 })
             producto.variantes_json = json.dumps(variantes_data)

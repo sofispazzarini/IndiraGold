@@ -607,7 +607,7 @@ def _build_home_context(request):
 			variantes_data.append({
 				'id': v.id,
 				'talle': v.talle.nombre,
-				'stock': v.stock,
+				'stock': sum(c['stock'] for c in colores_con_stock) if colores_con_stock else v.stock,
 				'colores': colores_con_stock,
 			})
 		producto.variantes_json = json.dumps(variantes_data)

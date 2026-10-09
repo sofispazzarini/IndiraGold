@@ -1764,17 +1764,24 @@ function scrollCatOrden{{ cat_orden.id }}(dir) {
     const stockLabel = document.getElementById('modalCantidadStock');
     const input = document.getElementById('modalCantidadInput');
 
+    let stock;
     if (coloresModalActuales.length > 0 && colorData) {
-      const stock = colorData.stock || 0;
+      stock = colorData.stock || 0;
       stockColorLabel.textContent = `Stock de este color: ${stock}`;
-      stockLabel.textContent = `Disponibles: ${stock}`;
-      input.max = stock;
-      input.value = stock > 0 ? 1 : 0;
     } else {
+      stock = varianteSeleccionadaModal.stock || 0;
       stockColorLabel.textContent = '';
-      stockLabel.textContent = `Disponibles: ${varianteSeleccionadaModal.stock}`;
-      input.max = varianteSeleccionadaModal.stock;
-      input.value = varianteSeleccionadaModal.stock > 0 ? 1 : 0;
+    }
+    stockLabel.textContent = `Disponibles: ${stock}`;
+    input.max = stock;
+    input.value = stock > 0 ? 1 : 0;
+
+    // Sin stock en el talle/color elegido: no se puede agregar
+    const btnAgregar = document.querySelector('#modalCantidad button[type="submit"]');
+    if (btnAgregar) {
+      btnAgregar.disabled = stock <= 0;
+      btnAgregar.style.opacity = stock <= 0 ? '0.5' : '';
+      btnAgregar.style.cursor = stock <= 0 ? 'not-allowed' : 'pointer';
     }
   }
 
@@ -1841,14 +1848,12 @@ function scrollCatOrden{{ cat_orden.id }}(dir) {
   }
 
   function actualizarModalStock() {
-    const input = document.getElementById('modalCantidadInput');
-    const stockLabel = document.getElementById('modalCantidadStock');
     const hiddenId = document.getElementById('modalCantidadProductoId');
-
     hiddenId.value = varianteSeleccionadaModal.id;
-    input.max = varianteSeleccionadaModal.stock;
-    input.value = 1;
-    stockLabel.textContent = `Disponibles: ${varianteSeleccionadaModal.stock}`;
+
+    // Si el talle tiene colores, manda el stock del color elegido (no el del talle)
+    const colorData = coloresModalActuales.find(c => c.nombre === colorSeleccionadoModal);
+    actualizarStockColorModal(colorData);
   }
 
   function cerrarModalCantidad() {

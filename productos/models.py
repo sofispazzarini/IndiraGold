@@ -69,9 +69,13 @@ class Producto(models.Model):
 
     @property
     def stock_total(self):
-        return self.variantes.filter(activa=True).aggregate(
-            total=models.Sum('stock')
-        )['total'] or 0
+        """Stock vendible: por cada talle activo, la suma de sus colores si tiene stock por
+        color (VarianteColor) o, si no, el stock del talle."""
+        total = 0
+        for variante in self.variantes.filter(activa=True).prefetch_related('variante_colores'):
+            colores = [vc for vc in variante.variante_colores.all() if vc.activo]
+            total += sum(vc.stock for vc in colores) if colores else variante.stock
+        return total
 
     def __str__(self):
         return self.nombre
