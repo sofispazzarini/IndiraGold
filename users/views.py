@@ -474,8 +474,10 @@ def registro(request):
 @csrf_exempt
 def verificar_codigo_email(request):
     if request.method == 'POST':
-        codigo_usuario = request.POST.get('codigo')
+        codigo_usuario = (request.POST.get('codigo') or '').strip()
         codigo_sesion = request.session.get('codigo_verificacion')
+        if not codigo_usuario:
+            return JsonResponse({'success': False, 'error': 'Ingresá el código que te enviamos por mail.'})
         if codigo_usuario and codigo_sesion and codigo_usuario == codigo_sesion:
             request.session['email_verificado'] = True
             return JsonResponse({'success': True})

@@ -365,13 +365,15 @@
     });
 </script>
 <!-- Modal de verificación de código -->
-<div class="modal-bg" id="codigoModalBg" style="display:none; position:fixed;z-index:1000;left:0;top:0;width:100vw;height:100vh;background:rgba(110,14,46,0.18);align-items:center;justify-content:center;">
-    <div class="modal" style="background:#fff;border-radius:18px;box-shadow:0 8px 32px 0 rgba(198,167,94,0.18);border:2px solid #C6A75E;max-width:370px;padding:36px 32px 28px 32px;text-align:center;position:relative;margin:auto;">
-        <div class="modal-title" style="margin-bottom:10px;font-weight:700;font-size:1.2rem;">Verifica tu correo electrónico</div>
+<div class="modal-bg" id="codigoModalBg" style="display:none; position:fixed;z-index:1000;left:0;top:0;width:100vw;height:100vh;background:rgba(110,14,46,0.18);align-items:center;justify-content:center;padding:1rem;box-sizing:border-box;">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="codigoModalTitulo" style="background:#fff;border-radius:18px;box-shadow:0 8px 32px 0 rgba(198,167,94,0.18);border:2px solid #C6A75E;width:100%;max-width:370px;padding:32px 22px 24px;text-align:center;position:relative;margin:auto;box-sizing:border-box;">
+        <button type="button" id="codigoModalCerrar" aria-label="Cerrar" style="position:absolute;top:10px;right:12px;background:none;border:0;font-size:1.5rem;line-height:1;color:#8b7769;cursor:pointer;">&times;</button>
+        <div class="modal-title" id="codigoModalTitulo" style="margin-bottom:10px;font-weight:700;font-size:1.2rem;">Verifica tu correo electrónico</div>
         <div class="modal-message" style="margin-bottom:18px;">Ingresa el código que te enviamos a tu email para continuar.</div>
-        <input type="text" id="codigo-verificacion" maxlength="6" class="modal-input" placeholder="Código de verificación" style="font-size:1.2rem;letter-spacing:0.2rem;text-align:center;border:2px solid #e2cfa2;border-radius:8px;padding:6px 10px;margin:18px 0 18px 0;background:#fff;color:#7c5a3a;outline:none;width:180px;max-width:200px;box-sizing:border-box;">
+        <input type="text" id="codigo-verificacion" maxlength="6" inputmode="numeric" autocomplete="one-time-code" class="modal-input" placeholder="6 números" style="font-size:1.2rem;letter-spacing:0.2rem;text-align:center;border:2px solid #e2cfa2;border-radius:8px;padding:8px 10px;margin:18px 0 18px 0;background:#fff;color:#7c5a3a;outline:none;width:100%;max-width:240px;box-sizing:border-box;">
         <div id="codigo-modal-error" class="modal-error" style="color:#6E0E2E;font-size:15px;margin-bottom:10px;font-family:'Lora',serif;"></div>
         <button type="button" class="modal-btn" id="btn-verificar-codigo" style="display:block;margin:0 auto;min-width:140px;font-size:1.1rem;padding:10px 0;background:linear-gradient(90deg,#d6b97b 60%,#e7cfa2 100%);color:#800020;font-family:'Playfair Display',serif;font-weight:600;border:none;border-radius:10px;box-shadow:0 2px 8px rgba(180,140,80,0.08);margin-top:10px;">Verificar</button>
+        <button type="button" id="codigoModalCambiar" style="display:block;margin:14px auto 0;background:none;border:0;color:#6E0E2E;font-size:.9rem;text-decoration:underline;cursor:pointer;">Corregir mis datos (email incorrecto)</button>
     </div>
 </div>
 
@@ -389,10 +391,26 @@
             var btn = document.getElementById('btn-verificar-codigo');
             var input = document.getElementById('codigo-verificacion');
             var errorDiv = document.getElementById('codigo-modal-error');
+            // Cerrar el modal: X, "Corregir mis datos", Escape o click afuera (el formulario queda cargado)
+            var fondo = document.getElementById('codigoModalBg');
+            function cerrarModalCodigo() { if (fondo) fondo.style.display = 'none'; }
+            ['codigoModalCerrar', 'codigoModalCambiar'].forEach(function(id) {
+                var el = document.getElementById(id);
+                if (el) el.addEventListener('click', cerrarModalCodigo);
+            });
+            if (fondo) fondo.addEventListener('click', function(e) { if (e.target === fondo) cerrarModalCodigo(); });
+            document.addEventListener('keydown', function(e) { if (e.key === 'Escape') cerrarModalCodigo(); });
+            if (input && btn) {
+                input.addEventListener('keydown', function(e) { if (e.key === 'Enter') { e.preventDefault(); btn.click(); } });
+            }
             if (btn) {
                 btn.addEventListener('click', function() {
-                    var codigo = input.value;
+                    var codigo = input.value.trim();
                     errorDiv.textContent = '';
+                    if (!/^\d{6}$/.test(codigo)) {
+                        errorDiv.textContent = 'Ingresá los 6 números del código que te enviamos.';
+                        return;
+                    }
                     fetch("{% url 'users:verificar_codigo_email' %}", {
                         method: 'POST',
                         headers: {
