@@ -1397,14 +1397,14 @@ def obtener_variantes_producto(request, producto_id):
             for vc in colores_con_stock:
                 colores.append({
                     'nombre': vc.color.nombre,
-                    'hex': vc.color.codigo_hex,
+                    'hex': normalizar_hex_color(vc.color.nombre, vc.color.codigo_hex),
                     'stock': vc.stock,
                 })
         else:
             for color in variante.colores.all():
                 colores.append({
                     'nombre': color.nombre,
-                    'hex': color.codigo_hex,
+                    'hex': normalizar_hex_color(color.nombre, color.codigo_hex),
                     'stock': None,
                 })
 

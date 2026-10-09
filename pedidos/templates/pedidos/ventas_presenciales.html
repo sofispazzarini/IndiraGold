@@ -2649,8 +2649,8 @@ document.getElementById(
             'color-select'
         ).value
 
-        const colorBtn = document.querySelector('.color-btn[style*="border-color: rgb(184, 146, 42)"]') ||
-                         document.querySelector('.color-btn[style*="#b8922a"]')
+        // Botón del color elegido (por su nombre: buscarlo por el estilo del borde no funcionaba)
+        const colorBtn = [...document.querySelectorAll('.color-btn')].find(b => b.dataset.color === color)
         const colorHex = colorBtn ? colorBtn.dataset.hex : (color.startsWith('#') ? color : '#888')
 
         const cantidad = parseInt(
