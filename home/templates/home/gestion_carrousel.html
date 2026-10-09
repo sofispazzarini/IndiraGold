@@ -433,11 +433,29 @@
       margin-left: 0;
     }
     .slide-item {
-      grid-template-columns: 70px 1fr;
-      gap: 1rem;
+      grid-template-columns: 84px 1fr;
+      gap: 0.75rem 1rem;
     }
-    .slide-index, .slide-actions {
+    .slide-thumb, .slide-thumb-empty {
+      width: 84px;
+      height: 48px;
+    }
+    .slide-index {
       display: none;
+    }
+    /* En mobile no hay hover: las acciones quedan siempre visibles, en una fila propia */
+    .slide-actions {
+      grid-column: 1 / -1;
+      justify-content: flex-end;
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  @media (hover: none) {
+    .slide-actions {
+      opacity: 1;
+      transform: none;
     }
   }
 </style>
