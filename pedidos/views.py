@@ -5,7 +5,7 @@ from django.db import transaction
 from django.contrib import messages
 from django.db.models import Sum, Count, Avg, Q, F
 from datetime import datetime, timedelta
-from decimal import Decimal, ROUND_HALF_UP
+from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 from .models import (
     Pedido,
     PedidoItem,
@@ -3372,18 +3372,32 @@ def crear_nota_credito(request, pedido_id):
 
         if monto:
             try:
-                monto_decimal = Decimal(monto)
-                if monto_decimal > 0:
+                monto_nota = Decimal(str(monto).strip().replace(',', '.'))
+            except (InvalidOperation, ValueError):
+                monto_nota = None
+
+            if monto_nota is None or not monto_nota.is_finite():
+                messages.error(request, 'Monto inválido.')
+            elif monto_nota <= 0:
+                messages.error(request, 'El monto debe ser mayor a 0.')
+            else:
+                ya_acreditado = pedido.notas_credito.aggregate(total=Sum('monto'))['total'] or Decimal('0.00')
+                disponible = max(Decimal('0.00'), pedido.total - ya_acreditado)
+
+                if monto_nota > disponible:
+                    messages.error(
+                        request,
+                        f'El monto no puede superar ${disponible} '
+                        '(total del pedido menos las notas de crédito ya emitidas).'
+                    )
+                else:
+                    monto_nota = monto_nota.quantize(Decimal('0.01'))
                     NotaCredito.objects.create(
                         pedido=pedido,
-                        monto=monto_decimal,
+                        monto=monto_nota,
                         motivo=motivo,
                     )
-                    messages.success(request, f'Nota de crédito por ${monto_decimal} creada correctamente.')
-                else:
-                    messages.error(request, 'El monto debe ser mayor a 0.')
-            except:
-                messages.error(request, 'Monto inválido.')
+                    messages.success(request, f'Nota de crédito por ${monto_nota} creada correctamente.')
         else:
             messages.error(request, 'Debes ingresar un monto.')
 
