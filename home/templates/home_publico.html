@@ -43,7 +43,7 @@
         {% if slide.link %}
         <a href="{{ slide.link }}" class="carousel-link">
         {% endif %}
-          <img src="{{ slide.imagen.url }}" alt="{{ slide.titulo }}" class="carousel-img" />
+          {% if slide.imagen %}<img src="{{ slide.imagen.url }}" alt="{{ slide.titulo }}" class="carousel-img" />{% endif %}
           {% if slide.titulo or slide.subtitulo %}
           <div class="carousel-caption">
             {% if slide.titulo %}<h2 class="carousel-title">{{ slide.titulo }}</h2>{% endif %}
