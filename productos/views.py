@@ -99,8 +99,10 @@ def producto_debe_regenerar_qr(codigo_original, codigo_nuevo):
 
 
 def variante_debe_regenerar_qr(variante, talle_original_id, colores_originales_ids):
-    colores_nuevos_ids = set(variante.colores.values_list('id', flat=True))
-    return variante.talle_id != talle_original_id or colores_nuevos_ids != set(colores_originales_ids)
+    """Solo si cambió el talle (la etiqueta impresa dice otro talle). Agregar o quitar un color no
+    regenera los QR de los demás colores: las etiquetas ya pegadas siguen escaneando (los colores
+    nuevos reciben su QR al crearse)."""
+    return variante.talle_id != talle_original_id
 
 
 def sincronizar_qrs_variante_color(variante, regenerar_qr=False):
