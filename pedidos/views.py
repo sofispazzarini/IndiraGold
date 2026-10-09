@@ -1514,8 +1514,12 @@ def crear_pago(request):
 
     # CREAR PREFERENCIA
     site_url = settings.SITE_URL.rstrip('/')
+    referencia_mp = f"carrito_{carrito.id}_{uuid.uuid4().hex[:16]}"
+    request.session['mp_external_reference'] = referencia_mp
+    request.session.modified = True
     preference_data = {
         "items": productos,
+        "external_reference": referencia_mp,
         "back_urls": {
             "success": f"{site_url}/pedidos/pago-exitoso/",
             "failure": f"{site_url}/",
@@ -1614,6 +1618,31 @@ def pago_exitoso(request):
         ).first()
 
     mercado_pago = resumen_pago_mercado_pago(request)
+    detalle_pago = mercado_pago['detalle']
+    total_esperado = total_productos_con_descuento + costo_envio
+    referencia_esperada = request.session.get('mp_external_reference')
+    error_pago = None
+
+    if not mercado_pago['payment_id'] or not detalle_pago:
+        error_pago = 'No pudimos verificar tu pago con Mercado Pago.'
+    elif detalle_pago.get('status') != 'approved':
+        error_pago = 'Mercado Pago todavía no aprobó tu pago.'
+    elif referencia_esperada and detalle_pago.get('external_reference') != referencia_esperada:
+        error_pago = 'El pago informado no corresponde a esta compra.'
+    elif decimal_mp(detalle_pago.get('transaction_amount')) + Decimal('1.00') < total_esperado:
+        error_pago = 'El monto pagado no coincide con el total de tu compra.'
+    elif Pago.objects.filter(mercado_pago_payment_id=mercado_pago['payment_id']).exists():
+        error_pago = 'Este pago ya fue registrado.'
+
+    if error_pago:
+        messages.error(
+            request,
+            f'{error_pago} Tu pedido no fue confirmado. Si el dinero se debitó, '
+            'escribinos por WhatsApp con el comprobante.'
+        )
+        return redirect('pedidos:checkout')
+
+    request.session.pop('mp_external_reference', None)
 
     pedido = Pedido.objects.create(
         cliente=cliente,
