@@ -975,7 +975,7 @@
                                 Cliente
 
                             </h5>
-                            <button type="button" class="btn btn-sm btn-soft mb-3" data-bs-toggle="modal" data-bs-target="#modalNuevoClienteVenta">
+                            <button type="button" class="btn btn-sm btn-soft mb-3" data-bs-target="#modalNuevoClienteVenta" onclick="abrirModalSobreVenta('modalNuevoClienteVenta')">
                                 <i class="bi bi-plus-lg me-1"></i> Nuevo cliente
                             </button>
 
@@ -1904,6 +1904,20 @@ document.addEventListener(
         }
     }
 )
+
+// Nuevo cliente / nueva dirección se abren encima de la venta sin cerrarla
+// (con data-bs-toggle, Bootstrap cerraba el modal de la venta y se perdía lo cargado)
+function abrirModalSobreVenta(id){
+    bootstrap.Modal.getOrCreateInstance(document.getElementById(id)).show()
+}
+;['modalNuevoClienteVenta', 'modalNuevaDireccionVenta'].forEach(id => {
+    document.getElementById(id).addEventListener('hidden.bs.modal', () => {
+        // Al cerrar el de encima, Bootstrap libera el scroll del body aunque la venta siga abierta
+        if (document.getElementById('nuevaVentaModal').classList.contains('show')) {
+            document.body.classList.add('modal-open')
+        }
+    })
+})
 
 document.getElementById('formNuevoClienteVenta').addEventListener('submit', async function(e){
     e.preventDefault()
