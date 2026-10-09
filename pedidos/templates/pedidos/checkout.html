@@ -1,4 +1,5 @@
 {% extends 'users/dashboard_cliente.html' %}
+{% load l10n %}
 
 {% block extra_head %}
 {{ block.super }}
@@ -984,7 +985,7 @@
                     id="flex_{{ opcion.id }}"
                     value="flex"
                     data-opcion-flex-id="{{ opcion.id }}"
-                    data-precio="{{ opcion.precio }}"
+                    data-precio="{{ opcion.precio|unlocalize }}"
                     data-es-gratis="{{ opcion.es_gratis|yesno:'true,false' }}"
                 >
 
@@ -1010,8 +1011,8 @@
                 </div>
                 {% endfor %}
 
-                <!-- FLEX LEGACY (si no hay opciones nuevas pero está activo el viejo) -->
-                {% if not opciones_flex and configuracion_envio.flex_activo %}
+                <!-- FLEX LEGACY (si no hay opciones nuevas pero está activo el viejo y tiene zonas) -->
+                {% if not opciones_flex and configuracion_envio.flex_activo and zonas_flex %}
                 <div class="entrega-option">
                 <input
                     type="radio"
@@ -1153,7 +1154,7 @@
                 </button>
 
                 {% for direccion in direcciones_flex %}
-                <label class="direccion-card" data-address-group="flex" data-etiqueta="{{ direccion.etiqueta|lower }}">
+                <label class="direccion-card" data-address-group="flex" data-etiqueta="{{ direccion.etiqueta|lower }}" data-opciones-flex="{{ direccion.opciones_flex_ids|default:'' }}">
 
                 <input
                     type="radio"
@@ -1181,14 +1182,12 @@
                 </div>
 
                 </label>
-                {% empty %}
+                {% endfor %}
 
-                <div class="alert-warning">
+                <div class="alert-warning" id="flex-sin-direcciones" {% if direcciones_flex %}style="display:none;"{% endif %}>
                 <i class="bi bi-exclamation-triangle"></i>
                 No tenés direcciones registradas para esta zona. Usá el botón Agregar direccion para cargar una nueva.
                 </div>
-
-                {% endfor %}
 
             </div>
 
@@ -1603,7 +1602,7 @@
 
 <script>
 const subtotalBase = parseFloat("{{ subtotal|floatformat:'2' }}".replace(',', '.'));
-const costoFlex = parseFloat("{{ precio_flex|floatformat:'2' }}".replace(',', '.'));
+const costoFlexLegacy = parseFloat("{{ precio_flex|floatformat:'2' }}".replace(',', '.')) || 0;
 const costoCorreoBase = parseFloat("{{ precio_correo|floatformat:'2' }}".replace(',', '.'));
 let costoCorreo = costoCorreoBase;
 let descuentoAplicado = parseFloat("{{ descuento_monto|floatformat:'2' }}".replace(',', '.')) || 0;
@@ -1676,7 +1675,8 @@ function actualizarEntrega() {
 
   if (metodo === 'flex') {
     camposFlex.style.display = 'block';
-    costoEnvio = costoFlex;
+    costoEnvio = costoFlexSeleccionado();
+    filtrarDireccionesFlex();
   }
 
   if (metodo === 'correo' && camposCorreo) {
@@ -1845,6 +1845,34 @@ async function cotizarCorreo() {
   }
 }
 
+// Costo de la opción Flex elegida (cada opción tiene su precio o es gratis)
+function costoFlexSeleccionado() {
+  const radio = document.querySelector('input[name="metodo_entrega"]:checked');
+  if (!radio || !radio.dataset.opcionFlexId) return costoFlexLegacy;
+  if (radio.dataset.esGratis === 'true') return 0;
+  return parseFloat((radio.dataset.precio || '0').replace(',', '.')) || 0;
+}
+
+// Muestra solo las direcciones que cubre la opción Flex elegida
+function filtrarDireccionesFlex() {
+  const radio = document.querySelector('input[name="metodo_entrega"]:checked');
+  const opcionId = radio && radio.dataset.opcionFlexId;
+  let visibles = 0;
+  document.querySelectorAll('[data-address-group="flex"]').forEach(card => {
+    const opciones = (card.dataset.opcionesFlex || '').split(',').filter(Boolean);
+    const visible = !opcionId || opciones.includes(opcionId);
+    card.style.display = visible ? '' : 'none';
+    if (visible) {
+      visibles += 1;
+    } else {
+      const input = card.querySelector('input[type="radio"]');
+      if (input) input.checked = false;
+    }
+  });
+  const vacio = document.getElementById('flex-sin-direcciones');
+  if (vacio) vacio.style.display = visibles ? 'none' : 'block';
+}
+
 function enviarCheckout() {
   const metodoEntrega = valorSeleccionado('metodo_entrega') || 'local';
   const metodoPago = valorSeleccionado('metodo_pago') || 'mercado_pago';
@@ -1882,6 +1910,7 @@ function enviarCheckout() {
   agregarCampo(form, 'metodo_entrega', metodoEntrega);
   agregarCampo(form, 'metodo_pago', metodoPago);
   agregarCampo(form, 'direccion_id', valorSeleccionado('direccion_id'));
+  agregarCampo(form, 'opcion_flex_id', document.querySelector('input[name="metodo_entrega"]:checked')?.dataset.opcionFlexId || '');
   agregarCampo(form, 'direccion_correo_id', valorSeleccionado('direccion_correo_id'));
   agregarCampo(form, 'correo', valorCampo('select[name="correo"]'));
   agregarCampo(form, 'tipo_correo', valorSeleccionado('tipo_correo'));

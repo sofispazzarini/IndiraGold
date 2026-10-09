@@ -485,8 +485,11 @@ class OpcionEnvioFlex(models.Model):
         return f'${self.precio:,.0f}'.replace(',', '.')
 
     def incluye_direccion(self, direccion):
-        if not direccion or not self.zonas_lista:
+        if not direccion:
             return False
+        if not self.zonas_lista:
+            # Sin zonas cargadas la opción se muestra como "Zonas a confirmar": acepta cualquier dirección
+            return True
         import unicodedata
         def normalizar(valor):
             texto = unicodedata.normalize('NFKD', str(valor or ''))

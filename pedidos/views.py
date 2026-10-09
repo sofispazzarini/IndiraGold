@@ -907,11 +907,20 @@ def checkout_view(request):
 
     # Para compatibilidad con código existente
     zonas_flex = configuracion_envio.zonas_flex_lista
-    direcciones_flex = [
-        direccion
-        for direccion in direcciones
-        if direccion_en_zona_flex(direccion, zonas_flex)
-    ]
+    if opciones_flex:
+        # Cada dirección lleva las opciones Flex que la cubren; el checkout filtra según la opción elegida
+        direcciones_flex = []
+        for direccion in direcciones:
+            ids = [str(opcion.id) for opcion in opciones_flex if opcion.incluye_direccion(direccion)]
+            if ids:
+                direccion.opciones_flex_ids = ','.join(ids)
+                direcciones_flex.append(direccion)
+    else:
+        direcciones_flex = [
+            direccion
+            for direccion in direcciones
+            if direccion_en_zona_flex(direccion, zonas_flex)
+        ]
     etiquetas_direcciones = sorted({direccion.etiqueta for direccion in direcciones}, key=str.casefold)
     etiquetas_flex = sorted({direccion.etiqueta for direccion in direcciones_flex}, key=str.casefold)
     
@@ -1490,7 +1499,20 @@ def crear_pago(request):
     direccion_flex = None
     direccion_correo = None
 
-    if request.session['metodo_entrega'] == 'flex' and not configuracion_envio.flex_activo:
+    opcion_flex = None
+    request.session['opcion_flex_id'] = None
+    hay_opciones_flex = OpcionEnvioFlex.objects.filter(activo=True).exists()
+
+    if request.session['metodo_entrega'] == 'flex' and hay_opciones_flex:
+        opcion_flex = OpcionEnvioFlex.objects.filter(
+            id=request.POST.get('opcion_flex_id') or None,
+            activo=True
+        ).first()
+        if not opcion_flex:
+            messages.error(request, 'Elegí una opción de Envío Flex.')
+            return redirect('pedidos:checkout')
+        request.session['opcion_flex_id'] = opcion_flex.id
+    elif request.session['metodo_entrega'] == 'flex' and not configuracion_envio.flex_activo:
         messages.error(request, 'El Envio Flex no esta disponible en este momento.')
         return redirect('pedidos:checkout')
 
@@ -1506,7 +1528,11 @@ def crear_pago(request):
         if not direccion_flex:
             messages.error(request, 'Selecciona una direccion para Envio Flex.')
             return redirect('pedidos:checkout')
-        if not direccion_en_zona_flex(direccion_flex, configuracion_envio.zonas_flex_lista):
+        if opcion_flex:
+            if not opcion_flex.incluye_direccion(direccion_flex):
+                messages.error(request, f'La dirección seleccionada no está dentro de las zonas de {opcion_flex.nombre}.')
+                return redirect('pedidos:checkout')
+        elif not direccion_en_zona_flex(direccion_flex, configuracion_envio.zonas_flex_lista):
             messages.error(request, 'La dirección seleccionada no está dentro de las zonas de Envío Flex.')
             return redirect('pedidos:checkout')
 
@@ -1534,6 +1560,8 @@ def crear_pago(request):
                 return redirect('pedidos:checkout')
 
     costo_envio = costo_envio_checkout(request.session['metodo_entrega'], configuracion_envio)
+    if opcion_flex:
+        costo_envio = opcion_flex.costo_actual
     if request.session['metodo_entrega'] == 'correo' and request.session.get('correo') == 'correo_argentino':
         codigo_postal_cotizacion = (
             direccion_correo.codigo_postal
@@ -1579,6 +1607,7 @@ def crear_pago(request):
             cliente=cliente,
             total=total_pedido,
             costo_envio=costo_envio,
+            opcion_flex=opcion_flex,
             codigo_descuento=cupon.codigo if cupon else None,
             descuento_porcentaje=cupon.descuento if cupon else 0,
             descuento_monto=descuento_monto,
@@ -1731,6 +1760,11 @@ def pago_exitoso(request):
 
     configuracion_envio = ConfiguracionEnvio.actual()
     costo_envio = costo_envio_checkout(metodo_entrega, configuracion_envio)
+    opcion_flex = None
+    if metodo_entrega == 'flex' and request.session.get('opcion_flex_id'):
+        opcion_flex = OpcionEnvioFlex.objects.filter(id=request.session.get('opcion_flex_id')).first()
+        if opcion_flex:
+            costo_envio = opcion_flex.costo_actual
     if metodo_entrega == 'correo' and request.session.get('correo') == 'correo_argentino':
         costo_envio = monto_decimal(Decimal(str(request.session.get('correo_costo_final') or '0')))
     direccion = None
@@ -1777,6 +1811,7 @@ def pago_exitoso(request):
         cliente=cliente,
         total=total_productos_con_descuento + costo_envio,
         costo_envio=costo_envio,
+        opcion_flex=opcion_flex,
         codigo_descuento=cupon.codigo if cupon else None,
         descuento_porcentaje=cupon.descuento if cupon else 0,
         descuento_monto=descuento_monto,
