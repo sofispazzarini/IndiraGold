@@ -1542,6 +1542,16 @@
     </div>
 </div>
 <script>
+// Escapa texto antes de insertarlo con innerHTML (nombres, direcciones, etc. cargados por usuarios)
+function escHtml(valor){
+    return String(valor ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;')
+}
+
 
 // Solo números para DNI y Teléfono
 document.querySelectorAll('.solo-numeros').forEach(input => {
@@ -1630,8 +1640,8 @@ function renderDireccionesVenta(direcciones){
 
     direcciones.forEach(direccion => {
         direccionEnvioSelect.innerHTML += `
-            <option value="${direccion.id}" data-ciudad="${direccion.ciudad}">
-                ${direccion.texto}
+            <option value="${direccion.id}" data-ciudad="${escHtml(direccion.ciudad)}">
+                ${escHtml(direccion.texto)}
             </option>
         `
     })
@@ -1712,7 +1722,7 @@ inputCliente.addEventListener(
         }
 
         const response = await fetch(
-            `/users/buscar-clientes/?q=${q}`
+            `/users/buscar-clientes/?q=${encodeURIComponent(q)}`
         )
 
         const clientes = await response.json()
@@ -1740,18 +1750,18 @@ inputCliente.addEventListener(
                     class="p-3 border-bottom resultado-cliente"
                     style="cursor:pointer;"
                     data-id="${cliente.id}"
-                    data-nombre="${cliente.nombre}"
+                    data-nombre="${escHtml(cliente.nombre)}"
                 >
 
                     <div class="fw-bold">
 
-                        ${cliente.nombre}
+                        ${escHtml(cliente.nombre)}
 
                     </div>
 
                     <small class="text-muted">
 
-                        ${cliente.email}
+                        ${escHtml(cliente.email)}
 
                     </small>
 
@@ -2194,21 +2204,21 @@ inputProducto.addEventListener(
                     class="p-3 border-bottom resultado-producto"
                     style="cursor:pointer;"
                     data-id="${producto.id}"
-                    data-nombre="${producto.nombre}"
+                    data-nombre="${escHtml(producto.nombre)}"
                     data-auto="${producto.auto_select || ''}"
                     data-variante="${producto.scanned_variante_id || ''}"
-                    data-color="${producto.scanned_color || ''}"
+                    data-color="${escHtml(producto.scanned_color || '')}"
                 >
 
                     <div class="fw-bold">
 
-                        ${producto.nombre}
+                        ${escHtml(producto.nombre)}
 
                     </div>
 
                     <small class="text-muted">
 
-                        Código: ${producto.codigo}
+                        Código: ${escHtml(producto.codigo)}
 
                     </small>
 
@@ -2295,7 +2305,7 @@ document.addEventListener(
 
                     <option value="${variante.id}">
 
-                        ${variante.talle}
+                        ${escHtml(variante.talle)}
 
                     </option>
 
@@ -2343,7 +2353,7 @@ async function seleccionarProducto(producto){
     variantes.forEach(variante => {
         talleSelect.innerHTML += `
             <option value="${variante.id}">
-                ${variante.talle}
+                ${escHtml(variante.talle)}
             </option>
         `
     })
@@ -2416,7 +2426,7 @@ document.getElementById(
                 btn.dataset.color = nombre;
                 btn.dataset.hex = hex;
                 btn.title = nombre;
-                btn.innerHTML = `<span style="display:inline-block; width:28px; height:28px; border-radius:50%; background-color:${hex}; border:2px solid #ddd;"></span>`;
+                btn.innerHTML = `<span style="display:inline-block; width:28px; height:28px; border-radius:50%; background-color:${escHtml(hex)}; border:2px solid #ddd;"></span>`;
                 btn.style.cssText = 'padding:4px; border:2px solid transparent; border-radius:8px; background:none; cursor:pointer;';
                 btn.onclick = function() {
                     document.querySelectorAll('.color-btn').forEach(b => b.style.borderColor = 'transparent');
@@ -2574,10 +2584,10 @@ function renderProductosVenta(){
                 </button>
                 <div class="d-flex justify-content-between pe-4">
                     <div>
-                        <div class="fw-bold">${producto.producto}</div>
+                        <div class="fw-bold">${escHtml(producto.producto)}</div>
                         <small class="text-muted d-flex align-items-center gap-1">
-                            ${producto.talle}
-                            ${producto.color ? `<span style="display:inline-block; width:14px; height:14px; border-radius:50%; background-color:${producto.colorHex || '#888'}; border:1px solid #ccc;"></span>` : ''}
+                            ${escHtml(producto.talle)}
+                            ${producto.color ? `<span style="display:inline-block; width:14px; height:14px; border-radius:50%; background-color:${escHtml(producto.colorHex || '#888')}; border:1px solid #ccc;"></span>` : ''}
                         </small>
                     </div>
                     <div class="text-end">
@@ -2708,7 +2718,7 @@ function mostrarMensaje(texto){
 
             <i class="bi bi-exclamation-circle me-2"></i>
 
-            ${texto}
+            ${escHtml(texto)}
 
         </div>
 
@@ -2757,7 +2767,7 @@ document.querySelectorAll(
 
                     <div>
 
-                        ${data.cliente}
+                        ${escHtml(data.cliente)}
 
                     </div>
 
@@ -2776,7 +2786,7 @@ document.querySelectorAll(
 
                     <div>
 
-                        ${data.fecha}
+                        ${escHtml(data.fecha)}
 
                     </div>
 
@@ -2792,11 +2802,11 @@ document.querySelectorAll(
 
                     <div>
 
-                        ${data.metodo_entrega || 'Retiro en local'}
+                        ${escHtml(data.metodo_entrega || 'Retiro en local')}
 
                     </div>
 
-                    ${data.direccion ? `<small class="text-muted">${data.direccion}</small>` : ''}
+                    ${data.direccion ? `<small class="text-muted">${escHtml(data.direccion)}</small>` : ''}
 
                 </div>
 
@@ -2826,7 +2836,7 @@ document.querySelectorAll(
 
                     <div>
 
-                        ${data.metodo_pago || 'No especificado'}
+                        ${escHtml(data.metodo_pago || 'No especificado')}
 
                     </div>
 
@@ -2844,7 +2854,7 @@ document.querySelectorAll(
 
                         <span class="badge ${data.estado === 'PAGADO' ? 'bg-success' : 'bg-warning'}">
 
-                            ${data.estado}
+                            ${escHtml(data.estado)}
 
                         </span>
 
@@ -2901,15 +2911,15 @@ document.querySelectorAll(
 
                                 <div class="fw-bold">
 
-                                    ${p.producto}
+                                    ${escHtml(p.producto)}
 
                                 </div>
 
                                 <small class="text-muted" style="display:flex;align-items:center;gap:4px;">
-                                    ${p.talle}
+                                    ${escHtml(p.talle)}
                                     ${p.color ? (p.color.startsWith('#') ?
-                                        `· <span style="display:inline-block;width:14px;height:14px;background-color:${p.color};border-radius:50%;border:1px solid #ccc;"></span>` :
-                                        `· ${p.color}`) : ''}
+                                        `· <span style="display:inline-block;width:14px;height:14px;background-color:${escHtml(p.color)};border-radius:50%;border:1px solid #ccc;"></span>` :
+                                        `· ${escHtml(p.color)}`) : ''}
                                 </small>
 
                             </div>
