@@ -22,6 +22,7 @@ from .forms import (
     TipoMedidaForm, ProveedorForm, SubcategoriaSoloNombreForm,
     CategoriaOrdenForm
 )
+from django.db import transaction
 from django.db.models import Q, Sum
 from decimal import Decimal
 from django.utils import timezone
@@ -150,6 +151,12 @@ def leer_colores_con_stock(request):
         else:
             colores[clave] = {'nombre': nombre, 'hex': codigo_hex, 'stock': stock_color}
     return list(colores.values())
+
+
+def obtener_talle(nombre):
+    """Talle por nombre sin distinguir mayúsculas ("s" y "S" son el mismo talle)."""
+    nombre = (nombre or '').strip() or 'Sin talle'
+    return Talle.objects.filter(nombre__iexact=nombre).first() or Talle.objects.create(nombre=nombre)
 
 
 def color_desde_form(nombre, codigo_hex):
@@ -446,79 +453,92 @@ def agregar_producto(request, subcat_id):
             subcategoria = get_object_or_404(Subcategoria, id=subcat_form_id, activa=True)
             categoria_padre = subcategoria.categoria
 
+        try:
+            variantes_list = json.loads(variantes_json) if variantes_json else []
+        except (TypeError, ValueError):
+            variantes_list = []
+        talles_cargados = [((v.get('talle') or '').strip() or 'Sin talle').casefold() for v in variantes_list]
+        talles_repetidos = sorted({t for t in talles_cargados if talles_cargados.count(t) > 1})
+
         if len(imagenes_galeria) > 5:
             messages.error(request, "Máximo 5 imágenes de galería permitidas.")
+        elif talles_repetidos:
+            messages.error(
+                request,
+                f"El talle {', '.join(t.upper() for t in talles_repetidos)} está cargado más de una vez. "
+                "Cargá cada talle una sola vez (con todos sus colores)."
+            )
         elif form.is_valid():
-            producto = form.save(commit=False)
-            producto.subcategoria = subcategoria
-            producto.categoria = categoria_padre
-            producto.activo = True
-            producto.stock = 0
-            producto.save()
-            for img in imagenes_galeria:
-                ImagenProducto.objects.create(producto=producto, imagen=img)
+            with transaction.atomic():
+                producto = form.save(commit=False)
+                producto.subcategoria = subcategoria
+                producto.categoria = categoria_padre
+                producto.activo = True
+                producto.stock = 0
+                producto.save()
+                for img in imagenes_galeria:
+                    ImagenProducto.objects.create(producto=producto, imagen=img)
 
-            if variantes_json:
-                variantes_list = json.loads(variantes_json)
-                stock_total = 0
-                for v in variantes_list:
-                    talle_nombre = (v.get('talle') or '').strip() or 'Sin talle'
-                    talle_obj, _ = Talle.objects.get_or_create(nombre=talle_nombre)
-                    stock_variante = max(int(v.get('stock') or 0), 0)
-                    stock_total += stock_variante
+                if variantes_json:
+                    stock_total = 0
+                    for v in variantes_list:
+                        talle_nombre = (v.get('talle') or '').strip() or 'Sin talle'
+                        talle_obj = obtener_talle(talle_nombre)
+                        stock_variante = max(int(v.get('stock') or 0), 0)
+                        stock_total += stock_variante
                     
-                    # 2. Crear la Variante
-                    nueva_variante = Variante.objects.create(
-                        producto=producto,
-                        talle=talle_obj,
-                        stock=stock_variante,
-                        precio=float(v.get('precio', 0)),
-                        qr_code=str(uuid.uuid4())
-                    )
-                    
-                    # 3. VINCULAR COLORES (Importante: es ManyToMany)
-                    colores_data = v.get('colores', [])
-                    for c in colores_data:
-                        nombre_color = c.get('colorNombre') or c.get('colorHex')
-                        codigo_hex = normalizar_hex_color(
-                            nombre_color,
-                            c.get('colorHex') or '#888888'
+                        # 2. Crear la Variante
+                        nueva_variante = Variante.objects.create(
+                            producto=producto,
+                            talle=talle_obj,
+                            stock=stock_variante,
+                            precio=float(v.get('precio', 0)),
+                            qr_code=str(uuid.uuid4())
                         )
-                        stock_color = int(c.get('stock', 0))
-                        if nombre_color:
-                            color_obj, created = Color.objects.get_or_create(
-                                nombre=nombre_color,
-                                defaults={'codigo_hex': codigo_hex}
+                    
+                        # 3. VINCULAR COLORES (Importante: es ManyToMany)
+                        colores_data = v.get('colores', [])
+                        for c in colores_data:
+                            nombre_color = c.get('colorNombre') or c.get('colorHex')
+                            codigo_hex = normalizar_hex_color(
+                                nombre_color,
+                                c.get('colorHex') or '#888888'
                             )
-                            if not created and color_obj.codigo_hex != codigo_hex:
-                                color_obj.codigo_hex = codigo_hex
-                                color_obj.save()
-                            nueva_variante.colores.add(color_obj)
-                            vc, creado = VarianteColor.objects.get_or_create(
-                                variante=nueva_variante,
-                                color=color_obj,
-                            )
-                            # Si el mismo color se cargó dos veces, se suman los stocks
-                            vc.stock = max(stock_color, 0) if creado else vc.stock + max(stock_color, 0)
-                            vc.save()
+                            stock_color = int(c.get('stock', 0))
+                            if nombre_color:
+                                color_obj, created = Color.objects.get_or_create(
+                                    nombre=nombre_color,
+                                    defaults={'codigo_hex': codigo_hex}
+                                )
+                                if not created and color_obj.codigo_hex != codigo_hex:
+                                    color_obj.codigo_hex = codigo_hex
+                                    color_obj.save()
+                                nueva_variante.colores.add(color_obj)
+                                vc, creado = VarianteColor.objects.get_or_create(
+                                    variante=nueva_variante,
+                                    color=color_obj,
+                                )
+                                # Si el mismo color se cargó dos veces, se suman los stocks
+                                vc.stock = max(stock_color, 0) if creado else vc.stock + max(stock_color, 0)
+                                vc.save()
 
-                    sincronizar_stock_variante(nueva_variante)
+                        sincronizar_stock_variante(nueva_variante)
                     
-                    # 4. VINCULAR MEDIDAS
-                    medidas_data = v.get('medidas', [])
-                    for m in medidas_data:
-                        # Creamos el objeto medida y lo asociamos a la variante
-                        medida_obj = Medida.objects.create(
-                            alto=m.get('alto') or 0,
-                            ancho=m.get('ancho') or 0,
-                            largo=m.get('largo') or 0,
-                            tiro=m.get('tiro') or 0
-                        )
-                        nueva_variante.medidas.add(medida_obj)
-                recalcular_stock_producto(producto)
+                        # 4. VINCULAR MEDIDAS
+                        medidas_data = v.get('medidas', [])
+                        for m in medidas_data:
+                            # Creamos el objeto medida y lo asociamos a la variante
+                            medida_obj = Medida.objects.create(
+                                alto=m.get('alto') or 0,
+                                ancho=m.get('ancho') or 0,
+                                largo=m.get('largo') or 0,
+                                tiro=m.get('tiro') or 0
+                            )
+                            nueva_variante.medidas.add(medida_obj)
+                    recalcular_stock_producto(producto)
             
-            messages.success(request, 'Producto guardado correctamente.')
-            return redirect('productos:productos_por_subcategoria', subcat_id=subcategoria.id)
+                messages.success(request, 'Producto guardado correctamente.')
+                return redirect('productos:productos_por_subcategoria', subcat_id=subcategoria.id)
     else:
         form = ProductoForm()
     todas_categorias = Categoria.objects.filter(activa=True).order_by('nombre')
@@ -1011,7 +1031,10 @@ def editar_variante(request, variante_id):
         # Actualizar talle
         talle_nombre = request.POST.get('talle_nombre', '').strip()
         if talle_nombre:
-            talle_obj, _ = Talle.objects.get_or_create(nombre=talle_nombre)
+            if producto.variantes.filter(talle__nombre__iexact=talle_nombre).exclude(id=variante.id).exists():
+                messages.error(request, f'El producto ya tiene otro talle {talle_nombre}. Elegí un nombre distinto.')
+                return redirect('productos:editar_variante', variante_id=variante.id)
+            talle_obj = obtener_talle(talle_nombre)
             variante.talle = talle_obj
 
         # Actualizar stock
@@ -1115,7 +1138,10 @@ def agregar_variante(request, producto_id):
 
     if request.method == 'POST':
         talle_nombre = request.POST.get('talle_nombre', '').strip() or 'Sin talle'
-        talle_obj, _ = Talle.objects.get_or_create(nombre=talle_nombre)
+        if producto.variantes.filter(talle__nombre__iexact=talle_nombre).exists():
+            messages.error(request, f'El producto ya tiene el talle {talle_nombre}. Editalo desde la lista de talles.')
+            return redirect('productos:agregar_variante', producto_id=producto.id)
+        talle_obj = obtener_talle(talle_nombre)
 
         stock = request.POST.get('stock', '0')
         stock_variante = int(stock) if stock else 0

@@ -513,6 +513,11 @@
                 let talle = document.getElementById('inputTalleLibre').value.trim();
                 let stock = parseInt(document.getElementById('inputStockVariante').value || '0', 10);
 
+                const talleNormalizado = (talle || 'Sin talle').toLowerCase();
+                if (variantes.some(v => (v.talle || 'Sin talle').toLowerCase() === talleNormalizado)) {
+                    alert('Ese talle ya está cargado en este producto. Cargá cada talle una sola vez con todos sus colores.');
+                    return;
+                }
                 if (tempColores.length === 0) {
                     alert('Agregá al menos un color con stock.');
                     return;
