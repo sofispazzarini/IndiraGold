@@ -33,14 +33,14 @@
         <form method="post" enctype="multipart/form-data" id="formEditar">
             {% csrf_token %}
 
-            <div class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom">
+            <div class="d-flex flex-wrap gap-3 justify-content-between align-items-center mb-4 pb-3 border-bottom">
                 <div>
                     <a href="{% url 'productos:productos_por_subcategoria' subcategoria.id %}" class="btn btn-sm btn-outline-secondary rounded-pill mb-2">
                         ← Volver al listado
                     </a>
                     <h2 class="fw-bold text-dark" style="font-family: 'Cormorant Garamond';">Editar: <span style="color: #b8922a;">{{ producto.nombre }}</span></h2>
                 </div>
-                <div class="d-flex gap-2">
+                <div class="d-flex flex-wrap gap-2">
                     <!-- <a href="{% url 'productos:producto_qrs_impresion' producto.id %}" class="btn btn-outline-secondary px-4 rounded-pill" target="_blank">
                         <i class="bi bi-qr-code me-1"></i> Ver QRs
                     </a> -->
@@ -144,24 +144,32 @@
                                         <th>Talle</th>
                                         <th style="width: 110px;">Stock</th>
                                         <th>Detalle (Color / Medidas)</th>
-                                        <th class="text-end">Acción</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {% for variante in producto.variantes.all %}
                                     <tr>
-                                        <td class="fw-bold text-dark" style="font-size: 1rem;">{{ variante.talle.nombre }}</td>
+                                        <td class="fw-bold text-dark" style="font-size: 1rem;">
+                                            {{ variante.talle.nombre }}
+                                            {# Acciones debajo del talle: en tablet y celular la tabla es angosta y una columna al final quedaba fuera de la vista #}
+                                            <div class="d-flex gap-1 mt-2">
+                                                <a href="{% url 'productos:editar_variante' variante.id %}" class="btn btn-sm btn-light text-primary border shadow-sm">✎</a>
+                                                <button type="button" class="btn btn-sm btn-light text-danger border shadow-sm btn-eliminar-talle"
+                                                        data-talle-nombre="{{ variante.talle.nombre }}"
+                                                        data-url="{% url 'productos:eliminar_variante' variante.id %}">×</button>
+                                            </div>
+                                        </td>
                                         <td>
-                                            <input type="number" min="0" step="1" name="variante_stock_{{ variante.id }}" value="{{ variante.stock }}" class="form-control form-control-sm variant-stock-input" readonly style="background:#f5f5f5;" title="Se calcula de los colores">
+                                            <input type="number" min="0" step="1" name="variante_stock_{{ variante.id }}" value="{{ variante.stock }}" class="form-control form-control-sm variant-stock-input" readonly style="background:#f5f5f5; min-width:64px; padding:.3rem .45rem; text-align:center;" title="Se calcula de los colores">
                                         </td>
                                         <td>
                                             <div class="small mb-1">
                                                 <span class="text-dark fw-bold">Colores:</span>
                                                 {% for vc in variante.variante_colores.all %}
-                                                    <div class="d-flex align-items-center gap-2 mt-1">
-                                                        <span title="{{ vc.color.nombre }}" style="display:inline-block; width:18px; height:18px; background-color:{{ vc.color.codigo_hex }}; border-radius:50%; border:2px solid #ddd;"></span>
-                                                        <span class="text-muted" style="font-size:0.85rem; min-width:60px;">{{ vc.color.nombre }}</span>
-                                                        <input type="number" min="0" step="1" name="color_stock_{{ vc.id }}" value="{{ vc.stock }}" class="form-control form-control-sm" style="width:70px;" placeholder="Stock">
+                                                    <div class="d-flex flex-wrap align-items-center gap-2 mt-1">
+                                                        <span title="{{ vc.color.nombre }}" style="display:inline-block; width:18px; height:18px; background-color:{{ vc.color.nombre|hex_color:vc.color.codigo_hex }}; border-radius:50%; border:2px solid #ddd;"></span>
+                                                        <span class="text-muted" style="font-size:0.85rem; white-space:nowrap;">{{ vc.color.nombre }}</span>
+                                                        <input type="number" min="0" step="1" name="color_stock_{{ vc.id }}" value="{{ vc.stock }}" class="form-control form-control-sm" style="width:70px; min-width:64px; padding:.3rem .45rem; text-align:center;" placeholder="Stock">
                                                     </div>
                                                 {% empty %}
                                                     <span class="text-muted italic">-</span>
@@ -180,14 +188,6 @@
                                                 {% else %}
                                                     <span class="text-muted italic">No cargadas</span>
                                                 {% endif %}
-                                            </div>
-                                        </td>
-                                        <td class="text-end">
-                                            <div class="d-flex gap-1 justify-content-end">
-                                                <a href="{% url 'productos:editar_variante' variante.id %}" class="btn btn-sm btn-light text-primary border shadow-sm">✎</a>
-                                                <button type="button" class="btn btn-sm btn-light text-danger border shadow-sm btn-eliminar-talle"
-                                                        data-talle-nombre="{{ variante.talle.nombre }}"
-                                                        data-url="{% url 'productos:eliminar_variante' variante.id %}">×</button>
                                             </div>
                                         </td>
                                     </tr>
