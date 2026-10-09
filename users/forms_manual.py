@@ -101,9 +101,11 @@ class EditarClienteForm(forms.ModelForm):
         if len(dni) not in [7, 8]:
             raise ValidationError('El DNI debe tener 7 u 8 dígitos.')
         cliente_qs = Cliente.objects.filter(dni=dni)
+        user_qs = User.objects.filter(username=dni)
         if self.instance and self.instance.pk:
             cliente_qs = cliente_qs.exclude(pk=self.instance.pk)
-        if cliente_qs.exists():
+            user_qs = user_qs.exclude(pk=self.instance.user_id)
+        if cliente_qs.exists() or user_qs.exists():
             raise ValidationError('Ya existe un cliente con este DNI.')
         return dni
 

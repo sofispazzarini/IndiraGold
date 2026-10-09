@@ -252,6 +252,10 @@ def editar_cliente(request, cliente_id):
             cliente.telefono = form.cleaned_data['telefono']
             if form.cleaned_data.get('dni'):
                 cliente.dni = form.cleaned_data['dni']
+                # El login es con el DNI (username): si cambia, el usuario entra con el nuevo
+                if user.username != cliente.dni:
+                    user.username = cliente.dni
+                    user.save(update_fields=['username'])
             cliente.save()
             mensaje = 'Datos actualizados correctamente.'
         else:
