@@ -2933,6 +2933,13 @@ function mostrarMensaje(texto){
 </script>
 <script>
 
+// Si se registró un pago en el detalle, al cerrarlo se recarga el listado (estado y saldo al día)
+document.getElementById('modalDetalleVenta').addEventListener('hidden.bs.modal', () => {
+    if(window.recargarVentasAlCerrarDetalle){
+        window.location.reload()
+    }
+})
+
 async function abrirDetalleVenta(ventaId){
         {
 
@@ -3039,7 +3046,7 @@ async function abrirDetalleVenta(ventaId){
 
                     <div>
 
-                        <span class="badge ${data.estado === 'PAGADO' ? 'bg-success' : 'bg-warning'}">
+                        <span id="detalle-venta-estado" class="badge ${data.estado === 'PAGADO' ? 'bg-success' : 'bg-warning'}">
 
                             ${escHtml(data.estado)}
 
@@ -3318,6 +3325,15 @@ async function registrarPago(ventaId){
         if(inputPago){
             inputPago.value = ''
         }
+
+        // Estado del detalle al día (antes seguía en PARCIAL hasta recargar) y el listado se
+        // recarga al cerrar el detalle para mostrar el saldo nuevo
+        const badgeEstado = document.getElementById('detalle-venta-estado')
+        if(badgeEstado && data.estado){
+            badgeEstado.textContent = data.estado
+            badgeEstado.className = `badge ${data.estado === 'PAGADO' ? 'bg-success' : 'bg-warning'}`
+        }
+        window.recargarVentasAlCerrarDetalle = true
 
         if(data.estado === 'PAGADO'){
             if(formPago){
