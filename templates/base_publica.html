@@ -55,34 +55,73 @@
     }
     .nb-link:hover { color: var(--dark); }
 
-    /* Responsive navbar */
-    @media (max-width: 600px) {
-      .navbar__inner {
-        padding: 0 0.75rem;
-      }
-      .nb-name {
-        font-size: 1.1rem;
-      }
-      .navbar__links {
-        gap: 0.5rem;
-      }
-      .nb-link {
-        font-size: 0.75rem;
-        padding: 0.4em 0.6em !important;
-        margin-left: 0 !important;
-      }
+    /* Botón de menú (hamburguesa): solo en celulares */
+    .nb-toggle {
+      display: none;
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      width: 42px;
+      height: 42px;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: var(--dark);
+      font-size: 1.35rem;
+      line-height: 1;
     }
 
-    @media (max-width: 400px) {
-      .nb-name {
-        font-size: 0.95rem;
+    /* Celulares: los links van en un menú desplegable (antes se partían en dos líneas) */
+    @media (max-width: 600px) {
+      .navbar__inner {
+        padding: 0 1rem;
+        position: relative;
       }
-      .nb-link {
-        font-size: 0.7rem;
-        padding: 0.35em 0.5em !important;
+      .nb-name {
+        font-size: 1.25rem;
+      }
+      .nb-toggle {
+        display: inline-flex;
       }
       .navbar__links {
-        gap: 0.3rem;
+        display: none;
+        position: absolute;
+        top: 64px;
+        left: 0;
+        right: 0;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0;
+        background: var(--white);
+        border-bottom: 1px solid var(--border);
+        box-shadow: 0 12px 24px rgba(26, 22, 18, 0.08);
+        padding: 0.5rem 1rem 1rem;
+      }
+      .navbar.menu-abierto .navbar__links {
+        display: flex;
+      }
+      .navbar__links > * {
+        display: block;
+        width: 100%;
+        text-align: left;
+        font-size: 0.95rem !important;
+        padding: 0.8rem 0.25rem !important;
+        margin: 0 !important;
+        border-radius: 0 !important;
+        border: 0 !important;
+        border-bottom: 1px solid var(--border) !important;
+        box-shadow: none !important;
+        background: none !important;
+        color: var(--dark) !important;
+        white-space: nowrap;
+      }
+      .navbar__links > *:last-child {
+        border-bottom: none !important;
+        margin-top: 0.5rem !important;
+        background: var(--gold) !important;
+        color: var(--white) !important;
+        text-align: center;
+        border-radius: 8px !important;
       }
     }
 
@@ -124,7 +163,8 @@
 <header class="navbar">
   <div class="navbar__inner">
     <a class="nb-name" href="{% url 'home:home' %}">IndiraGold</a>
-    <nav class="navbar__links">
+    <button type="button" class="nb-toggle" id="nbToggle" aria-label="Abrir menú" aria-expanded="false" aria-controls="nbLinks">&#9776;</button>
+    <nav class="navbar__links" id="nbLinks">
       <a href="{% url 'home:home' %}#catalogo" class="nb-link">Catálogo</a>
       <a href="{% url 'home:home' %}#contacto" class="nb-link">Contacto</a>
       {% if request.user.is_superuser %}
@@ -140,5 +180,21 @@
 
 {% block content %}{% endblock %}
 
+<script>
+  // Menú del header en celulares: abre/cierra con el botón, al elegir una opción o al tocar afuera
+  (function () {
+    const navbar = document.querySelector('.navbar');
+    const boton = document.getElementById('nbToggle');
+    if (!navbar || !boton) return;
+    const cerrar = () => { navbar.classList.remove('menu-abierto'); boton.setAttribute('aria-expanded', 'false'); };
+    boton.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const abierto = navbar.classList.toggle('menu-abierto');
+      boton.setAttribute('aria-expanded', abierto ? 'true' : 'false');
+    });
+    document.getElementById('nbLinks').addEventListener('click', (e) => { if (e.target.closest('a, button')) cerrar(); });
+    document.addEventListener('click', (e) => { if (!navbar.contains(e.target)) cerrar(); });
+  })();
+</script>
 </body>
 </html>
