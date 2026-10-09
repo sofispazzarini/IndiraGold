@@ -3281,12 +3281,21 @@ async function registrarPago(ventaId){
 
     const boton = document.getElementById('btn-guardar-pago')
 
+    // Monto vacío o no numérico: se avisa sin llamar al servidor
+    const montoNumero = parseFloat(String(monto).replace(',', '.'))
+    if(!(montoNumero > 0)){
+        alert('Ingresá un monto válido mayor a 0.')
+        return
+    }
+
     if(boton){
         boton.disabled = true
         boton.innerText = 'Guardando...'
     }
 
-    const response = await fetch(
+    let response
+    try{
+    response = await fetch(
 
         `/pedidos/registrar-pago/${ventaId}/`,
 
@@ -3311,8 +3320,25 @@ async function registrarPago(ventaId){
         }
 
     )
+    }catch(error){
+        response = null
+    }
 
-    const data = await response.json()
+    let data = null
+    try{
+        data = response ? await response.json() : null
+    }catch(error){
+        data = null
+    }
+    if(!data){
+        // Error de conexión o respuesta inesperada: el botón no queda trabado en "Guardando..."
+        if(boton){
+            boton.disabled = false
+            boton.innerText = 'Guardar'
+        }
+        alert('No pudimos registrar el pago. Probá de nuevo.')
+        return
+    }
 
     if(data.success){
 
