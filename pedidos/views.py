@@ -1,4 +1,5 @@
 from django.shortcuts import render, get_object_or_404, redirect
+from django.urls import reverse
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.core.paginator import Paginator
 from django.db import transaction
@@ -543,28 +544,61 @@ def listado_gastos(request):
 @admin_required
 def listado_deudas(request):
     """
-    Listado de pedidos con deuda pendiente.
+    Listado de deudas pendientes: pedidos online y ventas presenciales con saldo.
     """
     pedidos_con_deuda = Pedido.objects.filter(
         deuda__gt=0
     ).select_related('cliente__user').order_by('-deuda')
 
-    # Búsqueda por cliente o pedido
+    ventas_con_deuda = VentaLocal.objects.filter(
+        saldo_pendiente__gt=0
+    ).select_related('cliente__user')
+
+    # Búsqueda por cliente o número de pedido/venta
     q = request.GET.get('q', '').strip()
     if q:
-        pedidos_con_deuda = pedidos_con_deuda.filter(
+        filtro_cliente = (
             Q(cliente__user__first_name__icontains=q) |
             Q(cliente__user__last_name__icontains=q) |
             Q(cliente__dni__icontains=q) |
             Q(id__icontains=q)
         )
+        pedidos_con_deuda = pedidos_con_deuda.filter(filtro_cliente)
+        ventas_con_deuda = ventas_con_deuda.filter(filtro_cliente)
 
-    total_deudas = pedidos_con_deuda.aggregate(total=Sum('deuda'))['total'] or 0
+    deudas = [
+        {
+            'tipo': 'Pedido',
+            'id': pedido.id,
+            'cliente': pedido.cliente,
+            'fecha': pedido.created_at,
+            'total': pedido.total,
+            'pagado': pedido.monto_pagado,
+            'pendiente': pedido.deuda,
+            'url': reverse('pedidos:detalle_pedido', args=[pedido.id]),
+        }
+        for pedido in pedidos_con_deuda
+    ] + [
+        {
+            'tipo': 'Venta local',
+            'id': venta.id,
+            'cliente': venta.cliente,
+            'fecha': venta.created_at,
+            'total': venta.total,
+            'pagado': venta.monto_pagado,
+            'pendiente': venta.saldo_pendiente,
+            'url': f"{reverse('pedidos:ventas_presenciales')}?venta={venta.id}",
+        }
+        for venta in ventas_con_deuda
+    ]
+    deudas.sort(key=lambda deuda: deuda['pendiente'], reverse=True)
+
+    total_deudas = sum((deuda['pendiente'] for deuda in deudas), Decimal('0.00'))
 
     context = {
-        'pedidos': pedidos_con_deuda,
+        'deudas': deudas,
         'total_deudas': total_deudas,
-        'cantidad': pedidos_con_deuda.count(),
+        'cantidad': len(deudas),
         'q': q,
     }
     return render(request, 'pedidos/listado_deudas.html', context)
@@ -3140,6 +3174,11 @@ def registrar_pago_venta(request, venta_id):
     venta.saldo_pendiente = (
         venta.total - venta.monto_pagado
     )
+
+    if venta.cliente_id:
+        cliente = venta.cliente
+        cliente.deuda_total = max(Decimal('0.00'), cliente.deuda_total - monto)
+        cliente.save(update_fields=['deuda_total'])
 
     if venta.saldo_pendiente <= 0:
 

@@ -440,37 +440,37 @@
 
   <div class="search-bar">
     <form method="get" class="search-input-wrap">
-      <input type="text" name="q" class="search-input" placeholder="Buscar por DNI, nombre o N° pedido..." value="{{ q }}">
+      <input type="text" name="q" class="search-input" placeholder="Buscar por DNI, nombre o N° de pedido/venta..." value="{{ q }}">
       <button type="submit" class="search-btn">
         <i class="bi bi-search"></i>
       </button>
     </form>
   </div>
 
-  {% if pedidos %}
+  {% if deudas %}
   <ul class="deuda-list">
-    {% for pedido in pedidos %}
+    {% for deuda in deudas %}
     <li class="deuda-item">
       <span class="deuda-index">{{ forloop.counter|stringformat:"02d" }}</span>
       <div class="deuda-info">
-        <div class="deuda-pedido">Pedido #{{ pedido.id }}</div>
+        <div class="deuda-pedido">{{ deuda.tipo }} #{{ deuda.id }}</div>
         <div class="deuda-cliente">
           <i class="bi bi-person"></i>
-          {{ pedido.cliente.user.first_name|title }} {{ pedido.cliente.user.last_name|title }}
-          {% if pedido.cliente.dni %}<span style="color: var(--muted);">({{ pedido.cliente.dni }})</span>{% endif %}
+          {{ deuda.cliente.user.first_name|title }} {{ deuda.cliente.user.last_name|title }}
+          {% if deuda.cliente.dni %}<span style="color: var(--muted);">({{ deuda.cliente.dni }})</span>{% endif %}
         </div>
         <div class="deuda-meta">
-          <span><i class="bi bi-calendar3"></i> {{ pedido.created_at|date:"d/m/Y" }}</span>
-          <span><i class="bi bi-cash"></i> Pagado: ${{ pedido.monto_pagado|floatformat:0 }}</span>
+          <span><i class="bi bi-calendar3"></i> {{ deuda.fecha|date:"d/m/Y" }}</span>
+          <span><i class="bi bi-cash"></i> Pagado: ${{ deuda.pagado|floatformat:0 }}</span>
         </div>
       </div>
       <div class="deuda-monto">
         <div class="deuda-total-label">Total</div>
-        <div class="deuda-total-value">${{ pedido.total|floatformat:0 }}</div>
-        <div class="deuda-pendiente">-${{ pedido.deuda|floatformat:0 }}</div>
+        <div class="deuda-total-value">${{ deuda.total|floatformat:0 }}</div>
+        <div class="deuda-pendiente">-${{ deuda.pendiente|floatformat:0 }}</div>
       </div>
       <div class="deuda-actions">
-        <a href="{% url 'pedidos:detalle_pedido' pedido.id %}" class="btn-action" title="Ver pedido">
+        <a href="{{ deuda.url }}" class="btn-action" title="Ver {{ deuda.tipo|lower }} y registrar pago">
           <i class="bi bi-arrow-right"></i>
         </a>
       </div>

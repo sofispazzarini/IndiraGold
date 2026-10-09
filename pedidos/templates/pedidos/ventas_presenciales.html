@@ -2796,16 +2796,8 @@ function mostrarMensaje(texto){
 </script>
 <script>
 
-document.querySelectorAll(
-    '.btn-detalle-venta'
-).forEach(btn => {
-
-    btn.addEventListener(
-        'click',
-        async function(){
-
-            const ventaId =
-                this.dataset.id
+async function abrirDetalleVenta(ventaId){
+        {
 
             const response = await fetch(
                 `/pedidos/detalle-venta/${ventaId}/`
@@ -3104,8 +3096,25 @@ document.querySelectorAll(
             modal.show()
 
         }
+}
+
+document.querySelectorAll(
+    '.btn-detalle-venta'
+).forEach(btn => {
+
+    btn.addEventListener(
+        'click',
+        function(){
+            abrirDetalleVenta(this.dataset.id)
+        }
     )
 })
+
+// Desde "Gestión de deudas" se llega con ?venta=<id> para ver la venta y registrar el pago
+const ventaParam = new URLSearchParams(window.location.search).get('venta')
+if(ventaParam && /^\d+$/.test(ventaParam)){
+    abrirDetalleVenta(ventaParam)
+}
 document.getElementById(
     'nueva-deuda'
 ).addEventListener(
