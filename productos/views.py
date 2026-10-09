@@ -197,6 +197,9 @@ def error_en_medidas(request):
     return None
 
 
+TALLE_MAX = 20  # Talle.nombre max_length
+
+
 def obtener_talle(nombre):
     """Talle por nombre sin distinguir mayúsculas ("s" y "S" son el mismo talle)."""
     nombre = (nombre or '').strip() or 'Sin talle'
@@ -513,9 +516,13 @@ def agregar_producto(request, subcat_id):
             variantes_list = []
         talles_cargados = [((v.get('talle') or '').strip() or 'Sin talle').casefold() for v in variantes_list]
         talles_repetidos = sorted({t for t in talles_cargados if talles_cargados.count(t) > 1})
+        # El talle se guarda con hasta 20 caracteres (en PostgreSQL uno más largo daría error 500)
+        talles_largos = [t for t in talles_cargados if len(t) > TALLE_MAX]
 
         if len(imagenes_galeria) > 5:
             messages.error(request, "Máximo 5 imágenes de galería permitidas.")
+        elif talles_largos:
+            messages.error(request, f"El talle puede tener hasta {TALLE_MAX} caracteres: revisá «{talles_largos[0]}».")
         elif talles_repetidos:
             messages.error(
                 request,
@@ -787,6 +794,8 @@ def api_crear_categoria(request):
     nombre = request.POST.get('nombre', '').strip()
     if not nombre:
         return JsonResponse({'success': False, 'error': 'Ingresá un nombre para la categoría'})
+    if len(nombre) > 100:
+        return JsonResponse({'success': False, 'error': 'El nombre de la categoría puede tener hasta 100 caracteres.'})
     if Categoria.objects.filter(nombre__iexact=nombre).exists():
         return JsonResponse({'success': False, 'error': f'Ya tenés una categoría llamada "{nombre}". Elegí otro nombre.'})
     categoria = Categoria.objects.create(nombre=nombre, activa=True)
@@ -799,6 +808,8 @@ def api_crear_subcategoria(request):
     categoria_id = request.POST.get('categoria_id')
     if not nombre:
         return JsonResponse({'success': False, 'error': 'Ingresá un nombre para la subcategoría'})
+    if len(nombre) > 100:
+        return JsonResponse({'success': False, 'error': 'El nombre de la subcategoría puede tener hasta 100 caracteres.'})
     if not categoria_id:
         return JsonResponse({'success': False, 'error': 'Seleccioná una categoría primero'})
     categoria = get_object_or_404(Categoria, id=categoria_id, activa=True)
@@ -1118,6 +1129,8 @@ def editar_variante(request, variante_id):
 
     if request.method == 'POST':
         error_medidas = error_en_medidas(request)
+        if not error_medidas and len(request.POST.get('talle_nombre', '').strip()) > TALLE_MAX:
+            error_medidas = f'El talle puede tener hasta {TALLE_MAX} caracteres.'
         if error_medidas:
             messages.error(request, error_medidas)
             return redirect('productos:editar_variante', variante_id=variante.id)
@@ -1236,6 +1249,8 @@ def agregar_variante(request, producto_id):
     if request.method == 'POST':
         talle_nombre = request.POST.get('talle_nombre', '').strip() or 'Sin talle'
         error_form = error_en_medidas(request)
+        if not error_form and len(talle_nombre) > TALLE_MAX:
+            error_form = f'El talle puede tener hasta {TALLE_MAX} caracteres.'
         if not error_form and producto.variantes.filter(talle__nombre__iexact=talle_nombre).exists():
             error_form = f'El producto ya tiene el talle {talle_nombre}. Cambiá el nombre o editalo desde la lista de talles.'
         if error_form:

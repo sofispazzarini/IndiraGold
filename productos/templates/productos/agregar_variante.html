@@ -17,7 +17,7 @@
 
                 <div class="col-md-6">
                     <label class="small fw-bold text-muted text-uppercase mb-1">Talle (Letra / Numero)</label>
-                    <input type="text" name="talle_nombre" class="form-control" value="{{ previo.talle_nombre|default:'' }}" placeholder="Ej: S, M, XL, 42, Unico..." style="text-transform: capitalize;" required>
+                    <input type="text" name="talle_nombre" class="form-control" maxlength="20" value="{{ previo.talle_nombre|default:'' }}" placeholder="Ej: S, M, XL, 42, Unico..." style="text-transform: capitalize;" required>
                 </div>
 
                 <div class="col-md-6">
