@@ -22,7 +22,9 @@
 }
 
 @media print {
-    .no-print, .sidebar, .page-header, .print-hint, .messages { display: none !important; }
+    /* Hoja limpia: sin barra superior (usuario/avatar), menú ni el margen del layout del panel */
+    .no-print, .sidebar, .topbar, .page-header, .print-hint, .messages { display: none !important; }
+    .layout, .main { margin: 0 !important; padding: 0 !important; max-width: none !important; }
 
     body {
         background: #fff !important;
@@ -42,8 +44,9 @@
     /* Solo mostrar seleccionados si hay selección */
     .qr-grid.has-selection .qr-card:not(.selected) { display: none !important; }
 
-    /* Ocultar información de texto */
-    .qr-code-label, .qr-talle, .qr-color, .qr-checkbox { display: none !important; }
+    /* Cada etiqueta lleva su código, talle y color (para saber en qué prenda va) */
+    .qr-checkbox { display: none !important; }
+    .qr-code-label, .qr-talle, .qr-color { display: block !important; font-size: 8pt !important; line-height: 1.2 !important; margin: 0 !important; color: #000 !important; text-align: center !important; }
 
     /* Tarjetas sin estilo - solo el QR */
     .qr-card {
@@ -368,7 +371,7 @@
             <div class="qr-code-label">{{ producto.codigo }}</div>
             <div class="qr-talle">{{ vc.variante.talle.nombre }}</div>
             <div class="qr-color d-flex align-items-center justify-content-center">
-                <span title="{{ vc.color.nombre }}" style="display:inline-block; width:14px; height:14px; border-radius:50%; background-color:{{ vc.color.codigo_hex|default:'#888888' }}; border:1px solid #d8d0c5;"></span>
+                <span title="{{ vc.color.nombre }}" style="display:inline-block; width:14px; height:14px; border-radius:50%; background-color:{{ vc.color.nombre|hex_color:vc.color.codigo_hex }}; border:1px solid #d8d0c5; margin-right:4px;"></span>{{ vc.color.nombre }}
             </div>
         </div>
         {% endfor %}
