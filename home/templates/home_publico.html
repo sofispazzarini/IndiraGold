@@ -564,11 +564,22 @@ function scrollOfertas(dir) {
     font-weight: 700;
     margin: 0 0 0.5rem;
     text-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    /* Textos largos: cortan en 2 líneas y una palabra larga no se sale de la caja */
+    overflow-wrap: anywhere;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
   }
   .carousel-subtitle {
     font-size: 1rem;
     margin: 0;
     opacity: 0.9;
+    overflow-wrap: anywhere;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
   }
   .carousel-btn {
     position: absolute;
@@ -625,7 +636,10 @@ function scrollOfertas(dir) {
     .carousel-btn { width: 40px; height: 40px; }
     .carousel-btn--prev { left: 0.75rem; }
     .carousel-btn--next { right: 0.75rem; }
-    .carousel-caption { padding: 2rem 1.5rem; }
+    /* El texto deja lugar a las flechas (costados) y a los puntos (abajo) */
+    .carousel-caption { padding: 1.5rem 3.5rem 2.75rem; }
+    .carousel-title { font-size: 1.6rem; }
+    .carousel-subtitle { font-size: .9rem; -webkit-line-clamp: 2; }
   }
 
   /* HERO */
