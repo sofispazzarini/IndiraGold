@@ -363,9 +363,18 @@
     .gestion-main {
       padding: 1rem 0.5rem;
     }
+    /* Tarjetas separadas: sin el fondo de la grilla, que entre los huecos se veía como barras beige */
     .kpi-grid {
       grid-template-columns: 1fr;
       gap: 0.75rem;
+      background: transparent;
+      border: none;
+      border-radius: 0;
+      overflow: visible;
+    }
+    .kpi-card {
+      border: 1px solid var(--border);
+      border-radius: 12px;
     }
     .page-title {
       font-size: 1.5rem;
