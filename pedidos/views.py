@@ -920,6 +920,25 @@ def editar_pedido(request, pedido_id):
     return render(request, 'pedidos/editar_pedido.html', context)
 
 @login_required
+def quitar_items_no_disponibles(request, carrito):
+    """Productos o talles que el admin desactivó después de que el cliente los agregó: se sacan
+    del carrito con un aviso (antes se podían comprar igual). Devuelve True si quitó alguno."""
+    if carrito is None:
+        return False
+    no_disponibles = [
+        item for item in carrito.items.select_related('variante__producto', 'variante__talle')
+        if not item.variante.activa or not item.variante.producto.activo
+    ]
+    for item in no_disponibles:
+        messages.warning(
+            request,
+            f'{item.variante.producto.nombre} (talle {item.variante.talle.nombre}) ya no está disponible '
+            'y lo quitamos de tu carrito.'
+        )
+        item.delete()
+    return bool(no_disponibles)
+
+
 def checkout_view(request):
     # Administradores no pueden hacer checkout
     if request.user.is_superuser or request.user.is_staff:
@@ -933,6 +952,7 @@ def checkout_view(request):
 
     # Precios al día (ofertas, cambios de precio) antes de mostrar el resumen
     refrescar_precios_carrito(carrito)
+    quitar_items_no_disponibles(request, carrito)
 
     # Traemos los items con sus variantes y fotos
     items = carrito.items.all().select_related('variante__producto', 'variante__talle')
@@ -1466,6 +1486,8 @@ def _crear_pago(request):
 
     carrito = get_or_create_cart(request)
     refrescar_precios_carrito(carrito)
+    if quitar_items_no_disponibles(request, carrito):
+        return redirect('pedidos:checkout')
 
     # Traer items del carrito
     items = carrito.items.all().select_related(
