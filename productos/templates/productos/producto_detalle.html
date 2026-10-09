@@ -1140,6 +1140,26 @@ function datosTalle(varianteId) {
     return variantesData.find(v => String(v.id) === String(varianteId));
 }
 
+// Después de agregar, sumar o quitar: "ya tenés N en el carrito" se recalcula con el mini-carrito
+function sincronizarEnCarrito() {
+    const porTalle = {};
+    const porColor = {};
+    document.querySelectorAll('.cart-item[data-variante-id]').forEach(el => {
+        const id = String(el.dataset.varianteId);
+        const cantidad = parseInt(el.dataset.cantidad || '0', 10) || 0;
+        const color = (el.dataset.colorNombre || '').trim().toLowerCase();
+        porTalle[id] = (porTalle[id] || 0) + cantidad;
+        porColor[`${id}|${color}`] = (porColor[`${id}|${color}`] || 0) + cantidad;
+    });
+    variantesData.forEach(v => {
+        v.en_carrito = porTalle[String(v.id)] || 0;
+        (v.colores || []).forEach(c => {
+            c.en_carrito = porColor[`${v.id}|${(c.nombre || '').trim().toLowerCase()}`] || 0;
+        });
+    });
+    actualizarDisponible();
+}
+
 // Disponible para el talle y color elegidos: si el talle tiene stock por color, manda el del color
 function actualizarDisponible() {
     if (!varianteSeleccionada) return;
@@ -1479,6 +1499,7 @@ async function submitCartForm(form) {
 
         if (applied) {
             try { cerrarModalCantidadDetalle(); } catch (e) { /* ignore */ }
+            try { sincronizarEnCarrito(); } catch (e) { /* ignore */ }
         } else {
             form.removeAttribute('data-submitting');
             form.submit();
