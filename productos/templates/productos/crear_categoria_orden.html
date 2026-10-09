@@ -239,14 +239,14 @@
     <i class="bi bi-arrow-left"></i> Volver
 </a>
 <div class="modern-card">
-    <div class="modern-title">{% if categoria %}Editar Categoria{% else %}Nueva Categoria{% endif %}</div>
-    <div class="modern-sub">{% if categoria %}Modificar categoria de orden{% else %}Crear seccion destacada{% endif %}</div>
+    <div class="modern-title">{% if categoria %}Editar categoría{% else %}Nueva categoría{% endif %}</div>
+    <div class="modern-sub">{% if categoria %}Modificar categoría de orden{% else %}Crear sección destacada{% endif %}</div>
 
     <form method="post" autocomplete="off">
         {% csrf_token %}
 
         <div class="modern-section">
-            <div class="modern-section-title">1. Informacion</div>
+            <div class="modern-section-title">1. Información</div>
             <div class="modern-row">
                 <div class="modern-col-full">
                     <label class="modern-label"><i class="bi bi-tag me-1"></i> Nombre * <span class="char-limit">máx. 100</span></label>
@@ -256,7 +256,7 @@
             </div>
             <div class="modern-row">
                 <div class="modern-col-full">
-                    <label class="modern-label"><i class="bi bi-card-text me-1"></i> Descripcion (opcional) <span class="char-limit">máx. 500</span></label>
+                    <label class="modern-label"><i class="bi bi-card-text me-1"></i> Descripción (opcional) <span class="char-limit">máx. 500</span></label>
                     <textarea name="descripcion" class="modern-textarea char-input" data-max="500" maxlength="500" placeholder="Descripcion breve de la categoria...">{{ form.descripcion.value|default:'' }}</textarea>
                     <div class="char-counter"><span class="char-count">0</span>/500</div>
                 </div>

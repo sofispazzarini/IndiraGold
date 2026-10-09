@@ -353,7 +353,7 @@
 <aside class="sidebar" id="sidebar">
   <div class="sidebar__brand">
     <div class="brand-name">IndiraGold</div>
-    <div class="brand-tagline">Panel de gestión</div>
+    <div class="brand-tagline">{% if user.is_superuser %}Panel de gestión{% else %}Mi cuenta{% endif %}</div>
   </div>
 
   <nav class="sidebar__nav">

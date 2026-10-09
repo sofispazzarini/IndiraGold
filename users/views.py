@@ -120,7 +120,7 @@ def perfil(request):
         if 'eliminar_direccion_cliente' in request.POST:
             direccion = get_object_or_404(Direccion, pk=request.POST.get('eliminar_direccion_cliente'), cliente=cliente)
             direccion.delete()
-            mensaje = 'Direccion eliminada correctamente.'
+            mensaje = 'Dirección eliminada correctamente.'
             mensaje_tipo = 'success'
             direccion_form = NuevaDireccionForm(initial={'cliente': cliente})
         elif 'editar_direccion_cliente' in request.POST:
@@ -128,11 +128,11 @@ def perfil(request):
             edit_form = NuevaDireccionForm(request.POST, instance=direccion, initial={'cliente': cliente})
             if edit_form.is_valid():
                 edit_form.save()
-                mensaje = 'Direccion actualizada correctamente.'
+                mensaje = 'Dirección actualizada correctamente.'
                 mensaje_tipo = 'success'
                 edit_form = None
             else:
-                mensaje = 'Por favor revisa los datos de la direccion.'
+                mensaje = 'Revisá los datos de la dirección.'
                 mensaje_tipo = 'danger'
                 edit_direccion_id = direccion.pk
             direccion_form = NuevaDireccionForm(initial={'cliente': cliente})
@@ -142,11 +142,11 @@ def perfil(request):
                 direccion = direccion_form.save(commit=False)
                 direccion.cliente = cliente
                 direccion.save()
-                mensaje = 'Direccion agregada correctamente.'
+                mensaje = 'Dirección agregada correctamente.'
                 mensaje_tipo = 'success'
                 direccion_form = NuevaDireccionForm(initial={'cliente': cliente})
             else:
-                mensaje = 'Por favor revisa los datos de la direccion.'
+                mensaje = 'Revisá los datos de la dirección.'
                 mensaje_tipo = 'danger'
         else:
             # Se valida todo antes de tocar el usuario: si hay un error no se guarda nada y la

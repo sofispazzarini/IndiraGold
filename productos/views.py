@@ -1665,7 +1665,7 @@ def admin_ofertas(request):
         try:
             descuento_numero = int(descuento)
         except (TypeError, ValueError):
-            messages.error(request, 'El descuento debe ser un numero.')
+            messages.error(request, 'El descuento debe ser un número.')
             return redirect('productos:admin_ofertas')
 
         if descuento_numero < 1 or descuento_numero > 100:
@@ -1677,7 +1677,7 @@ def admin_ofertas(request):
                 messages.error(request, 'Carga un codigo para el cupon.')
                 return redirect('productos:admin_ofertas')
             if Oferta.objects.filter(codigo__iexact=codigo).exists():
-                messages.error(request, 'Ya existe una oferta con ese codigo.')
+                messages.error(request, 'Ya existe una oferta con ese código.')
                 return redirect('productos:admin_ofertas')
 
             # Procesar límite de usos
@@ -1715,7 +1715,7 @@ def admin_ofertas(request):
                 fecha_fin=fecha_fin_valor
             )
 
-            messages.success(request, 'Codigo de descuento creado correctamente.')
+            messages.success(request, 'Código de descuento creado correctamente.')
             return redirect('productos:admin_ofertas')
 
         alcance = request.POST.get('alcance', 'productos')

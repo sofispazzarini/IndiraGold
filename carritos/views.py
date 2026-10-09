@@ -817,7 +817,7 @@ def sumar_producto(request):
 		if item:
 			# Validar stock antes de aumentar
 			if item.cantidad + 1 > stock_disponible:
-				messages.error(request, f"No hay más stock disponible de este color ({stock_disponible} máx.)")
+				messages.error(request, f"No hay más stock disponible {'de este color' if color_nombre else 'de este talle'} ({stock_disponible} máx.)")
 				return redirect(next_url or reverse("home:home"))
 			item.cantidad += 1
 			item.save()
@@ -858,7 +858,7 @@ def sumar_producto(request):
 
 		# Validar stock por color para usuario invitado
 		if current_qty + 1 > stock_disponible:
-			messages.error(request, f"No hay más stock disponible de este color ({stock_disponible} máx.)")
+			messages.error(request, f"No hay más stock disponible {'de este color' if color_nombre else 'de este talle'} ({stock_disponible} máx.)")
 			return redirect(next_url or reverse("home:home"))
 
 		cart[key] = current_qty + 1

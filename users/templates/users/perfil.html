@@ -713,7 +713,7 @@
         </h3>
         <p class="form-card-subtitle">Direcciones guardadas en tu cuenta</p>
       </div>
-      <button type="button" class="btn-add-toggle{% if direccion_form.errors %} is-open{% endif %}" id="toggle-address-form" aria-label="Agregar direccion" aria-expanded="{% if direccion_form.errors %}true{% else %}false{% endif %}">
+      <button type="button" class="btn-add-toggle{% if direccion_form.errors %} is-open{% endif %}" id="toggle-address-form" aria-label="Agregar dirección" aria-expanded="{% if direccion_form.errors %}true{% else %}false{% endif %}">
         <i class="bi bi-plus-lg"></i>
       </button>
     </div>
@@ -767,7 +767,7 @@
                 <input type="text" name="calle" class="form-control" value="{{ dir.calle|title }}" maxlength="100" required>
               </div>
               <div class="form-group">
-                <label class="form-label">Numero</label>
+                <label class="form-label">Número</label>
                 <input type="text" name="numero" class="form-control" value="{{ dir.numero }}" maxlength="10" required>
               </div>
               <div class="form-group">
@@ -805,7 +805,7 @@
                 <input type="text" name="ciudad" class="form-control" value="{{ dir.ciudad|title }}" maxlength="50" required>
               </div>
               <div class="form-group">
-                <label class="form-label">Codigo postal</label>
+                <label class="form-label">Código postal</label>
                 <input type="text" name="codigo_postal" class="form-control" value="{{ dir.codigo_postal }}" maxlength="4" inputmode="numeric" pattern="[0-9]{4}" title="4 números" required>
               </div>
               <div class="form-group full-width">
@@ -814,7 +814,7 @@
               </div>
             </div>
             <button type="submit" name="editar_direccion_cliente" value="{{ dir.id }}" class="btn-submit">
-              GUARDAR DIRECCION
+              GUARDAR DIRECCIÓN
             </button>
             <button type="button" class="btn-secondary-action edit-address-cancel" data-target="edit-address-{{ dir.id }}">
               CANCELAR
@@ -835,7 +835,7 @@
       {% csrf_token %}
       <h4 class="form-card-title address-form-title">
         <i class="bi bi-plus-circle"></i>
-        Agregar direccion
+        Agregar dirección
       </h4>
       {% if direccion_form.errors %}
       <div class="alert alert-danger">
@@ -862,7 +862,7 @@
           <div class="char-counter"><span class="char-count">0</span>/100</div>
         </div>
         <div class="form-group">
-          <label class="form-label">Numero</label>
+          <label class="form-label">Número</label>
           {{ direccion_form.numero }}
         </div>
         <div class="form-group">
@@ -876,7 +876,7 @@
           <div class="char-counter"><span class="char-count">0</span>/50</div>
         </div>
         <div class="form-group">
-          <label class="form-label">Codigo postal</label>
+          <label class="form-label">Código postal</label>
           {{ direccion_form.codigo_postal }}
         </div>
         <div class="form-group full-width">
@@ -886,7 +886,7 @@
         </div>
       </div>
       <button type="submit" name="agregar_direccion_cliente" class="btn-submit">
-        AGREGAR DIRECCION
+        AGREGAR DIRECCIÓN
       </button>
     </form>
   </div>

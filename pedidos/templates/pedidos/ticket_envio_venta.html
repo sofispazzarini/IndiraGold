@@ -19,7 +19,7 @@
     Calle: {{ direccion.calle }}, N° {{ direccion.numero }},
     Ciudad: {{ direccion.ciudad }}, CP: {{ direccion.codigo_postal }},
     Provincia: {{ direccion.provincia }}
-    {% if direccion.referencia %}. Ref: {{ direccion.referencia }}{% endif %}
+    {% if direccion.referencia %}<br>Referencia: {{ direccion.referencia }}{% endif %}
 </div>
 {% elif pedido_direccion_texto %}
 <div class="line">Dirección de envío: {{ pedido_direccion_texto }}</div>

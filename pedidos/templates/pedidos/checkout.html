@@ -1177,7 +1177,7 @@
                 </select>
 
                 <button type="button" class="btn-checkout-add-address" data-bs-toggle="modal" data-bs-target="#modalNuevaDireccionCheckout">
-                    <i class="bi bi-plus-circle"></i> Agregar direccion
+                    <i class="bi bi-plus-circle"></i> Agregar dirección
                 </button>
 
                 {% for direccion in direcciones_flex %}
@@ -1213,7 +1213,7 @@
 
                 <div class="alert-warning" id="flex-sin-direcciones" {% if direcciones_flex %}style="display:none;"{% endif %}>
                 <i class="bi bi-exclamation-triangle"></i>
-                No tenés direcciones registradas para esta zona. Usá el botón Agregar direccion para cargar una nueva.
+                No tenés direcciones registradas para esta zona. Usá el botón Agregar dirección para cargar una nueva.
                 </div>
 
             </div>
@@ -1350,7 +1350,7 @@
                 </select>
 
                 <button type="button" class="btn-checkout-add-address" data-bs-toggle="modal" data-bs-target="#modalNuevaDireccionCheckout">
-                    <i class="bi bi-plus-circle"></i> Agregar direccion
+                    <i class="bi bi-plus-circle"></i> Agregar dirección
                 </button>
 
                 {% for direccion in direcciones %}
@@ -1388,7 +1388,7 @@
 
                 <div class="alert-warning">
                     <i class="bi bi-exclamation-triangle"></i>
-                    No tenés direcciones registradas. Usá el botón Agregar direccion para cargar una nueva.
+                    No tenés direcciones registradas. Usá el botón Agregar dirección para cargar una nueva.
                 </div>
 
                 {% endfor %}
@@ -1425,7 +1425,7 @@
           </label>
 
           <div style="margin-top: 1.25rem;">
-            <div class="direccion-alias" style="margin-bottom: 0.75rem;">Metodo de pago</div>
+            <div class="direccion-alias" style="margin-bottom: 0.75rem;">Método de pago</div>
 
             {% if configuracion_pago.mercado_pago_activo %}
             <label class="direccion-card regalo-card pago-card" for="pago-mercado">
@@ -1458,7 +1458,7 @@
                 {% endfor %}
               </ul>
               {% else %}
-              <div class="direccion-detail">La administradora todavia no cargo planes de cuotas.</div>
+              <div class="direccion-detail">Por ahora no hay planes de cuotas disponibles.</div>
               {% endif %}
             </div>
             {% endif %}
@@ -1530,7 +1530,7 @@
 
           <div class="coupon-box">
             <button type="button" class="coupon-toggle" id="coupon-toggle">
-              Agregar codigo de descuento
+              Agregar código de descuento
               <i class="bi bi-chevron-down"></i>
             </button>
             <div class="coupon-form" id="coupon-form">
@@ -1580,7 +1580,7 @@
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content" style="border-radius: 16px; border: 1px solid var(--border);">
       <div class="modal-header" style="border-bottom: 1px solid var(--border);">
-        <h5 class="modal-title" style="color: var(--burgundy); font-weight: 700;">Agregar direccion</h5>
+        <h5 class="modal-title" style="color: var(--burgundy); font-weight: 700;">Agregar dirección</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
       </div>
       <form id="formNuevaDireccionCheckout">
@@ -1596,7 +1596,7 @@
               <input type="text" name="calle" maxlength="100" class="form-control" required>
             </div>
             <div class="col-md-6">
-              <label class="form-label">Numero</label>
+              <label class="form-label">Número</label>
               <input type="text" name="numero" maxlength="10" class="form-control" required>
             </div>
             <div class="col-md-6">
@@ -1608,7 +1608,7 @@
               <input type="text" name="provincia" class="form-control" required>
             </div>
             <div class="col-md-6">
-              <label class="form-label">Codigo postal</label>
+              <label class="form-label">Código postal</label>
               <input type="text" name="codigo_postal" maxlength="4" inputmode="numeric" pattern="[0-9]{4}" title="4 números" class="form-control" required>
             </div>
             <div class="col-12">
@@ -1928,7 +1928,7 @@ function enviarCheckout() {
   const metodoPago = valorSeleccionado('metodo_pago') || 'mercado_pago';
 
   if (metodoEntrega === 'flex' && !valorSeleccionado('direccion_id')) {
-    alert('Selecciona una direccion para Envio Flex.');
+    alert('Seleccioná una dirección para el envío Flex.');
     return;
   }
 
@@ -2043,7 +2043,7 @@ if (couponButton) {
     couponMessage.textContent = '';
 
     if (!codigo) {
-      couponMessage.textContent = 'Escribi un codigo para aplicarlo.';
+      couponMessage.textContent = 'Escribí un código para aplicarlo.';
       couponMessage.classList.add('error');
       return;
     }

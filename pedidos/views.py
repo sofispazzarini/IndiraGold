@@ -1405,7 +1405,7 @@ def cotizar_correo_argentino_checkout(request):
         ).first()
         if not direccion:
             print(f"DEBUG: No se encontro direccion para cliente {cliente.id}")
-            return JsonResponse({'success': False, 'error': 'Selecciona una direccion.'}, status=400)
+            return JsonResponse({'success': False, 'error': 'Seleccioná una dirección.'}, status=400)
         codigo_postal = direccion.codigo_postal
         print(f"DEBUG: Direccion encontrada, cp={codigo_postal}")
 
@@ -1674,7 +1674,7 @@ def _crear_pago(request):
             cliente=cliente
         ).first()
         if not direccion_flex:
-            messages.error(request, 'Selecciona una direccion para Envio Flex.')
+            messages.error(request, 'Seleccioná una dirección para el envío Flex.')
             return redirect('pedidos:checkout')
         if opcion_flex:
             if not opcion_flex.incluye_direccion(direccion_flex):

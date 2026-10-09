@@ -70,6 +70,8 @@ class ProductoForm(forms.ModelForm):
             self.fields['categoria'].required = False
         if 'subcategoria' in self.fields:
             self.fields['subcategoria'].required = False
+        if 'proveedor' in self.fields:
+            self.fields['proveedor'].empty_label = 'Sin proveedor'
    
     class Meta:
         model = Producto

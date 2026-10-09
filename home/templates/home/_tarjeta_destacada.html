@@ -16,13 +16,13 @@
       {% if producto.stock_total == 0 %}
         <span class="product-card__badge product-card__badge--agotado">Agotado</span>
       {% elif producto.stock_total < 5 %}
-        <span class="product-card__badge product-card__badge--ultimos">Ultimos</span>
+        <span class="product-card__badge product-card__badge--ultimos">Últimos</span>
       {% endif %}
     </a>
     <div class="product-card__body">
       <span class="product-card__cat">{{ producto.categoria.nombre }}</span>
       <h3 class="product-card__name">{{ producto.nombre }}</h3>
-      <p class="product-card__meta">{{ producto.tipo }} - {{ producto.tela }}</p>
+      <p class="product-card__meta">{{ producto.tipo }} · {{ producto.tela }}</p>
           {% if producto.obtener_oferta_activa %}
           <div class="product-discount-circle">
             -{{ producto.obtener_oferta_activa.descuento }}%
