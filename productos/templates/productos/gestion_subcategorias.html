@@ -472,6 +472,45 @@
     color: #991b1b;
     border-color: #fecaca;
   }
+
+  /* Pantallas táctiles / angostas: sin hover, las acciones (eliminar) tienen que verse siempre */
+  @media (hover: none), (max-width: 991px) {
+    .cat-actions,
+    .cat-arrow {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  /* Celulares: encabezado y nombres sin salirse de la pantalla */
+  @media (max-width: 480px) {
+    .gestion-main {
+      padding: 2rem 1rem 3rem;
+    }
+    .page-header {
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      align-items: flex-start;
+    }
+    .page-header > * {
+      min-width: 0;
+    }
+    .header-right {
+      text-align: left;
+    }
+    .item-count {
+      font-size: 2.2rem;
+    }
+    .cat-name {
+      font-size: 1.35rem;
+      white-space: normal;
+      overflow-wrap: break-word;
+    }
+    .category-item {
+      grid-template-columns: 1.6rem minmax(0, 1fr) auto;
+      gap: 0.6rem;
+    }
+  }
 </style>
 {% endblock %}
 

@@ -480,6 +480,15 @@
       font-size: 0.8rem;
     }
   }
+
+  /* Pantallas táctiles / angostas: sin hover, las acciones (eliminar) tienen que verse siempre */
+  @media (hover: none), (max-width: 991px) {
+    .cat-actions,
+    .cat-arrow {
+      opacity: 1;
+      transform: none;
+    }
+  }
 </style>
 {% endblock %}
 
