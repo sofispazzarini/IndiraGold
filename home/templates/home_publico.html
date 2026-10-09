@@ -173,7 +173,7 @@
                     <button
                       type="button"
                       class="product-card__btn"
-                      data-variantes='{{ producto.variantes_json|safe }}'
+                      data-variantes="{{ producto.variantes_json }}"
                       data-nombre="{{ producto.nombre }}"
                       onclick="abrirModalCantidad(this)"
                     >
@@ -414,7 +414,7 @@ function scrollCatOrden{{ cat_orden.id }}(dir) {
     <button
       type="button"
       class="product-card__btn"
-      data-variantes='{{ producto.variantes_json|safe }}'
+      data-variantes="{{ producto.variantes_json }}"
       data-nombre="{{ producto.nombre }}"
       onclick="abrirModalCantidad(this)"
     >
@@ -1714,6 +1714,11 @@ function scrollCatOrden{{ cat_orden.id }}(dir) {
 
   let coloresModalActuales = [];
 
+  // Nombres de color con comillas o apóstrofos dentro de atributos HTML
+  function escaparAtributo(texto) {
+    return String(texto).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
   function renderizarColoresModal(varianteId) {
     const container = document.getElementById('modalColoresContainer');
     const grid = document.getElementById('modalColoresGrid');
@@ -1738,6 +1743,7 @@ function scrollCatOrden{{ cat_orden.id }}(dir) {
     container.style.display = 'block';
     grid.innerHTML = colores.map((color, index) => {
       const nombre = color.nombre || 'Color';
+      const nombreAttr = escaparAtributo(nombre);
       const hex = normalizarHexColor(color.codigo_hex || color.hex || '#888888');
       const stockColor = color.stock || 0;
       const sinStock = stockColor <= 0;
@@ -1745,10 +1751,10 @@ function scrollCatOrden{{ cat_orden.id }}(dir) {
       return `
         <button type="button"
                 class="color-circle-btn ${index === indexSeleccionado ? 'seleccionado' : ''} ${sinStock ? 'sin-stock' : ''}"
-                data-color-name="${nombre}"
+                data-color-name="${nombreAttr}"
                 data-stock="${stockColor}"
-                title="${nombre} (${stockColor} disponibles)"
-                aria-label="${nombre}"
+                title="${nombreAttr} (${stockColor} disponibles)"
+                aria-label="${nombreAttr}"
                 style="width: 32px; height: 32px; border-radius: 50%; border: 2px solid ${index === indexSeleccionado ? '#1a1612' : '#e8dfd4'}; background: ${hex}; box-shadow: inset 0 0 0 2px rgba(255,255,255,.9); cursor:${sinStock ? 'not-allowed' : 'pointer'}; padding:0; transition:all .15s ease; opacity:${sinStock ? '0.4' : '1'};"
                 onclick="seleccionarColorModal(this)" ${sinStock ? 'disabled' : ''}></button>
       `;
