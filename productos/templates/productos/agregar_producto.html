@@ -11,7 +11,10 @@
   }
   @media (max-width: 480px) {
     .container-fluid { padding: 0.5rem !important; }
-    .row.g-0 > [class*="col-3"] { flex: 0 0 100%; max-width: 100%; border-right: none !important; }
+    .row.g-0 > [class*="col-3"],
+    .row.g-0 > .col-dibujo { flex: 0 0 100%; max-width: 100%; border-right: none !important; }
+    .row.g-0 > .col-dibujo { min-height: 220px; }
+    textarea[name="avios"] { min-height: 6rem; }
     h2 { font-size: 1.4rem !important; }
   }
   /* Character counter */
@@ -114,7 +117,7 @@
                         <textarea name="avios" class="form-control border-0 bg-transparent p-0 flex-grow-1 char-input" data-max="500" maxlength="500">{{ form.avios.value|default_if_none:'' }}</textarea>
                         <div class="char-counter"><span class="char-count">0</span>/500</div>
                     </div>
-                    <div class="col-6 border-end border-dark p-3 d-flex flex-column align-items-center justify-content-center bg-light">
+                    <div class="col-6 col-dibujo border-end border-dark p-3 d-flex flex-column align-items-center justify-content-center bg-light">
                         <label class="small fw-bold text-muted mb-3">DIBUJO TÉCNICO</label>
                         <input type="file" name="imagen_tecnica" id="inputImgTecnica" class="d-none" accept="image/*">
                         <label for="inputImgTecnica" id="labelUpload" class="text-center" style="cursor:pointer; border: 2px dashed #b8922a; padding: 40px; border-radius: 15px; color: #b8922a;">
@@ -504,6 +507,8 @@
             actualizarStockVariante();
             document.getElementById('colorNombreModal').value = '';
             document.getElementById('colorStockModal').value = '';
+            // Avisa del cambio para que el contador de caracteres vuelva a 0
+            document.getElementById('colorNombreModal').dispatchEvent(new Event('input'));
         };
 
         // Botón Agregar Medida (DENTRO DEL MODAL)
@@ -547,6 +552,7 @@
                 // Reset
                 tempColores = []; tempMedidas = [];
                 e.target.reset();
+                e.target.querySelectorAll('.char-input').forEach(i => i.dispatchEvent(new Event('input')));
                 renderTempColores(); renderTempMedidas();
                 document.getElementById('stockVarianteTotal').textContent = '0';
             } catch(err) {

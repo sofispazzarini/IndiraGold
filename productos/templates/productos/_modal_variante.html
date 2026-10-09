@@ -9,10 +9,10 @@
         <form id="formVarianteInternal">
           
           <div class="mb-4">
-            <label class="form-label fw-bold" style="color: #8c7e70; font-size: 0.8rem;">TALLE (opcional) <span class="char-limit">máx. 50</span></label>
+            <label class="form-label fw-bold" style="color: #8c7e70; font-size: 0.8rem;">TALLE (opcional) <span class="char-limit">máx. 20</span></label>
             <input type="text" class="form-control char-input" id="inputTalleLibre" data-max="20" maxlength="20" placeholder="Ej: S, M, XL, 42, Unico... O Dejalo Vacio"
                    style="border-radius: 8px; border: 1.5px solid #e8dfd4; text-transform: capitalize;">
-            <div class="char-counter"><span class="char-count">0</span>/50</div>
+            <div class="char-counter"><span class="char-count">0</span>/20</div>
           </div>
 
           <div class="mb-4">
@@ -22,11 +22,13 @@
                 <input type="color" class="form-control form-control-color" id="colorPickerModal" value="#000000" title="Elegir color"
                        style="width: 45px; height: 38px; padding: 2px; border-radius: 8px; cursor: pointer;">
               </div>
-              <div class="col">
+              <div class="col" style="min-width: 0;">
                 <input type="text" class="form-control char-input" id="colorNombreModal" data-max="30" maxlength="30" placeholder="Nombre (Ej: Azul Marino)"
                        style="border: 1.5px solid #e8dfd4; border-radius: 8px;">
               </div>
-              <div class="col-3">
+              <!-- En pantallas chicas stock y "+" bajan a una segunda línea para que se lea el nombre -->
+              <div class="w-100 d-sm-none"></div>
+              <div class="col col-sm-3">
                 <input type="number" min="1" step="1" class="form-control" id="colorStockModal" placeholder="Stock"
                        style="border: 1.5px solid #e8dfd4; border-radius: 8px;"
                        onkeydown="return event.key !== 'e' && event.key !== 'E' && event.key !== '+' && event.key !== '-' && event.key !== '.'">
@@ -55,10 +57,10 @@
           <div class="mb-4">
             <label class="form-label fw-bold" style="color: #8c7e70; font-size: 0.8rem;">MEDIDAS (cm)</label>
             <div class="row g-2 mb-2">
-              <div class="col-3"><input type="number" step="0.01" class="form-control form-control-sm" id="medAlto" placeholder="Alto"></div>
-              <div class="col-3"><input type="number" step="0.01" class="form-control form-control-sm" id="medAncho" placeholder="Ancho"></div>
-              <div class="col-3"><input type="number" step="0.01" class="form-control form-control-sm" id="medLargo" placeholder="Largo"></div>
-              <div class="col-3"><input type="number" step="0.01" class="form-control form-control-sm" id="medTiro" placeholder="Tiro"></div>
+              <div class="col-6 col-sm-3"><input type="number" step="0.01" class="form-control form-control-sm" id="medAlto" placeholder="Alto"></div>
+              <div class="col-6 col-sm-3"><input type="number" step="0.01" class="form-control form-control-sm" id="medAncho" placeholder="Ancho"></div>
+              <div class="col-6 col-sm-3"><input type="number" step="0.01" class="form-control form-control-sm" id="medLargo" placeholder="Largo"></div>
+              <div class="col-6 col-sm-3"><input type="number" step="0.01" class="form-control form-control-sm" id="medTiro" placeholder="Tiro"></div>
             </div>
             <button type="button" class="btn btn-outline-secondary btn-sm w-100 mb-2" id="btnPostMedida">+ Cargar estas medidas</button>
             
