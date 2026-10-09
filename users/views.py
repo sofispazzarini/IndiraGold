@@ -524,13 +524,22 @@ def confirmar_direccion(request):
         form = RegistroUsuarioForm(data, password_hash=data.get("password_hash"))
         if form.is_valid():
             try:
-                form.save()
+                cliente = form.save()
             except IntegrityError:
                 request.session["confirmar_direccion_error"] = "Ya existe una cuenta con ese DNI o correo. Iniciá sesión con tu DNI o volvé al registro con otros datos."
                 return redirect("users:confirmar_direccion")
             for clave in ("registro_data", "codigo_verificacion", "email_verificado"):
                 request.session.pop(clave, None)
-            return redirect("users:login")
+            # Cuenta creada: entra directo, con aviso (antes caía en el login vacío sin ningún mensaje)
+            carrito_temporal = request.session.get('carrito', {})
+            sesion_anterior = request.session.session_key
+            auth_login(request, cliente.user, backend='django.contrib.auth.backends.ModelBackend')
+            from carritos.utils import vincular_carrito_con_usuario
+            vincular_carrito_con_usuario(request, session_id_previo=sesion_anterior, carrito_sesion=carrito_temporal)
+            messages.success(request, f'¡Listo, {cliente.user.first_name}! Tu cuenta está creada. Para entrar la próxima vez usá tu DNI y tu contraseña.')
+            if carrito_temporal:
+                return redirect("pedidos:checkout")
+            return redirect("home:home")
         # Redirect (no render) para que recargar la página no reenvíe la confirmación
         request.session["confirmar_direccion_error"] = "No pudimos confirmar la dirección. Revisá los datos e intentá de nuevo."
         return redirect("users:confirmar_direccion")

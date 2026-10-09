@@ -109,6 +109,7 @@
     color: #ccc;
   }
 
+  .alert-ok { background: #eef6ea; border: 1px solid #c6e0bb; color: #3d6e2a; border-radius: 10px; padding: .85rem 1rem; font-size: .9rem; margin-bottom: 1.25rem; }
   .alert-error {
     background: rgba(110, 14, 46, 0.06);
     border: 1px solid rgba(110, 14, 46, 0.15);
@@ -185,6 +186,12 @@
     </div>
 
     <h1 class="login-title">Iniciar sesión</h1>
+
+    {% if messages %}
+      {% for message in messages %}
+      <div class="{% if message.tags == 'success' %}alert-ok{% else %}alert-error{% endif %}">{{ message }}</div>
+      {% endfor %}
+    {% endif %}
 
     {% if error %}
     <div class="alert-error">{{ error }}</div>
