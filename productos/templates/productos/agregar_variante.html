@@ -17,12 +17,12 @@
 
                 <div class="col-md-6">
                     <label class="small fw-bold text-muted text-uppercase mb-1">Talle (Letra / Numero)</label>
-                    <input type="text" name="talle_nombre" class="form-control" placeholder="Ej: S, M, XL, 42, Unico..." style="text-transform: capitalize;" required>
+                    <input type="text" name="talle_nombre" class="form-control" value="{{ previo.talle_nombre|default:'' }}" placeholder="Ej: S, M, XL, 42, Unico..." style="text-transform: capitalize;" required>
                 </div>
 
                 <div class="col-md-6">
                     <label class="small fw-bold text-muted text-uppercase mb-1">Stock de este talle</label>
-                    <input type="number" name="stock" id="stockTalleInput" class="form-control" value="0" min="0" placeholder="0">
+                    <input type="number" name="stock" id="stockTalleInput" class="form-control" value="{{ previo.stock|default:'0' }}" min="0" placeholder="0">
                     <small class="text-muted" id="stockTalleAyuda"></small>
                 </div>
 
@@ -67,6 +67,7 @@
     #btnAgregarColor { border-radius: 0 12px 12px 0 !important; }
 </style>
 
+{% if previo %}{{ previo|json_script:'talle-previo' }}{% endif %}
 <script>
 document.getElementById('btnAgregarColor').addEventListener('click', function() {
     const colorHex = document.getElementById('colorPicker').value;
@@ -109,6 +110,26 @@ function recalcularStockTalle() {
     }
 }
 document.addEventListener('DOMContentLoaded', recalcularStockTalle);
+
+// Si el talle estaba repetido, se vuelven a cargar los colores y medidas que se habían ingresado
+{% if previo %}
+document.addEventListener('DOMContentLoaded', function() {
+    const previo = JSON.parse(document.getElementById('talle-previo').textContent);
+    (previo.colores || []).forEach(color => {
+        document.getElementById('colorPicker').value = color.hex && color.hex.length === 7 ? color.hex : '#000000';
+        document.getElementById('colorNombreInput').value = color.nombre;
+        document.getElementById('btnAgregarColor').click();
+        const stocks = document.querySelectorAll('#contenedorColores .stock-color-input');
+        stocks[stocks.length - 1].value = color.stock;
+    });
+    (previo.medidas || []).forEach(medida => {
+        agregarMedida();
+        const fila = [...document.querySelectorAll('#contenedorMedidas .medida-row')].pop();
+        ['alto', 'ancho', 'largo', 'tiro'].forEach(campo => { fila.querySelector(`[name="${campo}"]`).value = medida[campo]; });
+    });
+    recalcularStockTalle();
+});
+{% endif %}
 
 function agregarMedida() {
     const contenedor = document.getElementById('contenedorMedidas');

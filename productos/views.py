@@ -1191,8 +1191,25 @@ def agregar_variante(request, producto_id):
     if request.method == 'POST':
         talle_nombre = request.POST.get('talle_nombre', '').strip() or 'Sin talle'
         if producto.variantes.filter(talle__nombre__iexact=talle_nombre).exists():
-            messages.error(request, f'El producto ya tiene el talle {talle_nombre}. Editalo desde la lista de talles.')
-            return redirect('productos:agregar_variante', producto_id=producto.id)
+            messages.error(request, f'El producto ya tiene el talle {talle_nombre}. Cambiá el nombre o editalo desde la lista de talles.')
+            # Se vuelve a mostrar el form con lo cargado (colores, stock y medidas), sin redirect
+            medidas_previas = [
+                {'alto': alto, 'ancho': ancho, 'largo': largo, 'tiro': tiro}
+                for alto, ancho, largo, tiro in zip(
+                    request.POST.getlist('alto'), request.POST.getlist('ancho'),
+                    request.POST.getlist('largo'), request.POST.getlist('tiro'),
+                )
+                if alto or ancho or largo or tiro
+            ]
+            return render(request, 'productos/agregar_variante.html', {
+                'producto': producto,
+                'previo': {
+                    'talle_nombre': talle_nombre,
+                    'stock': request.POST.get('stock') or '0',
+                    'colores': leer_colores_con_stock(request),
+                    'medidas': medidas_previas,
+                },
+            })
         talle_obj = obtener_talle(talle_nombre)
 
         try:
