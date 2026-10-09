@@ -17,7 +17,8 @@
 <div class="line">{{ metodo_pago }}</div>
 {% if not es_regalo %}
 <div class="line">Subtotal: {{ subtotal }}</div>
-<div class="line">Descuento: 0% (- {{ descuento }})</div>
+{% if descuento_porcentaje %}<div class="line">Descuento: {{ descuento_porcentaje }}% (- {{ descuento }})</div>{% endif %}
+{% if tiene_envio %}<div class="line">Envío: {{ costo_envio }}</div>{% endif %}
 <div class="line strong">TOTAL: {{ total }}</div>
 {% endif %}
 
@@ -30,7 +31,8 @@
     <div>• {{ item.producto }}</div>
     <div>Color: {{ item.color|default:"-" }}</div>
     <div>Talle: {{ item.talle }}</div>
-    {% if not es_regalo %}<div>Precio: {{ item.precio }}</div>{% endif %}
+    <div>Cantidad: {{ item.cantidad }}</div>
+    {% if not es_regalo %}<div>Precio: {{ item.precio }}{% if item.cantidad > 1 %} c/u ({{ item.subtotal }}){% endif %}</div>{% endif %}
 </div>
 {% endfor %}
 {% endblock %}
