@@ -524,6 +524,13 @@ def cambiar_estado_pedido(pedido, nuevo_estado):
     return True
 
 
+def texto_sin_acentos(texto):
+    """Minúsculas y sin tildes, para buscar "Rodriguez" y encontrar "Rodríguez"."""
+    import unicodedata
+    texto = unicodedata.normalize('NFKD', (texto or '').lower())
+    return ''.join(c for c in texto if not unicodedata.combining(c))
+
+
 @admin_required
 def gestion_pedidos(request):
     """
@@ -535,23 +542,24 @@ def gestion_pedidos(request):
     estado = request.GET.get('estado', '')
     if estado:
         pedidos = pedidos.filter(estado=estado)
-    q = request.GET.get('q', '')
+    q = request.GET.get('q', '').strip()
 
     if q:
-
-        pedidos = pedidos.filter(
-
-            Q(cliente__user__first_name__icontains=q)
-
-            |
-
-            Q(cliente__user__last_name__icontains=q)
-
-            |
-
-            Q(cliente__user__email__icontains=q)
-
-        )
+        # Por nombre y apellido juntos, DNI, email o n.º de pedido, sin distinguir acentos ni mayúsculas
+        # ("Rodriguez" encuentra "Rodríguez", "#7" o "7" encuentra el pedido 7)
+        terminos = texto_sin_acentos(q).replace('#', ' ').split()
+        coincidencias = []
+        for pedido_id, nombre, apellido, email, dni in pedidos.values_list(
+            'id', 'cliente__user__first_name', 'cliente__user__last_name', 'cliente__user__email', 'cliente__dni'
+        ):
+            texto = texto_sin_acentos(f'{nombre or ""} {apellido or ""} {email or ""} {dni or ""}')
+            # Un número corto es un n.º de pedido (no se busca dentro de DNIs ni teléfonos)
+            if all(
+                termino == str(pedido_id) if termino.isdigit() and len(termino) < 7 else termino in texto
+                for termino in terminos
+            ):
+                coincidencias.append(pedido_id)
+        pedidos = pedidos.filter(id__in=coincidencias)
     # Paginación
     paginator = Paginator(pedidos, 10)
     page_number = request.GET.get('page')
