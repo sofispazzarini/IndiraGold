@@ -2977,9 +2977,20 @@ def ventas_presenciales(request):
     # FILTROS
 
     q = request.GET.get('q', '')
-    dia = request.GET.get('dia', '')
-    mes = request.GET.get('mes', '')
-    anio = request.GET.get('anio', '')
+    # Día, mes y año: solo números en rango (un año mal tipeado como 20266 daba error 500); si no, se ignoran
+    def numero_en_rango(valor, minimo, maximo):
+        valor = (valor or '').strip()
+        return valor if valor.isdigit() and minimo <= int(valor) <= maximo else ''
+
+    dia = numero_en_rango(request.GET.get('dia'), 1, 31)
+    mes = numero_en_rango(request.GET.get('mes'), 1, 12)
+    anio = numero_en_rango(request.GET.get('anio'), 2000, 2100)
+    filtros_invalidos = any(
+        (request.GET.get(campo) or '').strip() and not valor
+        for campo, valor in (('dia', dia), ('mes', mes), ('anio', anio))
+    )
+    if filtros_invalidos:
+        messages.warning(request, 'Revisá el día, mes o año del filtro: se ignoró lo que no es una fecha válida.')
 
     if q:
 
