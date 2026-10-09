@@ -1104,16 +1104,20 @@ def eliminar_item_carrito(request, variante_id):
     if not variante_id_int:
         variante_id_int = int(variante_id)
 
-    # Buscar item comparando cart_key generada con la recibida
+    # Buscar item: por su id si viene (identifica la línea exacta aunque el talle esté en
+    # varios colores); si no, comparando cart_key generada con la recibida
     item_a_eliminar = None
-    for item_db in carrito.items.filter(variante_id=variante_id_int):
+    item_id = request.POST.get('item_id')
+    if item_id:
+        item_a_eliminar = carrito.items.filter(id=item_id).first()
+    for item_db in ([] if item_a_eliminar else carrito.items.filter(variante_id=variante_id_int)):
         item_key = _make_cart_item_key(item_db.variante.id, item_db.color_nombre, item_db.color_hex)
         if item_key == cart_key:
             item_a_eliminar = item_db
             break
 
-    # Fallback: si no encontró por cart_key exacto, eliminar el primero de esa variante
-    if item_a_eliminar is None:
+    # Fallback: si no encontró por id ni por cart_key exacto, eliminar el primero de esa variante
+    if item_a_eliminar is None and not item_id:
         item_a_eliminar = carrito.items.filter(variante_id=variante_id_int).first()
 
     if item_a_eliminar:

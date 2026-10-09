@@ -927,7 +927,7 @@
               </div>
               <div class="product-subtotal">
                 <div class="subtotal-price">${{ item.subtotal }}</div>
-                <button type="button" class="btn-quitar btn-eliminar-item" data-variante="{{ item.variante.id }}">
+                <button type="button" class="btn-quitar btn-eliminar-item" data-variante="{{ item.variante.id }}" data-item="{{ item.id }}">
                   <i class="bi bi-x-circle"></i> Quitar
                 </button>
               </div>
@@ -2117,19 +2117,28 @@ document.querySelectorAll('.btn-eliminar-item').forEach(btn => {
     e.preventDefault();
     const varianteId = this.dataset.variante;
     const url = `/pedidos/checkout/eliminar/${varianteId}/`;
+    // Se identifica la línea exacta (el mismo talle puede estar en varios colores)
+    const body = new FormData();
+    body.append('item_id', this.dataset.item || '');
+    body.append('next', window.location.pathname);
 
+    this.disabled = true;
     try {
       const response = await fetch(url, {
         method: 'POST',
         headers: {
           'X-CSRFToken': csrfToken,
-        }
+        },
+        body
       });
-      if (response.ok) {
-        location.reload();
+      if (!response.ok) {
+        alert('No pudimos quitar el producto. Recargá la página e intentá de nuevo.');
       }
+      location.reload();
     } catch (err) {
       console.error('Error:', err);
+      alert('No pudimos quitar el producto. Revisá tu conexión e intentá de nuevo.');
+      this.disabled = false;
     }
   });
 });
