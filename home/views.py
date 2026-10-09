@@ -81,42 +81,14 @@ class HomePublicaView(TemplateView):
             .distinct()
             .order_by('nombre')
         )
-        oferta_global_activa = Oferta.objects.filter(
-            activa=True,
-            aplicar_a_todos=True
-        ).exists()
-
-        if oferta_global_activa:
-
-            productos_oferta = productos.filter(
-                activo=True
-            )
-
-        else:
-
-            productos_oferta = productos.filter(
-                ofertas__activa=True
-            ).distinct()
         ctx['productos'] = productos
         ctx['categorias'] = Categoria.objects.all()
         ctx['talles'] = talles
         ctx['colores'] = colores
-        oferta_global_activa = Oferta.objects.filter(
-            activa=True,
-            aplicar_a_todos=True
-        ).exists()
 
-        if oferta_global_activa:
-
-            productos_oferta = productos.filter(
-                activo=True
-            )
-
-        else:
-
-            productos_oferta = productos.filter(
-                ofertas__activa=True
-            ).distinct()
+        # Sección "Ofertas": misma regla que el precio (oferta por producto, por categoría o
+        # global, sin cupones). Antes no incluía las ofertas por categoría.
+        productos_oferta = [producto for producto in productos if producto.obtener_oferta_activa()]
 
         ctx['productos_oferta'] = productos_oferta
         ctx['whatsapp_numero'] = whatsapp_numero()
