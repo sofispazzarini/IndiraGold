@@ -510,8 +510,9 @@
   .installment-list li,
   .bank-list li {
     display: flex;
+    flex-wrap: wrap; /* a 360px el chip baja de línea en vez de apilar el texto palabra por palabra */
     justify-content: space-between;
-    gap: 1rem;
+    gap: 0.35rem 1rem;
     border-bottom: 1px solid rgba(232,223,212,0.7);
     padding-bottom: 0.45rem;
     font-size: 0.84rem;
