@@ -63,8 +63,13 @@ class HomePublicaView(TemplateView):
 
         productos = Producto.objects.filter(activo=True).prefetch_related('variantes__talle', 'variantes__colores')
 
+        from productos.stock import stock_total_variante
         for producto in productos:
             producto.variantes_json = variantes_json(producto)
+            # Para el filtro por talle: solo los talles que tienen stock (por color si corresponde)
+            producto.talles_con_stock = ','.join(
+                str(v.talle_id) for v in producto.variantes.all() if v.activa and stock_total_variante(v) > 0
+            )
 
         talles = (
             Talle.objects.filter(variante__activa=True, variante__stock__gt=0, variante__producto__activo=True)
