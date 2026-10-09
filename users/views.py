@@ -33,6 +33,9 @@ from django.http import JsonResponse
 from django.contrib.auth.models import User
 # --- LOGOUT VIEW ---
 def logout_view(request):
+    # Solo por POST (con CSRF): un link o una imagen de otra página no puede cerrar la sesión
+    if request.method != 'POST':
+        return redirect(reverse('home:home'))
     # NO borramos el carrito de la BD - persiste hasta que expire o se compre
     # Solo limpiamos la sesión
     if 'carrito' in request.session:

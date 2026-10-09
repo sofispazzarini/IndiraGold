@@ -353,7 +353,7 @@
   <nav class="sidebar__nav">
     {% block sidebar_menu %}
       {% if user.is_authenticated %}
-        <a href="{% url 'users:logout' %}" class="nav-link">Salir</a>
+        <form method="post" action="{% url 'users:logout' %}" class="m-0">{% csrf_token %}<button type="submit" class="nav-link" style="background:none; border:0; width:100%; text-align:left; cursor:pointer;">Salir</button></form>
       {% else %}
         <a href="{% url 'users:login' %}" class="nav-link">Ingresar</a>
       {% endif %}
@@ -390,7 +390,7 @@
             <li><a class="dropdown-item" href="{% url 'users:perfil' %}"><i class="bi bi-person me-2"></i>Mi perfil</a></li>
             <li><hr class="dropdown-divider"></li>
             {% endif %}
-            <li><a class="dropdown-item text-danger fw-bold" href="{% url 'users:logout' %}">Cerrar sesión</a></li>
+            <li><form method="post" action="{% url 'users:logout' %}" class="m-0">{% csrf_token %}<button type="submit" class="dropdown-item text-danger fw-bold">Cerrar sesión</button></form></li>
           </ul>
         </div>
       </div>
