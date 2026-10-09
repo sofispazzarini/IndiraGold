@@ -779,7 +779,8 @@ def sumar_producto(request):
 			raise ValueError("Producto inválido")
 	except (TypeError, ValueError):
 		messages.error(request, "Producto inválido.")
-		return redirect(next_url)
+		# Sin "next" se vuelve a la tienda (antes daba error 500)
+		return redirect(next_url or reverse("home:home"))
 
 	# Obtener variante y stock por color
 	from productos.models import Variante, VarianteColor
