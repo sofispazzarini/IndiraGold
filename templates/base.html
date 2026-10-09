@@ -336,7 +336,11 @@
         font-size: 0.8rem;
       }
     }
-  </style>
+  
+    /* Botones de los modales propios del panel: en celular bajan de línea sin partir el texto */
+    .modal-actions { flex-wrap: wrap; }
+    .modal-actions > * { white-space: nowrap; }
+</style>
 </head>
 <body>
 
@@ -501,6 +505,23 @@
     }
   });
 })();
+</script>
+<script>
+  // Modales propios del panel (eliminar, nuevo tema, etc.): ESC y click en el fondo los cierran
+  // y mientras están abiertos el fondo no scrollea
+  (function () {
+    const SELECTOR = '.modal-backdrop-custom, .modal-tema-backdrop';
+    const modales = () => Array.from(document.querySelectorAll(SELECTOR));
+    const sincronizar = () => { document.body.style.overflow = modales().some(m => m.classList.contains('open')) ? 'hidden' : ''; };
+    const observador = new MutationObserver(sincronizar);
+    modales().forEach(m => {
+      observador.observe(m, { attributes: true, attributeFilter: ['class'] });
+      m.addEventListener('click', (e) => { if (e.target === m) m.classList.remove('open'); });
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') modales().forEach(m => m.classList.remove('open'));
+    });
+  })();
 </script>
 </body>
 </html>

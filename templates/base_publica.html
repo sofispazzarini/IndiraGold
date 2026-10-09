@@ -232,5 +232,41 @@
     document.addEventListener('click', (e) => { if (!navbar.contains(e.target)) cerrar(); });
   })();
 </script>
+<script>
+  // Modales y drawers de la tienda (bienvenida, "Agregar al carrito", medidas, carrito):
+  // cierran con ESC, la bienvenida y medidas también tocando el fondo, y mientras hay uno
+  // abierto el fondo no scrollea.
+  (function () {
+    const SELECTOR = '#welcomeModal, #modalCantidad, #modalMedidas, #modalCantidadDetalle, #cartPanel';
+    const elementos = () => Array.from(document.querySelectorAll(SELECTOR));
+    const estaAbierto = (el) => el.id === 'cartPanel' ? el.classList.contains('open')
+      : el.id === 'welcomeModal' ? el.classList.contains('show')
+      : (el.style.display && el.style.display !== 'none');
+    function cerrar(el) {
+      if (el.id === 'cartPanel') {
+        el.classList.remove('open');
+        const overlay = document.getElementById('cartOverlay');
+        if (overlay) overlay.classList.remove('open');
+      } else if (el.id === 'welcomeModal') {
+        el.classList.remove('show');
+      } else {
+        el.style.display = 'none';
+      }
+    }
+    function sincronizarScroll() {
+      document.body.style.overflow = elementos().some(estaAbierto) ? 'hidden' : '';
+    }
+    const observador = new MutationObserver(sincronizarScroll);
+    elementos().forEach(el => observador.observe(el, { attributes: true, attributeFilter: ['class', 'style'] }));
+    sincronizarScroll();
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') elementos().filter(estaAbierto).forEach(cerrar);
+    });
+    ['welcomeModal', 'modalMedidas'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.addEventListener('click', (e) => { if (e.target === el) cerrar(el); });
+    });
+  })();
+</script>
 </body>
 </html>
