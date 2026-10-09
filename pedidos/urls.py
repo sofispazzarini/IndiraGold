@@ -13,6 +13,7 @@ urlpatterns = [
     path('historial-cliente/<int:cliente_id>/', views.historial_cliente, name='historial_cliente'),
     path('<int:pedido_id>/', views.detalle_pedido, name='detalle_pedido'),
     path('<int:pedido_id>/ticket-cambio/', views.ticket_cambio_pedido, name='ticket_cambio_pedido'),
+    path('<int:pedido_id>/transferencia/', views.pago_transferencia, name='pago_transferencia'),
     path('<int:pedido_id>/ticket-envio/', views.ticket_envio_pedido, name='ticket_envio_pedido'),
     path('<int:pedido_id>/tracking/', views.actualizar_tracking_envio, name='actualizar_tracking_envio'),
     path('<int:pedido_id>/editar/', views.editar_pedido, name='editar_pedido'),

@@ -164,6 +164,17 @@
       <strong>{{ pedido.total|pesos }}</strong>
     </div>
 
+    {% if items %}
+    <div style="margin:1rem 0; text-align:left; font-size:.9rem; color:#4a3f36;">
+      {% for item in items %}
+      <div style="display:flex; justify-content:space-between; gap:1rem; padding:.35rem 0; border-bottom:1px solid #efe7dc;">
+        <span>{{ item.variante.producto.nombre }} · Talle {{ item.variante.talle.nombre }}{% if item.color_nombre %} · {{ item.color_nombre }}{% endif %} × {{ item.cantidad }}</span>
+        <strong style="white-space:nowrap;">{{ item.precio_total|pesos }}</strong>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
     <p class="transfer-sub">Mandanos el comprobante a {{ whatsapp_numero }}. El boton abre el chat con el pedido preparado.</p>
 
     <div class="action-row">

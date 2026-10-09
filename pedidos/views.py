@@ -1753,12 +1753,8 @@ def _crear_pago(request):
 
         if metodo_pago == 'transferencia':
             vaciar_carrito_completo(request, carrito)
-            return render(request, 'pedidos/pago_transferencia_pendiente.html', {
-                'pedido': pedido,
-                'configuracion_pago': configuracion_pago,
-                'whatsapp_url': whatsapp_transferencia_url(pedido),
-                'whatsapp_numero': whatsapp_numero_visible(),
-            })
+            # Redirect (no render): la pantalla con los datos se puede volver a abrir y recargar
+            return redirect('pedidos:pago_transferencia', pedido_id=pedido.id)
 
         vaciar_carrito_completo(request, carrito)
         messages.success(request, f'Pedido #{pedido.id} creado para pagar en efectivo al retirar.')
@@ -2535,6 +2531,28 @@ def estadisticas_ventas(request):
         'pedidos/estadisticas_ventas.html',
         context
     )
+
+
+@login_required
+def pago_transferencia(request, pedido_id):
+    """Datos para transferir (CBU/alias, monto, comprobante por WhatsApp y productos) de un pedido
+    por transferencia. Antes se veían una sola vez, en la respuesta del checkout."""
+    pedido = get_object_or_404(
+        Pedido.objects.prefetch_related('items__variante__producto', 'items__variante__talle'),
+        id=pedido_id,
+        cliente__user=request.user,
+    )
+    if pedido.metodo_pago != 'transferencia':
+        return redirect('pedidos:estado_pedido', pedido_id=pedido.id)
+    return render(request, 'pedidos/pago_transferencia_pendiente.html', {
+        'pedido': pedido,
+        'items': pedido.items.all(),
+        'configuracion_pago': ConfiguracionPago.actual(),
+        'whatsapp_url': whatsapp_transferencia_url(pedido),
+        'whatsapp_numero': whatsapp_numero_visible(),
+    })
+
+
 @login_required
 def estado_pedido(request, pedido_id):
 

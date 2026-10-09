@@ -271,6 +271,11 @@
       </div>
       <span class="pedido-total">{{ pedido.total|pesos }}</span>
       <div class="pedido-action">
+        {% if pedido.metodo_pago == 'transferencia' and pedido.estado == 'pendiente' %}
+        <a href="{% url 'pedidos:pago_transferencia' pedido.id %}" class="btn-ver" style="margin-right:.5rem;">
+          Datos para transferir
+        </a>
+        {% endif %}
         <a href="{% url 'pedidos:estado_pedido' pedido.id %}" class="btn-ver">
           Ver seguimiento <i class="bi bi-chevron-right"></i>
         </a>

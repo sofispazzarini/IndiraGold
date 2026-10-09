@@ -255,6 +255,13 @@
     <p class="pedido-number">Pedido #{{ pedido.id }}</p>
   </div>
 
+  {% if pedido.metodo_pago == 'transferencia' and pedido.estado == 'pendiente' %}
+  <div class="info-card" style="border-left: 4px solid #b8922a; margin-bottom: 1.5rem; display:flex; flex-wrap:wrap; gap:.75rem; align-items:center; justify-content:space-between;">
+    <p style="margin:0;">Falta la transferencia de <strong>{{ pedido.total|pesos }}</strong> para confirmar tu pedido.</p>
+    <a href="{% url 'pedidos:pago_transferencia' pedido.id %}" class="btn-ver" style="white-space:nowrap;">Ver datos para transferir</a>
+  </div>
+  {% endif %}
+
   {% if estado_cerrado %}
   <div class="info-card" style="border-left: 4px solid var(--burgundy); margin-bottom: 1.5rem;">
     <p style="margin:0;">
