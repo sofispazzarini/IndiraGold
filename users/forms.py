@@ -7,8 +7,7 @@ from django.core.exceptions import ValidationError
 from django.db import transaction
 
 
-def capitalizar_texto(value):
-    return " ".join(part.capitalize() for part in (value or "").strip().split())
+from config.textos import capitalizar_texto  # noqa: E402,F401 (respeta siglas, apóstrofos y conectores)
 
 
 # Letras (con acentos y ñ), espacios, apóstrofos y guiones: "María José", "O'Connor", "Pérez-Gil"

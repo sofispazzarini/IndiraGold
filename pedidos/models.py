@@ -1,3 +1,4 @@
+from config.textos import capitalizar_texto
 from django.db import models
 from users.models import Cliente
 from productos.models import Producto
@@ -474,9 +475,9 @@ class OpcionEnvioFlex(models.Model):
     def save(self, *args, **kwargs):
         # Capitalizar nombre y zonas automáticamente
         if self.nombre:
-            self.nombre = self.nombre.strip().title()
+            self.nombre = capitalizar_texto(self.nombre)
         if self.zonas:
-            self.zonas = ', '.join([z.strip().title() for z in self.zonas.split(',') if z.strip()])
+            self.zonas = ', '.join([capitalizar_texto(z) for z in self.zonas.split(',') if z.strip()])
         super().save(*args, **kwargs)
 
     @property
@@ -486,7 +487,7 @@ class OpcionEnvioFlex(models.Model):
 
     @property
     def zonas_lista(self):
-        return [z.strip().title() for z in self.zonas.split(',') if z.strip()]
+        return [capitalizar_texto(z) for z in self.zonas.split(',') if z.strip()]
 
     @property
     def texto_costo(self):

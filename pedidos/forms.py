@@ -1,3 +1,4 @@
+from config.textos import capitalizar_texto
 from django import forms
 from django.forms import modelformset_factory
 from .models import Gasto, ConfiguracionEnvio, ConfiguracionPago, OpcionEnvioFlex
@@ -97,7 +98,7 @@ class OpcionEnvioFlexForm(forms.ModelForm):
     def clean_nombre(self):
         # El modelo guarda el nombre en formato título: se valida igual para que "flex caba"
         # choque con "Flex Caba" acá (mensaje en el form) y no en la base (error 500)
-        nombre = (self.cleaned_data.get('nombre') or '').strip().title()
+        nombre = capitalizar_texto(self.cleaned_data.get('nombre'))
         repetida = OpcionEnvioFlex.objects.filter(nombre__iexact=nombre)
         if self.instance.pk:
             repetida = repetida.exclude(pk=self.instance.pk)
@@ -106,9 +107,26 @@ class OpcionEnvioFlexForm(forms.ModelForm):
         return nombre
 
 
+class BaseOpcionEnvioFlexFormSet(forms.BaseModelFormSet):
+    def clean(self):
+        super().clean()
+        # Dos opciones con el mismo nombre en distintas mayúsculas ("Flex Sur" y "flex SUR") son la misma
+        vistos = set()
+        for form in self.forms:
+            if not hasattr(form, 'cleaned_data') or form.cleaned_data.get('DELETE'):
+                continue
+            nombre = (form.cleaned_data.get('nombre') or '').strip().lower()
+            if not nombre:
+                continue
+            if nombre in vistos:
+                raise forms.ValidationError('Hay dos opciones Flex con el mismo nombre.')
+            vistos.add(nombre)
+
+
 OpcionEnvioFlexFormSet = modelformset_factory(
     OpcionEnvioFlex,
     form=OpcionEnvioFlexForm,
+    formset=BaseOpcionEnvioFlexFormSet,
     extra=1,
     can_delete=True,
 )
