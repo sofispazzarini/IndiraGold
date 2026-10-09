@@ -381,14 +381,17 @@
     <div class="topbar__right">
       <div class="d-flex align-items-center gap-3">
         <span class="small fw-bold text-muted d-none d-md-inline">
-          {{ user.first_name|default:user.username }}
+          {% if user.first_name %}{{ user.first_name }}{% elif user.is_superuser %}Administrador{% else %}{{ user.username }}{% endif %}
         </span>
         <div class="dropdown">
           <button class="avatar dropdown-toggle" type="button" id="avatarDropdown" data-bs-toggle="dropdown" aria-expanded="false">
             {% if user.is_authenticated and user.cliente.foto_perfil %}
               <img src="{{ user.cliente.foto_perfil.url }}" alt="Foto de perfil">
-            {% else %}
+            {% elif user.first_name or user.last_name %}
               {{ user.first_name|default:''|slice:":1" }}{{ user.last_name|default:''|slice:":1" }}
+            {% else %}
+              {# Sin nombre cargado (p. ej. el superusuario): ícono en vez de un círculo vacío #}
+              <i class="bi bi-person-fill" aria-hidden="true"></i>
             {% endif %}
           </button>
           <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="avatarDropdown">
