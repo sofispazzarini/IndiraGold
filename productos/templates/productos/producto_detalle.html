@@ -181,7 +181,7 @@
     
     .miniaturas {
         display: grid;
-        grid-template-columns: repeat(4, 1fr);
+        grid-template-columns: repeat(5, 1fr); /* hasta 5 fotos (el máximo del admin) */
         gap: 0.75rem;
     }
     
@@ -587,7 +587,7 @@
             font-size: 0.8rem;
         }
         .miniaturas {
-            grid-template-columns: repeat(4, 1fr);
+            grid-template-columns: repeat(5, 1fr);
             gap: 0.5rem;
         }
         .miniatura-item {
@@ -914,7 +914,7 @@
             
             {% if producto.imagenes.all|length > 1 %}
                 <div class="miniaturas">
-                    {% for imagen in producto.imagenes.all|slice:":4" %}
+                    {% for imagen in producto.imagenes.all|slice:":5" %}
                         <div class="miniatura {% if forloop.first %}activa{% endif %}" onclick="cambiarImagen(this, '{{ imagen.imagen.url }}')">
                             <img src="{{ imagen.imagen.url }}" alt="Miniatura">
                         </div>
