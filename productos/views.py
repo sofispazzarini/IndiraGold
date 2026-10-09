@@ -786,8 +786,16 @@ def gestion_subcategorias(request, cat_id):
 @require_POST
 def eliminar_subcategoria(request, subcat_id):
     subcategoria = get_object_or_404(Subcategoria, id=subcat_id)
-    subcategoria.delete()
-    messages.success(request, "Subcategoría eliminada.")
+    cantidad_productos = Producto.objects.filter(subcategoria=subcategoria).count()
+    if cantidad_productos:
+        messages.error(
+            request,
+            f'No se puede eliminar la subcategoría "{subcategoria.nombre}" porque tiene '
+            f'{cantidad_productos} producto(s). Movelos a otra subcategoría o eliminalos primero.'
+        )
+    else:
+        subcategoria.delete()
+        messages.success(request, "Subcategoría eliminada.")
     return redirect(request.META.get('HTTP_REFERER', 'productos:gestion_productos'))
 
 # --- PROVEEDORES (RESTURADO) ---
@@ -795,6 +803,7 @@ def eliminar_subcategoria(request, subcat_id):
 @admin_required
 def agregar_proveedor(request):
     mensaje = None
+    mensaje_error = False
     edit_form = None
     edit_id = request.GET.get('edit')
 
@@ -811,8 +820,16 @@ def agregar_proveedor(request):
         form = ProveedorForm()
     elif request.method == "POST" and "delete_id" in request.POST:
         proveedor = get_object_or_404(Proveedor, id=request.POST["delete_id"])
-        proveedor.delete()
-        mensaje = "Proveedor eliminado correctamente."
+        cantidad_productos = Producto.objects.filter(proveedor=proveedor).count()
+        if cantidad_productos:
+            mensaje = (
+                f'No se puede eliminar el proveedor "{proveedor.nombre}" porque tiene '
+                f'{cantidad_productos} producto(s) asociados. Asigná otro proveedor a esos productos primero.'
+            )
+            mensaje_error = True
+        else:
+            proveedor.delete()
+            mensaje = "Proveedor eliminado correctamente."
         form = ProveedorForm()
     elif request.method == "POST":
         form = ProveedorForm(request.POST)
@@ -835,7 +852,7 @@ def agregar_proveedor(request):
     page_number = request.GET.get("page")
     proveedores = paginator.get_page(page_number)
 
-    return render(request, "productos/agregar_proveedor.html", {"form": form, "mensaje": mensaje, "proveedores": proveedores, "edit_form": edit_form, "edit_id": edit_id})
+    return render(request, "productos/agregar_proveedor.html", {"form": form, "mensaje": mensaje, "mensaje_error": mensaje_error, "proveedores": proveedores, "edit_form": edit_form, "edit_id": edit_id})
 
 
 @admin_required

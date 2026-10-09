@@ -56,8 +56,9 @@ class Producto(models.Model):
     precio = models.DecimalField(max_digits=10, decimal_places=2)
     stock = models.PositiveIntegerField()
     categoria = models.ForeignKey(Categoria, on_delete=models.CASCADE)
-    subcategoria = models.ForeignKey(Subcategoria, on_delete=models.CASCADE, null=True, blank=True, related_name='productos')
-    proveedor = models.ForeignKey(Proveedor, on_delete=models.CASCADE)
+    # PROTECT: borrar una subcategoría o un proveedor no puede borrar sus productos
+    subcategoria = models.ForeignKey(Subcategoria, on_delete=models.PROTECT, null=True, blank=True, related_name='productos')
+    proveedor = models.ForeignKey(Proveedor, on_delete=models.PROTECT)
     created_at = models.DateTimeField(auto_now_add=True)
     temporada = models.CharField(max_length=100, blank=True, null=True)
     avios = models.TextField(blank=True, null=True)

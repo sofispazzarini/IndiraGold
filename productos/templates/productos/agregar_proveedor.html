@@ -498,8 +498,8 @@
   </div>
 
   {% if mensaje %}
-  <div class="alert-custom">
-    <i class="bi bi-check-circle"></i> {{ mensaje }}
+  <div class="alert-custom"{% if mensaje_error %} style="background:#fdecea; color:#8a1c1c; border-color:#f5c2c0;"{% endif %}>
+    <i class="bi {% if mensaje_error %}bi-exclamation-triangle{% else %}bi-check-circle{% endif %}"></i> {{ mensaje }}
   </div>
   {% endif %}
 
