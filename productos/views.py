@@ -1547,7 +1547,10 @@ def admin_ofertas(request):
                 try:
                     from datetime import datetime
                     from django.utils import timezone
-                    fecha_fin_valor = timezone.make_aware(datetime.strptime(fecha_fin, '%Y-%m-%d'))
+                    # "Hasta el 08/10" incluye todo ese día
+                    fecha_fin_valor = timezone.make_aware(
+                        datetime.strptime(fecha_fin, '%Y-%m-%d').replace(hour=23, minute=59, second=59)
+                    )
                 except (TypeError, ValueError):
                     fecha_fin_valor = None
 

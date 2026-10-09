@@ -861,7 +861,7 @@
 
                     <td>
 
-                        {% if oferta.activa %}
+                        {% if oferta.estado_texto == 'Activa' %}
 
                             <span class="badge badge-success">
                                 Activa
@@ -870,7 +870,7 @@
                         {% else %}
 
                             <span class="badge badge-warning">
-                                Pausada
+                                {{ oferta.estado_texto }}
                             </span>
 
                         {% endif %}

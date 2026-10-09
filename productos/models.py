@@ -317,9 +317,20 @@ class Oferta(models.Model):
         return True, None
 
     def registrar_uso(self):
-        """Incrementa el contador de usos."""
-        self.usos_actuales += 1
-        self.save(update_fields=['usos_actuales'])
+        """Incrementa el contador de usos (con F() para no perder usos simultáneos)."""
+        Oferta.objects.filter(pk=self.pk).update(usos_actuales=models.F('usos_actuales') + 1)
+        self.refresh_from_db(fields=['usos_actuales'])
+
+    @property
+    def estado_texto(self):
+        """Estado para el admin: Vencida / Agotada / Activa / Pausada."""
+        from django.utils import timezone
+
+        if self.fecha_fin and timezone.now() > self.fecha_fin:
+            return 'Vencida'
+        if self.limite_usos is not None and self.usos_actuales >= self.limite_usos:
+            return 'Agotada'
+        return 'Activa' if self.activa else 'Pausada'
 
     def save(self, *args, **kwargs):
         self.codigo = self.codigo.strip().upper() if self.codigo else None

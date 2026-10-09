@@ -96,15 +96,25 @@ def vaciar_carrito_completo(request, carrito):
     request.session.modified = True
 
 
-def obtener_cupon_activo(codigo):
+def buscar_cupon(codigo):
+    """(cupon, motivo): el cupón si se puede usar ahora, o None y el motivo por el que no."""
     codigo_normalizado = (codigo or '').strip().upper()
     if not codigo_normalizado:
-        return None
-    return Oferta.objects.filter(
+        return None, None
+    cupon = Oferta.objects.filter(
         codigo__iexact=codigo_normalizado,
         es_cupon=True,
-        activa=True
     ).first()
+    if not cupon:
+        return None, 'El código no existe.'
+    puede, motivo = cupon.puede_usarse()
+    if not puede:
+        return None, motivo
+    return cupon, None
+
+
+def obtener_cupon_activo(codigo):
+    return buscar_cupon(codigo)[0]
 
 
 def calcular_descuento_cupon(subtotal, codigo):
@@ -1234,7 +1244,8 @@ def validar_codigo_descuento(request):
     if not cupon:
         request.session.pop('codigo_descuento', None)
         request.session.modified = True
-        return JsonResponse({'success': False, 'error': 'El codigo no existe o no esta activo.'}, status=404)
+        _, motivo = buscar_cupon(codigo)
+        return JsonResponse({'success': False, 'error': motivo or 'Ingresá un código de descuento.'}, status=404)
 
     request.session['codigo_descuento'] = cupon.codigo
     request.session.modified = True
@@ -1433,6 +1444,12 @@ def crear_pago(request):
     subtotal_productos = sum(item.subtotal for item in items)
     codigo_descuento = request.POST.get('codigo_descuento') or request.session.get('codigo_descuento')
     cupon, descuento_monto = calcular_descuento_cupon(subtotal_productos, codigo_descuento)
+    if codigo_descuento and not cupon:
+        _, motivo = buscar_cupon(codigo_descuento)
+        request.session.pop('codigo_descuento', None)
+        request.session.modified = True
+        messages.error(request, f'El código {codigo_descuento.strip().upper()} ya no se puede usar: {motivo} Revisá el total antes de pagar.')
+        return redirect('pedidos:checkout')
     factor_descuento = (
         max(Decimal('0'), Decimal('1') - (Decimal(cupon.descuento) / Decimal(100)))
         if cupon
@@ -1633,6 +1650,8 @@ def crear_pago(request):
             estado='pendiente',
             es_regalo=request.session['es_regalo'],
         )
+        if cupon:
+            cupon.registrar_uso()
         crear_envio_pedido(pedido)
 
         for item in items:
@@ -1836,6 +1855,9 @@ def pago_exitoso(request):
         estado='aceptado',
         es_regalo=bool(request.session.get('es_regalo')),
     )
+
+    if cupon:
+        cupon.registrar_uso()
 
     Pago.objects.create(
         pedido=pedido,
