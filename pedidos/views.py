@@ -46,7 +46,7 @@ from django.db.models import Q
 from django.core.paginator import Paginator
 import json
 import unicodedata
-from urllib.parse import quote
+from urllib.parse import quote, urlencode
 import uuid
 import base64
 import io
@@ -557,10 +557,15 @@ def gestion_pedidos(request):
     # Estados disponibles para el filtro
     estados_disponibles = Pedido.ESTADOS
     
+    # Filtros activos para los links de la paginación (si no, al cambiar de página se pierden)
+    filtros = {clave: valor for clave, valor in (('estado', estado), ('q', q)) if valor}
     context = {
         'page_obj': page_obj,
         'pedidos': page_obj.object_list,
         'estado_filtro': estado,
+        'estado': estado,
+        'q': q,
+        'filtros_query': f"&{urlencode(filtros)}" if filtros else '',
         'estados': estados_disponibles,
     }
     

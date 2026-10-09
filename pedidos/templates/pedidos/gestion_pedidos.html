@@ -870,10 +870,10 @@
                 <ul class="pagination justify-content-center">
                     {% if page_obj.has_previous %}
                         <li class="page-item">
-                            <a class="page-link" href="?page=1{% if estado %}&estado={{ estado }}{% endif %}"><i class="bi bi-chevron-double-left"></i></a>
+                            <a class="page-link" href="?page=1{{ filtros_query }}"><i class="bi bi-chevron-double-left"></i></a>
                         </li>
                         <li class="page-item">
-                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if estado %}&estado={{ estado }}{% endif %}"><i class="bi bi-chevron-left"></i> Anterior</a>
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{{ filtros_query }}"><i class="bi bi-chevron-left"></i> Anterior</a>
                         </li>
                     {% endif %}
 
@@ -882,17 +882,17 @@
                             <li class="page-item active"><span class="page-link">{{ num }}</span></li>
                         {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
                             <li class="page-item">
-                                <a class="page-link" href="?page={{ num }}{% if estado %}&estado={{ estado }}{% endif %}">{{ num }}</a>
+                                <a class="page-link" href="?page={{ num }}{{ filtros_query }}">{{ num }}</a>
                             </li>
                         {% endif %}
                     {% endfor %}
 
                     {% if page_obj.has_next %}
                         <li class="page-item">
-                            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if estado %}&estado={{ estado }}{% endif %}">Siguiente <i class="bi bi-chevron-right"></i></a>
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}{{ filtros_query }}">Siguiente <i class="bi bi-chevron-right"></i></a>
                         </li>
                         <li class="page-item">
-                            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if estado %}&estado={{ estado }}{% endif %}"><i class="bi bi-chevron-double-right"></i></a>
+                            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{{ filtros_query }}"><i class="bi bi-chevron-double-right"></i></a>
                         </li>
                     {% endif %}
                 </ul>
