@@ -1798,8 +1798,6 @@ def _crear_pago(request):
     }
     preference_response = sdk.preference().create(preference_data)
 
-    print(preference_response)
-
     # VALIDAR RESPUESTA
     if preference_response.get("status") != 201:
 

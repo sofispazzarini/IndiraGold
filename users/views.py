@@ -610,7 +610,6 @@ def registro_manual_cliente(request):
             # Enviar email con usuario y contraseña
             from django.core.mail import send_mail
             from django.conf import settings
-            print('Enviando mail de registro manual a:', email)
 
             html_email = f"""
 <!doctype html>
