@@ -919,9 +919,9 @@
                   </div>
                 {% endif %}
                 <div class="cantidad-wrap">
-                  <button type="button" class="cantidad-btn btn-cantidad" data-action="disminuir" data-variante="{{ item.variante.id }}">-</button>
+                  <button type="button" class="cantidad-btn btn-cantidad" data-action="disminuir" data-variante="{{ item.variante.id }}" data-item="{{ item.id }}">-</button>
                   <span class="cantidad-num">{{ item.cantidad }}</span>
-                  <button type="button" class="cantidad-btn btn-cantidad" data-action="aumentar" data-variante="{{ item.variante.id }}">+</button>
+                  <button type="button" class="cantidad-btn btn-cantidad" data-action="aumentar" data-variante="{{ item.variante.id }}" data-item="{{ item.id }}">+</button>
                 </div>
                 <div class="product-precio-unit">Precio unit: ${{ item.precio_unitario }}</div>
               </div>
@@ -2087,19 +2087,27 @@ document.querySelectorAll('.btn-cantidad').forEach(btn => {
     const url = action === 'aumentar'
       ? `/pedidos/aumentar-cantidad/${varianteId}/`
       : `/pedidos/disminuir-cantidad/${varianteId}/`;
+    // Se identifica la línea exacta (el mismo talle puede estar en varios colores)
+    const body = new FormData();
+    body.append('item_id', this.dataset.item || '');
 
+    this.disabled = true;
     try {
       const response = await fetch(url, {
         method: 'POST',
         headers: {
           'X-CSRFToken': csrfToken,
-        }
+        },
+        body
       });
-      if (response.ok) {
-        location.reload();
+      if (!response.ok) {
+        alert('No pudimos actualizar la cantidad. Recargá la página e intentá de nuevo.');
       }
+      location.reload();
     } catch (err) {
       console.error('Error:', err);
+      alert('No pudimos actualizar la cantidad. Revisá tu conexión e intentá de nuevo.');
+      this.disabled = false;
     }
   });
 });

@@ -50,7 +50,7 @@ import base64
 import io
 import qrcode
 
-from django.http import JsonResponse
+from django.http import Http404, JsonResponse
 from django.views.decorators.http import require_POST
 from django.db import transaction
 from django.utils.html import escape
@@ -2491,17 +2491,27 @@ def mis_pedidos(request):
             'pedidos': pedidos
         }
     )
+
+
+def item_carrito_de_request(request, carrito, variante_id):
+    """Ítem del carrito a modificar: por su id (item_id) si viene, porque el mismo talle puede
+    estar en varias líneas de distintos colores; si no, el primero de esa variante."""
+    item_id = request.POST.get('item_id')
+    if item_id:
+        return get_object_or_404(CarritoItem, carrito=carrito, id=item_id)
+    item = CarritoItem.objects.filter(carrito=carrito, variante_id=variante_id).order_by('id').first()
+    if not item:
+        raise Http404('El producto ya no está en el carrito.')
+    return item
+
+
 @login_required
 @require_POST
 def aumentar_cantidad(request, variante_id):
 
     carrito = get_or_create_cart(request)
 
-    item = get_object_or_404(
-        CarritoItem,
-        carrito=carrito,
-        variante_id=variante_id
-    )
+    item = item_carrito_de_request(request, carrito, variante_id)
 
     if item.cantidad < stock_disponible(item.variante, item.color_nombre):
 
@@ -2522,11 +2532,7 @@ def disminuir_cantidad(request, variante_id):
 
     carrito = get_or_create_cart(request)
 
-    item = get_object_or_404(
-        CarritoItem,
-        carrito=carrito,
-        variante_id=variante_id
-    )
+    item = item_carrito_de_request(request, carrito, variante_id)
 
     item.cantidad -= 1
 
