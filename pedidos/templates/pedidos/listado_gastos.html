@@ -611,7 +611,7 @@
       document.getElementById('deleteGastoDesc').textContent = descripcion;
       document.getElementById('deleteGastoMonto').textContent = '$' + monto;
       document.getElementById('deleteGastoFecha').textContent = fecha;
-      document.getElementById('deleteForm').action = `/pedidos/gasto/${id}/eliminar/`;
+      document.getElementById('deleteForm').action = "{% url 'pedidos:eliminar_gasto' 0 %}".replace('/0/', `/${id}/`);
       document.getElementById('modalDelete').classList.add('open');
     });
   });
