@@ -100,6 +100,11 @@
     font-weight: 800;
     margin-bottom: .45rem;
   }
+  /* En celulares la tabla se desliza adentro de la tarjeta, no toda la página */
+  .planes-table-wrap {
+    width: 100%;
+    overflow-x: auto;
+  }
   .planes-table {
     width: 100%;
     border-collapse: collapse;
@@ -306,6 +311,7 @@
         <button type="button" class="btn-add-plan" id="add-plan-btn"><i class="bi bi-plus-lg"></i> Agregar plan</button>
       </div>
 
+      <div class="planes-table-wrap">
       <table class="planes-table" style="margin-top:.75rem;">
         <thead>
           <tr>
@@ -346,6 +352,7 @@
           {% endfor %}
         </tbody>
       </table>
+      </div>
     </section>
 
     {% if form.errors %}
