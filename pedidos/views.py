@@ -294,8 +294,7 @@ def enviar_email_confirmacion_pedido(pedido):
 @login_required
 def enviar_comprobante_transferencia(request, pedido_id):
     pedido = get_object_or_404(Pedido, pk=pedido_id, cliente__user=request.user)
-    carrito = get_or_create_cart(request)
-    vaciar_carrito_completo(request, carrito)
+    # Solo abre WhatsApp: el carrito ya se vació al crear el pedido (antes borraba el carrito nuevo)
     return redirect(whatsapp_transferencia_url(pedido))
 
 
