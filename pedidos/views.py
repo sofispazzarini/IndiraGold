@@ -33,6 +33,7 @@ from carritos.models import Carrito, CarritoItem
 from carritos.utils import clear_cart_session, get_or_create_cart, vincular_carrito_con_usuario, get_cart_seconds_left, refrescar_precios_carrito
 from users.models import Cliente, Direccion, direcciones_sin_duplicados
 from productos.models import Variante, Oferta
+from productos.stock import descontar_stock, reponer_stock, stock_disponible, validar_stock
 import mercadopago
 from django.conf import settings
 from django.views.decorators.http import require_POST
@@ -426,24 +427,39 @@ def url_seguimiento_envio(envio):
     return ''
 
 
+def errores_stock_items(lineas):
+    """Valida stock (por color cuando corresponde) de una lista de (variante, color_nombre, cantidad),
+    sumando las líneas del mismo talle y color. Devuelve una lista de mensajes de error."""
+    acumulado = {}
+    for variante, color_nombre, cantidad in lineas:
+        clave = (variante.id, (color_nombre or '').strip().lower())
+        if clave not in acumulado:
+            acumulado[clave] = [variante, color_nombre, 0]
+        acumulado[clave][2] += cantidad
+
+    errores = []
+    for variante, color_nombre, cantidad in acumulado.values():
+        try:
+            validar_stock(variante, cantidad, color_nombre)
+        except ValueError as error:
+            errores.append(str(error))
+    return errores
+
+
 def descontar_stock_pedido(pedido):
-    for item in pedido.items.select_related('variante'):
-        if item.variante.stock < item.cantidad:
-            raise ValueError(
-                f'No hay stock suficiente para {item.variante.producto.nombre}. '
-                f'Disponible: {item.variante.stock}, pedido: {item.cantidad}'
-            )
+    items = list(pedido.items.select_related('variante__producto', 'variante__talle'))
+    errores = errores_stock_items(
+        (item.variante, item.color_nombre, item.cantidad) for item in items
+    )
+    if errores:
+        raise ValueError(' '.join(errores))
 
-    for item in pedido.items.select_related('variante'):
-        descontar_stock_variante(item.variante, item.cantidad)
+    for item in items:
+        descontar_stock(item.variante, item.cantidad, item.color_nombre)
 
 
-def descontar_stock_variante(variante, cantidad):
-    variante.stock -= cantidad
-    variante.save(update_fields=['stock'])
-    producto = variante.producto
-    producto.stock = producto.stock_total
-    producto.save(update_fields=['stock'])
+def descontar_stock_variante(variante, cantidad, color_nombre=None):
+    descontar_stock(variante, cantidad, color_nombre)
 
 
 @admin_required
@@ -665,11 +681,26 @@ def detalle_pedido(request, pedido_id):
     pagos_registrados = pedido.pagos_registrados.all()
     saldo_pendiente = pedido.total - pedido.monto_pagado
 
-    # Variantes disponibles con stock para cambios
-    variantes_disponibles = Variante.objects.filter(
+    # Talles (y colores, si el talle tiene stock por color) disponibles para cambios
+    variantes_disponibles = []
+    for variante in Variante.objects.filter(
         activa=True,
         stock__gt=0
-    ).select_related('producto', 'talle').order_by('producto__nombre', 'talle__nombre')
+    ).select_related('producto', 'talle').prefetch_related('variante_colores__color').order_by('producto__nombre', 'talle__nombre'):
+        colores_activos = [vc for vc in variante.variante_colores.all() if vc.activo]
+        etiqueta = f'{variante.producto.nombre} - Talle {variante.talle.nombre}'
+        if colores_activos:
+            for vc in colores_activos:
+                if vc.stock > 0:
+                    variantes_disponibles.append({
+                        'valor': f'{variante.id}|{vc.color.nombre}',
+                        'etiqueta': f'{etiqueta} - {vc.color.nombre} (Stock: {vc.stock})',
+                    })
+        else:
+            variantes_disponibles.append({
+                'valor': f'{variante.id}|',
+                'etiqueta': f'{etiqueta} (Stock: {variante.stock})',
+            })
 
     context = {
         'pedido': pedido,
@@ -937,10 +968,9 @@ def confirmar_pedido(request):
                     return redirect("pedidos:checkout")
 
         # VALIDACIÓN DE STOCK
-        variantes_sin_stock = []
-        for item in items_del_carrito:
-            if item.variante.stock < item.cantidad:
-                variantes_sin_stock.append(f"{item.variante.producto.nombre} (Talle: {item.variante.talle.nombre}) - Stock disponible: {item.variante.stock}, intentas: {item.cantidad}")
+        variantes_sin_stock = errores_stock_items(
+            (item.variante, item.color_nombre, item.cantidad) for item in items_del_carrito
+        )
         if variantes_sin_stock:
             messages.error(request, "No hay stock suficiente para los siguientes productos:\n" + "\n".join(variantes_sin_stock))
             return redirect("pedidos:checkout")
@@ -979,8 +1009,8 @@ def confirmar_pedido(request):
                 precio_unitario=item.variante.precio,
                 precio_total=item.cantidad * item.variante.precio
             )
-            # Bajamos el stock del talle elegido
-            descontar_stock_variante(item.variante, item.cantidad)
+            # Bajamos el stock del talle y color elegidos
+            descontar_stock_variante(item.variante, item.cantidad, item.color_nombre)
 
         # 4. Limpieza final
         vaciar_carrito_completo(request, carrito)
@@ -1309,24 +1339,10 @@ def crear_pago(request):
         messages.error(request, 'Tu carrito está vacío.')
         return redirect('pedidos:checkout')
 
-    # VALIDAR STOCK
-    variantes_sin_stock = []
-
-    for item in items:
-
-        if item.variante.stock < item.cantidad:
-
-            talle = (
-                item.variante.talle.nombre
-                if item.variante.talle
-                else "Sin talle"
-            )
-
-            variantes_sin_stock.append(
-                f"{item.variante.producto.nombre} "
-                f"(Talle: {talle}) "
-                f"- Disponible: {item.variante.stock}"
-            )
+    # VALIDAR STOCK (por color cuando el talle tiene stock por color)
+    variantes_sin_stock = errores_stock_items(
+        (item.variante, item.color_nombre, item.cantidad) for item in items
+    )
 
     # Si hay productos sin stock
     if variantes_sin_stock:
@@ -1744,7 +1760,16 @@ def pago_exitoso(request):
             precio_total=item.subtotal
         )
 
-        descontar_stock_variante(item.variante, item.cantidad)
+        try:
+            descontar_stock_variante(item.variante, item.cantidad, item.color_nombre)
+        except ValueError:
+            # El pago ya fue aprobado: se registra el pedido igual y se descuenta lo que haya
+            disponible = stock_disponible(item.variante, item.color_nombre)
+            if disponible > 0:
+                try:
+                    descontar_stock_variante(item.variante, disponible, item.color_nombre)
+                except ValueError:
+                    pass
 
     items_pedido = pedido.items.select_related(
         'variante__producto',
@@ -2358,7 +2383,7 @@ def aumentar_cantidad(request, variante_id):
         variante_id=variante_id
     )
 
-    if item.cantidad < item.variante.stock:
+    if item.cantidad < stock_disponible(item.variante, item.color_nombre):
 
         item.cantidad += 1
         item.save()
@@ -2367,7 +2392,7 @@ def aumentar_cantidad(request, variante_id):
 
         messages.error(
             request,
-            'No hay más stock disponible.'
+            'No hay más stock disponible de este talle y color.'
         )
 
     return redirect('pedidos:checkout')
@@ -2760,15 +2785,16 @@ def registrar_venta_local(request):
                     'error': 'La cantidad debe ser mayor a cero'
                 }, status=400)
 
-            pedidas_por_variante[variante.id] = pedidas_por_variante.get(variante.id, 0) + cantidad
+            color = (item.get('color') or '').strip()
+            clave_stock = (variante.id, color.lower())
+            pedidas_por_variante[clave_stock] = pedidas_por_variante.get(clave_stock, 0) + cantidad
 
-            if variante.stock < pedidas_por_variante[variante.id]:
+            try:
+                validar_stock(variante, pedidas_por_variante[clave_stock], color)
+            except ValueError as error:
                 return JsonResponse({
                     'success': False,
-                    'error': (
-                        f'No hay stock suficiente para {variante.producto.nombre}. '
-                        f'Disponible: {variante.stock}, en la venta: {pedidas_por_variante[variante.id]}'
-                    )
+                    'error': str(error)
                 }, status=400)
 
             # El precio publicado es el del producto (el del talle solo si el producto no tiene)
@@ -2784,7 +2810,7 @@ def registrar_venta_local(request):
 
             subtotal = precio_unitario * cantidad
             total += subtotal
-            lineas.append((variante, item.get('color') or '', cantidad, precio_unitario, subtotal))
+            lineas.append((variante, color, cantidad, precio_unitario, subtotal))
 
         if nueva_deuda < 0:
             return JsonResponse({
@@ -2835,7 +2861,7 @@ def registrar_venta_local(request):
 
             )
 
-            descontar_stock_variante(variante, cantidad)
+            descontar_stock_variante(variante, cantidad, color)
 
         monto_pagado = total - nueva_deuda
         saldo_pendiente = nueva_deuda
@@ -3428,41 +3454,35 @@ def registrar_cambio(request, pedido_id):
     pedido = get_object_or_404(Pedido, pk=pedido_id)
 
     if request.method == 'POST':
-        variante_devuelta_id = request.POST.get('variante_devuelta')
-        variante_entregada_id = request.POST.get('variante_entregada')
+        # Los valores llegan como "<variante_id>|<color>" (color vacío si el talle no usa stock por color)
+        variante_devuelta_id, _, color_devuelto = (request.POST.get('variante_devuelta') or '').partition('|')
+        variante_entregada_id, _, color_entregado = (request.POST.get('variante_entregada') or '').partition('|')
         motivo = request.POST.get('motivo', '')
 
         if variante_devuelta_id and variante_entregada_id:
             variante_devuelta = get_object_or_404(Variante, pk=variante_devuelta_id)
             variante_entregada = get_object_or_404(Variante, pk=variante_entregada_id)
 
-            # Validar stock de variante entregada
-            if variante_entregada.stock < 1:
-                messages.error(request, f'No hay stock disponible de {variante_entregada.producto.nombre} - Talle {variante_entregada.talle.nombre}')
+            try:
+                with transaction.atomic():
+                    # Restar stock al producto entregado (valida talle y color)
+                    descontar_stock(variante_entregada, 1, color_entregado or None)
+
+                    # Sumar stock al producto devuelto, en el color que se había vendido
+                    reponer_stock(variante_devuelta, 1, color_devuelto or None)
+
+                    # Crear registro de cambio
+                    Cambio.objects.create(
+                        pedido=pedido,
+                        variante_devuelta=variante_devuelta,
+                        producto_devuelto=variante_devuelta.producto,
+                        variante_entregada=variante_entregada,
+                        producto_entregado=variante_entregada.producto,
+                        motivo=motivo,
+                    )
+            except ValueError as error:
+                messages.error(request, str(error))
                 return redirect('pedidos:detalle_pedido', pedido_id=pedido.id)
-
-            with transaction.atomic():
-                # Sumar stock al producto devuelto
-                variante_devuelta.stock += 1
-                variante_devuelta.save(update_fields=['stock'])
-                variante_devuelta.producto.stock = variante_devuelta.producto.stock_total
-                variante_devuelta.producto.save(update_fields=['stock'])
-
-                # Restar stock al producto entregado
-                variante_entregada.stock -= 1
-                variante_entregada.save(update_fields=['stock'])
-                variante_entregada.producto.stock = variante_entregada.producto.stock_total
-                variante_entregada.producto.save(update_fields=['stock'])
-
-                # Crear registro de cambio
-                Cambio.objects.create(
-                    pedido=pedido,
-                    variante_devuelta=variante_devuelta,
-                    producto_devuelto=variante_devuelta.producto,
-                    variante_entregada=variante_entregada,
-                    producto_entregado=variante_entregada.producto,
-                    motivo=motivo,
-                )
 
             messages.success(request, 'Cambio registrado y stock actualizado.')
         else:

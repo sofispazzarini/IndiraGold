@@ -657,7 +657,7 @@
                         <select name="variante_devuelta" class="form-select" required style="border-radius:8px;">
                             <option value="">Seleccionar...</option>
                             {% for item in items %}
-                            <option value="{{ item.variante.id }}">{{ item.variante.producto.nombre }} - Talle {{ item.variante.talle.nombre }}</option>
+                            <option value="{{ item.variante.id }}|{{ item.color_nombre|default:'' }}">{{ item.variante.producto.nombre }} - Talle {{ item.variante.talle.nombre }}{% if item.color_nombre %} - {{ item.color_nombre }}{% endif %}</option>
                             {% endfor %}
                         </select>
                     </div>
@@ -666,7 +666,7 @@
                         <select name="variante_entregada" class="form-select" required style="border-radius:8px;">
                             <option value="">Seleccionar...</option>
                             {% for var in variantes_disponibles %}
-                            <option value="{{ var.id }}">{{ var.producto.nombre }} - Talle {{ var.talle.nombre }} (Stock: {{ var.stock }})</option>
+                            <option value="{{ var.valor }}">{{ var.etiqueta }}</option>
                             {% endfor %}
                         </select>
                     </div>
