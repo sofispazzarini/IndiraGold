@@ -1332,7 +1332,7 @@ def precio_final(self):
     )
 
     return self.precio * (1 - descuento)
-@login_required
+@admin_required
 def admin_ofertas(request):
 
     ofertas = Oferta.objects.all().order_by('-id')
@@ -1433,7 +1433,8 @@ def admin_ofertas(request):
         'productos/admin_ofertas.html',
         context
     )
-@login_required
+@admin_required
+@require_POST
 def toggle_oferta(request, oferta_id):
 
     oferta = get_object_or_404(

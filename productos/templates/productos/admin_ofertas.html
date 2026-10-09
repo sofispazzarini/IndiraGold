@@ -879,24 +879,28 @@
 
                     <td>
 
-                        <a
-                            href="{% url 'productos:toggle_oferta' oferta.id %}"
-                            class="
+                        <form method="post" action="{% url 'productos:toggle_oferta' oferta.id %}" style="display:inline;">
+                            {% csrf_token %}
+                            <button
+                                type="submit"
+                                class="
+                                    {% if oferta.activa %}
+                                        btn-danger
+                                    {% else %}
+                                        btn-success
+                                    {% endif %}
+                                "
+                                style="border:0;cursor:pointer;font-family:inherit;"
+                            >
+
                                 {% if oferta.activa %}
-                                    btn-danger
+                                    Desactivar
                                 {% else %}
-                                    btn-success
+                                    Activar
                                 {% endif %}
-                            "
-                        >
 
-                            {% if oferta.activa %}
-                                Desactivar
-                            {% else %}
-                                Activar
-                            {% endif %}
-
-                        </a>
+                            </button>
+                        </form>
 
                     </td>
 
