@@ -1441,6 +1441,28 @@ def buscar_sucursales_correo(request):
 
 @login_required
 def crear_pago(request):
+    """Un solo pedido por carrito aunque lleguen dos "Confirmar" a la vez (doble envío con red
+    lenta, dos pestañas): el segundo espera o se corta y no encuentra nada que comprar.
+    - cache.add: bloqueo entre hilos del mismo proceso.
+    - select_for_update: bloqueo de la fila del carrito en la base (PostgreSQL)."""
+    from django.core.cache import cache
+
+    carrito = get_or_create_cart(request)
+    if carrito is None:
+        return redirect('pedidos:checkout')
+    clave_bloqueo = f'crear_pago_carrito_{carrito.pk}'
+    if not cache.add(clave_bloqueo, 1, timeout=120):
+        messages.info(request, 'Tu pedido ya se está procesando. Revisalo en Mis pedidos.')
+        return redirect('pedidos:mis_pedidos')
+    try:
+        with transaction.atomic():
+            Carrito.objects.select_for_update().filter(pk=carrito.pk).first()
+            return _crear_pago(request)
+    finally:
+        cache.delete(clave_bloqueo)
+
+
+def _crear_pago(request):
 
     carrito = get_or_create_cart(request)
     refrescar_precios_carrito(carrito)
