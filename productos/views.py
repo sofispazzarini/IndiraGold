@@ -24,7 +24,7 @@ from .forms import (
 )
 from django.db import transaction
 from django.db.models import Q, Sum
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from django.utils import timezone
 from .stock import repartir_stock_en_colores, sincronizar_stock_variante
 from carritos.utils import (
@@ -417,12 +417,9 @@ def gestion_productos(request):
 
 @admin_required
 def lista_subcategorias(request, categoria_id):
+    # El template lista_subcategorias.html nunca existió: se usa la gestión de subcategorías
     categoria = get_object_or_404(Categoria, id=categoria_id)
-    subcategorias = Subcategoria.objects.filter(categoria=categoria, activa=True)
-    return render(request, 'productos/lista_subcategorias.html', {
-        'categoria': categoria,
-        'subcategorias': subcategorias
-    })
+    return redirect('productos:gestion_subcategorias', cat_id=categoria.id)
 
 @admin_required
 def productos_por_subcategoria(request, subcat_id):
@@ -980,10 +977,18 @@ def actualizar_variante_ajax(request):
         nuevo_precio = data.get('precio')
 
         variante = get_object_or_404(Variante, id=variante_id)
-        
+
+        try:
+            stock_valor = int(nuevo_stock)
+            precio_valor = Decimal(str(nuevo_precio))
+        except (TypeError, ValueError, InvalidOperation):
+            return JsonResponse({'status': 'error', 'mensaje': 'Stock o precio inválidos.'}, status=400)
+        if stock_valor < 0 or precio_valor <= 0:
+            return JsonResponse({'status': 'error', 'mensaje': 'El stock no puede ser negativo y el precio tiene que ser mayor a 0.'}, status=400)
+
         # Actualizamos los campos
-        variante.stock = int(nuevo_stock)
-        variante.precio = float(nuevo_precio)
+        variante.stock = stock_valor
+        variante.precio = precio_valor
         variante.save()
         stock_total = recalcular_stock_producto(variante.producto)
 
@@ -1051,8 +1056,10 @@ def editar_variante(request, variante_id):
             variante.talle = talle_obj
 
         # Actualizar stock
-        stock = request.POST.get('stock', '0')
-        variante.stock = int(stock) if stock else 0
+        try:
+            variante.stock = max(int(request.POST.get('stock') or 0), 0)
+        except (TypeError, ValueError):
+            variante.stock = 0
         variante.save()
 
         # Recalcular stock del producto
@@ -1156,8 +1163,10 @@ def agregar_variante(request, producto_id):
             return redirect('productos:agregar_variante', producto_id=producto.id)
         talle_obj = obtener_talle(talle_nombre)
 
-        stock = request.POST.get('stock', '0')
-        stock_variante = int(stock) if stock else 0
+        try:
+            stock_variante = max(int(request.POST.get('stock') or 0), 0)
+        except (TypeError, ValueError):
+            stock_variante = 0
 
         nueva_variante = Variante.objects.create(
             producto=producto,
@@ -1612,6 +1621,9 @@ def admin_ofertas(request):
 
         if alcance == 'categoria':
             categoria_id = request.POST.get('categoria')
+            if not str(categoria_id or '').isdigit():
+                messages.error(request, 'Elegí la categoría a la que se aplica la oferta.')
+                return redirect('productos:admin_ofertas')
             categoria = get_object_or_404(Categoria, id=categoria_id, activa=True)
 
         oferta = Oferta.objects.create(
