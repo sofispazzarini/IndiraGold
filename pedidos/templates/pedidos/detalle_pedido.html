@@ -200,6 +200,9 @@
 
     /* Payment */
     .payment-info { padding: 1.2rem 1.5rem; }
+    /* Mismo margen interno que .payment-info para que no queden pegados al borde del card */
+    .pagos-lista, .registrar-pago { padding: 0 1.5rem 1.2rem; }
+    .pedido-pagado { margin: 0 1.5rem 1.2rem; }
     .payment-row {
         display: flex; justify-content: space-between; align-items: center;
         padding: 0.5rem 0; border-bottom: 1px solid rgba(232,223,212,0.4);
@@ -577,7 +580,7 @@
                 <div id="pago-mensaje" style="margin-top:0.75rem;"></div>
             </div>
             {% else %}
-            <div style="margin-top:1rem; padding:0.75rem; background:#e8f5e9; border-radius:8px; text-align:center;">
+            <div class="pedido-pagado" style="padding:0.75rem; background:#e8f5e9; border-radius:8px; text-align:center;">
                 <i class="bi bi-check-circle" style="color:#2f6b38;"></i>
                 <span style="color:#2f6b38; font-weight:600; font-size:0.85rem;">Pedido pagado</span>
             </div>
