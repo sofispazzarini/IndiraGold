@@ -21,15 +21,6 @@
 <div class="container-fluid py-4 d-flex justify-content-center">
     <div style="width: 100%; max-width: 1200px;">
         
-        {% if messages %}
-            {% for message in messages %}
-                <div class="alert alert-{{ message.tags|default:'danger' }} alert-dismissible fade show rounded-pill px-4 mb-4 shadow-sm" role="alert">
-                    <i class="bi bi-exclamation-circle me-2"></i> {{ message }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-            {% endfor %}
-        {% endif %}
-
         <form method="post" enctype="multipart/form-data" id="formEditar">
             {% csrf_token %}
 

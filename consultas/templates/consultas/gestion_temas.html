@@ -425,14 +425,6 @@
     </div>
   </div>
 
-  {% if messages %}
-    {% for message in messages %}
-    <div class="alert-custom">
-      {{ message }}
-    </div>
-    {% endfor %}
-  {% endif %}
-
   <ul class="tema-list">
     {% for tema in temas %}
     <li class="tema-item" data-id="{{ tema.id }}">

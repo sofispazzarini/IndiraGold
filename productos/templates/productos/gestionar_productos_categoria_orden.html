@@ -188,15 +188,6 @@
     </div>
 </div>
 
-{% if messages %}
-    {% for message in messages %}
-    <div class="alert alert-{{ message.tags }} alert-dismissible fade show content-card" role="alert" style="padding: 1rem;">
-        {{ message }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
-    {% endfor %}
-{% endif %}
-
 <div class="row" style="max-width: 1100px; margin-left: 20%;">
     <div class="col-md-6 mb-3">
         <div class="content-card" style="margin-left: 0;">

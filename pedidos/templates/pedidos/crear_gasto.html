@@ -165,14 +165,6 @@
         <p class="page-subtitle">Egreso del negocio</p>
     </div>
 
-    {% if messages %}
-        {% for message in messages %}
-        <div class="alert-custom alert-success">
-            <i class="bi bi-check-circle"></i> {{ message }}
-        </div>
-        {% endfor %}
-    {% endif %}
-
     <form method="post" autocomplete="off">
         {% csrf_token %}
         <div class="form-card">

@@ -433,14 +433,6 @@
     </div>
   </div>
 
-  {% if messages %}
-    {% for message in messages %}
-    <div class="alert-custom">
-      {{ message }}
-    </div>
-    {% endfor %}
-  {% endif %}
-
   <ul class="cat-list">
     {% for cat in categorias %}
     <li class="cat-item" data-id="{{ cat.id }}">

@@ -479,14 +479,6 @@
     </div>
   </div>
 
-  {% if messages %}
-    {% for message in messages %}
-    <div class="alert-custom">
-      {{ message }}
-    </div>
-    {% endfor %}
-  {% endif %}
-
   <div class="search-bar">
     <form method="get" class="search-input-wrap">
       <input type="text" name="q" class="search-input" placeholder="Buscar por pregunta o tema..." value="{{ request.GET.q }}">
