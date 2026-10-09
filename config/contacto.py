@@ -12,3 +12,8 @@ def whatsapp_numero_visible():
     if len(numero) == 13 and numero.startswith('549'):
         return f'+54 9 {numero[3:6]} {numero[6:9]} {numero[9:]}'
     return f'+{numero}' if numero else ''
+
+
+def contacto_tienda(request):
+    """Context processor: WhatsApp de la tienda para el footer de todas las páginas públicas."""
+    return {'whatsapp_tienda': whatsapp_numero(), 'whatsapp_tienda_visible': whatsapp_numero_visible()}

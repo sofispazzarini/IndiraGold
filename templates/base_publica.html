@@ -125,6 +125,16 @@
       }
     }
 
+    .pie-tienda { background: #1a1612; color: #d8cbbb; margin-top: 3rem; padding: 2.5rem 1.5rem 1.25rem; }
+    .pie-tienda__inner { max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.5rem; }
+    .pie-tienda__col { display: flex; flex-direction: column; gap: .5rem; min-width: 0; }
+    .pie-tienda a { color: #d8cbbb; text-decoration: none; font-size: .9rem; overflow-wrap: anywhere; }
+    .pie-tienda a:hover { color: #e8c96a; }
+    .pie-tienda__marca { font-family: 'Cormorant Garamond', serif; font-size: 1.5rem !important; font-weight: 700; color: #e8c96a !important; }
+    .pie-tienda__texto { margin: 0; font-size: .85rem; color: #a99a8a; }
+    .pie-tienda__copy { max-width: 1200px; margin: 1.75rem auto 0; padding-top: 1rem; border-top: 1px solid rgba(216,203,187,.15); font-size: .78rem; color: #8c7e70; text-align: center; }
+    @media (max-width: 600px) { .pie-tienda__inner { grid-template-columns: 1fr; } }
+
     .messages-wrap { max-width: 1200px; margin: 1rem auto 0; padding: 0 2rem; }
     .message-item {
       border: 1px solid var(--border);
@@ -179,6 +189,32 @@
 </header>
 
 {% block content %}{% endblock %}
+
+{# Footer común de la tienda (antes las páginas terminaban sin datos del negocio ni links) #}
+<footer class="pie-tienda">
+  <div class="pie-tienda__inner">
+    <div class="pie-tienda__col">
+      <a class="pie-tienda__marca" href="{% url 'home:home' %}">IndiraGold</a>
+      <p class="pie-tienda__texto">Tienda online. Envíos y retiro en el local.</p>
+    </div>
+    <nav class="pie-tienda__col" aria-label="Links de la tienda">
+      <a href="{% url 'home:home' %}#catalogo">Catálogo</a>
+      <a href="{% url 'home:home' %}#faq">Preguntas frecuentes</a>
+      <a href="{% url 'home:home' %}#contacto">Contacto</a>
+      {% if request.user.is_authenticated and not request.user.is_superuser %}
+        <a href="{% url 'pedidos:mis_pedidos' %}">Mis pedidos</a>
+      {% elif not request.user.is_authenticated %}
+        <a href="{% url 'users:login' %}">Iniciar sesión</a>
+      {% endif %}
+    </nav>
+    <div class="pie-tienda__col">
+      {% if whatsapp_tienda %}<a href="https://wa.me/{{ whatsapp_tienda }}" target="_blank" rel="noopener">WhatsApp {{ whatsapp_tienda_visible }}</a>{% endif %}
+      <a href="https://www.instagram.com/indiragold_" target="_blank" rel="noopener">Instagram</a>
+      <a href="https://www.tiktok.com/@indiragold_" target="_blank" rel="noopener">TikTok</a>
+    </div>
+  </div>
+  <p class="pie-tienda__copy">© {% now "Y" %} Indira Gold</p>
+</footer>
 
 <script>
   // Menú del header en celulares: abre/cierra con el botón, al elegir una opción o al tocar afuera
