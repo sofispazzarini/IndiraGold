@@ -907,7 +907,9 @@
     id="nuevaVentaModal"
     tabindex="-1"
     aria-hidden="true"
+    data-bs-focus="false"
 >
+{# data-bs-focus="false": sin trampa de foco, así los modales de encima (nuevo cliente / dirección) reciben el foco y ESC cierra el de arriba #}
 
     <div
         class="modal-dialog modal-xl modal-dialog-centered"
@@ -1911,10 +1913,15 @@ function abrirModalSobreVenta(id){
     bootstrap.Modal.getOrCreateInstance(document.getElementById(id)).show()
 }
 ;['modalNuevoClienteVenta', 'modalNuevaDireccionVenta'].forEach(id => {
+    // ESC cierra solo el modal de encima (el markup está dentro de la venta y el evento la cerraba también)
+    document.getElementById(id).addEventListener('keydown', (e) => { if (e.key === 'Escape') e.stopPropagation() })
     document.getElementById(id).addEventListener('hidden.bs.modal', () => {
         // Al cerrar el de encima, Bootstrap libera el scroll del body aunque la venta siga abierta
-        if (document.getElementById('nuevaVentaModal').classList.contains('show')) {
+        const ventaModal = document.getElementById('nuevaVentaModal')
+        if (ventaModal.classList.contains('show')) {
             document.body.classList.add('modal-open')
+            // El foco vuelve a la venta para que ESC la siga cerrando
+            ventaModal.focus()
         }
     })
 })
@@ -2761,12 +2768,13 @@ document.getElementById(
             variante_id: variante.id
 
         })
-        console.log(productosVenta)
         renderProductosVenta()
         inputProducto.value = ''
         document.getElementById(
             'configuracion-variante'
         ).style.display = 'none'
+        // El foco vuelve al buscador (dentro del modal): así ESC sigue cerrando la venta
+        inputProducto.focus()
 
     }
 )
