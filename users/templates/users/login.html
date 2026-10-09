@@ -182,7 +182,8 @@
   <div class="login-card">
 
     <div class="brand">
-      <span class="brand-name">Indira Gold</span>
+      {# La marca lleva a la tienda (antes la única salida era el botón Atrás) #}
+      <a class="brand-name" href="{% url 'home:home' %}" style="text-decoration:none; color:inherit;">Indira Gold</a>
     </div>
 
     <h1 class="login-title">Iniciar sesión</h1>
@@ -237,6 +238,9 @@
 
     <p class="register-link">
       ¿No tenés cuenta? <a href="{% url 'users:registro' %}">Registrate</a>
+    </p>
+    <p class="register-link" style="margin-top:.5rem;">
+      <a href="{% url 'home:home' %}">← Volver a la tienda</a>
     </p>
 
   </div>

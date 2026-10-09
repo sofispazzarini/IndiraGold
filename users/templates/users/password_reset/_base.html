@@ -185,7 +185,8 @@
   <div class="login-card">
 
     <div class="brand">
-      <span class="brand-name">Indira Gold</span>
+      {# La marca lleva a la tienda (antes la única salida era el botón Atrás) #}
+      <a class="brand-name" href="{% url 'home:home' %}" style="text-decoration:none; color:inherit;">Indira Gold</a>
     </div>
 
     {% block tarjeta %}{% endblock %}
