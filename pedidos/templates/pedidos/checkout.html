@@ -907,7 +907,12 @@
             <div class="product-item">
               <div>
                 {% with img=item.variante.producto.imagenes.first %}
-                  <img src="{{ img.imagen.url }}" alt="" class="product-img">
+                  {% if img and img.imagen %}
+                    <img src="{{ img.imagen.url }}" alt="" class="product-img">
+                  {% else %}
+                    {# Producto sin foto: recuadro con ícono en vez de una imagen rota #}
+                    <div class="product-img d-flex align-items-center justify-content-center" style="background:#f3ede4; color:#b8a48a;"><i class="bi bi-image"></i></div>
+                  {% endif %}
                 {% endwith %}
               </div>
               <div>
