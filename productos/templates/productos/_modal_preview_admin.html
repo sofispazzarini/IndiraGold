@@ -2,9 +2,10 @@
     <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content border-0" style="border-radius: 20px; background: #fafaf8;">
             <div class="modal-header border-0 pb-0 px-4 pt-4">
-                <div class="d-flex align-items-center">
-                    <span class="badge bg-white text-muted border px-3 py-2 me-3" id="previewCodigo" style="border-radius: 10px;">CÓDIGO</span>
-                    <h4 class="modal-title text-dark fw-bold" id="previewNombre" style="font-family: 'Cormorant Garamond';">Nombre del Producto</h4>
+                {# flex-wrap + min-width 0: con un código o nombre largo el título baja de línea en vez de salirse de la pantalla #}
+                <div class="d-flex flex-wrap align-items-center gap-2" style="min-width:0; flex:1 1 auto;">
+                    <span class="badge bg-white text-muted border px-3 py-2" id="previewCodigo" style="border-radius: 10px; max-width:100%; white-space:normal; overflow-wrap:anywhere; text-align:left;">CÓDIGO</span>
+                    <h4 class="modal-title text-dark fw-bold" id="previewNombre" style="font-family: 'Cormorant Garamond'; min-width:0; overflow-wrap:anywhere;">Nombre del Producto</h4>
                 </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
