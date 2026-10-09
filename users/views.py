@@ -308,16 +308,24 @@ def registro(request):
                 request.session['registro_data'] = form.cleaned_data
                 request.session['codigo_verificacion'] = codigo
                 request.session['email_verificado'] = False
-                # Enviar email
-                send_mail(
-                    'Código de verificación Indira Gold',
-                    f'Tu código de verificación es: {codigo}',
-                    settings.EMAIL_HOST_USER,
-                    [email],
-                    fail_silently=False,
-                    html_message=_html_codigo_verificacion(codigo),
-                )
-                show_verification_modal = True
+                # Enviar email (si falla, se avisa y el formulario conserva lo cargado)
+                try:
+                    send_mail(
+                        'Código de verificación Indira Gold',
+                        f'Tu código de verificación es: {codigo}',
+                        settings.DEFAULT_FROM_EMAIL,
+                        [email],
+                        fail_silently=False,
+                        html_message=_html_codigo_verificacion(codigo),
+                    )
+                except Exception:
+                    request.session.pop('codigo_verificacion', None)
+                    error = (
+                        'No pudimos enviarte el código de verificación por mail. '
+                        'Revisá que el correo esté bien escrito e intentá de nuevo en unos minutos.'
+                    )
+                else:
+                    show_verification_modal = True
         else:
             error = 'Por favor revisa los datos ingresados.'
     else:
