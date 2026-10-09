@@ -1,6 +1,6 @@
 # home/views.py
 import json
-from PIL import Image
+from config.imagenes import optimizar_imagen
 from django.views.generic import TemplateView
 from django.contrib import messages
 from config.permisos import admin_required
@@ -328,17 +328,13 @@ def configurar_hero(request):
             hero.imagen_fondo.delete(save=False)
             hero.imagen_fondo = None
         elif 'imagen_fondo' in request.FILES:
-            imagen = request.FILES['imagen_fondo']
-            try:
-                img = Image.open(imagen)
-                img.verify()
-                imagen.seek(0)
-                if hero.imagen_fondo:
-                    hero.imagen_fondo.delete(save=False)
-                hero.imagen_fondo = imagen
-            except Exception:
-                messages.error(request, 'No se pudo agregar la imagen. Asegurate de subir un archivo de imagen válido (JPG, PNG, etc).')
+            imagen, error = optimizar_imagen(request.FILES['imagen_fondo'])
+            if error:
+                messages.error(request, f'No se pudo agregar la imagen. {error}')
                 return redirect('home:configurar_hero')
+            if hero.imagen_fondo:
+                hero.imagen_fondo.delete(save=False)
+            hero.imagen_fondo = imagen
 
         hero.save()
         messages.success(request, 'Configuración del Hero actualizada.')
