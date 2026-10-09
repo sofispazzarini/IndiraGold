@@ -99,7 +99,9 @@ class AgregarProductoCarritoTests(TestCase):
 		self.assertEqual(session.get("carrito", {}), {})
 		self.assertNotIn(SESSION_CART_STARTED_AT_KEY, session)
 
-	def test_confirmar_compra_crea_pedido_y_detalle_para_cliente_logueado(self):
+	def test_confirmar_compra_redirige_al_checkout_sin_crear_pedido(self):
+		# El flujo viejo creaba el pedido y descontaba stock sin pasar por el checkout:
+		# ahora todas las compras van por el checkout.
 		self.client.force_login(self.user)
 		session = self.client.session
 		session["carrito"] = {str(self.producto.id): 1}
@@ -108,11 +110,8 @@ class AgregarProductoCarritoTests(TestCase):
 		url = reverse("carritos:confirmar_compra")
 		res = self.client.post(url, {"next": "/home/"})
 		self.assertEqual(res.status_code, 302)
-		self.assertTrue(Pedido.objects.filter(cliente=self.cliente).exists())
-		pedido = Pedido.objects.get(cliente=self.cliente)
-		self.assertEqual(pedido.items.count(), 1)
-		self.assertEqual(PedidoItem.objects.get(pedido=pedido).cantidad, 1)
-		self.assertEqual(self.client.session.get("carrito", {}), {})
+		self.assertEqual(res.url, reverse("pedidos:checkout"))
+		self.assertFalse(Pedido.objects.filter(cliente=self.cliente).exists())
 
 	def test_confirmar_compra_sin_login_redirige_a_login(self):
 		url = reverse("carritos:confirmar_compra")
