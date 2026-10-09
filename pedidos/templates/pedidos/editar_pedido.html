@@ -376,7 +376,7 @@
                     <span class="card-head-title">Direccion de envio</span>
                 </div>
                 <div class="card-body-content">
-                    <textarea name="direccion_info" class="modern-textarea" placeholder="Calle, numero, ciudad, provincia, CP">{{ pedido.direccion_info }}</textarea>
+                    <textarea name="direccion_info" class="modern-textarea" placeholder="{% if pedido.direccion %}{{ pedido.direccion.calle }} {{ pedido.direccion.numero }}, {{ pedido.direccion.ciudad }}, {{ pedido.direccion.provincia }} ({{ pedido.direccion.codigo_postal }}){% else %}Calle, numero, ciudad, provincia, CP{% endif %}">{{ pedido.direccion_info|default_if_none:'' }}</textarea>
                 </div>
             </div>
 

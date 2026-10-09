@@ -483,7 +483,12 @@
                 {% endif %}
                 {% endif %}
                 {% endif %}
-                {% if pedido.direccion %}
+                {% if pedido.direccion_info %}
+                <div class="payment-row">
+                    <span class="detail-lbl">Dirección (editada)</span>
+                    <span class="detail-val" style="white-space:pre-line;">{{ pedido.direccion_info }}</span>
+                </div>
+                {% elif pedido.direccion %}
                 <div class="payment-row">
                     <span class="detail-lbl">Direccion</span>
                     <span class="detail-val">{{ pedido.direccion.calle }} {{ pedido.direccion.numero }}, {{ pedido.direccion.ciudad }} ({{ pedido.direccion.codigo_postal }})</span>

@@ -3208,7 +3208,8 @@ def contexto_ticket_pedido(pedido):
         'costo_envio': formato_pesos(pedido.costo_envio),
         'metodo_pago': pago.metodo if pago else (pedido.get_metodo_pago_display() if pedido.metodo_pago else 'Mercado Pago'),
         'es_regalo': pedido.es_regalo,
-        'direccion': pedido.direccion,
+        # Si el admin editó la dirección del pedido, esa es la que se imprime
+        'direccion': None if pedido.direccion_info else pedido.direccion,
         'pedido_direccion_texto': pedido.direccion_info or pedido.calle_numero or '',
     }
 
