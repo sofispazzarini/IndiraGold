@@ -4,7 +4,8 @@ from .models import Gasto, ConfiguracionEnvio, ConfiguracionPago, OpcionEnvioFle
 
 
 class GastoForm(forms.ModelForm):
-    fecha = forms.DateField(widget=forms.DateInput(attrs={'type': 'date'}))
+    # format ISO: el <input type="date"> solo acepta AAAA-MM-DD (con el formato local quedaba vacío)
+    fecha = forms.DateField(widget=forms.DateInput(format='%Y-%m-%d', attrs={'type': 'date'}))
 
     class Meta:
         model = Gasto
