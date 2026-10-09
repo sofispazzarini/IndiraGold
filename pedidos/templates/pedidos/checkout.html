@@ -140,6 +140,10 @@
     border-bottom: 1px solid rgba(232, 223, 212, 0.5);
   }
 
+  /* Nombres largos: que corten por palabra sin ensanchar la columna */
+  .product-item > * { min-width: 0; }
+  .product-name { overflow-wrap: anywhere; }
+
   .product-item:last-of-type {
     border-bottom: none;
   }
@@ -739,6 +743,15 @@
     }
     .product-item {
       padding: 0.85rem 0;
+      /* En celular el subtotal y "Quitar" van debajo, a lo ancho, y el nombre usa toda la fila */
+      grid-template-columns: 50px 1fr;
+      gap: 0.75rem;
+    }
+    .product-subtotal {
+      grid-column: 1 / -1;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
     .product-img {
       width: 50px;
