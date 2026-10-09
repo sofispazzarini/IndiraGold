@@ -651,7 +651,8 @@ function scrollOfertas(dir) {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0 6vw;
+    /* Padding vertical: con textos largos el contenido no queda pegado al header */
+    padding: 3.5rem 6vw;
     position: relative;
     overflow: hidden;
     border-bottom: 1px solid #e8dfd4;
@@ -666,11 +667,13 @@ function scrollOfertas(dir) {
   }
   /* Con imagen de fondo se oscurece el lado del texto para que se lea */
   .hero--imagen .hero__bg { background: linear-gradient(90deg, rgba(0,0,0,.55) 0%, rgba(0,0,0,.25) 55%, rgba(0,0,0,0) 100%); }
-  .hero__content { position: relative; z-index: 1; max-width: 520px; animation: fadeUp .7s ease both; }
-  .hero__eyebrow { font-size: .75rem; font-weight: 600; letter-spacing: .2em; text-transform: uppercase; color: var(--hero-accent, #b8922a); display: block; margin-bottom: .75rem; }
-  .hero__title { font-family: var(--hero-font, 'Cormorant Garamond', serif); font-size: clamp(3rem, 6vw, 5rem); font-weight: 700; color: var(--hero-text, #1a1612); line-height: 1.0; margin-bottom: 1rem; overflow-wrap: anywhere; }
+  .hero__content { position: relative; z-index: 1; max-width: min(640px, 100%); animation: fadeUp .7s ease both; }
+  .hero__eyebrow { font-size: .75rem; font-weight: 600; letter-spacing: .2em; text-transform: uppercase; color: var(--hero-accent, #b8922a); display: block; margin-bottom: .75rem; overflow-wrap: anywhere; }
+  .hero__title { font-family: var(--hero-font, 'Cormorant Garamond', serif); font-size: clamp(2.4rem, 5vw, 4.4rem); font-weight: 700; color: var(--hero-text, #1a1612); line-height: 1.0; margin-bottom: 1rem; overflow-wrap: anywhere; }
   .hero__title em { font-style: italic; color: var(--hero-accent, #b8922a); }
-  .hero__sub { font-size: 1rem; color: var(--hero-text, #8c7e70); opacity: .8; line-height: 1.65; margin-bottom: 2rem; }
+  .hero__sub { font-size: 1rem; color: var(--hero-text, #8c7e70); opacity: .8; line-height: 1.65; margin-bottom: 2rem; overflow-wrap: anywhere; }
+  /* Sobre una imagen de fondo los textos llevan sombra para que se lean */
+  .hero--imagen .hero__eyebrow, .hero--imagen .hero__title, .hero--imagen .hero__sub { text-shadow: 0 2px 10px rgba(0,0,0,.45); }
   .hero__cta {
     display: inline-flex; align-items: center; gap: .5rem;
     background: var(--hero-accent, #b8922a); color: #fff;
