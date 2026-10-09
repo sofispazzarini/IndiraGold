@@ -1398,7 +1398,12 @@ function scrollOfertas(dir) {
 
   function checkEmpty() {
     const visible = [...getCatalogCards()].filter(c => c.style.display !== 'none');
-    document.getElementById('noResults').style.display = visible.length === 0 ? 'block' : 'none';
+    const caja = document.getElementById('noResults');
+    caja.style.display = visible.length === 0 ? 'block' : 'none';
+    // El texto depende de si el cliente buscó algo o solo filtró por categoría, talle o color
+    caja.querySelector('p').textContent = (typeof searchTerm !== 'undefined' && searchTerm)
+      ? 'No encontramos productos con esa búsqueda.'
+      : 'Por ahora no hay productos disponibles con esos filtros.';
   }
 
   function scrollFeatured(dir) {

@@ -82,7 +82,8 @@ class HomePublicaView(TemplateView):
             .order_by('nombre')
         )
         ctx['productos'] = productos
-        ctx['categorias'] = Categoria.objects.all()
+        # Solo categorías activas que tienen productos activos (antes aparecían píldoras vacías o inactivas)
+        ctx['categorias'] = Categoria.objects.filter(activa=True, producto__activo=True).distinct()
         ctx['talles'] = talles
         ctx['colores'] = colores
 
