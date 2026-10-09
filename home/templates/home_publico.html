@@ -1117,6 +1117,7 @@ function scrollOfertas(dir) {
 </style>
 
 <script>
+  function sinTildes(texto) { return (texto || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''); }
   const isAuthenticated = {{ request.user.is_authenticated|yesno:"true,false" }};
   let cartExpiresIn = parseInt('{{ cart_expires_in|default:0 }}', 10) || 0;
   let cartExpireTimer = null;
@@ -1309,7 +1310,7 @@ function scrollOfertas(dir) {
     const cards = getCatalogCards();
     cards.forEach(card => {
       const matchCategory = activeCategory === '' || card.dataset.cat === activeCategory;
-      const matchSearch = card.dataset.name.includes(searchTerm);
+      const matchSearch = sinTildes(card.dataset.name).includes(searchTerm);
 
       const talles = parseList(card.dataset.talles);
       const colores = parseList(card.dataset.colores);
@@ -1331,7 +1332,8 @@ function scrollOfertas(dir) {
 
   // Buscador
   function filterSearch(q) {
-    searchTerm = q.toLowerCase().trim();
+    // Sin tildes: "algodon" encuentra "Algodón"
+    searchTerm = sinTildes(q).trim();
     applyFilters();
   }
 

@@ -324,7 +324,7 @@
         'gris': '#808080', 'violeta': '#800080', 'naranja': '#ffa500', 'marron': '#8b4513', 'cafe': '#6f4e37', 'beige': '#d2b48c', 'turquesa': '#40e0d0',
         'dorado': '#d4af37', 'plateado': '#c0c0c0', 'bordo': '#800020', 'fucsia': '#ff00ff', 'crema': '#fffdd0', 'nude': '#e3bc9a', 'camel': '#c19a6b',
         'suela': '#a0522d', 'chocolate': '#7b3f00', 'natural': '#e8dcc4', 'verde militar': '#4b5320', 'azul marino': '#000080' };
-    const normalizarNombreColor = (texto) => texto.toLowerCase().trim().normalize('NFD').replace(/[̀-ͯ]/g, '');
+    const normalizarNombreColor = (texto) => texto.toLowerCase().trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
     // Función para mostrar mensaje de éxito
     function mostrarExito(mensaje) {
