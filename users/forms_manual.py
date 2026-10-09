@@ -74,7 +74,7 @@ class EditarClienteForm(forms.ModelForm):
         user_instance = kwargs.pop('user_instance', None)
         super().__init__(*args, **kwargs)
         if user_instance:
-            self.fields['nombre'].initial = user_instance.first_name
+            self.fields['nombre'].initial = f'{user_instance.first_name} {user_instance.last_name}'.strip()
             self.fields['email'].initial = user_instance.email
         if self.instance and self.instance.pk:
             self.fields['dni'].initial = self.instance.dni

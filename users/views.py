@@ -246,7 +246,12 @@ def editar_cliente(request, cliente_id):
         form = EditarClienteForm(request.POST, instance=cliente, user_instance=user)
         if form.is_valid():
             # Actualizar datos del user y cliente
-            user.first_name = form.cleaned_data['nombre']
+            # "Nombre completo": la última palabra va al apellido (así no se duplica al mostrarlo)
+            nombre_completo = ' '.join(form.cleaned_data['nombre'].split())
+            if ' ' in nombre_completo:
+                user.first_name, user.last_name = nombre_completo.rsplit(' ', 1)
+            else:
+                user.first_name, user.last_name = nombre_completo, ''
             user.email = form.cleaned_data['email']
             user.save()
             cliente.telefono = form.cleaned_data['telefono']
