@@ -1313,6 +1313,9 @@ def agregar_variante(request, producto_id):
 
 # --- VISTAS QR ---
 
+
+# Uso interno (ventas presenciales / QRs): solo admin
+@admin_required
 def variante_color_qr(request, vc_id):
     """Devuelve la imagen QR de una VarianteColor específica."""
     variante_color = get_object_or_404(VarianteColor, id=vc_id)
@@ -1356,6 +1359,9 @@ def producto_qrs_impresion(request, producto_id):
         'variantes_color': variantes_color,
         'volver_url': volver_url,
     })
+
+# Uso interno (ventas presenciales / QRs): solo admin
+@admin_required
 def buscar_productos(request):
 
     q = request.GET.get('q', '').strip()
@@ -1432,6 +1438,9 @@ def buscar_productos(request):
         })
 
     return JsonResponse(data, safe=False)
+
+# Uso interno (ventas presenciales / QRs): solo admin
+@admin_required
 def obtener_variantes_producto(request, producto_id):
     from decimal import Decimal
 
