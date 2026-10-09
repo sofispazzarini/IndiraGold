@@ -30,7 +30,7 @@
         min-height:100vh;
         width:100%;
         max-width:1180px;
-        margin-left:20%;
+        margin-left:auto;
         margin-right:auto;
         padding:3rem 2.5rem 5rem;
     }
@@ -162,6 +162,13 @@
         overflow-x:auto;
         -webkit-overflow-scrolling:touch;
         width:100%;
+    }
+
+    .scroll-hint{
+        text-align:center;
+        font-size:.72rem;
+        color:#9c8c7c;
+        padding:.4rem;
     }
 
     .ventas-table tbody td{
@@ -384,7 +391,7 @@
             -webkit-overflow-scrolling:touch;
             display:block;
             width:100%;
-            max-width:100vw;
+            max-width:100%; /* 100vw se calculaba sobre la página ya agrandada y no contenía la tabla */
             padding-bottom:10px;
         }
         .ventas-table{
@@ -699,7 +706,7 @@
 
         <div class="section-title mb-3">Historial de ventas</div>
 
-        <div class="scroll-hint d-sm-none">
+        <div class="scroll-hint" id="ventasScrollHint">
             <i class="bi bi-arrow-left-right me-1"></i> Desliza para ver todo
         </div>
 
@@ -2117,6 +2124,16 @@ document.getElementById(
 
     }
 )
+
+// El aviso "Desliza para ver todo" aparece solo si la tabla del historial no entra en su tarjeta
+function actualizarAvisoScrollVentas(){
+    const wrapper = document.querySelector('.tabla-scroll-wrapper')
+    const hint = document.getElementById('ventasScrollHint')
+    if(!wrapper || !hint) return
+    hint.style.display = wrapper.scrollWidth > wrapper.clientWidth + 2 ? '' : 'none'
+}
+window.addEventListener('load', actualizarAvisoScrollVentas)
+window.addEventListener('resize', actualizarAvisoScrollVentas)
 
 function getCookie(name){
 
