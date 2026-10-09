@@ -118,6 +118,12 @@
 {% endblock %}
 
 {% block content %}
+<style>
+  /* Modal Editar dirección: labels arriba de cada campo y campos a lo ancho (basico.html no carga Bootstrap) */
+  .modal-direccion-caja label { display: block; margin-bottom: .35rem; }
+  .modal-direccion-caja input, .modal-direccion-caja select { display: block; width: 100%; box-sizing: border-box; }
+</style>
+
 <div class="membership-grid-card">
     <div class="header-minimal">
         <h1>Confirmar Ubicación</h1>
@@ -152,8 +158,8 @@
             </form>
                         <a href="#" class="btn-corrige" id="btn-editar-direccion"><i class="bi bi-pencil me-1"></i> Corregir datos</a>
                         <!-- Modal edición dirección -->
-                        <div id="modal-direccion-bg" style="display:none;position:fixed;z-index:2000;left:0;top:0;width:100vw;height:100vh;background:rgba(110,14,46,0.18);align-items:center;justify-content:center;">
-                            <div style="background:#fff;border-radius:22px;box-shadow:0 8px 32px 0 rgba(198,167,94,0.18);border:2.5px solid #e8c96a;max-width:410px;padding:38px 36px 30px 36px;text-align:center;position:relative;margin:auto;">
+                        <div id="modal-direccion-bg" style="display:none;position:fixed;z-index:2000;left:0;top:0;width:100vw;height:100vh;background:rgba(110,14,46,0.18);align-items:center;justify-content:center;overflow-y:auto;padding:1rem;box-sizing:border-box;">
+                            <div class="modal-direccion-caja" style="background:#fff;border-radius:22px;box-shadow:0 8px 32px 0 rgba(198,167,94,0.18);border:2.5px solid #e8c96a;width:100%;max-width:410px;max-height:calc(100vh - 2rem);overflow-y:auto;padding:32px 24px 26px;text-align:center;position:relative;margin:auto;box-sizing:border-box;">
                                 <h4 style="margin-bottom:2rem;font-family:'Cormorant Garamond',serif;font-size:1.5rem;font-weight:700;color:#1a1612;letter-spacing:1px;">Editar Dirección</h4>
                                 <form id="form-editar-direccion" autocomplete="off">
                                     <div class="mb-3" style="text-align:left;margin-bottom:1.2rem;">
