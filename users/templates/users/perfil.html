@@ -727,7 +727,7 @@
             <div>
               <div class="direccion-etiqueta">{{ dir.etiqueta|title }}</div>
               <div class="direccion-calle">{{ dir.calle|title }} {{ dir.numero }}</div>
-              <div class="direccion-ciudad">{{ dir.ciudad|title }}, {{ dir.provincia|title }} - CP {{ dir.codigo_postal }}</div>
+              <div class="direccion-ciudad">{{ dir.ciudad|title }}, {{ dir.provincia }} - CP {{ dir.codigo_postal }}</div>
               {% if dir.referencia %}
               <div class="direccion-ciudad">Referencia: {{ dir.referencia|title }}</div>
               {% endif %}

@@ -1177,7 +1177,7 @@
 
                     <div class="direccion-detail">
                         {{ direccion.calle|title }} {{ direccion.numero }}<br>
-                        {{ direccion.ciudad|title }}, {{ direccion.provincia|title }}
+                        {{ direccion.ciudad|title }}, {{ direccion.provincia }}
                         ({{ direccion.codigo_postal }})
                         {% if direccion.referencia %}<br>Ref: {{ direccion.referencia|title }}{% endif %}
                     </div>
@@ -1351,7 +1351,7 @@
 
                         <div class="direccion-detail">
                         {{ direccion.calle|title }} {{ direccion.numero }}<br>
-                        {{ direccion.ciudad|title }}, {{ direccion.provincia|title }}
+                        {{ direccion.ciudad|title }}, {{ direccion.provincia }}
                         ({{ direccion.codigo_postal }})
                         {% if direccion.referencia %}<br>Ref: {{ direccion.referencia|title }}{% endif %}
                         </div>

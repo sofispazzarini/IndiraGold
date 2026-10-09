@@ -130,7 +130,7 @@
             </div>
             <div class="domicilio-box">
                 <h6>Domicilio Registrado:</h6>
-                <p><strong>{{ data.etiqueta|title }}</strong><br>{{ data.calle|title }} {{ data.numero }}<br>{{ data.ciudad|title }}, {{ data.provincia|title }}{% if data.referencia %}<br>Referencia: {{ data.referencia|title }}{% endif %}</p>
+                <p><strong>{{ data.etiqueta|title }}</strong><br>{{ data.calle|title }} {{ data.numero }}<br>{{ data.ciudad|title }}, {{ data.provincia }}{% if data.referencia %}<br>Referencia: {{ data.referencia|title }}{% endif %}</p>
             </div>
             {% if error %}
             <div class="alert alert-danger border-0 shadow-sm rounded-4 mb-4 small">
