@@ -9,6 +9,19 @@ def capitalizar_texto(value):
     return " ".join(part.capitalize() for part in (value or "").strip().split())
 
 
+def normalizar_email(email):
+    """Los emails se guardan siempre en minúsculas: "Ana@Mail.com" y "ana@mail.com" son el mismo."""
+    return (email or "").strip().lower()
+
+
+def email_en_uso(email, excluir_user_id=None):
+    """Si otro usuario ya tiene ese email, sin distinguir mayúsculas (cubre los guardados antes en mayúsculas)."""
+    usuarios = User.objects.filter(email__iexact=normalizar_email(email))
+    if excluir_user_id:
+        usuarios = usuarios.exclude(pk=excluir_user_id)
+    return usuarios.exists()
+
+
 PROVINCIAS = [
     ("", "Seleccioná una provincia"),
     ("Buenos Aires", "Buenos Aires"),
@@ -122,8 +135,8 @@ class RegistroUsuarioForm(forms.ModelForm):
         return capitalizar_texto(self.cleaned_data.get('referencia', ''))
 
     def clean_email(self):
-        email = self.cleaned_data['email']
-        if User.objects.filter(email=email).exists():
+        email = normalizar_email(self.cleaned_data['email'])
+        if email_en_uso(email):
             raise ValidationError("Ya existe un usuario con este correo.")
         return email
 

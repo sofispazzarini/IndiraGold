@@ -12,7 +12,9 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth import authenticate, login as auth_login
-from .forms import RegistroUsuarioForm, capitalizar_texto, normalizar_provincia
+from .forms import RegistroUsuarioForm, capitalizar_texto, normalizar_provincia, normalizar_email, email_en_uso
+from django.core.exceptions import ValidationError
+from django.core.validators import validate_email
 from .models import Cliente, Direccion, direcciones_sin_duplicados
 from django.db.models import Q
 from django.db import IntegrityError
@@ -156,9 +158,9 @@ def perfil(request):
                     mensaje = error_foto
                     mensaje_tipo = 'danger'
                     hay_error = True
+            email = normalizar_email(email)
             if email and email != request.user.email:
-                from django.contrib.auth.models import User
-                if User.objects.filter(email=email).exclude(pk=request.user.pk).exists():
+                if email_en_uso(email, excluir_user_id=request.user.pk):
                     mensaje = 'Ya existe otro usuario con este correo electrónico.'
                     mensaje_tipo = 'danger'
                     hay_error = True
@@ -398,8 +400,7 @@ def registro(request):
             if (
                 User.objects.filter(username=dni).exists()
                 or Cliente.objects.filter(dni=dni).exists()
-                or User.objects.filter(email=email).exists()
-                or Cliente.objects.filter(user__email=email).exists()
+                or email_en_uso(email)
             ):
                 error = 'Ya existe una cuenta registrada con estos datos (DNI o correo electrónico).'
             else:
@@ -735,16 +736,20 @@ def crear_cliente_ajax(request):
     nombre = capitalizar_texto(request.POST.get('nombre', ''))
     apellido = capitalizar_texto(request.POST.get('apellido', ''))
     dni = request.POST.get('dni', '').strip()
-    email = request.POST.get('email', '').strip()
+    email = normalizar_email(request.POST.get('email', ''))
     telefono = request.POST.get('telefono', '').strip()
 
     if not all([nombre, apellido, dni, email, telefono]):
         return JsonResponse({'success': False, 'error': 'Completá todos los campos del cliente.'}, status=400)
+    try:
+        validate_email(email)
+    except ValidationError:
+        return JsonResponse({'success': False, 'error': 'Ingresá un email válido.'}, status=400)
     if not dni.isdigit() or len(dni) not in [7, 8]:
         return JsonResponse({'success': False, 'error': 'El DNI debe tener 7 u 8 números.'}, status=400)
     if User.objects.filter(username=dni).exists() or Cliente.objects.filter(dni=dni).exists():
         return JsonResponse({'success': False, 'error': 'Ya existe un cliente con ese DNI.'}, status=400)
-    if User.objects.filter(email=email).exists():
+    if email_en_uso(email):
         return JsonResponse({'success': False, 'error': 'Ya existe un usuario con ese email.'}, status=400)
 
     user = User.objects.create_user(

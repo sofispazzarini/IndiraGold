@@ -4,7 +4,7 @@ from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 
 
-from .forms import PROVINCIAS, capitalizar_texto
+from .forms import PROVINCIAS, capitalizar_texto, email_en_uso, normalizar_email
 
 class RegistroManualClienteForm(forms.ModelForm):
     dni = forms.CharField(label='DNI', max_length=8, required=True)
@@ -36,8 +36,8 @@ class RegistroManualClienteForm(forms.ModelForm):
         return dni
 
     def clean_email(self):
-        email = self.cleaned_data['email']
-        if User.objects.filter(email=email).exists():
+        email = normalizar_email(self.cleaned_data['email'])
+        if email_en_uso(email):
             raise ValidationError("Ya existe un usuario con este correo.")
         return email
 
@@ -84,11 +84,8 @@ class EditarClienteForm(forms.ModelForm):
         self.fields['dni'].widget.attrs['class'] = 'form-control'
 
     def clean_email(self):
-        email = self.cleaned_data['email']
-        user_qs = User.objects.filter(email=email)
-        if self.instance and self.instance.user:
-            user_qs = user_qs.exclude(pk=self.instance.user.pk)
-        if user_qs.exists():
+        email = normalizar_email(self.cleaned_data['email'])
+        if email_en_uso(email, excluir_user_id=self.instance.user_id if self.instance else None):
             raise ValidationError('Ya existe un usuario con este correo.')
         return email
 
