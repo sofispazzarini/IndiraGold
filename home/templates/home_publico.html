@@ -96,7 +96,7 @@
 
 <!-- CATEGORÍAS DE ORDEN (Secciones Destacadas) -->
 {% for cat_orden in categorias_orden %}
-{% if cat_orden.categoriaordenproducto_set.all %}
+{% if cat_orden.tiene_productos_activos %}
 <section class="featured-section" aria-label="{{ cat_orden.nombre }}">
   <div class="container">
     <div class="featured-top">

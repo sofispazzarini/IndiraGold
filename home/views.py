@@ -222,6 +222,10 @@ class HomePublicaView(TemplateView):
         )
         # Configurar variantes_json para productos en categorías de orden
         for cat_orden in categorias_orden:
+            # Si todos sus productos están desactivados, la sección no se muestra (antes quedaba vacía)
+            cat_orden.tiene_productos_activos = any(
+                rel.producto.activo for rel in cat_orden.categoriaordenproducto_set.all()
+            )
             for rel in cat_orden.categoriaordenproducto_set.all():
                 producto = rel.producto
                 if not hasattr(producto, 'variantes_json') or not producto.variantes_json:
