@@ -36,6 +36,8 @@ def crear_tema_ajax(request):
     descripcion = request.POST.get('descripcion', '').strip()
     if not nombre:
         return JsonResponse({'success': False, 'error': 'El nombre es requerido'})
+    if len(nombre) > 100:
+        return JsonResponse({'success': False, 'error': 'El nombre del tema puede tener hasta 100 caracteres.'})
     if TemaConsulta.objects.filter(nombre__iexact=nombre).exists():
         return JsonResponse({'success': False, 'error': 'Ya existe un tema con ese nombre'})
     tema = TemaConsulta.objects.create(nombre=nombre, descripcion=descripcion, activo=True)

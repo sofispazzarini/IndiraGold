@@ -21,6 +21,16 @@ class TemaConsultaForm(forms.ModelForm):
             }),
         }
 
+    def clean_nombre(self):
+        # Misma regla que el alta rápida desde Nueva FAQ: sin repetir (sin distinguir mayúsculas)
+        nombre = (self.cleaned_data.get('nombre') or '').strip()
+        repetido = TemaConsulta.objects.filter(nombre__iexact=nombre)
+        if self.instance.pk:
+            repetido = repetido.exclude(pk=self.instance.pk)
+        if repetido.exists():
+            raise forms.ValidationError('Ya existe un tema con ese nombre.')
+        return nombre
+
 
 class ConsultaForm(forms.ModelForm):
     class Meta:
