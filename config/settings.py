@@ -188,6 +188,12 @@ EMAIL_BACKEND = os.getenv(
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
+# Tamaño máximo de la foto de perfil (MB)
+try:
+    FOTO_PERFIL_MAX_MB = max(float(os.getenv('FOTO_PERFIL_MAX_MB', '5')), 0.1)
+except ValueError:
+    FOTO_PERFIL_MAX_MB = 5.0
+
 # Security settings for production (HTTPS)
 if not DEBUG:
     CSRF_COOKIE_SECURE = True

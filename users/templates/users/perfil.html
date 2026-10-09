@@ -638,7 +638,7 @@
         <label for="foto_perfil" class="avatar-upload-btn">
           <i class="bi bi-camera-fill"></i>
         </label>
-        <input type="file" id="foto_perfil" name="foto_perfil" accept="image/*" style="display: none;" onchange="previewImage(this)">
+        <input type="file" id="foto_perfil" name="foto_perfil" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" style="display: none;" onchange="previewImage(this)" title="JPG, PNG o WEBP de hasta {{ foto_perfil_max_mb }} MB">
       </div>
 
       <div class="avatar-info">

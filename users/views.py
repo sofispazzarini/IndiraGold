@@ -63,6 +63,41 @@ def dashboard_cliente(request):
     })
 
 
+FORMATOS_FOTO_PERFIL = {'JPEG': 'jpg', 'PNG': 'png', 'WEBP': 'webp'}
+
+
+def procesar_foto_perfil(archivo):
+    """Valida la foto de perfil (imagen JPG/PNG/WEBP real, sin SVG, hasta FOTO_PERFIL_MAX_MB) y la
+    achica a 600 px. Devuelve (archivo_listo, None) o (None, mensaje_de_error)."""
+    from io import BytesIO
+    from django.core.files.base import ContentFile
+    from PIL import Image, UnidentifiedImageError
+
+    maximo_mb = settings.FOTO_PERFIL_MAX_MB
+    if archivo.size > maximo_mb * 1024 * 1024:
+        return None, f'La foto no puede pesar más de {maximo_mb:g} MB.'
+    try:
+        imagen = Image.open(archivo)
+        imagen.verify()
+        archivo.seek(0)
+        imagen = Image.open(archivo)
+        formato = imagen.format
+        imagen.load()
+    except (UnidentifiedImageError, OSError, ValueError, Image.DecompressionBombError):
+        return None, 'La foto tiene que ser una imagen JPG, PNG o WEBP.'
+    if formato not in FORMATOS_FOTO_PERFIL:
+        return None, 'La foto tiene que ser una imagen JPG, PNG o WEBP.'
+
+    # Se guarda achicada: el avatar se muestra chico en todo el sitio
+    imagen.thumbnail((600, 600))
+    if formato == 'JPEG' and imagen.mode not in ('RGB', 'L'):
+        imagen = imagen.convert('RGB')
+    salida = BytesIO()
+    imagen.save(salida, format=formato, quality=88)
+    extension = FORMATOS_FOTO_PERFIL[formato]
+    return ContentFile(salida.getvalue(), name=f'perfil.{extension}'), None
+
+
 @login_required
 def perfil(request):
     cliente = request.user.cliente
@@ -113,24 +148,31 @@ def perfil(request):
                 cliente.telefono = telefono
 
             # Validar y actualizar email
-            email_error = False
+            hay_error = False
+            foto_nueva = None
+            if 'foto_perfil' in request.FILES:
+                foto_nueva, error_foto = procesar_foto_perfil(request.FILES['foto_perfil'])
+                if error_foto:
+                    mensaje = error_foto
+                    mensaje_tipo = 'danger'
+                    hay_error = True
             if email and email != request.user.email:
                 from django.contrib.auth.models import User
                 if User.objects.filter(email=email).exclude(pk=request.user.pk).exists():
                     mensaje = 'Ya existe otro usuario con este correo electrónico.'
                     mensaje_tipo = 'danger'
-                    email_error = True
+                    hay_error = True
                 else:
                     request.user.email = email
 
-            if 'foto_perfil' in request.FILES:
-                cliente.foto_perfil = request.FILES['foto_perfil']
+            if foto_nueva:
+                cliente.foto_perfil = foto_nueva
 
             if 'eliminar_foto' in request.POST:
                 cliente.foto_perfil.delete(save=False)
                 cliente.foto_perfil = None
 
-            if not email_error:
+            if not hay_error:
                 request.user.save()
                 cliente.save()
                 mensaje = 'Perfil actualizado correctamente.'
@@ -147,6 +189,7 @@ def perfil(request):
         'direccion_form': direccion_form,
         'mensaje': mensaje,
         'mensaje_tipo': mensaje_tipo,
+        'foto_perfil_max_mb': f'{settings.FOTO_PERFIL_MAX_MB:g}',
     })
 
 
