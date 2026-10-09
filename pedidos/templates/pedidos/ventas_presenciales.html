@@ -2158,12 +2158,99 @@ btnCancelarScanner.addEventListener(
     cancelarModoScanner
 )
 
+// Los QR de las etiquetas tienen el formato IG-<codigo>-<talle>-<color>-<8 hex>.
+// El lector los "tipea" muy rápido: no se busca en cada tecla sino al terminar la lectura
+// (Enter o una pausa corta), y se ignoran respuestas viejas que llegan desordenadas.
+const ES_QR = /^IG-/i
+let busquedaSeq = 0
+let busquedaTimer = null
+
+async function buscarProductos(q){
+
+    const seq = ++busquedaSeq
+
+    const response = await fetch(
+        `/productos/buscar-productos/?q=${encodeURIComponent(q)}`
+    )
+
+    const productos = await response.json()
+
+    if(seq !== busquedaSeq){
+        return
+    }
+
+    resultadosProductos.innerHTML = ''
+
+    if(productos.length === 1 && productos[0].auto_select){
+        await seleccionarProducto(productos[0])
+        resultadosProductos.style.display = 'none'
+        btnEscanearQr.style.display = 'inline-block'
+        btnCancelarScanner.style.display = 'none'
+        modoScannerActivo = false
+        scannerStatus.innerText = 'Producto leído y agregado.'
+        scannerStatus.classList.remove('text-muted')
+        scannerStatus.classList.add('text-success')
+        return
+    }
+
+    if(productos.length === 0){
+
+        resultadosProductos.innerHTML = `
+
+            <div class="p-3 text-muted">
+
+                ${modoScannerActivo ? 'No se encontró stock disponible para ese QR' : 'No se encontraron productos con stock'}
+
+            </div>
+
+        `
+    }
+
+    productos.forEach(producto => {
+
+        resultadosProductos.innerHTML += `
+
+            <div
+                class="p-3 border-bottom resultado-producto"
+                style="cursor:pointer;"
+                data-id="${producto.id}"
+                data-nombre="${escHtml(producto.nombre)}"
+                data-auto="${producto.auto_select || ''}"
+                data-variante="${producto.scanned_variante_id || ''}"
+                data-color="${escHtml(producto.scanned_color || '')}"
+            >
+
+                <div class="fw-bold">
+
+                    ${escHtml(producto.nombre)}
+
+                </div>
+
+                <small class="text-muted">
+
+                    Código: ${escHtml(producto.codigo)}
+
+                </small>
+
+            </div>
+
+        `
+    })
+
+    resultadosProductos.style.display = 'block'
+}
+
 inputProducto.addEventListener(
     'keydown',
     function(e){
 
         if(e.key === 'Enter'){
             e.preventDefault()
+            const q = this.value.trim()
+            if(q.length >= 2){
+                clearTimeout(busquedaTimer)
+                buscarProductos(q)
+            }
         }
 
     }
@@ -2171,11 +2258,15 @@ inputProducto.addEventListener(
 
 inputProducto.addEventListener(
     'input',
-    async function(){
+    function(){
 
         const q = this.value.trim()
 
+        clearTimeout(busquedaTimer)
+
         if(q.length < 2){
+
+            busquedaSeq++
 
             resultadosProductos.style.display = 'none'
 
@@ -2184,71 +2275,10 @@ inputProducto.addEventListener(
             return
         }
 
-        const response = await fetch(
-            `/productos/buscar-productos/?q=${encodeURIComponent(q)}`
+        busquedaTimer = setTimeout(
+            () => buscarProductos(q),
+            ES_QR.test(q) ? 400 : 250
         )
-
-        const productos = await response.json()
-
-        resultadosProductos.innerHTML = ''
-
-        if(productos.length === 1 && productos[0].auto_select){
-            await seleccionarProducto(productos[0])
-            resultadosProductos.style.display = 'none'
-            btnEscanearQr.style.display = 'inline-block'
-            btnCancelarScanner.style.display = 'none'
-            modoScannerActivo = false
-            scannerStatus.innerText = 'Producto leído y agregado.'
-            scannerStatus.classList.remove('text-muted')
-            scannerStatus.classList.add('text-success')
-            return
-        }
-
-        if(productos.length === 0){
-
-            resultadosProductos.innerHTML = `
-
-                <div class="p-3 text-muted">
-
-                    ${modoScannerActivo ? 'No se encontró stock disponible para ese QR' : 'No se encontraron productos con stock'}
-
-                </div>
-
-            `
-        }
-
-        productos.forEach(producto => {
-
-            resultadosProductos.innerHTML += `
-
-                <div
-                    class="p-3 border-bottom resultado-producto"
-                    style="cursor:pointer;"
-                    data-id="${producto.id}"
-                    data-nombre="${escHtml(producto.nombre)}"
-                    data-auto="${producto.auto_select || ''}"
-                    data-variante="${producto.scanned_variante_id || ''}"
-                    data-color="${escHtml(producto.scanned_color || '')}"
-                >
-
-                    <div class="fw-bold">
-
-                        ${escHtml(producto.nombre)}
-
-                    </div>
-
-                    <small class="text-muted">
-
-                        Código: ${escHtml(producto.codigo)}
-
-                    </small>
-
-                </div>
-
-            `
-        })
-
-        resultadosProductos.style.display = 'block'
 
     }
 )

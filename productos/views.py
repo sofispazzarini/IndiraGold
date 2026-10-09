@@ -1,4 +1,5 @@
 import json
+import re
 import uuid
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.views.decorators.http import require_POST, require_http_methods
@@ -1094,16 +1095,30 @@ def buscar_productos(request):
         ).select_related('producto', 'talle').first()
 
         if not variante:
-            qr_fragment = q.split('-')[-1] if q.upper().startswith('IG-') else q
-            variante_color = VarianteColor.objects.filter(
-                qr_code__startswith=qr_fragment,
-                activo=True,
-                variante__activa=True,
-                variante__stock__gt=0,
-                variante__producto__activo=True
-            ).select_related('variante__producto', 'variante__talle', 'color').first()
+            # Etiqueta QR: IG-<codigo>-<talle>-<color>-<primeros 8 caracteres del qr_code>.
+            # Solo se busca por QR si la lectura está completa; un fragmento vacío o parcial
+            # (mientras el lector todavía está "tipeando") coincidía con cualquier color.
+            if q.upper().startswith('IG-'):
+                match = re.search(r'-([0-9a-fA-F]{8})$', q)
+                qr_fragment = match.group(1).lower() if match else None
+            elif re.fullmatch(r'[0-9a-fA-F-]{8,36}', q):
+                qr_fragment = q.lower()
+            else:
+                qr_fragment = None
+
+            if qr_fragment:
+                variante_color = VarianteColor.objects.filter(
+                    qr_code__startswith=qr_fragment,
+                    activo=True,
+                    variante__activa=True,
+                    variante__stock__gt=0,
+                    variante__producto__activo=True
+                ).select_related('variante__producto', 'variante__talle', 'color').first()
             if variante_color:
                 variante = variante_color.variante
+            elif q.upper().startswith('IG-'):
+                # Lectura de QR incompleta o sin stock: no mezclar con la búsqueda por nombre
+                return JsonResponse([], safe=False)
 
         if variante:
             producto = variante.producto
