@@ -1764,23 +1764,17 @@ function scrollCatOrden{{ cat_orden.id }}(dir) {
     const stockLabel = document.getElementById('modalCantidadStock');
     const input = document.getElementById('modalCantidadInput');
 
-    const totalStockColores = coloresModalActuales.reduce((sum, c) => sum + (c.stock || 0), 0);
-    const usarStockVariante = totalStockColores === 0 && varianteSeleccionadaModal.stock > 0;
-
-    if (usarStockVariante) {
+    if (coloresModalActuales.length > 0 && colorData) {
+      const stock = colorData.stock || 0;
+      stockColorLabel.textContent = `Stock de este color: ${stock}`;
+      stockLabel.textContent = `Disponibles: ${stock}`;
+      input.max = stock;
+      input.value = stock > 0 ? 1 : 0;
+    } else {
       stockColorLabel.textContent = '';
       stockLabel.textContent = `Disponibles: ${varianteSeleccionadaModal.stock}`;
       input.max = varianteSeleccionadaModal.stock;
-      input.value = 1;
-    } else if (colorData && colorData.stock !== undefined) {
-      stockColorLabel.textContent = `Stock de este color: ${colorData.stock}`;
-      stockLabel.textContent = `Disponibles: ${colorData.stock}`;
-      input.max = colorData.stock;
-      if (parseInt(input.value) > colorData.stock || colorData.stock === 0) {
-        input.value = colorData.stock > 0 ? 1 : 0;
-      }
-    } else {
-      stockColorLabel.textContent = '';
+      input.value = varianteSeleccionadaModal.stock > 0 ? 1 : 0;
     }
   }
 
