@@ -67,7 +67,8 @@ class EditarClienteForm(forms.ModelForm):
     nombre = forms.CharField(label='Nombre completo', max_length=150)
     email = forms.EmailField(label='Correo electrónico')
     telefono = forms.CharField(label='Teléfono', max_length=20)
-    dni = forms.CharField(label='DNI', max_length=8, required=False)
+    # El DNI es el usuario para entrar: no se cambia desde acá (disabled ignora lo que llegue por POST)
+    dni = forms.CharField(label='DNI', max_length=8, required=False, disabled=True)
 
     class Meta:
         model = Cliente

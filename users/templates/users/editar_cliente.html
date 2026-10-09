@@ -178,8 +178,8 @@
             </div>
             <div class="form-group">
                 <label class="form-label">DNI</label>
-                <input type="text" name="dni" class="form-input" value="{{ form.dni.value|default:cliente.dni }}" placeholder="Ej: 12345678" maxlength="8">
-                {% if form.dni.errors %}<span class="form-error">{{ form.dni.errors.0 }}</span>{% endif %}
+                <input type="text" class="form-input" value="{{ cliente.dni }}" readonly style="background:#f3efe9; color:#6f6259; cursor:not-allowed;">
+                <span style="font-size:.78rem; color:#8b7769;">El DNI es el usuario para entrar y no se puede cambiar.</span>
             </div>
             <button type="submit" class="btn-submit">
                 <i class="bi bi-check-circle"></i> Guardar cambios
