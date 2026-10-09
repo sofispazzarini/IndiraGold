@@ -3,6 +3,12 @@ from .models import TipoMedida, Proveedor, Subcategoria, Producto, Categoria
 
 # Formulario para tipos de medida globales
 class TipoMedidaForm(forms.ModelForm):
+    def clean_nombre(self):
+        nombre = (self.cleaned_data.get('nombre') or '').strip()
+        if TipoMedida.objects.filter(nombre__iexact=nombre).exclude(pk=self.instance.pk).exists():
+            raise forms.ValidationError('Ya existe una medida con ese nombre.')
+        return nombre
+
     class Meta:
         model = TipoMedida
         fields = ['nombre', 'descripcion']

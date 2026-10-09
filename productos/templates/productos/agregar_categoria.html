@@ -121,6 +121,7 @@
             <!-- Campo de nombre con el estilo de línea inferior[cite: 14] -->
             <input type="text" 
                    name="{{ form.nombre.name }}" 
+                   value="{{ form.nombre.value|default:'' }}"
                    class="input-clean-line" 
                    placeholder="Nombre (Ej: Calzado, Accesorios...)" 
                    required 

@@ -789,7 +789,10 @@ def agregar_categoria(request):
             messages.success(request, 'Categoría agregada.')
             return redirect('productos:gestion_productos')
         else:
-            messages.error(request, 'Por favor revisa los datos ingresados.')
+            # El motivo real (ej. "Ya existe una categoría con ese nombre.") en vez de un mensaje genérico
+            for errores in form.errors.values():
+                for error in errores:
+                    messages.error(request, error)
             return render(request, 'productos/agregar_categoria.html', {'form': form})
     form = CategoriaForm()
     return render(request, 'productos/agregar_categoria.html', {'form': form})
@@ -969,7 +972,7 @@ def gestion_medidas(request):
             mensaje = 'Medida agregada correctamente.'
             form = TipoMedidaForm()
         else:
-            mensaje = 'Por favor revisa los datos ingresados.'
+            mensaje = ' '.join(error for errores in form.errors.values() for error in errores) or 'Por favor revisa los datos ingresados.'
     else:
         form = TipoMedidaForm()
     medidas = TipoMedida.objects.all().order_by('nombre')
