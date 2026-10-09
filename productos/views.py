@@ -239,8 +239,7 @@ def tiene_ventas(producto=None, variante=None):
 
 
 # --- DECORADOR AUXILIAR ---
-def admin_required(view_func):
-    return login_required(user_passes_test(lambda u: u.is_superuser)(view_func))
+from config.permisos import admin_required  # noqa: E402 (mismo decorador en todo el panel)
 
 # --- VISTAS PÚBLICAS ---
 

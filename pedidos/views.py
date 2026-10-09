@@ -62,8 +62,7 @@ from .servicios_envio import ErrorEnvio, calcular_paquete_envio, cotizar_correo_
 logger = logging.getLogger(__name__)
 
 # Decorador para verificar que es administrador
-def admin_required(view_func):
-    return login_required(login_url="/users/login/")(user_passes_test(lambda u: u.is_superuser, login_url="/users/login/")(view_func))
+from config.permisos import admin_required  # noqa: E402 (mismo decorador en todo el panel)
 
 
 def formato_pesos(valor):

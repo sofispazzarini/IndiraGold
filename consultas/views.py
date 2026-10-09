@@ -1,5 +1,5 @@
 from django.contrib import messages
-from django.contrib.admin.views.decorators import staff_member_required
+from config.permisos import admin_required
 from django.http import JsonResponse
 from django.shortcuts import redirect, render, get_object_or_404
 from django.views.decorators.http import require_POST
@@ -10,13 +10,13 @@ from .models import TemaConsulta, Consulta
 
 # === TEMAS ===
 
-@staff_member_required
+@admin_required
 def gestion_temas(request):
     temas = TemaConsulta.objects.all().order_by('-created_at')
     return render(request, 'consultas/gestion_temas.html', {'temas': temas})
 
 
-@staff_member_required
+@admin_required
 def crear_tema(request):
     if request.method == 'POST':
         form = TemaConsultaForm(request.POST)
@@ -29,7 +29,7 @@ def crear_tema(request):
     return render(request, 'consultas/crear_tema.html', {'form': form})
 
 
-@staff_member_required
+@admin_required
 @require_POST
 def crear_tema_ajax(request):
     nombre = request.POST.get('nombre', '').strip()
@@ -42,7 +42,7 @@ def crear_tema_ajax(request):
     return JsonResponse({'success': True, 'id': tema.id, 'nombre': tema.nombre})
 
 
-@staff_member_required
+@admin_required
 def editar_tema(request, tema_id):
     tema = get_object_or_404(TemaConsulta, id=tema_id)
     if request.method == 'POST':
@@ -56,7 +56,7 @@ def editar_tema(request, tema_id):
     return render(request, 'consultas/crear_tema.html', {'form': form, 'tema': tema})
 
 
-@staff_member_required
+@admin_required
 def eliminar_tema(request, tema_id):
     tema = get_object_or_404(TemaConsulta, id=tema_id)
     if request.method == 'POST':
@@ -66,7 +66,7 @@ def eliminar_tema(request, tema_id):
     return redirect('consultas:gestion_temas')
 
 
-@staff_member_required
+@admin_required
 def toggle_estado_tema(request, tema_id):
     tema = get_object_or_404(TemaConsulta, id=tema_id)
     if request.method == 'POST':
@@ -79,7 +79,7 @@ def toggle_estado_tema(request, tema_id):
 
 # === PREGUNTAS FRECUENTES ===
 
-@staff_member_required
+@admin_required
 def gestion_faqs(request):
     from django.db.models import Q
 
@@ -91,7 +91,7 @@ def gestion_faqs(request):
     return render(request, 'consultas/gestion_faqs.html', {'faqs': faqs, 'q': q})
 
 
-@staff_member_required
+@admin_required
 def crear_faq(request):
     if request.method == 'POST':
         form = ConsultaForm(request.POST)
@@ -104,7 +104,7 @@ def crear_faq(request):
     return render(request, 'consultas/crear_faq.html', {'form': form})
 
 
-@staff_member_required
+@admin_required
 def editar_faq(request, faq_id):
     faq = get_object_or_404(Consulta, id=faq_id)
     if request.method == 'POST':
@@ -118,7 +118,7 @@ def editar_faq(request, faq_id):
     return render(request, 'consultas/crear_faq.html', {'form': form, 'faq': faq})
 
 
-@staff_member_required
+@admin_required
 def eliminar_faq(request, faq_id):
     faq = get_object_or_404(Consulta, id=faq_id)
     if request.method == 'POST':
@@ -127,7 +127,7 @@ def eliminar_faq(request, faq_id):
     return redirect('consultas:gestion_faqs')
 
 
-@staff_member_required
+@admin_required
 def toggle_estado_faq(request, faq_id):
     faq = get_object_or_404(Consulta, id=faq_id)
     if request.method == 'POST':

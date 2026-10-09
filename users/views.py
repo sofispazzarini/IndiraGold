@@ -4,6 +4,7 @@ from django.http import HttpResponseRedirect
 from django.contrib.auth.views import PasswordChangeView
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
+from config.permisos import admin_required
 import random
 from django.core.mail import send_mail
 from django.conf import settings
@@ -220,8 +221,7 @@ def perfil(request):
     })
 
 
-@login_required
-@user_passes_test(lambda u: u.is_superuser)
+@admin_required
 def dashboard_admin(request):
     from productos.models import Categoria, Producto
     from pedidos.models import Pedido
@@ -305,8 +305,7 @@ def dashboard_admin(request):
     }
     return render(request, 'users/dashboard_admin.html', context)
 # Vista para listado y búsqueda de clientes (solo admin)
-@login_required
-@user_passes_test(lambda u: u.is_superuser)
+@admin_required
 def listado_clientes(request):
     query = request.GET.get('q', '').strip()
     clientes = Cliente.objects.select_related('user').filter(user__is_superuser=False)
@@ -317,8 +316,7 @@ def listado_clientes(request):
         )
     return render(request, 'users/listado_clientes.html', {'clientes': clientes})
 # Vista para agregar nueva dirección a un cliente (solo admin)
-@login_required
-@user_passes_test(lambda u: u.is_superuser)
+@admin_required
 def agregar_direccion(request, cliente_id):
     cliente = get_object_or_404(Cliente, pk=cliente_id)
     direcciones = direcciones_sin_duplicados(cliente.direcciones.all().order_by('etiqueta', 'calle', 'numero'))
@@ -353,8 +351,7 @@ def agregar_direccion(request, cliente_id):
         form = NuevaDireccionForm(initial={'cliente': cliente})
     return render(request, 'users/agregar_direccion.html', {'form': form, 'cliente': cliente, 'mensaje': mensaje, 'direcciones': direcciones})
 # Vista para editar cliente (solo admin)
-@login_required
-@user_passes_test(lambda u: u.is_superuser)
+@admin_required
 def editar_cliente(request, cliente_id):
     cliente = get_object_or_404(Cliente.objects.select_related('user'), pk=cliente_id)
     user = cliente.user
@@ -408,6 +405,8 @@ def _html_codigo_verificacion(codigo):
 
 
 def registro(request):
+    if request.user.is_authenticated:
+        return ir_a_mi_cuenta(request.user)
     error = None
     show_verification_modal = False
     initial_data = request.session.get('registro_data')
@@ -547,8 +546,18 @@ def home(request):
 
 # users/views.py
 
+def ir_a_mi_cuenta(user):
+    return redirect('users:dashboard_admin' if user.is_superuser else 'users:dashboard_cliente')
+
+
 def login_view(request):
     error = None
+    # Ya logueado: no se vuelve a mostrar el login (va a la página pedida o a su panel)
+    if request.user.is_authenticated and request.method == 'GET':
+        next_url = request.GET.get('next')
+        if next_url and url_has_allowed_host_and_scheme(next_url, allowed_hosts={request.get_host()}, require_https=request.is_secure()):
+            return redirect(next_url)
+        return ir_a_mi_cuenta(request.user)
     if request.method == 'POST':
         dni = request.POST.get('username')
         password = request.POST.get('password')
@@ -593,7 +602,7 @@ def login_view(request):
             
     return render(request, 'users/login.html', {'error': error})
 # Vista para registro manual de cliente (solo admin)
-@user_passes_test(lambda u: u.is_superuser)
+@admin_required
 def registro_manual_cliente(request):
     
     mensaje = None
@@ -702,7 +711,7 @@ def registro_manual_cliente(request):
         form = RegistroManualClienteForm()
     return render(request, 'users/registro_manual_cliente.html', {'form': form, 'mensaje': mensaje})
 
-@user_passes_test(lambda u: u.is_superuser)
+@admin_required
 def buscar_clientes(request):
 
     q = request.GET.get('q', '')
@@ -731,7 +740,7 @@ def buscar_clientes(request):
     return JsonResponse(data, safe=False)
 
 
-@user_passes_test(lambda u: u.is_superuser)
+@admin_required
 def direcciones_cliente_ajax(request, cliente_id):
     cliente = get_object_or_404(Cliente, user_id=cliente_id)
     direcciones = direcciones_sin_duplicados(
@@ -760,7 +769,7 @@ def direcciones_cliente_ajax(request, cliente_id):
     })
 
 
-@user_passes_test(lambda u: u.is_superuser)
+@admin_required
 @require_POST
 def crear_cliente_ajax(request):
     nombre = capitalizar_texto(request.POST.get('nombre', ''))
@@ -905,7 +914,7 @@ def guardar_direccion_ajax(request, cliente):
     return direccion, None
 
 
-@user_passes_test(lambda u: u.is_superuser)
+@admin_required
 @require_POST
 def crear_direccion_ajax(request):
     cliente_id = request.POST.get('cliente_id')

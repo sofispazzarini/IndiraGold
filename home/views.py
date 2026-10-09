@@ -3,7 +3,7 @@ import json
 from PIL import Image
 from django.views.generic import TemplateView
 from django.contrib import messages
-from django.contrib.admin.views.decorators import staff_member_required
+from config.permisos import admin_required
 from django.shortcuts import redirect, render, get_object_or_404
 from productos.models import Producto, Categoria, Talle, Color, CategoriaOrden, Variante, Oferta
 from carritos.utils import (
@@ -247,13 +247,13 @@ class HomePublicaView(TemplateView):
 
 # === GESTIÓN CARROUSEL ===
 
-@staff_member_required
+@admin_required
 def gestion_carrousel(request):
     slides = SlideCarrousel.objects.all()
     return render(request, 'home/gestion_carrousel.html', {'slides': slides})
 
 
-@staff_member_required
+@admin_required
 def crear_slide(request):
     if request.method == 'POST':
         form = SlideCarrouselForm(request.POST, request.FILES)
@@ -266,7 +266,7 @@ def crear_slide(request):
     return render(request, 'home/crear_slide.html', {'form': form})
 
 
-@staff_member_required
+@admin_required
 def editar_slide(request, slide_id):
     slide = get_object_or_404(SlideCarrousel, id=slide_id)
     if request.method == 'POST':
@@ -280,7 +280,7 @@ def editar_slide(request, slide_id):
     return render(request, 'home/crear_slide.html', {'form': form, 'slide': slide})
 
 
-@staff_member_required
+@admin_required
 def eliminar_slide(request, slide_id):
     slide = get_object_or_404(SlideCarrousel, id=slide_id)
     if request.method == 'POST':
@@ -290,7 +290,7 @@ def eliminar_slide(request, slide_id):
     return redirect('home:gestion_carrousel')
 
 
-@staff_member_required
+@admin_required
 def toggle_slide(request, slide_id):
     slide = get_object_or_404(SlideCarrousel, id=slide_id)
     if request.method == 'POST':
@@ -301,7 +301,7 @@ def toggle_slide(request, slide_id):
     return redirect('home:gestion_carrousel')
 
 
-@staff_member_required
+@admin_required
 def configurar_hero(request):
     hero = ConfiguracionHero.actual()
 
