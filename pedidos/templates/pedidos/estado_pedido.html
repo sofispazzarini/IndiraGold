@@ -255,6 +255,15 @@
     <p class="pedido-number">Pedido #{{ pedido.id }}</p>
   </div>
 
+  {% if estado_cerrado %}
+  <div class="info-card" style="border-left: 4px solid var(--burgundy); margin-bottom: 1.5rem;">
+    <p style="margin:0;">
+      <strong>{{ pedido.get_estado_display }}</strong><br>
+      {{ estado_cerrado }}
+    </p>
+  </div>
+  {% endif %}
+
   <div class="timeline">
     {% for paso in pasos %}
     <div class="timeline-item">

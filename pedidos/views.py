@@ -2430,6 +2430,29 @@ def estado_pedido(request, pedido_id):
         'entregado': 'Entregado',
     }
 
+    # Pedidos cerrados sin entregar (rechazado, cancelado, vencido) o en un estado que no
+    # corresponde al método de entrega: no se dibuja la línea de tiempo, se informa el estado
+    mensajes_estado = {
+        'rechazado': 'El pago de este pedido fue rechazado. Si ya pagaste, escribinos con el comprobante.',
+        'cancelado': 'Este pedido fue cancelado. Si tenés dudas, escribinos.',
+        'vencido': 'Este pedido venció porque no recibimos el pago a tiempo.',
+    }
+    if pedido.estado not in flujo:
+        return render(
+            request,
+            'pedidos/estado_pedido.html',
+            {
+                'pedido': pedido,
+                'pasos': [],
+                'estado_cerrado': mensajes_estado.get(
+                    pedido.estado,
+                    f'Estado actual: {pedido.get_estado_display()}.'
+                ),
+                'envio': envio,
+                'seguimiento_url': url_seguimiento_envio(envio),
+            }
+        )
+
     indice_actual = flujo.index(pedido.estado)
 
     pasos = []
