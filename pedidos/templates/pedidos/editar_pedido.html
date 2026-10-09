@@ -363,7 +363,7 @@
                 </div>
                 <div class="card-body-content">
                     <select name="estado" class="modern-select">
-                        {% for value, label in pedido.ESTADOS %}
+                        {% for value, label in pedido.opciones_estado %}
                         <option value="{{ value }}" {% if pedido.estado == value %}selected{% endif %}>
                             {{ label }}
                         </option>

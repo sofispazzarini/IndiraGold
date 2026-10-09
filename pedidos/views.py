@@ -462,6 +462,40 @@ def descontar_stock_variante(variante, cantidad, color_nombre=None):
     descontar_stock(variante, cantidad, color_nombre)
 
 
+def reponer_stock_pedido(pedido):
+    for item in pedido.items.select_related('variante__producto', 'variante__talle'):
+        reponer_stock(item.variante, item.cantidad, item.color_nombre)
+
+
+def cambiar_estado_pedido(pedido, nuevo_estado):
+    """Aplica un cambio de estado respetando Pedido.TRANSICIONES y moviendo el stock una sola vez:
+    se descuenta al aceptar un pedido pendiente y se repone al cancelar uno que ya lo había
+    descontado. No guarda el pedido. Lanza ValueError si el cambio no está permitido."""
+    estado_anterior = pedido.estado
+    if nuevo_estado == estado_anterior:
+        return False
+
+    if nuevo_estado not in pedido.estados_siguientes():
+        nombres = dict(Pedido.ESTADOS)
+        raise ValueError(
+            f'No se puede pasar un pedido de "{nombres.get(estado_anterior, estado_anterior)}" '
+            f'a "{nombres.get(nuevo_estado, nuevo_estado)}".'
+        )
+
+    if (
+        estado_anterior == 'pendiente'
+        and nuevo_estado == 'aceptado'
+        and pedido.metodo_pago in ['mercado_pago_qr', 'efectivo', 'transferencia']
+    ):
+        descontar_stock_pedido(pedido)
+
+    if estado_anterior in Pedido.ESTADOS_CON_STOCK_DESCONTADO and nuevo_estado == 'cancelado':
+        reponer_stock_pedido(pedido)
+
+    pedido.estado = nuevo_estado
+    return True
+
+
 @admin_required
 def gestion_pedidos(request):
     """
@@ -795,10 +829,15 @@ def editar_pedido(request, pedido_id):
             if direccion_info:
                 pedido.direccion_info = direccion_info
             
-            # Actualizar estado
+            # Actualizar estado (mismas reglas y movimiento de stock que en la gestión de pedidos)
             nuevo_estado = request.POST.get('estado', pedido.estado)
-            if nuevo_estado in dict(Pedido.ESTADOS):
-                pedido.estado = nuevo_estado
+            if nuevo_estado in dict(Pedido.ESTADOS) and nuevo_estado != pedido.estado:
+                try:
+                    cambiar_estado_pedido(pedido, nuevo_estado)
+                except ValueError as error:
+                    transaction.set_rollback(True)
+                    messages.error(request, str(error))
+                    return redirect('pedidos:editar_pedido', pedido_id=pedido.id)
             
             # Guardar el pedido con el total recalculado
             pedido.total = total_nuevo
@@ -2444,19 +2483,13 @@ def actualizar_estado_pedido(request, pedido_id):
     ]
 
     if nuevo_estado in estados_validos:
-        if (
-            estado_anterior == 'pendiente'
-            and nuevo_estado == 'aceptado'
-            and pedido.metodo_pago in ['mercado_pago_qr', 'efectivo', 'transferencia']
-        ):
-            try:
-                descontar_stock_pedido(pedido)
-            except ValueError as error:
-                messages.error(request, str(error))
-                return redirect('pedidos:gestion_pedidos')
-
-        pedido.estado = nuevo_estado
-        pedido.save()
+        try:
+            with transaction.atomic():
+                cambiar_estado_pedido(pedido, nuevo_estado)
+                pedido.save()
+        except ValueError as error:
+            messages.error(request, str(error))
+            return redirect('pedidos:gestion_pedidos')
 
         if estado_anterior != nuevo_estado and pedido.cliente.user.email:
             estados_dict = dict(Pedido.ESTADOS)

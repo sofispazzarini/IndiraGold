@@ -28,20 +28,25 @@ class Pedido(models.Model):
 
         'pendiente': [
             'aceptado',
-            'rechazado'
+            'rechazado',
+            'cancelado',
+            'vencido',
         ],
 
         'aceptado': [
-            'en_preparacion'
+            'en_preparacion',
+            'cancelado',
         ],
 
         'en_preparacion': [
             'listo_retirar',
-            'preparando_envio'
+            'preparando_envio',
+            'cancelado',
         ],
 
         'preparando_envio': [
-            'enviado'
+            'enviado',
+            'cancelado',
         ],
 
         'enviado': [
@@ -49,9 +54,20 @@ class Pedido(models.Model):
         ],
 
         'listo_retirar': [
-            'entregado'
+            'entregado',
+            'cancelado',
         ],
     }
+    # Estados en los que el stock del pedido ya fue descontado (al aceptarlo o al pagarlo con MP)
+    ESTADOS_CON_STOCK_DESCONTADO = (
+        'aceptado',
+        'en_preparacion',
+        'listo_retirar',
+        'preparando_envio',
+        'enviado',
+        'entregado',
+    )
+    ESTADOS_FINALES = ('entregado', 'rechazado', 'cancelado', 'vencido')
     TIPOS_VENTA = (
         ('online', 'Online'),
         ('presencial', 'Presencial'),
@@ -71,6 +87,25 @@ class Pedido(models.Model):
         ('transferencia', 'Transferencia bancaria'),
     )
     metodo_entrega = models.CharField(max_length=20, choices=METODOS_ENTREGA, default='local')
+
+    def estados_siguientes(self):
+        """Estados a los que se puede pasar desde el actual (según el método de entrega)."""
+        siguientes = list(self.TRANSICIONES.get(self.estado, []))
+        if self.metodo_entrega == 'local':
+            return [estado for estado in siguientes if estado != 'preparando_envio']
+        return [estado for estado in siguientes if estado != 'listo_retirar']
+
+    @property
+    def opciones_estado(self):
+        """(valor, etiqueta) del estado actual y de los estados a los que puede pasar."""
+        nombres = dict(self.ESTADOS)
+        return [(self.estado, nombres.get(self.estado, self.estado))] + [
+            (estado, nombres[estado]) for estado in self.estados_siguientes()
+        ]
+
+    @property
+    def es_final(self):
+        return self.estado in self.ESTADOS_FINALES
     costo_envio = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     opcion_flex = models.ForeignKey(
         'OpcionEnvioFlex',

@@ -843,14 +843,14 @@
                             <small class="text-muted">Estado actual</small>
                             <div><span class="estado-badge estado-{{ pedido.estado }}">{{ pedido.get_estado_display }}</span></div>
                         </div>
-                        {% if pedido.estado == 'rechazado' or pedido.estado == 'entregado' %}
+                        {% if pedido.es_final %}
                             <div class="alert alert-warning rounded-4 mb-0">Este pedido ya fue finalizado y no puede modificarse.</div>
                         {% else %}
                             <form method="POST" action="{% url 'pedidos:actualizar_estado_pedido' pedido.id %}">
                                 {% csrf_token %}
                                 <label class="form-label fw-bold">Nuevo estado</label>
                                 <select name="estado" class="form-select rounded-4 mb-4">
-                                    {% for value, label in pedido.ESTADOS %}
+                                    {% for value, label in pedido.opciones_estado %}
                                         <option value="{{ value }}" {% if pedido.estado == value %}selected{% endif %}>{{ label }}</option>
                                     {% endfor %}
                                 </select>
