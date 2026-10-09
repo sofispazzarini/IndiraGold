@@ -12,7 +12,10 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth import authenticate, login as auth_login
-from .forms import RegistroUsuarioForm, capitalizar_texto, normalizar_provincia, normalizar_email, email_en_uso
+from .forms import (
+    RegistroUsuarioForm, capitalizar_texto, normalizar_provincia, normalizar_email, email_en_uso,
+    validar_nombre_persona, validar_telefono,
+)
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
 from .models import Cliente, Direccion, direcciones_sin_duplicados
@@ -137,44 +140,52 @@ def perfil(request):
                 mensaje = 'Por favor revisa los datos de la direccion.'
                 mensaje_tipo = 'danger'
         else:
-            nombre = request.POST.get('nombre', '').strip()
-            apellido = request.POST.get('apellido', '').strip()
-            telefono = request.POST.get('telefono', '').strip()
-            email = request.POST.get('email', '').strip()
+            # Se valida todo antes de tocar el usuario: si hay un error no se guarda nada y la
+            # pantalla sigue mostrando los datos guardados (QA-082)
+            errores = []
+            try:
+                nombre = validar_nombre_persona(request.POST.get('nombre'), 'nombre')
+            except ValidationError as error:
+                errores += error.messages
+            try:
+                apellido = validar_nombre_persona(request.POST.get('apellido'), 'apellido')
+            except ValidationError as error:
+                errores += error.messages
+            try:
+                telefono = validar_telefono(request.POST.get('telefono'))
+            except ValidationError as error:
+                errores += error.messages
 
-            if nombre:
-                request.user.first_name = capitalizar_texto(nombre)
-            if apellido:
-                request.user.last_name = capitalizar_texto(apellido)
-            if telefono:
-                cliente.telefono = telefono
+            email = normalizar_email(request.POST.get('email'))
+            try:
+                validate_email(email)
+                if len(email) > 254:
+                    raise ValidationError('')
+            except ValidationError:
+                errores.append('Ingresá un email válido.')
+            else:
+                if email != request.user.email and email_en_uso(email, excluir_user_id=request.user.pk):
+                    errores.append('Ya existe otro usuario con este correo electrónico.')
 
-            # Validar y actualizar email
-            hay_error = False
             foto_nueva = None
             if 'foto_perfil' in request.FILES:
                 foto_nueva, error_foto = procesar_foto_perfil(request.FILES['foto_perfil'])
                 if error_foto:
-                    mensaje = error_foto
-                    mensaje_tipo = 'danger'
-                    hay_error = True
-            email = normalizar_email(email)
-            if email and email != request.user.email:
-                if email_en_uso(email, excluir_user_id=request.user.pk):
-                    mensaje = 'Ya existe otro usuario con este correo electrónico.'
-                    mensaje_tipo = 'danger'
-                    hay_error = True
-                else:
-                    request.user.email = email
+                    errores.append(error_foto)
 
-            if foto_nueva:
-                cliente.foto_perfil = foto_nueva
-
-            if 'eliminar_foto' in request.POST:
-                cliente.foto_perfil.delete(save=False)
-                cliente.foto_perfil = None
-
-            if not hay_error:
+            if errores:
+                mensaje = ' '.join(errores)
+                mensaje_tipo = 'danger'
+            else:
+                request.user.first_name = nombre
+                request.user.last_name = apellido
+                request.user.email = email
+                cliente.telefono = telefono
+                if foto_nueva:
+                    cliente.foto_perfil = foto_nueva
+                if 'eliminar_foto' in request.POST:
+                    cliente.foto_perfil.delete(save=False)
+                    cliente.foto_perfil = None
                 request.user.save()
                 cliente.save()
                 mensaje = 'Perfil actualizado correctamente.'

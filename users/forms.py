@@ -1,3 +1,5 @@
+import re
+
 from django import forms
 from django.contrib.auth.models import User
 from .models import Cliente, Direccion
@@ -7,6 +9,32 @@ from django.db import transaction
 
 def capitalizar_texto(value):
     return " ".join(part.capitalize() for part in (value or "").strip().split())
+
+
+# Letras (con acentos y ñ), espacios, apóstrofos y guiones: "María José", "O'Connor", "Pérez-Gil"
+PATRON_NOMBRE = re.compile(r"^[A-Za-zÀ-ÖØ-öø-ÿ' .\-]+$")
+# Solo números, con un + opcional al principio (ej. +5492216375660)
+PATRON_TELEFONO = re.compile(r"^\+?\d{6,15}$")
+
+
+def validar_nombre_persona(valor, campo='nombre', maximo=50):
+    """Nombre o apellido: obligatorio, sin números ni símbolos, hasta `maximo` caracteres."""
+    valor = capitalizar_texto(valor)
+    if not valor:
+        raise ValidationError(f'Ingresá el {campo}.')
+    if len(valor) > maximo:
+        raise ValidationError(f'El {campo} no puede tener más de {maximo} caracteres.')
+    if not PATRON_NOMBRE.match(valor):
+        raise ValidationError(f'El {campo} solo puede tener letras, espacios, apóstrofos o guiones.')
+    return valor
+
+
+def validar_telefono(valor):
+    """Teléfono: números con un + opcional adelante. Espacios, guiones y paréntesis se quitan."""
+    valor = re.sub(r"[\s\-()]", "", valor or "")
+    if not PATRON_TELEFONO.match(valor):
+        raise ValidationError('El teléfono solo puede tener números (y un + al principio), entre 6 y 15 dígitos.')
+    return valor
 
 
 def normalizar_email(email):
