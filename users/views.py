@@ -380,18 +380,22 @@ def confirmar_direccion(request):
             try:
                 form.save()
             except IntegrityError:
-                return render(request, "users/confirmar_direccion.html", {
-                    "data": data,
-                    "form": form,
-                    "error": "Ya existe una cuenta con ese DNI o correo. Iniciá sesión con tu DNI o volvé al registro con otros datos.",
-                })
+                request.session["confirmar_direccion_error"] = "Ya existe una cuenta con ese DNI o correo. Iniciá sesión con tu DNI o volvé al registro con otros datos."
+                return redirect("users:confirmar_direccion")
             request.session.pop("registro_data", None)
             return redirect("users:login")
-        return render(request, "users/confirmar_direccion.html", {"data": data, "form": form, "error": "No pudimos confirmar la dirección. Revisá los datos e intentá de nuevo."})
+        # Redirect (no render) para que recargar la página no reenvíe la confirmación
+        request.session["confirmar_direccion_error"] = "No pudimos confirmar la dirección. Revisá los datos e intentá de nuevo."
+        return redirect("users:confirmar_direccion")
 
-    # Render normal
-    form = RegistroUsuarioForm(initial=data)
-    return render(request, "users/confirmar_direccion.html", {"data": data, "form": form})
+    # Render normal (con el error de la confirmación anterior, si hubo)
+    error = request.session.pop("confirmar_direccion_error", None)
+    if error:
+        form = RegistroUsuarioForm(data)
+        form.is_valid()
+    else:
+        form = RegistroUsuarioForm(initial=data)
+    return render(request, "users/confirmar_direccion.html", {"data": data, "form": form, "error": error})
 
 def home(request):
     return redirect('home:home')

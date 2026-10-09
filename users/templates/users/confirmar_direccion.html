@@ -235,8 +235,8 @@
         .then(resp => {
             if (resp.success) {
                 document.getElementById('modal-direccion-bg').style.display = 'none';
-                // Recargar la página para actualizar domicilio y mapa
-                window.location.reload();
+                // Volver a cargar la página (GET) para actualizar domicilio y mapa
+                window.location.href = window.location.pathname;
             } else {
                 document.getElementById('direccion-modal-error').textContent = resp.error || 'Error al guardar.';
             }
