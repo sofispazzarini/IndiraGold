@@ -159,6 +159,55 @@
                 margin: 1.5rem 1rem 0;
             }
         }
+
+        /* Celulares: sin scroll horizontal (padding chico y filas de a un campo) */
+        .membership-grid-card,
+        .membership-grid-card * {
+            box-sizing: border-box;
+        }
+        /* basico.html centra con flex el body: sin esto, en celulares se corta el lado izquierdo */
+        body {
+            margin: 0;
+        }
+        .master-flex-center {
+            width: 100%;
+            min-width: 0;
+        }
+        .dual-column-layout > *,
+        .registro-fila > * {
+            min-width: 0;
+        }
+        @media (max-width: 576px) {
+            .master-flex-center {
+                padding: 1.25rem 0.75rem;
+                align-items: flex-start;
+            }
+            .header-minimal {
+                padding: 1.75rem 1rem;
+            }
+            .header-minimal h1 {
+                font-size: 2rem !important;
+            }
+            .col-left-shipping,
+            .col-right-personal {
+                padding: 1.75rem 1.1rem;
+            }
+            .registro-fila {
+                grid-template-columns: 1fr !important;
+                gap: 0 !important;
+                margin-bottom: 0 !important;
+            }
+            .registro-fila > * {
+                margin-bottom: 1rem;
+            }
+            .registro-enviar {
+                padding: 2rem 1.1rem !important;
+            }
+            .registro-enviar button {
+                padding: 16px 24px !important;
+                width: 100%;
+            }
+        }
     </style>
 {% endblock %}
 
@@ -214,7 +263,7 @@
                         {{ form.etiqueta }}
                     </div>
 
-                    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 30px; margin-bottom: 1.5rem;">
+                    <div class="registro-fila" style="display: grid; grid-template-columns: 2fr 1fr; gap: 30px; margin-bottom: 1.5rem;">
                         <div>
                             <label style="font-weight: 700; font-size: 0.7rem; color: #8c7e70; text-transform: uppercase;">Calle</label>
                             {{ form.calle }}
@@ -251,7 +300,7 @@
                         <i class="bi bi-person-circle" style="color: #b8922a;"></i> Datos Personales
                     </div>
                     
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 1.5rem;">
+                    <div class="registro-fila" style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 1.5rem;">
                         <div>
                             <label style="font-weight: 700; font-size: 0.7rem; color: #8c7e70; text-transform: uppercase;">Nombre</label>
                             {{ form.nombre }}
@@ -262,7 +311,7 @@
                         </div>
                     </div>
                     
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 1.5rem;">
+                    <div class="registro-fila" style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 1.5rem;">
                         <div>
                             <label style="font-weight: 700; font-size: 0.7rem; color: #8c7e70; text-transform: uppercase;">DNI</label>
                             {{ form.dni }}
@@ -289,8 +338,8 @@
 
             </div>
 
-            <div style="text-align: center; padding: 3rem; background: #fff; border-top: 1px solid #f0f0f0;">
-                <button type="submit" style="background: #1a1612; color: #e8c96a; padding: 18px 80px; border: 2px solid #b8922a; border-radius: 100px; font-weight: 700; text-transform: uppercase; letter-spacing: 3px; cursor: pointer; transition: 0.3s;" onmouseover="this.style.background='#b8922a'; this.style.color='#fff'">
+            <div class="registro-enviar" style="text-align: center; padding: 3rem; background: #fff; border-top: 1px solid #f0f0f0;">
+                <button type="submit" style="background: #1a1612; color: #e8c96a; padding: 18px 80px; max-width: 100%; border: 2px solid #b8922a; border-radius: 100px; font-weight: 700; text-transform: uppercase; letter-spacing: 3px; cursor: pointer; transition: 0.3s;" onmouseover="this.style.background='#b8922a'; this.style.color='#fff'">
                     Confirmar Registro
                 </button>
                 <p class="mt-3 small text-muted">¿Ya sos parte? <a href="{% url 'users:login' %}" style="color: #b8922a; font-weight: 700; text-decoration: none;">Iniciá sesión</a></p>
