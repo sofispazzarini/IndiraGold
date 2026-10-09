@@ -787,6 +787,8 @@
                                 <td class="col-entrega">
                                     {% if pedido.metodo_entrega == 'local' %}
                                         <span class="badge-tipo">Retiro local</span>
+                                    {% elif pedido.metodo_entrega == 'flex' or pedido.metodo_entrega == 'flex_gratis' %}
+                                        <span class="badge-tipo">Envío Flex{% if pedido.opcion_flex %} · {{ pedido.opcion_flex.nombre }}{% endif %}</span>
                                     {% else %}
                                         <span class="badge-tipo">Envío Correo</span>
                                     {% endif %}

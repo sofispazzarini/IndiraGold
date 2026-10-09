@@ -526,7 +526,7 @@ def gestion_pedidos(request):
     """
     Listado de pedidos realizados con filtro opcional por estado.
     """
-    pedidos = Pedido.objects.all().order_by('-created_at')
+    pedidos = Pedido.objects.select_related('cliente__user', 'opcion_flex').order_by('-created_at')
     
     # Filtrar por estado si se proporciona
     estado = request.GET.get('estado', '')
