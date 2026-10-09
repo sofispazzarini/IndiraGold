@@ -562,7 +562,8 @@ def login_view(request):
             return redirect(next_url)
         return ir_a_mi_cuenta(request.user)
     if request.method == 'POST':
-        dni = request.POST.get('username')
+        # Sin espacios ni puntos (el autocompletado del celular suele agregar un espacio al final)
+        dni = (request.POST.get('username') or '').strip().replace('.', '')
         password = request.POST.get('password')
         
         user = authenticate(request, username=dni, password=password)
