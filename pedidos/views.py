@@ -3748,16 +3748,19 @@ def configurar_envios(request):
             messages.success(request, 'Configuración de envíos actualizada correctamente.')
             return redirect('pedidos:configurar_envios')
         else:
-            # Mostrar errores del formulario principal
-            if form.errors:
-                for field, errors in form.errors.items():
-                    messages.error(request, f'Error en {field}: {", ".join(errors)}')
-            # Mostrar errores del formset
-            for i, error in enumerate(formset.errors):
-                if error:
-                    messages.error(request, f'Error en opción Flex #{i+1}: {error}')
-            if formset.non_form_errors():
-                messages.error(request, f'Error: {formset.non_form_errors()}')
+            # Errores legibles: "Nueva opción · Nombre: ..." (antes se veía el HTML del error y un índice interno)
+            for field, errors in form.errors.items():
+                etiqueta = form.fields[field].label if field in form.fields else 'Configuración'
+                messages.error(request, f'{etiqueta}: {errors[0]}')
+            for flex_form in formset.forms:
+                if not flex_form.errors:
+                    continue
+                opcion = flex_form.instance.nombre if flex_form.instance.pk else 'Nueva opción'
+                for field, errors in flex_form.errors.items():
+                    etiqueta = flex_form.fields[field].label if field in flex_form.fields else ''
+                    messages.error(request, f'{opcion} · {etiqueta}: {errors[0]}' if etiqueta else f'{opcion}: {errors[0]}')
+            for error in formset.non_form_errors():
+                messages.error(request, 'Hay dos opciones Flex con el mismo nombre.' if 'duplicada' in error else error)
     else:
         form = ConfiguracionEnvioForm(instance=configuracion)
         formset = OpcionEnvioFlexFormSet(queryset=OpcionEnvioFlex.objects.all(), prefix='flex')
