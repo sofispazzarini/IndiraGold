@@ -1853,11 +1853,18 @@ document.getElementById('formNuevaDireccionVenta').addEventListener('submit', as
         errorBox.classList.remove('d-none')
     }
 })
+let registrandoVenta = false
+
 document.getElementById(
     'btn-registrar-venta'
 ).addEventListener(
     'click',
     async function(){
+
+        // Evita registrar la misma venta dos veces por doble click / doble tap
+        if(registrandoVenta){
+            return
+        }
 
         if(!window.clienteSeleccionado){
 
@@ -1923,6 +1930,18 @@ document.getElementById(
             return
         }
 
+        const botonRegistrar = this
+        const textoBoton = botonRegistrar.innerHTML
+        registrandoVenta = true
+        botonRegistrar.disabled = true
+        botonRegistrar.innerHTML = 'Registrando...'
+
+        const liberarBoton = () => {
+            registrandoVenta = false
+            botonRegistrar.disabled = false
+            botonRegistrar.innerHTML = textoBoton
+        }
+
         try {
 
             const response = await fetch(
@@ -1973,6 +1992,7 @@ document.getElementById(
 
             }else{
 
+                liberarBoton()
                 mostrarMensaje(
                     data.error || 'Error al registrar venta'
                 )
@@ -1981,6 +2001,7 @@ document.getElementById(
         } catch(error) {
 
             console.error('Error:', error)
+            liberarBoton()
 
             mostrarMensaje(
                 'Error en la solicitud: ' + error.message
