@@ -656,6 +656,7 @@ class NotaCredito(models.Model):
         ('vigente', 'Vigente'),
         ('usada', 'Usada'),
         ('vencida', 'Vencida'),
+        ('anulada', 'Anulada'),
     ]
 
     pedido = models.ForeignKey(
@@ -697,3 +698,13 @@ class NotaCredito(models.Model):
 
     def __str__(self):
         return f"NC #{self.pk} - ${self.monto} ({self.estado})"
+
+
+class NotaCreditoItem(models.Model):
+    """Unidades de un ítem del pedido devueltas con una nota de crédito (vuelven al stock)."""
+    nota_credito = models.ForeignKey(NotaCredito, on_delete=models.CASCADE, related_name='items')
+    pedido_item = models.ForeignKey('PedidoItem', on_delete=models.PROTECT, related_name='devoluciones')
+    cantidad = models.PositiveIntegerField()
+
+    def __str__(self):
+        return f"{self.pedido_item} x {self.cantidad} (NC #{self.nota_credito_id})"

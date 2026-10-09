@@ -641,6 +641,21 @@
                         {% if nc.pedido_uso %}
                         <div style="font-size:0.7rem; color:#1976d2; margin-top:0.3rem;">Usada en pedido #{{ nc.pedido_uso.id }}</div>
                         {% endif %}
+                        {% for dev in nc.items.all %}
+                        <div style="font-size:0.7rem; color:#5c4f43; margin-top:0.3rem;"><i class="bi bi-arrow-return-left"></i> {{ dev.cantidad }} × {{ dev.pedido_item.variante.producto.nombre }} (talle {{ dev.pedido_item.variante.talle.nombre }}{% if dev.pedido_item.color_nombre %}, {{ dev.pedido_item.color_nombre }}{% endif %}) devuelto al stock</div>
+                        {% endfor %}
+                        {% if nc.estado == 'vigente' %}
+                        <div style="display:flex; gap:.5rem; margin-top:.5rem;">
+                            <form method="post" action="{% url 'pedidos:actualizar_nota_credito' nc.id 'usada' %}">
+                                {% csrf_token %}
+                                <button type="submit" class="btn-act btn-hist" style="font-size:.7rem; padding:.3rem .6rem;">Marcar usada</button>
+                            </form>
+                            <form method="post" action="{% url 'pedidos:actualizar_nota_credito' nc.id 'anular' %}" onsubmit="return confirm('¿Anular esta nota de crédito? Si se devolvieron unidades al stock, se vuelven a descontar.');">
+                                {% csrf_token %}
+                                <button type="submit" class="btn-act btn-hist" style="font-size:.7rem; padding:.3rem .6rem; color:#c62828;">Anular</button>
+                            </form>
+                        </div>
+                        {% endif %}
                     </div>
                     {% endfor %}
                 {% else %}
@@ -650,9 +665,13 @@
                 {% endif %}
             </div>
             <div style="padding:1rem; border-top:1px solid #e8dfd4;">
+                {% if admite_nota_credito %}
                 <button type="button" class="btn-act btn-hist" style="width:100%; justify-content:center;" data-bs-toggle="modal" data-bs-target="#modalNotaCredito">
                     <i class="bi bi-plus-circle"></i> Crear nota de crédito
                 </button>
+                {% else %}
+                <div style="font-size:.75rem; color:#9c8c7c; text-align:center;">Las notas de crédito se emiten sobre pedidos confirmados.</div>
+                {% endif %}
             </div>
         </div>
     </div>
@@ -713,8 +732,18 @@
                 {% csrf_token %}
                 <div class="modal-body">
                     <div class="mb-3">
+                        <label class="form-label" style="font-size:0.8rem; font-weight:600;">Unidades devueltas (vuelven al stock)</label>
+                        {% for item, maximo in items_devolvibles %}
+                        <div style="display:flex; align-items:center; justify-content:space-between; gap:.75rem; padding:.35rem 0; border-bottom:1px dashed #eee;">
+                            <span style="font-size:.8rem; min-width:0;">{{ item.variante.producto.nombre }} · talle {{ item.variante.talle.nombre }}{% if item.color_nombre %} · {{ item.color_nombre }}{% endif %}<br><small style="color:#9c8c7c;">${{ item.precio_unitario }} c/u · se pueden devolver {{ maximo }}</small></span>
+                            <input type="number" name="devolver_{{ item.id }}" class="form-control nc-devolver" data-precio="{{ item.precio_unitario|stringformat:'s' }}" min="0" max="{{ maximo }}" value="0" style="width:80px; border-radius:8px;" {% if not maximo %}disabled{% endif %}>
+                        </div>
+                        {% endfor %}
+                        <small style="color:#9c8c7c;">Dejá 0 si la nota de crédito no implica devolución de productos.</small>
+                    </div>
+                    <div class="mb-3">
                         <label class="form-label" style="font-size:0.8rem; font-weight:600;">Monto</label>
-                        <input type="number" name="monto" class="form-control" step="0.01" min="0.01" required style="border-radius:8px;">
+                        <input type="number" name="monto" id="ncMonto" class="form-control" step="0.01" min="0.01" required style="border-radius:8px;">
                     </div>
                     <div class="mb-3">
                         <label class="form-label" style="font-size:0.8rem; font-weight:600;">Motivo (opcional)</label>
@@ -731,6 +760,18 @@
 </div>
 
 <script>
+// Sugiere el monto de la nota de crédito según las unidades devueltas (se puede editar a mano)
+document.querySelectorAll('.nc-devolver').forEach(input => {
+    input.addEventListener('input', () => {
+        let total = 0;
+        document.querySelectorAll('.nc-devolver').forEach(i => {
+            total += (parseInt(i.value || '0', 10) || 0) * (parseFloat(i.dataset.precio) || 0);
+        });
+        const monto = document.getElementById('ncMonto');
+        if (monto && total > 0) monto.value = total.toFixed(2);
+    });
+});
+
 document.addEventListener('DOMContentLoaded', function() {
     const btnRegistrarPago = document.getElementById('btn-registrar-pago');
     if (btnRegistrarPago) {

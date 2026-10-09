@@ -21,6 +21,7 @@ from .models import (
     OpcionEnvioFlex,
     Cambio,
     NotaCredito,
+    NotaCreditoItem,
 )
 from carritos.models import Carrito, CarritoItem
 from carritos.utils import get_or_create_cart, vincular_carrito_con_usuario
@@ -760,6 +761,8 @@ def detalle_pedido(request, pedido_id):
         'pagos_registrados': pagos_registrados,
         'saldo_pendiente': saldo_pendiente,
         'subtotal_items': sum((item.precio_total for item in pedido.items.all()), Decimal('0.00')),
+        'items_devolvibles': [(item, unidades_devolvibles(item)) for item in pedido.items.all()],
+        'admite_nota_credito': pedido.estado in Pedido.ESTADOS_CON_STOCK_DESCONTADO,
         'items': pedido.items.all(),
         'variantes_disponibles': variantes_disponibles,
     }
@@ -2235,7 +2238,7 @@ def estadisticas_ventas(request):
 
     # Notas de crédito emitidas sobre las ventas del período: restan de lo vendido
     total_notas_credito = (
-        NotaCredito.objects.filter(pedido__in=pedidos).aggregate(total=Sum('monto'))['total']
+        NotaCredito.objects.filter(pedido__in=pedidos).exclude(estado='anulada').aggregate(total=Sum('monto'))['total']
         or Decimal('0.00')
     )
 
@@ -3655,44 +3658,118 @@ def registrar_cambio(request, pedido_id):
     return redirect('pedidos:detalle_pedido', pedido_id=pedido.id)
 
 
+def unidades_devolvibles(pedido_item):
+    """Unidades de un ítem que todavía se pueden devolver con nota de crédito."""
+    devueltas = pedido_item.devoluciones.exclude(nota_credito__estado='anulada').aggregate(
+        total=Sum('cantidad')
+    )['total'] or 0
+    return max(pedido_item.cantidad - devueltas, 0)
+
+
 @admin_required
+@require_POST
 def crear_nota_credito(request, pedido_id):
-    """Crea una nota de crédito para un pedido."""
+    """Crea una nota de crédito para un pedido confirmado; opcionalmente devuelve unidades al stock."""
     pedido = get_object_or_404(Pedido, pk=pedido_id)
 
-    if request.method == 'POST':
-        monto = request.POST.get('monto')
-        motivo = request.POST.get('motivo', '')
+    if pedido.estado not in Pedido.ESTADOS_CON_STOCK_DESCONTADO:
+        messages.error(request, 'Solo se pueden emitir notas de crédito sobre pedidos confirmados (pago aceptado en adelante).')
+        return redirect('pedidos:detalle_pedido', pedido_id=pedido.id)
 
-        if monto:
-            try:
-                monto_nota = Decimal(str(monto).strip().replace(',', '.'))
-            except (InvalidOperation, ValueError):
-                monto_nota = None
+    monto = request.POST.get('monto')
+    motivo = request.POST.get('motivo', '')
 
-            if monto_nota is None or not monto_nota.is_finite():
-                messages.error(request, 'Monto inválido.')
-            elif monto_nota <= 0:
-                messages.error(request, 'El monto debe ser mayor a 0.')
-            else:
-                ya_acreditado = pedido.notas_credito.aggregate(total=Sum('monto'))['total'] or Decimal('0.00')
-                disponible = max(Decimal('0.00'), pedido.total - ya_acreditado)
+    if not monto:
+        messages.error(request, 'Debes ingresar un monto.')
+        return redirect('pedidos:detalle_pedido', pedido_id=pedido.id)
 
-                if monto_nota > disponible:
-                    messages.error(
-                        request,
-                        f'El monto no puede superar ${disponible} '
-                        '(total del pedido menos las notas de crédito ya emitidas).'
-                    )
-                else:
-                    monto_nota = monto_nota.quantize(Decimal('0.01'))
-                    NotaCredito.objects.create(
-                        pedido=pedido,
-                        monto=monto_nota,
-                        motivo=motivo,
-                    )
-                    messages.success(request, f'Nota de crédito por ${monto_nota} creada correctamente.')
-        else:
-            messages.error(request, 'Debes ingresar un monto.')
+    try:
+        monto_nota = Decimal(str(monto).strip().replace(',', '.'))
+    except (InvalidOperation, ValueError):
+        monto_nota = None
 
+    if monto_nota is None or not monto_nota.is_finite():
+        messages.error(request, 'Monto inválido.')
+        return redirect('pedidos:detalle_pedido', pedido_id=pedido.id)
+    if monto_nota <= 0:
+        messages.error(request, 'El monto debe ser mayor a 0.')
+        return redirect('pedidos:detalle_pedido', pedido_id=pedido.id)
+
+    ya_acreditado = pedido.notas_credito.exclude(estado='anulada').aggregate(total=Sum('monto'))['total'] or Decimal('0.00')
+    disponible = max(Decimal('0.00'), pedido.total - ya_acreditado)
+    if monto_nota > disponible:
+        messages.error(
+            request,
+            f'El monto no puede superar ${disponible} '
+            '(total del pedido menos las notas de crédito ya emitidas).'
+        )
+        return redirect('pedidos:detalle_pedido', pedido_id=pedido.id)
+
+    # Unidades devueltas por ítem (vuelven al stock del talle y color vendidos)
+    devoluciones = []
+    for item in pedido.items.select_related('variante__producto', 'variante__talle'):
+        try:
+            cantidad = int(request.POST.get(f'devolver_{item.id}') or 0)
+        except (TypeError, ValueError):
+            cantidad = 0
+        if cantidad <= 0:
+            continue
+        maximo = unidades_devolvibles(item)
+        if cantidad > maximo:
+            messages.error(
+                request,
+                f'De {item.variante.producto.nombre} (talle {item.variante.talle.nombre}) '
+                f'se pueden devolver como máximo {maximo} unidad(es).'
+            )
+            return redirect('pedidos:detalle_pedido', pedido_id=pedido.id)
+        devoluciones.append((item, cantidad))
+
+    with transaction.atomic():
+        nota = NotaCredito.objects.create(
+            pedido=pedido,
+            monto=monto_nota.quantize(Decimal('0.01')),
+            motivo=motivo,
+        )
+        for item, cantidad in devoluciones:
+            NotaCreditoItem.objects.create(nota_credito=nota, pedido_item=item, cantidad=cantidad)
+            reponer_stock(item.variante, cantidad, item.color_nombre)
+
+    detalle_stock = f' Se devolvieron {sum(c for _, c in devoluciones)} unidad(es) al stock.' if devoluciones else ''
+    messages.success(request, f'Nota de crédito por ${nota.monto} creada correctamente.{detalle_stock}')
     return redirect('pedidos:detalle_pedido', pedido_id=pedido.id)
+
+
+@admin_required
+@require_POST
+def actualizar_nota_credito(request, nota_id, accion):
+    """Marca una nota de crédito vigente como usada (aplicada en otra compra) o la anula.
+    Anularla vuelve a descontar las unidades que se habían devuelto al stock."""
+    nota = get_object_or_404(NotaCredito, pk=nota_id)
+    pedido_id = nota.pedido_id
+
+    if nota.estado != 'vigente':
+        messages.error(request, 'Solo se pueden modificar notas de crédito vigentes.')
+    elif accion == 'usada':
+        nota.estado = 'usada'
+        nota.fecha_uso = timezone.now()
+        nota.save(update_fields=['estado', 'fecha_uso'])
+        messages.success(request, f'Nota de crédito #{nota.id} marcada como usada.')
+    elif accion == 'anular':
+        try:
+            with transaction.atomic():
+                for devolucion in nota.items.select_related('pedido_item__variante__producto', 'pedido_item__variante__talle'):
+                    descontar_stock(
+                        devolucion.pedido_item.variante,
+                        devolucion.cantidad,
+                        devolucion.pedido_item.color_nombre,
+                    )
+                nota.estado = 'anulada'
+                nota.save(update_fields=['estado'])
+        except ValueError as error:
+            messages.error(request, f'No se puede anular la nota de crédito: {error}')
+        else:
+            messages.success(request, f'Nota de crédito #{nota.id} anulada.')
+    else:
+        messages.error(request, 'Acción no válida.')
+
+    return redirect('pedidos:detalle_pedido', pedido_id=pedido_id)
