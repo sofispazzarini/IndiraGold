@@ -438,12 +438,16 @@
     .gestion-main {
       padding: 2rem 1.5rem;
     }
+    /* La fecha pasa a una línea propia arriba de cada gasto (antes se ocultaba) */
     .gasto-item {
-      grid-template-columns: 1fr auto;
-      gap: 1rem;
+      grid-template-columns: 1fr auto auto;
+      gap: 0.35rem 0.75rem;
     }
     .gasto-fecha {
-      display: none;
+      grid-column: 1 / -1;
+      justify-self: start;
+      padding: 0.15rem 0.5rem;
+      font-size: 0.7rem;
     }
     .gasto-actions {
       opacity: 1;
@@ -493,7 +497,7 @@
       <h1 class="page-title">Gastos adicionales</h1>
     </div>
     <div class="header-right">
-      <div class="item-count">{{ gastos|length|stringformat:"02d" }}</div>
+      <div class="item-count">{{ page_obj.paginator.count|stringformat:"02d" }}</div>
       <div class="item-count-label">registros</div>
     </div>
   </div>
