@@ -3607,9 +3607,12 @@ def registrar_pago_venta(request, venta_id):
 @admin_required
 def registrar_pago_pedido(request, pedido_id):
     pedido = get_object_or_404(Pedido, id=pedido_id)
-    data = json.loads(request.body)
+    try:
+        data = json.loads(request.body or b'{}')
+    except (ValueError, TypeError):
+        return JsonResponse({'success': False, 'error': 'No pudimos leer el pago. Probá de nuevo.'}, status=400)
 
-    monto = Decimal(str(data.get('monto', 0)))
+    monto = leer_monto(data.get('monto'))
     metodo_pago = data.get('metodo_pago', 'efectivo')
     observaciones = data.get('observaciones', '')
 
@@ -3619,11 +3622,16 @@ def registrar_pago_pedido(request, pedido_id):
             'error': f'No se pueden registrar pagos en un pedido {pedido.get_estado_display().lower()}.'
         })
 
-    if monto <= 0:
-        return JsonResponse({'success': False, 'error': 'El monto debe ser mayor a 0'})
+    if monto is None or monto <= 0:
+        return JsonResponse({'success': False, 'error': 'Ingresá un monto mayor a 0.'})
 
     saldo_pendiente = pedido.total - pedido.monto_pagado
+    if saldo_pendiente <= 0:
+        return JsonResponse({'success': False, 'error': 'Este pedido ya está pagado.'})
+    # Si paga de más se registra el saldo y se avisa el vuelto (antes se recortaba sin avisar)
+    vuelto = Decimal('0.00')
     if monto > saldo_pendiente:
+        vuelto = monto - saldo_pendiente
         monto = saldo_pendiente
 
     with transaction.atomic():
@@ -3669,7 +3677,11 @@ def registrar_pago_pedido(request, pedido_id):
         'monto_pagado': float(pedido.monto_pagado),
         'deuda': float(pedido.deuda),
         'pagado_completo': pedido.deuda == 0,
-        'pagos_html': pagos_html
+        'pagos_html': pagos_html,
+        'mensaje': (
+            f'Pago registrado: {pesos(monto)}. El monto superaba el saldo: vuelto {pesos(vuelto)}.'
+            if vuelto > 0 else 'Pago registrado correctamente'
+        ),
     })
 
 

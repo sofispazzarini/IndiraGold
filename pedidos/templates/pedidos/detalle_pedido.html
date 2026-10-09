@@ -811,8 +811,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 const data = await response.json();
 
                 if (data.success) {
-                    mensajeDiv.innerHTML = '<div class="alert alert-success" style="font-size:0.8rem; padding:0.5rem; border-radius:8px;">Pago registrado correctamente</div>';
-                    setTimeout(() => location.reload(), 1000);
+                    mensajeDiv.innerHTML = '<div class="alert alert-success" style="font-size:0.8rem; padding:0.5rem; border-radius:8px;"></div>';
+                    mensajeDiv.firstChild.textContent = data.mensaje || 'Pago registrado correctamente';
+                    // Con vuelto se deja más tiempo para leerlo
+                    setTimeout(() => location.reload(), data.mensaje && data.mensaje.includes('vuelto') ? 4000 : 1000);
                 } else {
                     mensajeDiv.innerHTML = '<div class="alert alert-danger" style="font-size:0.8rem; padding:0.5rem; border-radius:8px;">' + (data.error || 'Error al registrar') + '</div>';
                     btnRegistrarPago.disabled = false;
