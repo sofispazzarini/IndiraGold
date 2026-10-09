@@ -543,6 +543,17 @@ def agregar_producto(request, subcat_id):
         form = ProductoForm()
     todas_categorias = Categoria.objects.filter(activa=True).order_by('nombre')
     todas_subcategorias = Subcategoria.objects.filter(categoria=categoria_padre, activa=True).order_by('nombre')
+
+    # Si el guardado falló, se devuelve lo cargado para no perderlo (ficha, proveedor y talles).
+    # Los archivos (fotos y dibujo técnico) no se pueden conservar: se pide volver a adjuntarlos.
+    variantes_previas = []
+    proveedor_seleccionado = None
+    if request.method == 'POST':
+        variantes_previas = variantes_list
+        proveedor_seleccionado = Proveedor.objects.filter(id=request.POST.get('proveedor') or None).first()
+        if request.FILES:
+            messages.info(request, 'Volvé a adjuntar las fotos y el dibujo técnico antes de guardar.')
+
     return render(request, 'productos/agregar_producto.html', {
         'form': form,
         'subcategoria': subcategoria,
@@ -550,6 +561,8 @@ def agregar_producto(request, subcat_id):
         'categoria': categoria_padre,
         'todas_categorias': todas_categorias,
         'todas_subcategorias': todas_subcategorias,
+        'variantes_previas': variantes_previas,
+        'proveedor_seleccionado': proveedor_seleccionado,
     })
 
 @admin_required
