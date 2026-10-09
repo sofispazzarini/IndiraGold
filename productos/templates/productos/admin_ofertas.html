@@ -97,6 +97,15 @@
     margin-bottom:2rem;
 }
 
+/* Sin estilos inline: así el @media de abajo las pasa a una columna en mobile */
+.form-grid-3{
+    grid-template-columns:repeat(3, minmax(0, 1fr));
+}
+
+.form-grid > *{
+    min-width:0;
+}
+
 .form-group{
     display:flex;
     flex-direction:column;
@@ -742,7 +751,7 @@
             {% csrf_token %}
             <input type="hidden" name="tipo_oferta" value="cupon">
 
-            <div class="form-grid" style="grid-template-columns: 1fr 1fr 1fr;">
+            <div class="form-grid form-grid-3">
                 <div class="form-group">
                     <label>Nombre <span class="char-limit">máx. 100</span></label>
                     <input type="text" name="nombre" class="char-input" data-max="100" maxlength="100" placeholder="Ej: Bienvenida" required>
@@ -761,7 +770,7 @@
                 </div>
             </div>
 
-            <div class="form-grid" style="grid-template-columns: 1fr 1fr; margin-top: 1rem;">
+            <div class="form-grid" style="margin-top: 1rem;">
                 <div class="form-group" id="limiteUsosGroup">
                     <label>Cantidad de usos <span class="char-limit">opcional</span></label>
                     <input type="number" name="limite_usos" id="limiteUsosInput" min="1" placeholder="Ej: 5">
