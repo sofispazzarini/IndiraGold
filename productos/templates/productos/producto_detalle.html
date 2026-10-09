@@ -1147,7 +1147,7 @@
 <script>
 let varianteSeleccionada = null;
 let colorSeleccionado = '';
-const productoNombre = '{{ producto.nombre }}';
+const productoNombre = '{{ producto.nombre|escapejs }}';
 const variantesData = JSON.parse(document.getElementById('variantes-data').textContent || '[]');
 
 function datosTalle(varianteId) {
