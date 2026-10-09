@@ -1781,7 +1781,7 @@ function scrollCatOrden{{ cat_orden.id }}(dir) {
     let stock;
     if (coloresModalActuales.length > 0 && colorData) {
       stock = colorData.stock || 0;
-      stockColorLabel.textContent = `Stock de este color: ${stock}`;
+      stockColorLabel.textContent = `${colorData.nombre}: ${stock} disponibles`;
     } else {
       stock = varianteSeleccionadaModal.stock || 0;
       stockColorLabel.textContent = '';

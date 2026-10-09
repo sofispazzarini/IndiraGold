@@ -11,6 +11,14 @@ from django import template
 register = template.Library()
 
 
+@register.filter
+def hex_color(color_nombre, codigo_hex=None):
+    """Color CSS para el puntito de un color: el hex guardado o, si es el gris por defecto,
+    el que corresponde al nombre ("Marrón" -> marrón)."""
+    from productos.views import normalizar_hex_color
+    return normalizar_hex_color(color_nombre, codigo_hex)
+
+
 def formatear_numero(valor):
     try:
         monto = Decimal(str(valor if valor not in (None, '') else 0).replace(',', '.'))

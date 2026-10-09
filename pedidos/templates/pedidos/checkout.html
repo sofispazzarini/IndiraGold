@@ -915,7 +915,8 @@
                 <div class="product-talle">Talle: {{ item.variante.talle.nombre }}</div>
                 {% if item.color_nombre %}
                   <div class="product-talle d-flex align-items-center gap-1">Color:
-                    <span title="{{ item.color_nombre }}" style="display:inline-block; width:16px; height:16px; background-color:{{ item.color_hex|default:'#888' }}; border-radius:50%; border:1px solid #ccc;"></span>
+                    <span title="{{ item.color_nombre }}" style="display:inline-block; width:16px; height:16px; background-color:{{ item.color_nombre|hex_color:item.color_hex }}; border-radius:50%; border:1px solid #ccc;"></span>
+                    {{ item.color_nombre }}
                   </div>
                 {% endif %}
                 <div class="cantidad-wrap">

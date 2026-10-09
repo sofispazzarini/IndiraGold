@@ -1,5 +1,6 @@
 import json
 import re
+import unicodedata
 import uuid
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.views.decorators.http import require_POST, require_http_methods
@@ -51,15 +52,29 @@ COLOR_HEX_BY_NAME = {
     'celeste': '#87ceeb',
     'violeta': '#800080',
     'naranja': '#ffa500',
-    'marron': '#a52a2a',
-    'café': '#a52a2a',
+    'marron': '#8b4513',
+    'cafe': '#6f4e37',
     'beige': '#d2b48c',
     'turquesa': '#40e0d0',
+    'dorado': '#d4af37',
+    'plateado': '#c0c0c0',
+    'bordo': '#800020',
+    'fucsia': '#ff00ff',
+    'crema': '#fffdd0',
+    'nude': '#e3bc9a',
+    'camel': '#c19a6b',
+    'suela': '#a0522d',
+    'chocolate': '#7b3f00',
+    'natural': '#e8dcc4',
+    'verde militar': '#4b5320',
+    'azul marino': '#000080',
 }
 
 
 def normalizar_hex_color(nombre, codigo_hex=None):
-    nombre_limpio = (nombre or '').strip().lower()
+    # Sin acentos: "Marrón" y "marron" son el mismo color
+    nombre_limpio = unicodedata.normalize('NFKD', (nombre or '').strip().lower())
+    nombre_limpio = ''.join(c for c in nombre_limpio if not unicodedata.combining(c))
     hex_actual = (codigo_hex or '').strip().lower()
 
     if hex_actual and hex_actual != '#888888':

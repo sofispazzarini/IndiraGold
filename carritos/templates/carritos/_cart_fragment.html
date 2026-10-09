@@ -15,7 +15,8 @@
           {% if item.color_nombre or item.color_hex %}
             <div class="cart-item__meta">
               <span style="font-size: .78rem; color: #3d342a;">Color:</span>
-              <span class="cart-color-dot" style="background-color: {{ item.color_hex|default:item.color_nombre|default:'#888888' }};"></span>
+              <span class="cart-color-dot" style="background-color: {{ item.color_nombre|hex_color:item.color_hex }};"></span>
+              {% if item.color_nombre %}<span style="font-size: .78rem; color: #3d342a;">{{ item.color_nombre }}</span>{% endif %}
             </div>
           {% endif %}
           <div class="cart-item__price">{{ item.subtotal|pesos }}</div>
