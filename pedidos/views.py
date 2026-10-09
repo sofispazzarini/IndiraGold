@@ -3792,56 +3792,87 @@ def configurar_envios(request):
     })
 
 
+def leer_porcentaje(valor):
+    """Porcentaje ingresado por el usuario (0 a 100, admite coma). None si no es válido; vacío cuenta como 0."""
+    if not str(valor or '').strip():
+        return Decimal('0')
+    porcentaje = leer_monto(valor)
+    if porcentaje is None or not (0 <= porcentaje <= 100):
+        return None
+    return porcentaje
+
+
+CUOTAS_MAXIMAS = 60
+
+
 @admin_required
 def configurar_pagos(request):
     configuracion = ConfiguracionPago.actual()
+    planes_cuotas = configuracion.planes_cuotas.all()
+    retencion_tarjeta = configuracion.retencion_tarjeta_porcentaje or Decimal('0')
+    errores = []
 
     if request.method == 'POST':
         form = ConfiguracionPagoForm(request.POST, instance=configuracion)
-        if form.is_valid():
-            configuracion = form.save()
 
-            # Guardar porcentaje de retención de tarjeta
-            retencion_tarjeta = request.POST.get('retencion_tarjeta_porcentaje', '0')
-            try:
-                configuracion.retencion_tarjeta_porcentaje = Decimal(str(retencion_tarjeta).replace(',', '.'))
-            except Exception:
-                configuracion.retencion_tarjeta_porcentaje = Decimal('0')
-            configuracion.save()
+        # Se valida todo antes de guardar: si algo está mal no se toca nada (antes se borraban los planes y
+        # un error a mitad de camino dejaba la configuración sin planes de cuotas)
+        retencion_tarjeta = request.POST.get('retencion_tarjeta_porcentaje', '')
+        retencion_tarjeta_valor = leer_porcentaje(retencion_tarjeta)
+        if retencion_tarjeta_valor is None:
+            errores.append('La retención por tarjeta/posnet tiene que ser un porcentaje entre 0 y 100.')
 
-            configuracion.planes_cuotas.all().delete()
+        cuotas = request.POST.getlist('cuotas[]')
+        retenciones = request.POST.getlist('retencion_porcentaje[]')
+        sin_interes_values = request.POST.getlist('sin_interes[]')
+        activos = request.POST.getlist('activo[]')
+        planes_cuotas = []
+        planes_validos = []
+        cuotas_vistas = set()
+        for index, cuotas_value in enumerate(cuotas):
+            numero = index + 1
+            retencion_value = retenciones[index] if index < len(retenciones) else ''
+            plan = {
+                'cuotas': cuotas_value.strip(),
+                'retencion_porcentaje': retencion_value.strip(),
+                'sin_interes': str(index) in sin_interes_values,
+                'activo': str(index) in activos,
+            }
+            planes_cuotas.append(plan)
 
-            cuotas = request.POST.getlist('cuotas[]')
-            retenciones = request.POST.getlist('retencion_porcentaje[]')
-            sin_interes_values = request.POST.getlist('sin_interes[]')
-            activos = request.POST.getlist('activo[]')
+            texto_cuotas = plan['cuotas']
+            if not texto_cuotas:
+                errores.append(f'Plan {numero}: completá la cantidad de cuotas o quitá la fila.')
+                continue
+            if not texto_cuotas.isdigit() or not (1 <= int(texto_cuotas) <= CUOTAS_MAXIMAS):
+                errores.append(f'Plan {numero}: la cantidad de cuotas tiene que ser un número entero entre 1 y {CUOTAS_MAXIMAS}.')
+                continue
+            cuotas_int = int(texto_cuotas)
+            if cuotas_int in cuotas_vistas:
+                errores.append(f'Hay más de un plan de {cuotas_int} cuotas.')
+                continue
+            cuotas_vistas.add(cuotas_int)
 
-            for index, cuotas_value in enumerate(cuotas):
-                try:
-                    cuotas_int = int(cuotas_value)
-                except ValueError:
-                    continue
+            retencion_porcentaje = leer_porcentaje(retencion_value)
+            if retencion_porcentaje is None:
+                errores.append(f'Plan {numero}: la retención tiene que ser un porcentaje entre 0 y 100.')
+                continue
+            planes_validos.append(PlanCuotasMercadoPago(
+                configuracion=configuracion,
+                cuotas=cuotas_int,
+                retencion_porcentaje=retencion_porcentaje,
+                sin_interes=plan['sin_interes'],
+                activo=plan['activo'],
+                orden=index,
+            ))
 
-                if cuotas_int <= 0:
-                    continue
-
-                retencion_value = retenciones[index] if index < len(retenciones) else '0'
-                try:
-                    retencion_porcentaje = Decimal(str(retencion_value).replace(',', '.'))
-                except Exception:
-                    retencion_porcentaje = Decimal('0')
-
-                if retencion_porcentaje < 0:
-                    retencion_porcentaje = Decimal('0')
-
-                PlanCuotasMercadoPago.objects.create(
-                    configuracion=configuracion,
-                    cuotas=cuotas_int,
-                    retencion_porcentaje=retencion_porcentaje,
-                    sin_interes=str(index) in sin_interes_values,
-                    activo=str(index) in activos,
-                    orden=index,
-                )
+        if form.is_valid() and not errores:
+            with transaction.atomic():
+                configuracion = form.save(commit=False)
+                configuracion.retencion_tarjeta_porcentaje = retencion_tarjeta_valor
+                configuracion.save()
+                configuracion.planes_cuotas.all().delete()
+                PlanCuotasMercadoPago.objects.bulk_create(planes_validos)
 
             messages.success(request, 'Configuracion de pagos actualizada.')
             return redirect('pedidos:configurar_pagos')
@@ -3851,7 +3882,9 @@ def configurar_pagos(request):
     return render(request, 'pedidos/configurar_pagos.html', {
         'form': form,
         'configuracion': configuracion,
-        'planes_cuotas': configuracion.planes_cuotas.all(),
+        'planes_cuotas': planes_cuotas,
+        'retencion_tarjeta': retencion_tarjeta,
+        'errores': errores,
     })
 
 
