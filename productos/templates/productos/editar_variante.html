@@ -59,25 +59,25 @@
                                 <div class="col">
                                     <div class="input-group input-group-sm">
                                         <span class="input-group-text bg-white text-muted">A</span>
-                                        <input type="text" name="alto" class="form-control" value="{{ medida.alto|default_if_none:'' }}">
+                                        <input type="text" name="alto" class="form-control" value="{% if medida.alto %}{{ medida.alto }}{% endif %}">
                                     </div>
                                 </div>
                                 <div class="col">
                                     <div class="input-group input-group-sm">
                                         <span class="input-group-text bg-white text-muted">An</span>
-                                        <input type="text" name="ancho" class="form-control" value="{{ medida.ancho|default_if_none:'' }}">
+                                        <input type="text" name="ancho" class="form-control" value="{% if medida.ancho %}{{ medida.ancho }}{% endif %}">
                                     </div>
                                 </div>
                                 <div class="col">
                                     <div class="input-group input-group-sm">
                                         <span class="input-group-text bg-white text-muted">L</span>
-                                        <input type="text" name="largo" class="form-control" value="{{ medida.largo|default_if_none:'' }}">
+                                        <input type="text" name="largo" class="form-control" value="{% if medida.largo %}{{ medida.largo }}{% endif %}">
                                     </div>
                                 </div>
                                 <div class="col">
                                     <div class="input-group input-group-sm">
                                         <span class="input-group-text bg-white text-muted">T</span>
-                                        <input type="text" name="tiro" class="form-control" value="{{ medida.tiro|default_if_none:'' }}">
+                                        <input type="text" name="tiro" class="form-control" value="{% if medida.tiro %}{{ medida.tiro }}{% endif %}">
                                     </div>
                                 </div>
                                 <div class="col-auto">
