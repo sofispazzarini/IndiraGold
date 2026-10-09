@@ -152,13 +152,17 @@
                                     <tr>
                                         <td class="fw-bold text-dark" style="font-size: 1rem;">{{ variante.talle.nombre }}</td>
                                         <td>
-                                            <input type="number" min="0" step="1" name="variante_stock_{{ variante.id }}" value="{{ variante.stock }}" class="form-control form-control-sm variant-stock-input">
+                                            <input type="number" min="0" step="1" name="variante_stock_{{ variante.id }}" value="{{ variante.stock }}" class="form-control form-control-sm variant-stock-input" readonly style="background:#f5f5f5;" title="Se calcula de los colores">
                                         </td>
                                         <td>
-                                            <div class="small mb-1 d-flex align-items-center gap-1">
-                                                <span class="text-dark fw-bold">Color:</span>
-                                                {% for c in variante.colores.all %}
-                                                    <span title="{{ c.nombre }}" style="display:inline-block; width:18px; height:18px; background-color:{{ c.codigo_hex }}; border-radius:50%; border:2px solid #ddd;"></span>
+                                            <div class="small mb-1">
+                                                <span class="text-dark fw-bold">Colores:</span>
+                                                {% for vc in variante.variante_colores.all %}
+                                                    <div class="d-flex align-items-center gap-2 mt-1">
+                                                        <span title="{{ vc.color.nombre }}" style="display:inline-block; width:18px; height:18px; background-color:{{ vc.color.codigo_hex }}; border-radius:50%; border:2px solid #ddd;"></span>
+                                                        <span class="text-muted" style="font-size:0.85rem; min-width:60px;">{{ vc.color.nombre }}</span>
+                                                        <input type="number" min="0" step="1" name="color_stock_{{ vc.id }}" value="{{ vc.stock }}" class="form-control form-control-sm" style="width:70px;" placeholder="Stock">
+                                                    </div>
                                                 {% empty %}
                                                     <span class="text-muted italic">-</span>
                                                 {% endfor %}

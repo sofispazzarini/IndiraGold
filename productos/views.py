@@ -471,13 +471,18 @@ def editar_producto(request, prod_id):
             form.save_m2m()
 
             for variante in producto_editado.variantes.all():
-                stock_key = f'variante_stock_{variante.id}'
-                if stock_key in request.POST:
-                    try:
-                        variante.stock = max(int(request.POST.get(stock_key) or 0), 0)
-                        variante.save(update_fields=['stock'])
-                    except ValueError:
-                        messages.error(request, f"Stock inválido para {variante.talle.nombre}.")
+                for vc in variante.variante_colores.all():
+                    color_stock_key = f'color_stock_{vc.id}'
+                    if color_stock_key in request.POST:
+                        try:
+                            vc.stock = max(int(request.POST.get(color_stock_key) or 0), 0)
+                            vc.save(update_fields=['stock'])
+                        except ValueError:
+                            pass
+                total_colores = sum(vc.stock for vc in variante.variante_colores.all())
+                if total_colores > 0:
+                    variante.stock = total_colores
+                    variante.save(update_fields=['stock'])
 
             if producto_debe_regenerar_qr(codigo_original, producto_editado.codigo):
                 for variante in producto_editado.variantes.all().prefetch_related('colores'):
