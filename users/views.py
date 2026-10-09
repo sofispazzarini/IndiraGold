@@ -108,6 +108,9 @@ def perfil(request):
     cliente = request.user.cliente
     mensaje = None
     mensaje_tipo = None
+    # Si falla la edición de una dirección, el error se muestra en ese mismo formulario (abierto)
+    edit_form = None
+    edit_direccion_id = None
 
     if request.method == 'POST':
         if 'eliminar_direccion_cliente' in request.POST:
@@ -118,15 +121,17 @@ def perfil(request):
             direccion_form = NuevaDireccionForm(initial={'cliente': cliente})
         elif 'editar_direccion_cliente' in request.POST:
             direccion = get_object_or_404(Direccion, pk=request.POST.get('editar_direccion_cliente'), cliente=cliente)
-            direccion_form = NuevaDireccionForm(request.POST, instance=direccion, initial={'cliente': cliente})
-            if direccion_form.is_valid():
-                direccion_form.save()
+            edit_form = NuevaDireccionForm(request.POST, instance=direccion, initial={'cliente': cliente})
+            if edit_form.is_valid():
+                edit_form.save()
                 mensaje = 'Direccion actualizada correctamente.'
                 mensaje_tipo = 'success'
-                direccion_form = NuevaDireccionForm(initial={'cliente': cliente})
+                edit_form = None
             else:
                 mensaje = 'Por favor revisa los datos de la direccion.'
                 mensaje_tipo = 'danger'
+                edit_direccion_id = direccion.pk
+            direccion_form = NuevaDireccionForm(initial={'cliente': cliente})
         elif 'agregar_direccion_cliente' in request.POST:
             direccion_form = NuevaDireccionForm(request.POST, initial={'cliente': cliente})
             if direccion_form.is_valid():
@@ -194,7 +199,14 @@ def perfil(request):
     else:
         direccion_form = NuevaDireccionForm(initial={'cliente': cliente})
 
-    direcciones = cliente.direcciones.all().order_by('etiqueta', 'calle', 'numero')
+    direcciones = list(cliente.direcciones.all().order_by('etiqueta', 'calle', 'numero'))
+    if edit_form is not None and edit_direccion_id:
+        # La dirección que falló se muestra con lo que escribió el cliente, no con lo guardado
+        for direccion in direcciones:
+            if direccion.pk == edit_direccion_id:
+                direccion.refresh_from_db()
+                for campo in ('etiqueta', 'calle', 'numero', 'ciudad', 'provincia', 'codigo_postal', 'referencia'):
+                    setattr(direccion, campo, edit_form.data.get(campo, getattr(direccion, campo)))
 
     return render(request, 'users/perfil.html', {
         'cliente': cliente,
@@ -202,6 +214,8 @@ def perfil(request):
         'direccion_form': direccion_form,
         'mensaje': mensaje,
         'mensaje_tipo': mensaje_tipo,
+        'edit_form': edit_form,
+        'edit_direccion_id': edit_direccion_id,
         'foto_perfil_max_mb': f'{settings.FOTO_PERFIL_MAX_MB:g}',
     })
 
