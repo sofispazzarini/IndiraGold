@@ -1051,7 +1051,14 @@
                     </div>
                     <div class="relacionado-body">
                         <div class="relacionado-nombre">{{ prod.nombre }}</div>
-                        <div class="relacionado-precio">{{ prod.precio|pesos }}</div>
+                        {# Mismo precio que en el resto de la tienda: con la oferta activa aplicada #}
+                        {% with oferta=prod.obtener_oferta_activa %}
+                        <div class="relacionado-precio">
+                            {% if oferta %}<span style="text-decoration:line-through; color:#9c8c7c; font-size:.85em; margin-right:.35rem;">{{ prod.precio|pesos }}</span>{% endif %}
+                            {{ prod.precio_final|pesos }}
+                            {% if oferta %}<span style="background:#6E0E2E; color:#fff; font-size:.7em; padding:1px 6px; border-radius:999px; margin-left:.3rem;">-{{ oferta.descuento }}%</span>{% endif %}
+                        </div>
+                        {% endwith %}
                     </div>
                 </a>
             {% endfor %}
