@@ -1675,7 +1675,12 @@ def admin_ofertas(request):
         nombre = request.POST.get('nombre')
         descuento = request.POST.get('descuento')
         tipo_oferta = request.POST.get('tipo_oferta', 'catalogo')
-        codigo = request.POST.get('codigo', '').strip().upper()
+        # Código sin espacios (con espacios después no funcionaba en el checkout)
+        codigo = ''.join(request.POST.get('codigo', '').split()).upper()
+        nombre = (nombre or '').strip()
+        if not nombre:
+            messages.error(request, 'Poné un nombre para la oferta.')
+            return redirect('productos:admin_ofertas')
 
         try:
             descuento_numero = int(descuento)
@@ -1719,6 +1724,9 @@ def admin_ofertas(request):
                     )
                 except (TypeError, ValueError):
                     fecha_fin_valor = None
+                if fecha_fin_valor and fecha_fin_valor < timezone.now():
+                    messages.error(request, 'La fecha límite no puede ser anterior a hoy.')
+                    return redirect('productos:admin_ofertas')
 
             Oferta.objects.create(
                 nombre=nombre,
@@ -1730,7 +1738,7 @@ def admin_ofertas(request):
                 fecha_fin=fecha_fin_valor
             )
 
-            messages.success(request, 'Código de descuento creado correctamente.')
+            messages.success(request, f'Código de descuento {codigo} creado correctamente.')
             return redirect('productos:admin_ofertas')
 
         alcance = request.POST.get('alcance', 'productos')
@@ -1744,6 +1752,12 @@ def admin_ofertas(request):
                 return redirect('productos:admin_ofertas')
             categoria = get_object_or_404(Categoria, id=categoria_id, activa=True)
 
+        productos_ids = request.POST.getlist('productos') if alcance == 'productos' else []
+        if alcance == 'productos' and not productos_ids:
+            # Antes se creaba una oferta vacía (sin productos) sin ningún aviso
+            messages.error(request, 'Elegí al menos un producto para la oferta.')
+            return redirect('productos:admin_ofertas')
+
         oferta = Oferta.objects.create(
             nombre=nombre,
             descuento=descuento_numero,
@@ -1753,10 +1767,9 @@ def admin_ofertas(request):
         )
 
         if alcance == 'productos':
-            productos_ids = request.POST.getlist('productos')
-
             oferta.productos.set(productos_ids)
 
+        messages.success(request, f'Oferta "{nombre}" creada correctamente.')
         return redirect('productos:admin_ofertas')
 
     context = {

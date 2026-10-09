@@ -100,13 +100,21 @@ def vaciar_carrito_completo(request, carrito):
 
 def buscar_cupon(codigo):
     """(cupon, motivo): el cupón si se puede usar ahora, o None y el motivo por el que no."""
-    codigo_normalizado = (codigo or '').strip().upper()
+    # Sin espacios: "promo verano" y "PROMOVERANO" son el mismo cupón
+    codigo_normalizado = ''.join((codigo or '').split()).upper()
     if not codigo_normalizado:
         return None, None
     cupon = Oferta.objects.filter(
         codigo__iexact=codigo_normalizado,
         es_cupon=True,
     ).first()
+    if not cupon:
+        # Cupones guardados antes con espacios en el código
+        cupon = next(
+            (c for c in Oferta.objects.filter(es_cupon=True).exclude(codigo__isnull=True)
+             if ''.join((c.codigo or '').split()).upper() == codigo_normalizado),
+            None,
+        )
     if not cupon:
         return None, 'El código no existe.'
     puede, motivo = cupon.puede_usarse()
