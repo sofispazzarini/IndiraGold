@@ -81,8 +81,14 @@ def toggle_estado_tema(request, tema_id):
 
 @staff_member_required
 def gestion_faqs(request):
+    from django.db.models import Q
+
     faqs = Consulta.objects.select_related('tema').all()
-    return render(request, 'consultas/gestion_faqs.html', {'faqs': faqs})
+    # Buscador "por pregunta o tema" (antes el ?q= se ignoraba)
+    q = request.GET.get('q', '').strip()
+    if q:
+        faqs = faqs.filter(Q(pregunta__icontains=q) | Q(respuesta__icontains=q) | Q(tema__nombre__icontains=q))
+    return render(request, 'consultas/gestion_faqs.html', {'faqs': faqs, 'q': q})
 
 
 @staff_member_required
