@@ -536,7 +536,7 @@
             </div>
             {% endif %}
 
-            {% if saldo_pendiente > 0 %}
+            {% if saldo_pendiente > 0 and pedido.estado != 'cancelado' and pedido.estado != 'rechazado' and pedido.estado != 'vencido' %}
             <div class="registrar-pago" style="margin-top:1.25rem; padding-top:1.25rem; border-top:1px solid #e8dfd4;">
                 <div class="detail-lbl" style="margin-bottom:0.75rem;">Registrar pago</div>
                 <div style="display:flex; flex-direction:column; gap:0.75rem;">

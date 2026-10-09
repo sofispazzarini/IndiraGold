@@ -3192,6 +3192,12 @@ def registrar_pago_pedido(request, pedido_id):
     metodo_pago = data.get('metodo_pago', 'efectivo')
     observaciones = data.get('observaciones', '')
 
+    if pedido.estado in ('cancelado', 'rechazado', 'vencido'):
+        return JsonResponse({
+            'success': False,
+            'error': f'No se pueden registrar pagos en un pedido {pedido.get_estado_display().lower()}.'
+        })
+
     if monto <= 0:
         return JsonResponse({'success': False, 'error': 'El monto debe ser mayor a 0'})
 
@@ -3199,22 +3205,32 @@ def registrar_pago_pedido(request, pedido_id):
     if monto > saldo_pendiente:
         monto = saldo_pendiente
 
-    pedido.monto_pagado += monto
-    pedido.deuda = pedido.total - pedido.monto_pagado
+    with transaction.atomic():
+        pedido.monto_pagado += monto
+        pedido.deuda = pedido.total - pedido.monto_pagado
 
-    if pedido.deuda <= 0:
-        pedido.deuda = 0
-        pedido.metodo_pago = metodo_pago
+        if pedido.deuda <= 0:
+            pedido.deuda = 0
+            pedido.metodo_pago = metodo_pago
 
-    pedido.estado = 'entregado'
-    pedido.save()
+            # Un pedido pendiente que queda saldado pasa a "Pago aceptado" y descuenta stock,
+            # igual que al aceptarlo desde la gestión de pedidos. Nunca se marca "Entregado" por un pago.
+            if pedido.estado == 'pendiente':
+                try:
+                    descontar_stock_pedido(pedido)
+                except ValueError as error:
+                    transaction.set_rollback(True)
+                    return JsonResponse({'success': False, 'error': str(error)})
+                pedido.estado = 'aceptado'
 
-    PagoPedido.objects.create(
-        pedido=pedido,
-        monto=monto,
-        metodo_pago=metodo_pago,
-        observaciones=observaciones
-    )
+        pedido.save()
+
+        PagoPedido.objects.create(
+            pedido=pedido,
+            monto=monto,
+            metodo_pago=metodo_pago,
+            observaciones=observaciones
+        )
 
     pagos = pedido.pagos_registrados.all()
     pagos_html = ""
