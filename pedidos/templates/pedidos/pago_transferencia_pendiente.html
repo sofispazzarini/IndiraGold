@@ -101,6 +101,7 @@
     background: #fff;
   }
   .btn-estado {
+    text-decoration: none;
     background: linear-gradient(135deg, #b8922a 0%, #d4a84b 100%);
     color: #fff;
     display: inline-flex;
@@ -125,8 +126,13 @@
     .bank-value {
       text-align: left;
       margin-top: .25rem;
+      display: block;
     }
   }
+  /* CUIT, CVU y alias en una sola línea (antes se partían y era fácil copiarlos mal) + botón Copiar */
+  .bank-dato { display: inline-flex; align-items: center; gap: .5rem; max-width: 100%; }
+  .bank-dato .bank-valor-texto { white-space: nowrap; overflow-x: auto; }
+  .btn-copiar { border: 1px solid #e8dfd4; background: #fff; color: #6e0e2e; border-radius: 999px; font-size: .72rem; font-weight: 700; padding: .2rem .6rem; cursor: pointer; flex-shrink: 0; }
 </style>
 {% endblock %}
 
@@ -147,15 +153,15 @@
       </div>
       <div class="bank-row">
         <span class="bank-label">CUIT/CUIL</span>
-        <span class="bank-value">{{ configuracion_pago.cuit_cuil }}</span>
+        <span class="bank-value"><span class="bank-dato"><span class="bank-valor-texto">{{ configuracion_pago.cuit_cuil }}</span><button type="button" class="btn-copiar" data-copiar="{{ configuracion_pago.cuit_cuil }}">Copiar</button></span></span>
       </div>
       <div class="bank-row">
         <span class="bank-label">CVU</span>
-        <span class="bank-value">{{ configuracion_pago.cvu }}</span>
+        <span class="bank-value"><span class="bank-dato"><span class="bank-valor-texto">{{ configuracion_pago.cvu }}</span><button type="button" class="btn-copiar" data-copiar="{{ configuracion_pago.cvu }}">Copiar</button></span></span>
       </div>
       <div class="bank-row">
         <span class="bank-label">Alias</span>
-        <span class="bank-value">{{ configuracion_pago.alias }}</span>
+        <span class="bank-value"><span class="bank-dato"><span class="bank-valor-texto">{{ configuracion_pago.alias }}</span><button type="button" class="btn-copiar" data-copiar="{{ configuracion_pago.alias }}">Copiar</button></span></span>
       </div>
     </div>
 
@@ -187,4 +193,23 @@
     </div>
   </div>
 </div>
+<script>
+  // Copiar CUIT / CVU / alias al portapapeles
+  document.querySelectorAll('.btn-copiar').forEach(boton => {
+    boton.addEventListener('click', async () => {
+      const texto = boton.dataset.copiar || '';
+      try {
+        await navigator.clipboard.writeText(texto);
+      } catch (e) {
+        const area = document.createElement('textarea');
+        area.value = texto; document.body.appendChild(area); area.select();
+        try { document.execCommand('copy'); } catch (err) {}
+        area.remove();
+      }
+      const original = boton.textContent;
+      boton.textContent = 'Copiado';
+      setTimeout(() => { boton.textContent = original; }, 1500);
+    });
+  });
+</script>
 {% endblock %}
