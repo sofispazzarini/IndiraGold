@@ -594,22 +594,55 @@ def historial_cliente(request, cliente_id):
     """
     Muestra el historial de pedidos de un cliente (solo accesible por administradores).
     """
-    cliente = get_object_or_404(Cliente, pk=cliente_id)
-    pedidos_qs = (
-        Pedido.objects.filter(cliente=cliente)
-        .select_related('cliente')
-        .order_by('-created_at')
-    )
+    cliente = get_object_or_404(Cliente.objects.select_related('user'), pk=cliente_id)
+    cerrados = ('cancelado', 'rechazado', 'vencido')
+
+    # Pedidos online y ventas en el local, juntos y ordenados por fecha (antes solo pedidos)
+    compras = [
+        {
+            'tipo': f'Pedido {pedido.get_tipo_venta_display().lower()}',
+            'id': pedido.id,
+            'total': pedido.total,
+            'pagado': pedido.monto_pagado,
+            'saldo': Decimal('0.00') if pedido.estado in cerrados else (pedido.deuda or Decimal('0.00')),
+            'estado': pedido.get_estado_display(),
+            'cuenta': pedido.estado not in cerrados and pedido.estado != 'pendiente',
+            'fecha': pedido.created_at,
+            'items': pedido.items.count(),
+            'url': reverse('pedidos:detalle_pedido', args=[pedido.id]),
+        }
+        for pedido in Pedido.objects.filter(cliente=cliente)
+    ] + [
+        {
+            'tipo': 'Venta en el local',
+            'id': venta.id,
+            'total': venta.total,
+            'pagado': venta.monto_pagado,
+            'saldo': venta.saldo_pendiente,
+            'estado': venta.get_estado_pago_display(),
+            'cuenta': True,
+            'fecha': venta.created_at,
+            'items': venta.items.count(),
+            'url': f"{reverse('pedidos:ventas_presenciales')}?venta={venta.id}",
+        }
+        for venta in VentaLocal.objects.filter(cliente=cliente)
+    ]
+    compras.sort(key=lambda compra: compra['fecha'], reverse=True)
+    validas = [compra for compra in compras if compra['cuenta']]
 
     # Paginación
-    paginator = Paginator(pedidos_qs, 10)
+    paginator = Paginator(compras, 10)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
     context = {
         'cliente': cliente,
+        'nombre_cliente': f'{cliente.user.first_name} {cliente.user.last_name}'.strip() or cliente.user.username,
         'page_obj': page_obj,
         'pedidos': page_obj.object_list,
+        'total_comprado': sum((compra['total'] for compra in validas), Decimal('0.00')),
+        'total_pagado': sum((compra['pagado'] for compra in validas), Decimal('0.00')),
+        'total_saldo': sum((compra['saldo'] for compra in validas), Decimal('0.00')),
     }
 
     return render(request, 'pedidos/historial_cliente.html', context)

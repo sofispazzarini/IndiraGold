@@ -6,7 +6,7 @@
     <div class="d-flex justify-content-between align-items-center mb-4 mt-3">
         <div>
             <h2 class="mb-1 fw-bold">Historial de compras</h2>
-            <p class="text-muted mb-0">Cliente: <strong>{{ cliente.user.username }}</strong> — DNI: {{ cliente.dni }}</p>
+            <p class="text-muted mb-0">Cliente: <strong>{{ nombre_cliente }}</strong> — DNI: {{ cliente.dni }}</p>
         </div>
         <div>
             <a href="{% url 'pedidos:gestion_pedidos' %}" class="btn btn-outline-secondary">Volver a pedidos</a>
@@ -14,14 +14,21 @@
     </div>
 
     {% if pedidos %}
+        <div class="d-flex flex-wrap gap-3 mb-3">
+            <div class="card border-0 shadow-sm px-3 py-2"><small class="text-muted">Total comprado</small><strong>{{ total_comprado|pesos }}</strong></div>
+            <div class="card border-0 shadow-sm px-3 py-2"><small class="text-muted">Pagado</small><strong>{{ total_pagado|pesos }}</strong></div>
+            <div class="card border-0 shadow-sm px-3 py-2"><small class="text-muted">Saldo</small><strong{% if total_saldo > 0 %} style="color:#6E0E2E;"{% endif %}>{{ total_saldo|pesos }}</strong></div>
+        </div>
         <div class="card border-0 shadow-sm">
             <div class="table-responsive">
                 <table class="table table-hover mb-0">
                     <thead>
                         <tr>
-                            <th>ID</th>
-                            <th>Total</th>
+                            <th>N.º</th>
                             <th>Tipo</th>
+                            <th>Total</th>
+                            <th>Pagado</th>
+                            <th>Saldo</th>
                             <th>Estado</th>
                             <th>Fecha</th>
                             <th>Items</th>
@@ -29,16 +36,18 @@
                         </tr>
                     </thead>
                     <tbody>
-                        {% for pedido in pedidos %}
+                        {% for compra in pedidos %}
                             <tr>
-                                <td><strong>#{{ pedido.id }}</strong></td>
-                                <td><strong>{{ pedido.total|pesos }}</strong></td>
-                                <td>{{ pedido.get_tipo_venta_display }}</td>
-                                <td>{{ pedido.get_estado_display }}</td>
-                                <td><small>{{ pedido.created_at|date:"d/m/Y H:i" }}</small></td>
-                                <td>{{ pedido.items.count }}</td>
+                                <td><strong>#{{ compra.id }}</strong></td>
+                                <td>{{ compra.tipo }}</td>
+                                <td><strong>{{ compra.total|pesos }}</strong></td>
+                                <td>{{ compra.pagado|pesos }}</td>
+                                <td>{% if compra.saldo > 0 %}<strong style="color:#6E0E2E;">{{ compra.saldo|pesos }}</strong>{% else %}{{ compra.saldo|pesos }}{% endif %}</td>
+                                <td>{{ compra.estado }}</td>
+                                <td><small>{{ compra.fecha|date:"d/m/Y H:i" }}</small></td>
+                                <td>{{ compra.items }}</td>
                                 <td>
-                                    <a href="{% url 'pedidos:detalle_pedido' pedido.id %}" class="btn btn-sm btn-outline-primary">Ver</a>
+                                    <a href="{{ compra.url }}" class="btn btn-sm btn-outline-primary">Ver</a>
                                 </td>
                             </tr>
                         {% endfor %}
