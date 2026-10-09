@@ -1603,7 +1603,10 @@
 <script>
 const subtotalBase = parseFloat("{{ subtotal|floatformat:'2' }}".replace(',', '.'));
 const costoFlexLegacy = parseFloat("{{ precio_flex|floatformat:'2' }}".replace(',', '.')) || 0;
-const costoCorreoBase = parseFloat("{{ precio_correo|floatformat:'2' }}".replace(',', '.'));
+// El correo se cotiza con la API: hasta tener cotización el costo es null ("A cotizar"), nunca NaN ni "Gratis"
+const costoCorreoParseado = parseFloat("{{ precio_correo|floatformat:'2' }}".replace(',', '.'));
+const costoCorreoBase = Number.isFinite(costoCorreoParseado) && costoCorreoParseado > 0 ? costoCorreoParseado : null;
+const correoGratis = {{ configuracion_envio.correo_gratis|yesno:'true,false' }};
 let costoCorreo = costoCorreoBase;
 let descuentoAplicado = parseFloat("{{ descuento_monto|floatformat:'2' }}".replace(',', '.')) || 0;
 
@@ -1679,11 +1682,19 @@ function actualizarEntrega() {
     filtrarDireccionesFlex();
   }
 
+  let envioPendiente = false;
   if (metodo === 'correo' && camposCorreo) {
     camposCorreo.style.display = 'block';
     const proveedor = valorCampo('select[name="correo"]');
     if (proveedor !== 'correo_argentino') costoCorreo = costoCorreoBase;
-    costoEnvio = costoCorreo;
+    if (correoGratis) {
+      costoEnvio = 0;
+    } else if (Number.isFinite(costoCorreo) && costoCorreo > 0) {
+      costoEnvio = costoCorreo;
+    } else {
+      costoEnvio = 0;
+      envioPendiente = true;
+    }
     actualizarTipoCorreo();
   }
 
@@ -1703,7 +1714,10 @@ function actualizarEntrega() {
     envioRow.style.display = metodo === 'local' ? 'none' : 'flex';
   }
 
-  if (costoEnvio > 0) {
+  if (envioPendiente) {
+    envioTexto.innerText = 'A cotizar';
+    envioTexto.classList.remove('green');
+  } else if (costoEnvio > 0) {
     envioTexto.innerText = formatearPesos(costoEnvio);
     envioTexto.classList.remove('green');
   } else {
@@ -1752,12 +1766,12 @@ document.querySelectorAll('input[name="direccion_correo_id"]').forEach(radio => 
 });
 
 document.querySelector('select[name="correo"]')?.addEventListener('change', () => {
-  costoCorreo = 0;
+  costoCorreo = null;
   cotizarCorreo();
 });
 
 document.querySelector('input[name="codigo_postal_sucursal"]')?.addEventListener('input', () => {
-  costoCorreo = 0;
+  costoCorreo = null;
   clearTimeout(window.cotizarCorreoTimer);
   window.cotizarCorreoTimer = setTimeout(cotizarCorreo, 500);
 });
@@ -1831,13 +1845,14 @@ async function cotizarCorreo() {
     console.log('Respuesta cotizacion:', result);
     if (!response.ok || !result.success) throw new Error(result.error || 'No se pudo cotizar.');
 
-    costoCorreo = parseFloat(result.importe) || 0;
+    costoCorreo = parseFloat(result.importe);
+    if (!Number.isFinite(costoCorreo) || costoCorreo <= 0) costoCorreo = null;
     if (correoCotizacionBox) {
       correoCotizacionBox.textContent = `Correo Argentino: ${formatearPesos(costoCorreo)}`;
     }
     actualizarEntrega();
   } catch (error) {
-    costoCorreo = 0;
+    costoCorreo = null;
     if (correoCotizacionBox) {
       correoCotizacionBox.textContent = error.message;
     }
@@ -1893,7 +1908,7 @@ function enviarCheckout() {
       alert('Busca y selecciona una sucursal para retirar el envio.');
       return;
     }
-    if (proveedor === 'correo_argentino' && costoCorreo <= 0) {
+    if (proveedor === 'correo_argentino' && !correoGratis && !(costoCorreo > 0)) {
       alert('Primero necesitamos cotizar Correo Argentino.');
       return;
     }
