@@ -8,7 +8,7 @@
 
 <!-- HERO -->
 {% if hero.activo %}
-<section class="hero" style="--hero-bg: {% if hero.imagen_fondo %}url('{{ hero.imagen_fondo.url }}'){% else %}{{ hero.color_fondo }}{% endif %}; --hero-text: {{ hero.color_texto }}; --hero-accent: {{ hero.color_acento }}; --hero-font: '{{ hero.fuente_titulo }}', serif;">
+<section class="hero{% if hero.imagen_fondo %} hero--imagen{% endif %}" style="--hero-bg: {% if hero.imagen_fondo %}url('{{ hero.imagen_fondo.url }}'){% else %}{{ hero.color_fondo }}{% endif %}; --hero-text: {{ hero.color_texto }}; --hero-accent: {{ hero.color_acento }}; --hero-font: '{{ hero.fuente_titulo }}', serif;">
   <div class="hero__bg"></div>
   <div class="hero__content">
     <span class="hero__eyebrow">{{ hero.eyebrow }}</span>
@@ -776,26 +776,29 @@ function scrollCatOrden{{ cat_orden.id }}(dir) {
     border-bottom: 1px solid #e8dfd4;
     margin-bottom: 2rem;
   }
+  /* Colores y fuente del hero salen de la configuración del admin (/admin/hero/) */
   .hero__bg {
     position: absolute;
     inset: 0;
-    background: radial-gradient(ellipse at 80% 50%, #fdf6e3 0%, transparent 65%);
+    background: radial-gradient(ellipse at 80% 50%, color-mix(in srgb, var(--hero-accent, #b8922a) 18%, transparent) 0%, transparent 65%);
     pointer-events: none;
   }
+  /* Con imagen de fondo se oscurece el lado del texto para que se lea */
+  .hero--imagen .hero__bg { background: linear-gradient(90deg, rgba(0,0,0,.55) 0%, rgba(0,0,0,.25) 55%, rgba(0,0,0,0) 100%); }
   .hero__content { position: relative; z-index: 1; max-width: 520px; animation: fadeUp .7s ease both; }
-  .hero__eyebrow { font-size: .75rem; font-weight: 600; letter-spacing: .2em; text-transform: uppercase; color: #b8922a; display: block; margin-bottom: .75rem; }
-  .hero__title { font-family: 'Cormorant Garamond', serif; font-size: clamp(3rem, 6vw, 5rem); font-weight: 700; color: #1a1612; line-height: 1.0; margin-bottom: 1rem; }
-  .hero__title em { font-style: italic; color: #b8922a; }
-  .hero__sub { font-size: 1rem; color: #8c7e70; line-height: 1.65; margin-bottom: 2rem; }
+  .hero__eyebrow { font-size: .75rem; font-weight: 600; letter-spacing: .2em; text-transform: uppercase; color: var(--hero-accent, #b8922a); display: block; margin-bottom: .75rem; }
+  .hero__title { font-family: var(--hero-font, 'Cormorant Garamond', serif); font-size: clamp(3rem, 6vw, 5rem); font-weight: 700; color: var(--hero-text, #1a1612); line-height: 1.0; margin-bottom: 1rem; overflow-wrap: anywhere; }
+  .hero__title em { font-style: italic; color: var(--hero-accent, #b8922a); }
+  .hero__sub { font-size: 1rem; color: var(--hero-text, #8c7e70); opacity: .8; line-height: 1.65; margin-bottom: 2rem; }
   .hero__cta {
     display: inline-flex; align-items: center; gap: .5rem;
-    background: #1a1612; color: #fff;
+    background: var(--hero-accent, #b8922a); color: #fff;
     padding: .85rem 2rem; border-radius: 2px;
     text-decoration: none; font-size: .875rem; font-weight: 500;
     letter-spacing: .06em; text-transform: uppercase;
-    transition: background .2s;
+    transition: filter .2s;
   }
-  .hero__cta:hover { background: #b8922a; }
+  .hero__cta:hover { filter: brightness(.88); }
   .hero__ornament { width: clamp(240px, 35vw, 420px); opacity: .2; animation: spin 80s linear infinite; flex-shrink: 0; }
   @keyframes spin { to { transform: rotate(360deg); } }
 
