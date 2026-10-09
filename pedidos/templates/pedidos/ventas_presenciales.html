@@ -144,6 +144,20 @@
         margin:0;
     }
 
+    .ventas-paginacion{
+        display:flex;
+        flex-wrap:wrap;
+        align-items:center;
+        gap:.4rem;
+        margin-top:1rem;
+    }
+
+    .ventas-paginacion-info{
+        font-size:.8rem;
+        color:var(--muted, #9c8c7c);
+        margin-left:.5rem;
+    }
+
     .tabla-scroll-wrapper{
         overflow-x:auto;
         -webkit-overflow-scrolling:touch;
@@ -852,6 +866,31 @@
             </table>
 
         </div>
+
+        {% if page_obj.has_other_pages %}
+        <nav aria-label="Páginas del historial" class="ventas-paginacion">
+            {% with filtros="&q="|add:q|add:"&dia="|add:dia|add:"&mes="|add:mes|add:"&anio="|add:anio %}
+            {% if page_obj.has_previous %}
+                <a class="btn btn-soft btn-sm" href="?page={{ page_obj.previous_page_number }}{{ filtros }}">
+                    <i class="bi bi-chevron-left"></i> Anterior
+                </a>
+            {% endif %}
+            {% for num in page_obj.paginator.page_range %}
+                {% if num == page_obj.number %}
+                    <span class="btn btn-gold btn-sm" aria-current="page">{{ num }}</span>
+                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                    <a class="btn btn-soft btn-sm" href="?page={{ num }}{{ filtros }}">{{ num }}</a>
+                {% endif %}
+            {% endfor %}
+            {% if page_obj.has_next %}
+                <a class="btn btn-soft btn-sm" href="?page={{ page_obj.next_page_number }}{{ filtros }}">
+                    Siguiente <i class="bi bi-chevron-right"></i>
+                </a>
+            {% endif %}
+            {% endwith %}
+            <span class="ventas-paginacion-info">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }} · {{ page_obj.paginator.count }} ventas</span>
+        </nav>
+        {% endif %}
 
     </div>
 
