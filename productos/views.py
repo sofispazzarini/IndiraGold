@@ -27,6 +27,7 @@ from django.db import transaction
 from django.db.models import Q, Sum
 from decimal import Decimal, InvalidOperation
 from django.utils import timezone
+from pedidos.templatetags.moneda import pesos_numero
 from .stock import repartir_stock_en_colores, sincronizar_stock_variante, usa_stock_por_color
 from carritos.utils import (
     get_or_create_cart,
@@ -971,12 +972,18 @@ def gestion_medidas(request):
 def obtener_detalle_producto_ajax(request, producto_id):
     producto = get_object_or_404(Producto, id=producto_id)
     imagenes = [{'url': img.imagen.url} for img in producto.imagenes.all()]
-    if not imagenes: imagenes = [{'url': '/static/images/placeholder-product.png'}]
+    if not imagenes:
+        # El placeholder png nunca existió (404): recuadro gris con ícono, en línea
+        imagenes = [{'url': (
+            "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='400' height='500' viewBox='0 0 400 500'>"
+            "<rect width='400' height='500' fill='%23f3ede4'/><text x='200' y='260' font-family='sans-serif' font-size='28' "
+            "fill='%23b8a48a' text-anchor='middle'>Sin foto</text></svg>"
+        )}]
     html_ficha_tecnica = render_to_string('productos/_snippet_ficha_tecnica_render.html', {'producto': producto})
     
     return JsonResponse({
         'id': producto.id, 'nombre': producto.nombre, 'codigo': producto.codigo,
-        'tipo': producto.tipo, 'precio': f"{producto.precio:,.2f}", 'stock': producto.stock,
+        'tipo': producto.tipo, 'precio': pesos_numero(producto.precio), 'stock': producto.stock,
         'activo': producto.activo, 'imagenes': imagenes, 'ficha_tecnica_html': html_ficha_tecnica,
         'url_editar': reverse('productos:editar_producto', args=[producto.id]),
         'url_eliminar': reverse('productos:eliminar_producto', args=[producto.id]),
