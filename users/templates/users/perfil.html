@@ -686,7 +686,7 @@
 
         <div class="form-group">
           <label class="form-label">Teléfono</label>
-          <input type="text" name="telefono" class="form-input solo-numeros" inputmode="numeric" pattern="[0-9]*" maxlength="20" value="{{ cliente.telefono }}" placeholder="Tu teléfono">
+          <input type="tel" name="telefono" class="form-input solo-telefono" inputmode="tel" pattern="\+?[0-9]*" maxlength="20" value="{{ cliente.telefono }}" placeholder="Ej: +5492216375660" title="Solo números, con un + opcional al principio">
         </div>
 
         <div class="form-group">
@@ -912,16 +912,18 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   });
 
-  // Solo números
-  document.querySelectorAll('.solo-numeros').forEach(input => {
+  // Teléfono: números y un + al principio. Los atajos (Ctrl/Cmd + A, C, V, X, Z) siguen andando
+  document.querySelectorAll('.solo-telefono').forEach(input => {
     input.addEventListener('keydown', function(e) {
-      if (e.key.length === 1 && !/[0-9]/.test(e.key)) {
+      if (e.ctrlKey || e.metaKey || e.altKey || e.key.length !== 1) return;
+      const esMasAlPrincipio = e.key === '+' && input.selectionStart === 0 && !input.value.includes('+');
+      if (!/[0-9]/.test(e.key) && !esMasAlPrincipio) {
         e.preventDefault();
       }
     });
     input.addEventListener('paste', function(e) {
-      const paste = (e.clipboardData || window.clipboardData).getData('text');
-      if (!/^\d+$/.test(paste)) {
+      const paste = (e.clipboardData || window.clipboardData).getData('text').trim();
+      if (!/^\+?\d+$/.test(paste)) {
         e.preventDefault();
       }
     });
