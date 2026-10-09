@@ -627,6 +627,7 @@ def eliminar_foto_galeria(request, foto_id):
     messages.success(request, "Foto eliminada de la galería.")
     return redirect('productos:editar_producto', prod_id=producto_id)
 @admin_required
+@require_POST
 def eliminar_esquema_tecnico(request, prod_id):
     """
     Borra la imagen técnica del producto y deja el campo vacío.
@@ -643,6 +644,7 @@ def eliminar_esquema_tecnico(request, prod_id):
     
     return redirect('productos:editar_producto', prod_id=prod_id)
 @admin_required
+@require_POST
 def eliminar_producto(request, prod_id):
     producto = get_object_or_404(Producto, id=prod_id)
     subcat_id = producto.subcategoria.id if producto.subcategoria else None
