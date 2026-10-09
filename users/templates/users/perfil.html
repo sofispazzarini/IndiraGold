@@ -165,7 +165,9 @@
     font-size: 0.9rem;
     color: var(--muted);
     margin-bottom: 1rem;
+    overflow-wrap: anywhere; /* emails largos parten línea en vez de ensanchar la pantalla */
   }
+  .avatar-info { min-width: 0; }
 
   .avatar-member {
     display: inline-flex;
@@ -268,9 +270,10 @@
 
   .form-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 1.5rem 2rem;
   }
+  .form-grid > * { min-width: 0; }
 
   .form-group {
     display: flex;
