@@ -7,30 +7,28 @@
         <div class="mb-2 d-flex align-items-center">
             <span><b>Cliente:</b> {{ cliente.user.first_name|title }} {{ cliente.user.last_name|title }} (DNI: {{ cliente.dni }})</span>
             {% if direcciones %}
-                <button type="button" class="btn btn-outline-info btn-sm ms-2" onclick="mostrarDireccionesModal()">Ver direcciones</button>
+                <button type="button" class="btn btn-outline-info btn-sm ms-2" data-bs-toggle="modal" data-bs-target="#direccionesModal">Ver direcciones</button>
             {% endif %}
         </div>
 
-        <!-- Modal de direcciones -->
-        <div id="direccionesModalBg" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.25); z-index:1050; align-items:center; justify-content:center;">
-            <div style="background:#fff; border-radius:12px; max-width:420px; width:90vw; margin:auto; box-shadow:0 4px 24px rgba(0,0,0,0.13); padding:28px 22px 18px 22px; position:relative;">
-                <button onclick="cerrarDireccionesModal()" style="position:absolute; top:10px; right:16px; border:none; background:transparent; font-size:1.5rem; color:#888;">&times;</button>
-                <h5 class="mb-3">Direcciones registradas</h5>
-                <ul style="margin-bottom:0;">
-                {% for d in direcciones %}
-                    <li><strong>{{ d.etiqueta }}</strong>: {{ d.calle }} {{ d.numero }}, {{ d.ciudad }}, {{ d.provincia }} (CP: {{ d.codigo_postal }}){% if d.referencia %} - Ref: {{ d.referencia }}{% endif %}</li>
-                {% endfor %}
-                </ul>
+        <!-- Modal de direcciones: con scroll interno si hay muchas; cierra con ESC o tocando afuera -->
+        <div class="modal fade" id="direccionesModal" tabindex="-1" aria-labelledby="direccionesModalTitulo" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+                <div class="modal-content" style="border-radius:12px;">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="direccionesModalTitulo">Direcciones registradas</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                    </div>
+                    <div class="modal-body">
+                        <ul class="mb-0">
+                        {% for d in direcciones %}
+                            <li><strong>{{ d.etiqueta }}</strong>: {{ d.calle }} {{ d.numero }}, {{ d.ciudad }}, {{ d.provincia }} (CP: {{ d.codigo_postal }}){% if d.referencia %} - Ref: {{ d.referencia }}{% endif %}</li>
+                        {% endfor %}
+                        </ul>
+                    </div>
+                </div>
             </div>
         </div>
-        <script>
-        function mostrarDireccionesModal() {
-            document.getElementById('direccionesModalBg').style.display = 'flex';
-        }
-        function cerrarDireccionesModal() {
-            document.getElementById('direccionesModalBg').style.display = 'none';
-        }
-        </script>
         {% if mensaje %}
             <div class="alert {% if 'correctamente' in mensaje %}alert-success{% else %}alert-danger{% endif %} mt-3">{{ mensaje }}</div>
         {% endif %}
