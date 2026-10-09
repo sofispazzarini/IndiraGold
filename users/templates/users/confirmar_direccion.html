@@ -143,11 +143,7 @@
                 {{ error }}
                 {% if form.errors %}
                 <ul style="margin: 8px 0 0; padding-left: 18px;">
-                    {% for field, errors in form.errors.items %}
-                        {% for field_error in errors %}
-                        <li>{{ field_error }}</li>
-                        {% endfor %}
-                    {% endfor %}
+                    {% include '_errores_formulario.html' with form=form %}
                 </ul>
                 {% endif %}
             </div>

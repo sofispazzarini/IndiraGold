@@ -36,14 +36,7 @@
         {% endif %}
         {% if form.errors %}
             <div class="alert alert-danger mt-2">
-                {% for field in form %}
-                    {% for error in field.errors %}
-                        <div>{{ error }}</div>
-                    {% endfor %}
-                {% endfor %}
-                {% for error in form.non_field_errors %}
-                    <div>{{ error }}</div>
-                {% endfor %}
+                <ul style="margin:0; padding-left:1.1rem;">{% include '_errores_formulario.html' with form=form %}</ul>
             </div>
         {% endif %}
         <form method="post" id="direccionForm" autocomplete="off">

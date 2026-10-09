@@ -314,11 +314,7 @@
   {% if form.errors %}
   <div class="alert-error-custom">
     <ul>
-      {% for field, errors in form.errors.items %}
-        {% for error in errors %}
-        <li><strong>{{ field|capfirst }}:</strong> {{ error }}</li>
-        {% endfor %}
-      {% endfor %}
+      {% include '_errores_formulario.html' with form=form %}
     </ul>
   </div>
   {% endif %}

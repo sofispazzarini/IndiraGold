@@ -217,9 +217,7 @@
                 <div class="alert-custom alert-danger">
                     <i class="bi bi-exclamation-circle"></i>
                     <div>
-                        {% for field, errors in form.errors.items %}
-                            {% for error in errors %}<strong>{{ field|capfirst }}:</strong> {{ error }}<br>{% endfor %}
-                        {% endfor %}
+                        <ul style="margin:0; padding-left:1.1rem;">{% include '_errores_formulario.html' with form=form %}</ul>
                     </div>
                 </div>
             </div>

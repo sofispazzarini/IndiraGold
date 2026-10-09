@@ -453,7 +453,8 @@ def registro(request):
                 else:
                     show_verification_modal = True
         else:
-            error = 'Por favor revisa los datos ingresados.'
+            # La lista de errores del form ya se muestra en la caja "Revisá estos datos"
+            error = None
     else:
         if initial_data:
             form = RegistroUsuarioForm(initial=initial_data)

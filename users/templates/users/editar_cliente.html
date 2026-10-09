@@ -166,6 +166,7 @@
             <div class="form-group">
                 <label class="form-label">Nombre completo</label>
                 <input type="text" name="nombre" value="{{ form.nombre.value|default:'' }}" class="form-input" placeholder="Nombre y apellido">
+                {% if form.nombre.errors %}<span class="form-error">{{ form.nombre.errors.0 }}</span>{% endif %}
             </div>
             <div class="form-group">
                 <label class="form-label">Correo electronico</label>
@@ -174,7 +175,8 @@
             </div>
             <div class="form-group">
                 <label class="form-label">Telefono</label>
-                <input type="tel" name="telefono" value="{{ form.telefono.value|default:'' }}" class="form-input" placeholder="Ej: 11 1234-5678">
+                <input type="tel" name="telefono" value="{{ form.telefono.value|default:'' }}" class="form-input" placeholder="Ej: 2215551234">
+                {% if form.telefono.errors %}<span class="form-error">{{ form.telefono.errors.0 }}</span>{% endif %}
             </div>
             <div class="form-group">
                 <label class="form-label">DNI</label>

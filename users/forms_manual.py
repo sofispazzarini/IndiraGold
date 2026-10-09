@@ -123,6 +123,7 @@ class NuevaDireccionForm(forms.ModelForm):
     class Meta:
         model = Direccion
         fields = ['etiqueta', 'calle', 'numero', 'ciudad', 'provincia', 'codigo_postal', 'referencia']
+        labels = {'numero': 'Número', 'codigo_postal': 'Código postal'}
         widgets = {
             'etiqueta': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: Casa, Trabajo', 'maxlength': '50'}),
             'calle': forms.TextInput(attrs={'class': 'form-control', 'maxlength': '100'}),
@@ -135,6 +136,9 @@ class NuevaDireccionForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['provincia'].widget.attrs['class'] = 'form-control'
+        # Dirección nueva: sin "Casa" precargado (chocaba con la dirección que ya se llama así)
+        if not self.instance.pk and not self.is_bound:
+            self.initial['etiqueta'] = ''
 
     def clean_etiqueta(self):
         etiqueta = capitalizar_texto(self.cleaned_data['etiqueta'])

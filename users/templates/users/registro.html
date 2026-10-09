@@ -235,14 +235,7 @@
                     <div>
                     <p class="form-alert-title">Revisá estos datos</p>
                     <ul class="form-alert-list">
-                        {% for field, errors in form.errors.items %}
-                            {% for error in errors %}
-                                <li><strong>{{ field|capfirst }}:</strong> {{ error }}</li>
-                            {% endfor %}
-                        {% endfor %}
-                        {% for error in form.non_field_errors %}
-                            <li>{{ error }}</li>
-                        {% endfor %}
+                        {% include '_errores_formulario.html' with form=form %}
                     </ul>
                     </div>
                 </div>
