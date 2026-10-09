@@ -607,9 +607,13 @@
                 {% endif %}
             </div>
             <div style="padding:1rem; border-top:1px solid #e8dfd4;">
+                {% if admite_nota_credito %}
                 <button type="button" class="btn-act btn-hist" style="width:100%; justify-content:center;" data-bs-toggle="modal" data-bs-target="#modalCambio">
                     <i class="bi bi-plus-circle"></i> Registrar cambio
                 </button>
+                {% else %}
+                <div style="font-size:.75rem; color:#9c8c7c; text-align:center;">Los cambios se registran sobre pedidos confirmados.</div>
+                {% endif %}
             </div>
         </div>
 
@@ -690,12 +694,13 @@
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label" style="font-size:0.8rem; font-weight:600;">Producto devuelto (del pedido)</label>
-                        <select name="variante_devuelta" class="form-select" required style="border-radius:8px;">
+                        <select name="item_devuelto" class="form-select" required style="border-radius:8px;">
                             <option value="">Seleccionar...</option>
-                            {% for item in items %}
-                            <option value="{{ item.variante.id }}|{{ item.color_nombre|default:'' }}">{{ item.variante.producto.nombre }} - Talle {{ item.variante.talle.nombre }}{% if item.color_nombre %} - {{ item.color_nombre }}{% endif %}</option>
+                            {% for item, disponibles in items_cambiables %}
+                            <option value="{{ item.id }}" {% if not disponibles %}disabled{% endif %}>{{ item.variante.producto.nombre }} - Talle {{ item.variante.talle.nombre }}{% if item.color_nombre %} - {{ item.color_nombre }}{% endif %} · ${{ item.precio_unitario }} ({{ disponibles }} para cambiar)</option>
                             {% endfor %}
                         </select>
+                        <small style="color:#9c8c7c;">Si el producto entregado vale distinto, la diferencia se suma al saldo del pedido o queda como nota de crédito.</small>
                     </div>
                     <div class="mb-3">
                         <label class="form-label" style="font-size:0.8rem; font-weight:600;">Producto entregado (con stock)</label>

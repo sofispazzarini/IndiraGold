@@ -763,6 +763,7 @@ def detalle_pedido(request, pedido_id):
         'subtotal_items': sum((item.precio_total for item in pedido.items.all()), Decimal('0.00')),
         'items_devolvibles': [(item, unidades_devolvibles(item)) for item in pedido.items.all()],
         'admite_nota_credito': pedido.estado in Pedido.ESTADOS_CON_STOCK_DESCONTADO,
+        'items_cambiables': [(item, unidades_cambiables(item)) for item in pedido.items.all()],
         'items': pedido.items.all(),
         'variantes_disponibles': variantes_disponibles,
     }
@@ -3621,14 +3622,32 @@ def registrar_cambio(request, pedido_id):
     pedido = get_object_or_404(Pedido, pk=pedido_id)
 
     if request.method == 'POST':
-        # Los valores llegan como "<variante_id>|<color>" (color vacío si el talle no usa stock por color)
-        variante_devuelta_id, _, color_devuelto = (request.POST.get('variante_devuelta') or '').partition('|')
+        if pedido.estado not in Pedido.ESTADOS_CON_STOCK_DESCONTADO:
+            messages.error(request, 'Solo se pueden registrar cambios en pedidos confirmados (pago aceptado en adelante).')
+            return redirect('pedidos:detalle_pedido', pedido_id=pedido.id)
+
+        # Devuelto: id del ítem del pedido. Entregado: "<variante_id>|<color>" (color vacío si el talle no usa stock por color)
+        item_devuelto = pedido.items.select_related('variante__producto', 'variante__talle').filter(
+            id=request.POST.get('item_devuelto') or None
+        ).first()
         variante_entregada_id, _, color_entregado = (request.POST.get('variante_entregada') or '').partition('|')
         motivo = request.POST.get('motivo', '')
 
-        if variante_devuelta_id and variante_entregada_id:
-            variante_devuelta = get_object_or_404(Variante, pk=variante_devuelta_id)
-            variante_entregada = get_object_or_404(Variante, pk=variante_entregada_id)
+        if item_devuelto and variante_entregada_id:
+            variante_devuelta = item_devuelto.variante
+            variante_entregada = get_object_or_404(Variante.objects.select_related('producto', 'talle'), pk=variante_entregada_id)
+
+            if unidades_cambiables(item_devuelto) <= 0:
+                messages.error(
+                    request,
+                    f'Ya se cambiaron o devolvieron todas las unidades compradas de {variante_devuelta.producto.nombre} '
+                    f'(talle {variante_devuelta.talle.nombre}).'
+                )
+                return redirect('pedidos:detalle_pedido', pedido_id=pedido.id)
+
+            # Diferencia de precio: lo que vale hoy lo entregado contra lo que se pagó por lo devuelto
+            diferencia = precio_unitario_vigente(variante_entregada) - item_devuelto.precio_unitario
+            detalle_diferencia = ''
 
             try:
                 with transaction.atomic():
@@ -3636,7 +3655,22 @@ def registrar_cambio(request, pedido_id):
                     descontar_stock(variante_entregada, 1, color_entregado or None)
 
                     # Sumar stock al producto devuelto, en el color que se había vendido
-                    reponer_stock(variante_devuelta, 1, color_devuelto or None)
+                    reponer_stock(variante_devuelta, 1, item_devuelto.color_nombre)
+
+                    if diferencia > 0:
+                        # El cliente tiene que abonar la diferencia: se suma al total y al saldo del pedido
+                        pedido.total += diferencia
+                        pedido.deuda = max(pedido.total - pedido.monto_pagado, Decimal('0.00'))
+                        pedido.save(update_fields=['total', 'deuda'])
+                        detalle_diferencia = f' El cliente debe abonar ${diferencia} de diferencia (quedó en el saldo del pedido).'
+                    elif diferencia < 0:
+                        # A favor del cliente: queda como nota de crédito vigente
+                        NotaCredito.objects.create(
+                            pedido=pedido,
+                            monto=-diferencia,
+                            motivo=f'Diferencia a favor por cambio de {variante_devuelta.producto.nombre} por {variante_entregada.producto.nombre}',
+                        )
+                        detalle_diferencia = f' Se generó una nota de crédito por ${-diferencia} a favor del cliente.'
 
                     # Crear registro de cambio
                     Cambio.objects.create(
@@ -3651,11 +3685,21 @@ def registrar_cambio(request, pedido_id):
                 messages.error(request, str(error))
                 return redirect('pedidos:detalle_pedido', pedido_id=pedido.id)
 
-            messages.success(request, 'Cambio registrado y stock actualizado.')
+            messages.success(request, f'Cambio registrado y stock actualizado.{detalle_diferencia}')
         else:
-            messages.error(request, 'Debes seleccionar ambas variantes.')
+            messages.error(request, 'Debes seleccionar el producto devuelto y el entregado.')
 
     return redirect('pedidos:detalle_pedido', pedido_id=pedido.id)
+
+
+def unidades_cambiables(pedido_item):
+    """Unidades de un ítem que todavía se pueden cambiar: lo comprado menos los cambios ya
+    registrados de ese talle en el pedido y lo devuelto con notas de crédito."""
+    cambios_previos = Cambio.objects.filter(
+        pedido=pedido_item.pedido,
+        variante_devuelta=pedido_item.variante,
+    ).count()
+    return max(unidades_devolvibles(pedido_item) - cambios_previos, 0)
 
 
 def unidades_devolvibles(pedido_item):
