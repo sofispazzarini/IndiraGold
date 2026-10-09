@@ -545,6 +545,25 @@
 
 <div class="ventas-wrapper">
 
+    <div id="avisoVentaRegistrada" class="alert alert-success rounded-4 border-0 shadow-sm" style="display:none; margin-bottom:1.25rem;">
+        <i class="bi bi-check-circle me-2"></i><span id="avisoVentaTexto"></span>
+        <a id="avisoVentaTicket" href="#" target="_blank" class="btn btn-sm btn-dark rounded-pill ms-2">Imprimir ticket de cambio</a>
+    </div>
+    <script>
+        // Confirmación de la venta recién registrada, con acceso directo al ticket
+        (function(){
+            let datos = null
+            try{
+                datos = JSON.parse(sessionStorage.getItem('ventaRegistrada') || 'null')
+                sessionStorage.removeItem('ventaRegistrada')
+            }catch(error){}
+            if(!datos) return
+            document.getElementById('avisoVentaTexto').textContent = `${datos.mensaje || 'Venta registrada'} (venta #${datos.venta_id}).`
+            document.getElementById('avisoVentaTicket').href = `/pedidos/venta-local/${datos.venta_id}/ticket-cambio/`
+            document.getElementById('avisoVentaRegistrada').style.display = 'block'
+        })()
+    </script>
+
     <div class="ventas-hero">
 
         <div>
@@ -2130,6 +2149,10 @@ document.getElementById(
 
             if(data.success){
 
+                // Se guarda la confirmación para mostrarla después de recargar (antes no había ningún aviso)
+                try{
+                    sessionStorage.setItem('ventaRegistrada', JSON.stringify({ mensaje: data.mensaje, venta_id: data.venta_id }))
+                }catch(error){}
                 location.reload()
 
             }else{
