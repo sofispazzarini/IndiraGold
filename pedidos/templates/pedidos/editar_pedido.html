@@ -340,9 +340,7 @@
                             <select name="nueva_variante_id" class="modern-select">
                                 <option value="">-- Seleccionar producto --</option>
                                 {% for variante in variantes_disponibles %}
-                                <option value="{{ variante.id }}">
-                                    {{ variante.producto.nombre }} - Talle {{ variante.talle.nombre }} - ${{ variante.precio }}
-                                </option>
+                                <option value="{{ variante.valor }}">{{ variante.etiqueta }}</option>
                                 {% endfor %}
                             </select>
                         </div>

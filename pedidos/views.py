@@ -30,7 +30,7 @@ from .forms import GastoForm, ConfiguracionEnvioForm, ConfiguracionPagoForm
 from pedidos.forms import GastoForm, ConfiguracionEnvioForm, ConfiguracionPagoForm
 from .models import Gasto, Pedido, PedidoItem
 from carritos.models import Carrito, CarritoItem
-from carritos.utils import clear_cart_session, get_or_create_cart, vincular_carrito_con_usuario, get_cart_seconds_left, refrescar_precios_carrito
+from carritos.utils import clear_cart_session, get_or_create_cart, vincular_carrito_con_usuario, get_cart_seconds_left, refrescar_precios_carrito, precio_unitario_vigente
 from users.models import Cliente, Direccion, direcciones_sin_duplicados
 from productos.models import Variante, Oferta
 from productos.stock import descontar_stock, reponer_stock, stock_disponible, validar_stock
@@ -690,6 +690,31 @@ def eliminar_gasto(request, gasto_id):
     return redirect('pedidos:listado_gastos')
 
 
+def opciones_variantes_con_stock():
+    """Opciones "<variante_id>|<color>" de talles (y colores, si el talle tiene stock por color)
+    con stock, para elegir qué producto se entrega en cambios o se agrega a un pedido."""
+    opciones = []
+    for variante in Variante.objects.filter(
+        activa=True,
+        stock__gt=0
+    ).select_related('producto', 'talle').prefetch_related('variante_colores__color').order_by('producto__nombre', 'talle__nombre'):
+        colores_activos = [vc for vc in variante.variante_colores.all() if vc.activo]
+        etiqueta = f'{variante.producto.nombre} - Talle {variante.talle.nombre}'
+        if colores_activos:
+            for vc in colores_activos:
+                if vc.stock > 0:
+                    opciones.append({
+                        'valor': f'{variante.id}|{vc.color.nombre}',
+                        'etiqueta': f'{etiqueta} - {vc.color.nombre} (Stock: {vc.stock})',
+                    })
+        else:
+            opciones.append({
+                'valor': f'{variante.id}|',
+                'etiqueta': f'{etiqueta} (Stock: {variante.stock})',
+            })
+    return opciones
+
+
 @admin_required
 def detalle_pedido(request, pedido_id):
     """
@@ -716,25 +741,7 @@ def detalle_pedido(request, pedido_id):
     saldo_pendiente = pedido.total - pedido.monto_pagado
 
     # Talles (y colores, si el talle tiene stock por color) disponibles para cambios
-    variantes_disponibles = []
-    for variante in Variante.objects.filter(
-        activa=True,
-        stock__gt=0
-    ).select_related('producto', 'talle').prefetch_related('variante_colores__color').order_by('producto__nombre', 'talle__nombre'):
-        colores_activos = [vc for vc in variante.variante_colores.all() if vc.activo]
-        etiqueta = f'{variante.producto.nombre} - Talle {variante.talle.nombre}'
-        if colores_activos:
-            for vc in colores_activos:
-                if vc.stock > 0:
-                    variantes_disponibles.append({
-                        'valor': f'{variante.id}|{vc.color.nombre}',
-                        'etiqueta': f'{etiqueta} - {vc.color.nombre} (Stock: {vc.stock})',
-                    })
-        else:
-            variantes_disponibles.append({
-                'valor': f'{variante.id}|',
-                'etiqueta': f'{etiqueta} (Stock: {variante.stock})',
-            })
+    variantes_disponibles = opciones_variantes_con_stock()
 
     context = {
         'pedido': pedido,
@@ -761,93 +768,107 @@ def editar_pedido(request, pedido_id):
         return redirect('pedidos:detalle_pedido', pedido_id=pedido.id)
     
     if request.method == 'POST':
-        with transaction.atomic():
-            # Procesar eliminación de items
-            items_a_eliminar = request.POST.getlist('eliminar_item')
-            for item_id in items_a_eliminar:
-                try:
-                    item = PedidoItem.objects.get(id=item_id, pedido=pedido)
-                    item.delete()
-                except PedidoItem.DoesNotExist:
-                    pass
-            
-            # Procesar cambios de cantidad
-            items = PedidoItem.objects.filter(pedido=pedido)
-            total_nuevo = Decimal('0.00')
-            
-            for item in items:
-                cantidad_key = f'cantidad_{item.id}'
-                if cantidad_key in request.POST:
+        # Si el pedido ya descontó stock (aceptado en adelante), los cambios de cantidad o de
+        # ítems mueven stock (talle y color); si está pendiente, solo se valida que alcance.
+        stock_descontado = pedido.estado in Pedido.ESTADOS_CON_STOCK_DESCONTADO
+        try:
+            with transaction.atomic():
+                ids_a_eliminar = set(request.POST.getlist('eliminar_item'))
+                for item in list(PedidoItem.objects.filter(pedido=pedido).select_related('variante__producto', 'variante__talle')):
                     try:
-                        nueva_cantidad = int(request.POST[cantidad_key])
-                        if nueva_cantidad > 0:
-                            item.cantidad = nueva_cantidad
-                            item.precio_total = item.precio_unitario * nueva_cantidad
-                            item.save()
-                            total_nuevo += item.precio_total
+                        nueva_cantidad = int(request.POST.get(f'cantidad_{item.id}', item.cantidad))
+                    except (TypeError, ValueError):
+                        nueva_cantidad = item.cantidad
+
+                    if str(item.id) in ids_a_eliminar or nueva_cantidad <= 0:
+                        if stock_descontado:
+                            reponer_stock(item.variante, item.cantidad, item.color_nombre)
+                        item.delete()
+                        continue
+
+                    diferencia = nueva_cantidad - item.cantidad
+                    if diferencia > 0:
+                        if stock_descontado:
+                            descontar_stock(item.variante, diferencia, item.color_nombre)
                         else:
-                            item.delete()
-                    except (ValueError, TypeError):
-                        total_nuevo += item.precio_total
-                else:
-                    total_nuevo += item.precio_total
-            
-            # Agregar nuevo item si se proporciona
-            variante_id = request.POST.get('nueva_variante_id')
-            cantidad_nueva = request.POST.get('nueva_cantidad')
-            
-            if variante_id and cantidad_nueva:
-                try:
-                    variante = Variante.objects.get(id=variante_id)
-                    cantidad_nueva_int = int(cantidad_nueva)
-                    if cantidad_nueva_int > 0:
-                        precio_unitario = variante.precio or variante.producto.precio
-                        precio_total = precio_unitario * cantidad_nueva_int
+                            validar_stock(item.variante, nueva_cantidad, item.color_nombre)
+                    elif diferencia < 0 and stock_descontado:
+                        reponer_stock(item.variante, -diferencia, item.color_nombre)
+
+                    if diferencia:
+                        item.cantidad = nueva_cantidad
+                        item.precio_total = item.precio_unitario * nueva_cantidad
+                        item.save()
+
+                # Agregar nuevo item ("<variante_id>|<color>")
+                variante_valor = request.POST.get('nueva_variante_id') or ''
+                cantidad_nueva = request.POST.get('nueva_cantidad')
+                if variante_valor and cantidad_nueva:
+                    variante_id, _, color_nuevo = variante_valor.partition('|')
+                    variante = Variante.objects.filter(id=variante_id).select_related('producto', 'talle').first()
+                    try:
+                        cantidad_nueva_int = int(cantidad_nueva)
+                    except (TypeError, ValueError):
+                        cantidad_nueva_int = 0
+                    if variante and cantidad_nueva_int > 0:
+                        if stock_descontado:
+                            descontar_stock(variante, cantidad_nueva_int, color_nuevo or None)
+                        else:
+                            validar_stock(variante, cantidad_nueva_int, color_nuevo or None)
+                        precio_unitario = precio_unitario_vigente(variante)
                         PedidoItem.objects.create(
                             pedido=pedido,
                             variante=variante,
+                            color_nombre=color_nuevo or None,
                             cantidad=cantidad_nueva_int,
                             precio_unitario=precio_unitario,
-                            precio_total=precio_total,
+                            precio_total=precio_unitario * cantidad_nueva_int,
                         )
-                        total_nuevo += precio_total
-                except (Variante.DoesNotExist, ValueError, TypeError):
-                    pass
-            pedido.metodo_entrega = request.POST.get('metodo_entrega', pedido.metodo_entrega)
-            pedido.codigo_postal = request.POST.get('codigo_postal', pedido.codigo_postal)
-            pedido.localidad = request.POST.get('localidad', pedido.localidad)
-            pedido.calle_numero = request.POST.get('calle_numero', pedido.calle_numero)
 
-            # Si cambia a domicilio, podrías disparar aquí la lógica del costo
-            if pedido.metodo_entrega == 'domicilio':
-                # Aquí podrías poner el valor que venga del cálculo de Correo Argentino
-                pedido.costo_envio = Decimal(request.POST.get('costo_envio', '0.00'))
-            else:
-                pedido.costo_envio = Decimal('0.00')
-            # Actualizar dirección
-            direccion_info = request.POST.get('direccion_info', '').strip()
-            if direccion_info:
-                pedido.direccion_info = direccion_info
-            
-            # Actualizar estado (mismas reglas y movimiento de stock que en la gestión de pedidos)
-            nuevo_estado = request.POST.get('estado', pedido.estado)
-            if nuevo_estado in dict(Pedido.ESTADOS) and nuevo_estado != pedido.estado:
-                try:
+                items_finales = list(PedidoItem.objects.filter(pedido=pedido))
+                if not items_finales:
+                    raise ValueError(
+                        'El pedido tiene que tener al menos un producto. Si ya no corresponde, cambiá su estado a Cancelado.'
+                    )
+
+                pedido.metodo_entrega = request.POST.get('metodo_entrega', pedido.metodo_entrega)
+                pedido.codigo_postal = request.POST.get('codigo_postal', pedido.codigo_postal)
+                pedido.localidad = request.POST.get('localidad', pedido.localidad)
+                pedido.calle_numero = request.POST.get('calle_numero', pedido.calle_numero)
+
+                # El costo de envío se conserva; solo el retiro en local no tiene envío
+                if pedido.metodo_entrega == 'local':
+                    pedido.costo_envio = Decimal('0.00')
+
+                # Actualizar dirección
+                direccion_info = request.POST.get('direccion_info', '').strip()
+                if direccion_info:
+                    pedido.direccion_info = direccion_info
+
+                # Actualizar estado (mismas reglas y movimiento de stock que en la gestión de pedidos)
+                nuevo_estado = request.POST.get('estado', pedido.estado)
+                if nuevo_estado in dict(Pedido.ESTADOS) and nuevo_estado != pedido.estado:
                     cambiar_estado_pedido(pedido, nuevo_estado)
-                except ValueError as error:
-                    transaction.set_rollback(True)
-                    messages.error(request, str(error))
-                    return redirect('pedidos:editar_pedido', pedido_id=pedido.id)
-            
-            # Guardar el pedido con el total recalculado
-            pedido.total = total_nuevo
-            pedido.save()
-            
-            messages.success(request, 'Pedido actualizado correctamente.')
-            return redirect('pedidos:detalle_pedido', pedido_id=pedido.id)
-    
+
+                # Total = ítems - descuento + envío, y la deuda acompaña al total
+                subtotal_items = sum((item.precio_total for item in items_finales), Decimal('0.00'))
+                if pedido.descuento_porcentaje:
+                    pedido.descuento_monto = monto_decimal(
+                        subtotal_items * Decimal(pedido.descuento_porcentaje) / Decimal(100)
+                    )
+                pedido.descuento_monto = min(pedido.descuento_monto or Decimal('0.00'), subtotal_items)
+                pedido.total = subtotal_items - pedido.descuento_monto + (pedido.costo_envio or Decimal('0.00'))
+                pedido.deuda = max(pedido.total - pedido.monto_pagado, Decimal('0.00'))
+                pedido.save()
+        except ValueError as error:
+            messages.error(request, str(error))
+            return redirect('pedidos:editar_pedido', pedido_id=pedido.id)
+
+        messages.success(request, 'Pedido actualizado correctamente.')
+        return redirect('pedidos:detalle_pedido', pedido_id=pedido.id)
+
     # GET: mostrar form
-    variantes_disponibles = Variante.objects.filter(activa=True, stock__gt=0).select_related('producto', 'talle')
+    variantes_disponibles = opciones_variantes_con_stock()
     items = pedido.items.all().select_related('variante__producto', 'variante__talle')
     
     context = {
