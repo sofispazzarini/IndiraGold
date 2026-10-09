@@ -971,7 +971,6 @@ def editar_pedido(request, pedido_id):
     }
     return render(request, 'pedidos/editar_pedido.html', context)
 
-@login_required
 def quitar_items_no_disponibles(request, carrito):
     """Productos o talles que el admin desactivó después de que el cliente los agregó: se sacan
     del carrito con un aviso (antes se podían comprar igual). Devuelve True si quitó alguno."""
@@ -991,6 +990,7 @@ def quitar_items_no_disponibles(request, carrito):
     return bool(no_disponibles)
 
 
+@login_required
 def checkout_view(request):
     # Administradores no pueden hacer checkout
     if request.user.is_superuser or request.user.is_staff:
