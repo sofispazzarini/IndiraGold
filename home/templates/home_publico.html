@@ -353,7 +353,7 @@ function scrollOfertas(dir) {
               </svg>
             </button>
             <div class="faq-answer">
-              <p>{{ consulta.respuesta }}</p>
+              <p>{{ consulta.respuesta|linebreaksbr }}</p>
             </div>
           </div>
           {% endif %}
@@ -851,7 +851,7 @@ function scrollOfertas(dir) {
   .faq-icon { flex-shrink: 0; color: #b8922a; transition: transform .2s; }
   .faq-item.open .faq-icon { transform: rotate(180deg); }
   .faq-answer { max-height: 0; overflow: hidden; transition: max-height .25s ease, padding .25s ease; }
-  .faq-item.open .faq-answer { max-height: 500px; }
+  /* La altura la pone toggleFaq con el alto real del contenido (antes cortaba a 500px) */
   .faq-answer p { padding: 0 1.25rem 1rem; margin: 0; font-size: .9rem; color: #5a5149; line-height: 1.65; }
 
   /* CONTACTO */
@@ -1769,10 +1769,17 @@ function scrollOfertas(dir) {
 
     // Cerrar otros del mismo tema
     const tema = item.closest('.faq-tema');
-    tema.querySelectorAll('.faq-item.open').forEach(el => el.classList.remove('open'));
+    tema.querySelectorAll('.faq-item.open').forEach(el => {
+      el.classList.remove('open');
+      el.querySelector('.faq-answer').style.maxHeight = '';
+    });
 
-    // Toggle actual
-    if (!wasOpen) item.classList.add('open');
+    // Toggle actual: se abre con el alto real de la respuesta, sea corta o larga
+    if (!wasOpen) {
+      item.classList.add('open');
+      const respuesta = item.querySelector('.faq-answer');
+      respuesta.style.maxHeight = respuesta.scrollHeight + 'px';
+    }
   }
 
   // CARROUSEL AUTO-PLAY
