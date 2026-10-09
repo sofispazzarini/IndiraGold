@@ -11,6 +11,26 @@
     gap:.4rem;
     }
 
+    /* Precio a pagar: destacado (antes no tenía estilos y se veía más chico que el tachado) */
+    .product-price{
+    font-family:'Cormorant Garamond', serif;
+    font-size:2.4rem;
+    font-weight:700;
+    line-height:1.1;
+    color:#6E0E2E;
+    display:flex;
+    align-items:baseline;
+    gap:.25rem;
+    }
+
+    .product-price .currency{
+    font-size:1.4rem;
+    }
+
+    @media (max-width:480px){
+    .product-price{ font-size:2rem; }
+    }
+
     .product-price-old{
     font-size:1.1rem;
     color:#9ca3af;
