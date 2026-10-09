@@ -828,6 +828,8 @@ def gestion_subcategorias(request, cat_id):
                 mensaje = form.errors['nombre'][0]
             else:
                 mensaje = 'Por favor revisa los datos ingresados.'
+            # Antes el mensaje se calculaba pero no se mostraba: la página recargaba sin aviso
+            messages.error(request, mensaje)
     else:
         form = SubcategoriaSoloNombreForm(categoria=categoria)
     subcategorias = categoria.subcategorias.all().order_by('nombre')
