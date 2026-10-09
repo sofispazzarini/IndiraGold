@@ -646,6 +646,9 @@ def _build_home_context(request):
 		try:
 			carrito = get_or_create_cart(request)
 			carrito_db = carrito  # Guardar referencia para el timer
+			# El mini-carrito muestra el precio vigente (si cambió una oferta, no el guardado)
+			from .utils import refrescar_precios_carrito
+			refrescar_precios_carrito(carrito)
 			if carrito is not None:
 				for item_db in carrito.items.all().select_related('variante__producto'):
 					color_hex = _resolve_item_color_hex(item_db)

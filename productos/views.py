@@ -259,6 +259,9 @@ def detalle_producto(request, producto_id):
             carrito_db = carrito  # Guardar para el timer
             if carrito is None:
                 raise Exception("Admin user")
+            # El mini-carrito muestra el precio vigente (si cambió una oferta, no el guardado)
+            from carritos.utils import refrescar_precios_carrito
+            refrescar_precios_carrito(carrito)
             for item_db in carrito.items.all().select_related('variante__producto'):
                 color_hex = _normalize_hex(getattr(item_db, 'color_hex', None))
                 if not color_hex and item_db.color_nombre:

@@ -128,6 +128,9 @@ class HomePublicaView(TemplateView):
 
                 carrito = get_or_create_cart(self.request)
                 carrito_db = carrito  # Guardar para el timer
+                # El mini-carrito muestra el precio vigente (si cambió una oferta, no el guardado)
+                from carritos.utils import refrescar_precios_carrito
+                refrescar_precios_carrito(carrito)
                 if carrito is None:
                     raise Exception("Admin user")
                 for item_db in carrito.items.all().select_related('variante__producto'):
