@@ -25,6 +25,7 @@ from .forms import (
 from django.db.models import Q, Sum
 from decimal import Decimal
 from django.utils import timezone
+from .stock import sincronizar_stock_variante
 from carritos.utils import (
     get_or_create_cart,
     precio_unitario_vigente,
@@ -115,6 +116,44 @@ def sincronizar_qrs_variante_color(variante, regenerar_qr=False):
             vc.save(update_fields=['qr_code'])
 
     return VarianteColor.objects.filter(variante=variante, activo=True).select_related('color')
+
+def leer_colores_con_stock(request):
+    """Lee los colores del form de talle ("nombre|#hex") con su stock ("stock_color", en el
+    mismo orden). Si un color se repite, se suman sus stocks."""
+    colores = {}
+    datos = request.POST.getlist('colores')
+    stocks = request.POST.getlist('stock_color')
+    for index, dato in enumerate(datos):
+        dato = dato.strip()
+        if not dato:
+            continue
+        if '|' in dato:
+            nombre, codigo_hex = dato.split('|', 1)
+        else:
+            nombre, codigo_hex = dato, '#888888'
+        nombre = nombre.strip()
+        try:
+            stock_color = max(int(stocks[index]), 0) if index < len(stocks) and stocks[index] != '' else 0
+        except (TypeError, ValueError):
+            stock_color = 0
+        clave = nombre.lower()
+        if clave in colores:
+            colores[clave]['stock'] += stock_color
+        else:
+            colores[clave] = {'nombre': nombre, 'hex': codigo_hex, 'stock': stock_color}
+    return list(colores.values())
+
+
+def color_desde_form(nombre, codigo_hex):
+    color_obj, created = Color.objects.get_or_create(
+        nombre=nombre,
+        defaults={'codigo_hex': codigo_hex}
+    )
+    if not created and color_obj.codigo_hex != codigo_hex:
+        color_obj.codigo_hex = codigo_hex
+        color_obj.save()
+    return color_obj
+
 
 # --- DECORADOR AUXILIAR ---
 def admin_required(view_func):
@@ -431,12 +470,15 @@ def agregar_producto(request, subcat_id):
                                 color_obj.codigo_hex = codigo_hex
                                 color_obj.save()
                             nueva_variante.colores.add(color_obj)
-                            vc, _ = VarianteColor.objects.get_or_create(
+                            vc, creado = VarianteColor.objects.get_or_create(
                                 variante=nueva_variante,
                                 color=color_obj,
                             )
-                            vc.stock = stock_color
+                            # Si el mismo color se cargó dos veces, se suman los stocks
+                            vc.stock = max(stock_color, 0) if creado else vc.stock + max(stock_color, 0)
                             vc.save()
+
+                    sincronizar_stock_variante(nueva_variante)
                     
                     # 4. VINCULAR MEDIDAS
                     medidas_data = v.get('medidas', [])
@@ -449,8 +491,7 @@ def agregar_producto(request, subcat_id):
                             tiro=m.get('tiro') or 0
                         )
                         nueva_variante.medidas.add(medida_obj)
-                producto.stock = stock_total
-                producto.save(update_fields=['stock'])
+                recalcular_stock_producto(producto)
             
             messages.success(request, 'Producto guardado correctamente.')
             return redirect('productos:productos_por_subcategoria', subcat_id=subcategoria.id)
@@ -510,10 +551,8 @@ def editar_producto(request, prod_id):
                             vc.save(update_fields=['stock'])
                         except ValueError:
                             pass
-                total_colores = sum(vc.stock for vc in variante.variante_colores.all())
-                if total_colores > 0:
-                    variante.stock = total_colores
-                    variante.save(update_fields=['stock'])
+                # Con colores, el stock del talle es siempre la suma de sus colores (aunque sea 0)
+                sincronizar_stock_variante(variante)
 
             if producto_debe_regenerar_qr(codigo_original, producto_editado.codigo):
                 for variante in producto_editado.variantes.all().prefetch_related('colores'):
@@ -921,27 +960,15 @@ def editar_variante(request, variante_id):
 
         var_editada = variante
 
-        # 1. CAPTURAR Y GUARDAR COLORES (múltiples)
-        colores_datos = request.POST.getlist('colores')
-        if colores_datos:
+        # 1. CAPTURAR Y GUARDAR COLORES (múltiples, cada uno con su stock)
+        colores_form = leer_colores_con_stock(request)
+        stock_por_color = {}
+        if colores_form:
             colores_objs = []
-            for dato in colores_datos:
-                dato = dato.strip()
-                if dato:
-                    # Formato: "nombre|#hex" o solo "nombre"
-                    if '|' in dato:
-                        nombre, codigo_hex = dato.split('|', 1)
-                    else:
-                        nombre = dato
-                        codigo_hex = '#888888'
-                    color_obj, created = Color.objects.get_or_create(
-                        nombre=nombre,
-                        defaults={'codigo_hex': codigo_hex}
-                    )
-                    if not created and color_obj.codigo_hex != codigo_hex:
-                        color_obj.codigo_hex = codigo_hex
-                        color_obj.save()
-                    colores_objs.append(color_obj)
+            for dato_color in colores_form:
+                color_obj = color_desde_form(dato_color['nombre'], dato_color['hex'])
+                colores_objs.append(color_obj)
+                stock_por_color[color_obj.id] = dato_color['stock']
             var_editada.colores.set(colores_objs)
         else:
             var_editada.colores.clear()
@@ -989,16 +1016,30 @@ def editar_variante(request, variante_id):
         else:
             sincronizar_qrs_variante_color(var_editada)
 
+        # Stock por color cargado en el form; con colores, el talle queda en la suma
+        for vc in VarianteColor.objects.filter(variante=var_editada):
+            if vc.color_id in stock_por_color:
+                vc.stock = stock_por_color[vc.color_id]
+                vc.save(update_fields=['stock'])
+        sincronizar_stock_variante(var_editada)
+
         messages.success(request, f"Talle {variante.talle.nombre} actualizado correctamente.")
         return redirect('productos:editar_producto', prod_id=producto.id)
 
     form = VarianteForm(instance=variante)
     
     # Pasamos los datos actuales para rellenar los inputs
+    stock_colores = {vc.color_id: vc.stock for vc in VarianteColor.objects.filter(variante=variante)}
+    colores_stock = [
+        {'color': color, 'stock': stock_colores.get(color.id, 0)}
+        for color in variante.colores.all()
+    ]
+
     return render(request, 'productos/editar_variante.html', {
         'form': form,
         'variante': variante,
         'producto': producto,
+        'colores_stock': colores_stock,
         'color_actual': variante.colores.first(),
         'medidas': variante.medidas.all()
     })
@@ -1023,28 +1064,17 @@ def agregar_variante(request, producto_id):
             qr_code=str(uuid.uuid4())
         )
 
-        colores_datos = request.POST.getlist('colores')
-        if colores_datos:
-            for dato in colores_datos:
-                dato = dato.strip()
-                if dato:
-                    if '|' in dato:
-                        nombre, codigo_hex = dato.split('|', 1)
-                    else:
-                        nombre = dato
-                        codigo_hex = '#888888'
-                    color_obj, created = Color.objects.get_or_create(
-                        nombre=nombre,
-                        defaults={'codigo_hex': codigo_hex}
-                    )
-                    if not created and color_obj.codigo_hex != codigo_hex:
-                        color_obj.codigo_hex = codigo_hex
-                        color_obj.save()
-                    nueva_variante.colores.add(color_obj)
-                    VarianteColor.objects.get_or_create(
-                        variante=nueva_variante,
-                        color=color_obj,
-                    )
+        # Cada color se guarda con su propio stock; el del talle es la suma
+        for dato_color in leer_colores_con_stock(request):
+            color_obj = color_desde_form(dato_color['nombre'], dato_color['hex'])
+            nueva_variante.colores.add(color_obj)
+            vc, _ = VarianteColor.objects.get_or_create(
+                variante=nueva_variante,
+                color=color_obj,
+            )
+            vc.stock = dato_color['stock']
+            vc.activo = True
+            vc.save()
 
         def limpiar_decimal(valor):
             if not valor:
@@ -1067,8 +1097,9 @@ def agregar_variante(request, producto_id):
                 )
                 nueva_variante.medidas.add(medida)
 
-        recalcular_stock_producto(producto)
         sincronizar_qrs_variante_color(nueva_variante)
+        sincronizar_stock_variante(nueva_variante)
+        recalcular_stock_producto(producto)
 
         messages.success(request, f"Talle {talle_nombre} agregado correctamente.")
         return redirect('productos:editar_producto', prod_id=producto.id)

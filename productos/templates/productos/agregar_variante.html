@@ -22,7 +22,8 @@
 
                 <div class="col-md-6">
                     <label class="small fw-bold text-muted text-uppercase mb-1">Stock de este talle</label>
-                    <input type="number" name="stock" class="form-control" value="0" min="0" placeholder="0">
+                    <input type="number" name="stock" id="stockTalleInput" class="form-control" value="0" min="0" placeholder="0">
+                    <small class="text-muted" id="stockTalleAyuda"></small>
                 </div>
 
                 <div class="col-12">
@@ -76,15 +77,36 @@ document.getElementById('btnAgregarColor').addEventListener('click', function() 
     if (msgVacio) msgVacio.remove();
 
     const html = `
-        <span class="d-inline-flex align-items-center px-2 py-1 rounded" style="background: #333;" title="${colorNombre}">
+        <span class="color-chip d-inline-flex align-items-center gap-1 px-2 py-1 rounded" style="background: #333;" title="${colorNombre}">
             <span style="display:inline-block; width:20px; height:20px; background-color:${colorHex}; border-radius:50%; border:2px solid #fff;"></span>
+            <span class="text-white small">${colorNombre}</span>
             <input type="hidden" name="colores" value="${colorNombre}|${colorHex}">
-            <button type="button" class="btn-close btn-close-white ms-1" style="font-size:0.4rem" onclick="this.parentElement.remove()"></button>
+            <input type="number" name="stock_color" class="form-control form-control-sm stock-color-input" value="0" min="0" style="width:64px; padding:2px 6px;" title="Stock de este color" oninput="recalcularStockTalle()">
+            <button type="button" class="btn-close btn-close-white ms-1" style="font-size:0.4rem" onclick="this.parentElement.remove(); recalcularStockTalle()"></button>
         </span>
     `;
     contenedor.insertAdjacentHTML('beforeend', html);
     document.getElementById('colorNombreInput').value = '';
+    recalcularStockTalle();
 });
+
+// Con colores, el stock del talle es la suma del stock de cada color
+function recalcularStockTalle() {
+    const inputs = document.querySelectorAll('#contenedorColores .stock-color-input');
+    const stockTalle = document.getElementById('stockTalleInput');
+    const ayuda = document.getElementById('stockTalleAyuda');
+    if (inputs.length) {
+        let total = 0;
+        inputs.forEach(i => { total += Math.max(0, parseInt(i.value || '0', 10) || 0); });
+        stockTalle.value = total;
+        stockTalle.readOnly = true;
+        ayuda.textContent = 'Se calcula sumando el stock de cada color.';
+    } else {
+        stockTalle.readOnly = false;
+        ayuda.textContent = '';
+    }
+}
+document.addEventListener('DOMContentLoaded', recalcularStockTalle);
 
 function agregarMedida() {
     const contenedor = document.getElementById('contenedorMedidas');

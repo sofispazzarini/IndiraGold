@@ -475,12 +475,19 @@
                 return;
             }
 
-            tempColores.push({
-                colorNombre: ninguno ? 'Sin color' : nombre,
-                colorHex: ninguno ? null : picker,
-                colorNinguno: ninguno,
-                stock: stockColor
-            });
+            const nombreFinal = ninguno ? 'Sin color' : nombre;
+            const existente = tempColores.find(c => (c.colorNombre || '').toLowerCase() === nombreFinal.toLowerCase());
+            if (existente) {
+                // El mismo color cargado dos veces: se suma el stock en vez de duplicarlo
+                existente.stock += stockColor;
+            } else {
+                tempColores.push({
+                    colorNombre: nombreFinal,
+                    colorHex: ninguno ? null : picker,
+                    colorNinguno: ninguno,
+                    stock: stockColor
+                });
+            }
             renderTempColores();
             actualizarStockVariante();
             document.getElementById('colorNombreModal').value = '';
