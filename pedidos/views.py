@@ -3292,11 +3292,13 @@ def registrar_venta_local(request):
             'success': False,
             'error': 'Formato de datos inválido'
         }, status=400)
-    except Exception as e:
+    except Exception:
         transaction.set_rollback(True)
+        # El detalle técnico va al log; a la pantalla, un mensaje entendible
+        logger.exception('Error al registrar una venta presencial')
         return JsonResponse({
             'success': False,
-            'error': f'Error al registrar venta: {str(e)}'
+            'error': 'No pudimos registrar la venta. Probá de nuevo en unos segundos.'
         }, status=400)
 
 
