@@ -655,12 +655,12 @@ def _build_home_context(request):
 						"nombre": item_db.variante.producto.nombre,
 						"precio": item_db.precio_unitario,
 						"cantidad": item_db.cantidad,
-						"subtotal": item_db.precio_total,
+						"subtotal": item_db.subtotal,
 						"color_nombre": item_db.color_nombre,
 						"color_hex": color_hex,
 					})
 					total_qty += item_db.cantidad
-					total_price += item_db.precio_total
+					total_price += item_db.subtotal
 
 				# Sincronizar sesión con BD para consistencia
 				carrito_sincronizado = {}

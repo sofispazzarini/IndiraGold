@@ -38,6 +38,15 @@ class CarritoItem(models.Model):
 
     def __str__(self):
         return f"{self.variante} x {self.cantidad}"
+
+    def save(self, *args, **kwargs):
+        # precio_total siempre refleja cantidad x precio_unitario, aunque solo se cambie la cantidad
+        self.precio_total = self.cantidad * (self.precio_unitario or 0)
+        update_fields = kwargs.get('update_fields')
+        if update_fields is not None and 'precio_total' not in update_fields:
+            kwargs['update_fields'] = list(update_fields) + ['precio_total']
+        super().save(*args, **kwargs)
+
     @property
     def subtotal(self):
         return self.cantidad * self.precio_unitario

@@ -1335,7 +1335,7 @@ def crear_pago(request):
 
         return redirect('pedidos:checkout')
 
-    subtotal_productos = sum(item.precio_total for item in items)
+    subtotal_productos = sum(item.subtotal for item in items)
     codigo_descuento = request.POST.get('codigo_descuento') or request.session.get('codigo_descuento')
     cupon, descuento_monto = calcular_descuento_cupon(subtotal_productos, codigo_descuento)
     factor_descuento = (
@@ -1527,7 +1527,7 @@ def crear_pago(request):
                 color_nombre=item.color_nombre,
                 cantidad=item.cantidad,
                 precio_unitario=item.precio_unitario,
-                precio_total=item.precio_total
+                precio_total=item.subtotal
             )
 
         enviar_email_confirmacion_pedido(pedido)
@@ -1635,7 +1635,7 @@ def pago_exitoso(request):
     )
 
     subtotal = sum(
-        item.precio_total for item in items
+        item.subtotal for item in items
     )
     cupon, descuento_monto = calcular_descuento_cupon(
         subtotal,
@@ -1736,7 +1736,7 @@ def pago_exitoso(request):
             color_nombre=item.color_nombre,
             cantidad=item.cantidad,
             precio_unitario=item.precio_unitario,
-            precio_total=item.precio_total
+            precio_total=item.subtotal
         )
 
         descontar_stock_variante(item.variante, item.cantidad)
