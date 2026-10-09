@@ -61,12 +61,14 @@ def _to_int(value) -> int | None:
         return None
 
 def precio_unitario_vigente(variante):
-    """Precio que se cobra hoy por una variante: precio propio (o el del producto)
-    con la oferta activa aplicada. Es el mismo para invitados y clientes logueados."""
+    """Precio que se cobra hoy por una variante: el precio publicado del producto
+    con la oferta activa aplicada. Es el mismo para invitados y clientes logueados.
+    El precio del producto manda: los talles no tienen precio propio editable y su
+    copia (Variante.precio) puede quedar vieja."""
     from decimal import Decimal
 
     producto = variante.producto
-    precio_base = variante.precio or producto.precio or Decimal('0')
+    precio_base = producto.precio or variante.precio or Decimal('0')
     oferta = producto.obtener_oferta_activa()
     if oferta:
         descuento = Decimal(oferta.descuento) / Decimal(100)

@@ -472,6 +472,11 @@ def editar_producto(request, prod_id):
             producto_editado.save()
             form.save_m2m()
 
+            # Los talles guardan una copia del precio: mantenerla igual al precio publicado
+            producto_editado.variantes.exclude(precio=producto_editado.precio).update(
+                precio=producto_editado.precio
+            )
+
             for variante in producto_editado.variantes.all():
                 for vc in variante.variante_colores.all():
                     color_stock_key = f'color_stock_{vc.id}'
@@ -1188,8 +1193,8 @@ def obtener_variantes_producto(request, producto_id):
                 'hex': color.codigo_hex
             })
 
-        # Usar precio de variante o del producto si es 0
-        precio_base = variante.precio if variante.precio > 0 else producto.precio
+        # El precio publicado es el del producto (el del talle solo si el producto no tiene)
+        precio_base = producto.precio or variante.precio
         # Aplicar descuento al precio
         precio_final = float(precio_base * (1 - descuento))
 

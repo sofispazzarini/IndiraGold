@@ -2771,8 +2771,8 @@ def registrar_venta_local(request):
                     )
                 }, status=400)
 
-            # Usar precio de variante o del producto si es 0
-            precio_base = variante.precio if variante.precio > 0 else variante.producto.precio
+            # El precio publicado es el del producto (el del talle solo si el producto no tiene)
+            precio_base = variante.producto.precio or variante.precio
 
             # Aplicar descuento si hay oferta activa
             oferta = variante.producto.obtener_oferta_activa()
