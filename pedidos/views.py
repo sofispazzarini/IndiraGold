@@ -2317,8 +2317,16 @@ def estadisticas_ventas(request):
 
         except ValueError:
 
+            # Fecha inválida: se avisa y se muestran los últimos 30 días (con el selector en 30 días)
+            messages.warning(request, 'Las fechas del período no son válidas: se muestran los últimos 30 días.')
+            tipo_periodo = '30dias'
             fecha_inicio = hoy - timedelta(days=30)
             fecha_fin = hoy
+
+        if fecha_inicio > fecha_fin:
+            # Rango invertido: se da vuelta en vez de mostrar todo en $0
+            messages.warning(request, 'La fecha "desde" era posterior a la fecha "hasta": se invirtió el período.')
+            fecha_inicio, fecha_fin = fecha_fin, fecha_inicio
 
     elif tipo_periodo == 'hoy':
 
@@ -2473,9 +2481,12 @@ def estadisticas_ventas(request):
     # Evolución diaria
     evolucion_diaria = []
 
-    for i in range(31):
+    # El gráfico sigue el período elegido (antes siempre mostraba los últimos 30 días); si el
+    # período es muy largo se muestran sus últimos 92 días para que el gráfico se lea
+    inicio_grafico = max(fecha_inicio, fecha_fin - timedelta(days=91))
+    for i in range((fecha_fin - inicio_grafico).days + 1):
 
-        fecha = hoy - timedelta(days=30 - i)
+        fecha = inicio_grafico + timedelta(days=i)
 
         pedidos_dia = Pedido.objects.filter(
             created_at__date=fecha,
