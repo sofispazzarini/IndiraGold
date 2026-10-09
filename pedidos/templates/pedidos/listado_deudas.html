@@ -249,6 +249,7 @@
     color: var(--muted);
   }
 
+  .deuda-meta-debe { display: none !important; color: var(--burgundy, #6E0E2E); }
   .deuda-meta span {
     display: flex;
     align-items: center;
@@ -377,6 +378,9 @@
     .deuda-monto {
       display: none;
     }
+    .deuda-meta-debe {
+      display: inline-flex !important;
+    }
     .page-title {
       font-size: 2rem;
     }
@@ -462,6 +466,8 @@
         <div class="deuda-meta">
           <span><i class="bi bi-calendar3"></i> {{ deuda.fecha|date:"d/m/Y" }}</span>
           <span><i class="bi bi-cash"></i> Pagado: {{ deuda.pagado|pesos }}</span>
+          {# En celular y tablet la columna de montos se oculta: lo que debe se muestra acá #}
+          <span class="deuda-meta-debe"><i class="bi bi-exclamation-circle"></i> Debe: <strong>{{ deuda.pendiente|pesos }}</strong> de {{ deuda.total|pesos }}</span>
         </div>
       </div>
       <div class="deuda-monto">
