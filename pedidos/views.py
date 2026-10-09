@@ -524,6 +524,12 @@ def cambiar_estado_pedido(pedido, nuevo_estado):
     return True
 
 
+def direccion_editada(pedido):
+    """Dirección escrita a mano en Editar pedido; el texto "None" que quedó guardado antes cuenta como vacío."""
+    texto = (pedido.direccion_info or '').strip()
+    return '' if texto.lower() == 'none' else texto
+
+
 def texto_sin_acentos(texto):
     """Minúsculas y sin tildes, para buscar "Rodriguez" y encontrar "Rodríguez"."""
     import unicodedata
@@ -895,8 +901,8 @@ def editar_pedido(request, pedido_id):
 
                 # Actualizar dirección
                 direccion_info = request.POST.get('direccion_info', '').strip()
-                if direccion_info:
-                    pedido.direccion_info = direccion_info
+                # Vacío (o el "None" que quedó guardado antes) = sin dirección editada a mano
+                pedido.direccion_info = direccion_info if direccion_info.lower() not in ('', 'none') else None
 
                 # Actualizar estado (mismas reglas y movimiento de stock que en la gestión de pedidos)
                 nuevo_estado = request.POST.get('estado', pedido.estado)
@@ -2031,7 +2037,7 @@ def pago_exitoso(request):
     direccion_envio = 'Retiro en local'
 
     if pedido.metodo_entrega != 'local':
-        direccion_envio = pedido.direccion_info or pedido.calle_numero or 'Direccion no informada'
+        direccion_envio = direccion_editada(pedido) or pedido.calle_numero or 'Direccion no informada'
         if pedido.localidad:
             direccion_envio += f', {pedido.localidad}'
         if pedido.codigo_postal:
@@ -3417,8 +3423,8 @@ def contexto_ticket_pedido(pedido):
         'metodo_pago': pago.metodo if pago else (pedido.get_metodo_pago_display() if pedido.metodo_pago else 'Mercado Pago'),
         'es_regalo': pedido.es_regalo,
         # Si el admin editó la dirección del pedido, esa es la que se imprime
-        'direccion': None if pedido.direccion_info else pedido.direccion,
-        'pedido_direccion_texto': pedido.direccion_info or pedido.calle_numero or '',
+        'direccion': None if direccion_editada(pedido) else pedido.direccion,
+        'pedido_direccion_texto': direccion_editada(pedido) or pedido.calle_numero or '',
     }
 
 
