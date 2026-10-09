@@ -346,7 +346,13 @@ function scrollCatOrden{{ cat_orden.id }}(dir) {
               </div>
               <div class="color-dropdown__colors">
                 {% for color in colores %}
-                <span class="color-dropdown__circle" style="background: {{ color.codigo_hex }};" title="{{ color.nombre }}" onclick="selectColor('{{ color.id }}', '{{ color.nombre }}', '{{ color.codigo_hex }}')"></span>
+                {# Cada color con su nombre visible (en celular el title no se ve) #}
+                <button type="button" class="color-dropdown__opcion"
+                        data-color-id="{{ color.id }}" data-color-nombre="{{ color.nombre }}" data-color-hex="{{ color.nombre|hex_color:color.codigo_hex }}"
+                        onclick="selectColor(this.dataset.colorId, this.dataset.colorNombre, this.dataset.colorHex)">
+                  <span class="color-dropdown__circle" style="background: {{ color.nombre|hex_color:color.codigo_hex }};"></span>
+                  <span>{{ color.nombre }}</span>
+                </button>
                 {% endfor %}
               </div>
             </div>
@@ -870,15 +876,23 @@ function scrollCatOrden{{ cat_orden.id }}(dir) {
   }
   .color-dropdown__item:hover { background: #faf7f0; border-radius: 4px; }
   .color-dropdown__colors {
-    display: flex; flex-wrap: wrap; gap: .5rem; padding: .25rem 0;
+    display: flex; flex-direction: column; gap: .1rem; padding: .25rem 0;
+    max-height: 260px; overflow-y: auto;
   }
+  .color-dropdown__opcion {
+    display: flex; align-items: center; gap: .6rem; width: 100%;
+    background: none; border: 0; border-radius: 4px; padding: .4rem .5rem;
+    font: inherit; font-size: .82rem; color: #1a1612; text-align: left; cursor: pointer;
+  }
+  .color-dropdown__opcion:hover { background: #faf7f0; }
   .color-dropdown__circle {
-    width: 24px; height: 24px; border-radius: 50%;
-    border: 2px solid transparent; transition: all .15s;
+    width: 20px; height: 20px; border-radius: 50%; flex-shrink: 0;
+    /* Borde siempre visible: el blanco no se veía */
+    border: 1px solid rgba(26, 22, 18, 0.25);
   }
-  .color-dropdown__circle:hover {
-    transform: scale(1.15);
-    border-color: #b8922a;
+  /* Celulares: el menú se abre hacia la izquierda para no salirse de la pantalla */
+  @media (max-width: 600px) {
+    .color-dropdown__menu { left: auto; right: 0; max-width: calc(100vw - 2rem); }
   }
   .color-dropdown__text { color: #1a1612; }
   .color-dropdown__label { display: flex; align-items: center; gap: .5rem; }
@@ -1478,11 +1492,14 @@ function scrollCatOrden{{ cat_orden.id }}(dir) {
 
   function selectColor(colorId, colorName, colorHex) {
     const label = document.querySelector('.color-dropdown__label');
+    label.textContent = '';
     if (colorHex) {
-      label.innerHTML = `<span class="color-dropdown__selected-circle" style="background: ${colorHex};"></span> ${colorName}`;
-    } else {
-      label.textContent = colorName;
+      const circulo = document.createElement('span');
+      circulo.className = 'color-dropdown__selected-circle';
+      circulo.style.background = colorHex;
+      label.appendChild(circulo);
     }
+    label.appendChild(document.createTextNode(' ' + colorName));
     document.getElementById('colorDropdown').classList.remove('open');
     filterColor(colorId);
   }
