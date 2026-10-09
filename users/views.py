@@ -535,6 +535,8 @@ def registro_manual_cliente(request):
     else:
         form = RegistroManualClienteForm()
     return render(request, 'users/registro_manual_cliente.html', {'form': form, 'mensaje': mensaje})
+
+@user_passes_test(lambda u: u.is_superuser)
 def buscar_clientes(request):
 
     q = request.GET.get('q', '')

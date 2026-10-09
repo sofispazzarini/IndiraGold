@@ -2825,6 +2825,9 @@ def registrar_venta_local(request):
             'success': False,
             'error': f'Error al registrar venta: {str(e)}'
         }, status=400)
+
+
+@admin_required
 def detalle_venta_local(request, venta_id):
 
     venta = get_object_or_404(
