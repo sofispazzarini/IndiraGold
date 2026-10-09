@@ -46,7 +46,8 @@ COMPROBANTE_WHATSAPP = os.getenv("COMPROBANTE_WHATSAPP", "5492216375660")
 SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-rm6jga7-aoj+xaek*-b!6328_$yk#tfhu=)h#rm*e*t+@s-zi2')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = env_bool('DEBUG', True)
+# Sin la variable, DEBUG queda apagado (producción): las páginas técnicas de error muestran datos internos
+DEBUG = env_bool('DEBUG', False)
 
 ALLOWED_HOSTS = env_lista("ALLOWED_HOSTS")
 
@@ -89,6 +90,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'config.middleware.PaginaError405Middleware',
 ]
 
 ROOT_URLCONF = 'config.urls'

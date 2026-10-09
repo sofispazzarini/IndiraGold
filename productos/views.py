@@ -7,6 +7,7 @@ from django.views.decorators.http import require_POST, require_http_methods
 from django.urls import reverse
 from django.shortcuts import redirect, get_object_or_404, render
 from django.contrib import messages
+from django.http import Http404
 from django.http import JsonResponse, HttpResponse
 from django.template.loader import render_to_string
 from django.core.paginator import Paginator
@@ -1060,10 +1061,15 @@ def obtener_tabla_medidas_ajax(request, producto_id):
             'tabla_html': tabla_html,
         })
     
-    except Exception as e:
+    except Http404:
         return JsonResponse({
             'status': 'error',
-            'mensaje': str(e)
+            'mensaje': 'Este producto ya no está disponible.'
+        }, status=404)
+    except Exception:
+        return JsonResponse({
+            'status': 'error',
+            'mensaje': 'No pudimos cargar las medidas. Probá de nuevo.'
         }, status=400)
 
 

@@ -1,0 +1,9 @@
+{% extends '_pagina_error.html' %}
+{% block titulo_pestana %}La página venció{% endblock %}
+{% block codigo %}Sesión vencida{% endblock %}
+{% block titulo %}La página venció{% endblock %}
+{% block texto %}Pasó un rato o la abriste en otra pestaña. Volvé a cargar la página e intentá de nuevo.{% endblock %}
+{% block botones %}
+<a href="javascript:history.back()" style="border:1.5px solid #1a1612; color:#1a1612; text-decoration:none; padding:.85rem 1.6rem; border-radius:999px; font-weight:700; letter-spacing:.08em; font-size:.85rem;">VOLVER</a>
+<a href="{% url 'home:home' %}" style="background:#1a1612; color:#e8c96a; text-decoration:none; padding:.85rem 1.6rem; border-radius:999px; font-weight:700; letter-spacing:.08em; font-size:.85rem;">IR A LA TIENDA</a>
+{% endblock %}

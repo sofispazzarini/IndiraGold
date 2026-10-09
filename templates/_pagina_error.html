@@ -1,0 +1,19 @@
+{% extends 'base_publica.html' %}
+{# Base de las páginas de error (404, 403, 403 CSRF, 405): diseño de la tienda y link para volver #}
+
+{% block title %}{% block titulo_pestana %}Indira Gold{% endblock %} — Indira Gold{% endblock %}
+
+{% block content %}
+<main style="min-height:60vh; display:flex; align-items:center; justify-content:center; padding:3rem 1rem;">
+  <div style="max-width:520px; width:100%; text-align:center; background:#fff; border:1px solid #efe7dc; border-radius:20px; padding:2.5rem 1.75rem; box-shadow:0 12px 34px rgba(26,22,18,.06);">
+    <p style="margin:0 0 .5rem; font-size:.75rem; letter-spacing:.2em; text-transform:uppercase; color:#b8922a; font-weight:700;">{% block codigo %}{% endblock %}</p>
+    <h1 style="margin:0 0 1rem; font-family:'Cormorant Garamond', Georgia, serif; font-size:2rem; color:#1a1612;">{% block titulo %}{% endblock %}</h1>
+    <p style="margin:0 0 1.75rem; color:#6f6259; line-height:1.6;">{% block texto %}{% endblock %}</p>
+    <div style="display:flex; flex-wrap:wrap; gap:.75rem; justify-content:center;">
+      {% block botones %}
+      <a href="{% url 'home:home' %}" style="background:#1a1612; color:#e8c96a; text-decoration:none; padding:.85rem 1.6rem; border-radius:999px; font-weight:700; letter-spacing:.08em; font-size:.85rem;">VOLVER A LA TIENDA</a>
+      {% endblock %}
+    </div>
+  </div>
+</main>
+{% endblock %}
