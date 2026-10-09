@@ -102,7 +102,7 @@
     <div class="featured-top">
       <h2 class="featured-title">{{ cat_orden.nombre }}</h2>
       {% if cat_orden.descripcion %}
-      <p class="text-muted mb-0" style="font-size: 0.95rem;">{{ cat_orden.descripcion }}</p>
+      <p class="text-muted mb-0 featured-desc" style="font-size: 0.95rem;">{{ cat_orden.descripcion }}</p>
       {% endif %}
       <div class="featured-controls">
         <button type="button" class="featured-btn" onclick="scrollCatOrden{{ cat_orden.id }}(-1)" aria-label="Anterior">&#8249;</button>
@@ -809,9 +809,11 @@ function scrollCatOrden{{ cat_orden.id }}(dir) {
 
   /* DESTACADOS (CARRUSEL) */
   .featured-section { padding: 3.25rem 0 1.25rem; background: #fff; border-bottom: 1px solid #e8dfd4; }
-  .featured-top { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 1.25rem; }
-  .featured-title { font-family: 'Cormorant Garamond', serif; font-size: 1.55rem; font-weight: 700; color: #1a1612; }
-  .featured-controls { display: flex; gap: .5rem; }
+  /* Título y flechas en la primera fila; la descripción abajo a todo el ancho (en mobile no se aprietan en 3 columnas) */
+  .featured-top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5rem 1rem; margin-bottom: 1.25rem; }
+  .featured-title { flex: 1 1 auto; min-width: 0; margin: 0; overflow-wrap: anywhere; font-family: 'Cormorant Garamond', serif; font-size: 1.55rem; font-weight: 700; color: #1a1612; }
+  .featured-desc { order: 3; flex: 1 1 100%; overflow-wrap: anywhere; }
+  .featured-controls { flex: none; display: flex; gap: .5rem; }
   .featured-btn { width: 40px; height: 40px; border-radius: 10px; border: 1px solid #e8dfd4; background: #fff; color: #1a1612; cursor: pointer; font-size: 1.1rem; line-height: 1; }
   .featured-btn:hover { border-color: #b8922a; color: #b8922a; }
   .featured-viewport { overflow: hidden; }
