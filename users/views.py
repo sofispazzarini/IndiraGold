@@ -14,7 +14,7 @@ from django.contrib.auth.hashers import make_password
 from django.contrib.auth import authenticate, login as auth_login
 from .forms import (
     RegistroUsuarioForm, capitalizar_texto, normalizar_provincia, normalizar_email, email_en_uso,
-    validar_nombre_persona, validar_telefono,
+    validar_nombre_persona, validar_telefono, PROVINCIAS,
 )
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
@@ -499,6 +499,14 @@ def confirmar_direccion(request):
 
     # Si POST con campos de dirección: actualizar sesión y devolver JSON
     if request.method == "POST" and all(k in request.POST for k in ["etiqueta", "calle", "numero", "ciudad", "provincia", "codigo_postal"]):
+        # Se valida en el modal (antes el error recién aparecía al confirmar, con texto técnico)
+        codigo_postal = request.POST.get('codigo_postal', '').strip()
+        if not codigo_postal.isdigit() or len(codigo_postal) != 4:
+            return JsonResponse({'success': False, 'error': 'El código postal debe tener 4 números.'})
+        if not any(valor == normalizar_provincia(request.POST.get('provincia', '')) for valor, _ in PROVINCIAS if valor):
+            return JsonResponse({'success': False, 'error': 'Elegí una provincia de la lista.'})
+        if not all(request.POST.get(k, '').strip() for k in ["etiqueta", "calle", "numero", "ciudad"]):
+            return JsonResponse({'success': False, 'error': 'Completá etiqueta, calle, altura y ciudad.'})
         data['etiqueta'] = capitalizar_texto(request.POST.get('etiqueta', data.get('etiqueta')))
         data['calle'] = capitalizar_texto(request.POST.get('calle', data.get('calle')))
         data['numero'] = request.POST.get('numero', data.get('numero'))
