@@ -139,6 +139,21 @@ class ImagenProducto(models.Model):
     imagen = models.ImageField(upload_to='productos/')
     # Opcional: un campo para definir cuál es la principal
     es_portada = models.BooleanField(default=False)
+ORDEN_TALLES_LETRA = ['XXXS', 'XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL', '4XL', '5XL', '6XL']
+
+
+def orden_talle(nombre):
+    """Clave para ordenar talles de forma lógica: letras de chico a grande (XXS→5XL), después números
+    de menor a mayor y al final el resto (Único, etc.). Antes se ordenaban alfabéticamente."""
+    texto = (nombre or '').strip().upper()
+    if texto in ORDEN_TALLES_LETRA:
+        return (0, ORDEN_TALLES_LETRA.index(texto), '')
+    try:
+        return (1, float(texto.replace(',', '.')), '')
+    except ValueError:
+        return (2, 0, texto)
+
+
 class Talle(models.Model):
     nombre = models.CharField(max_length=20)
     created_at = models.DateTimeField(auto_now_add=True)

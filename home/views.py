@@ -71,10 +71,10 @@ class HomePublicaView(TemplateView):
                 str(v.talle_id) for v in producto.variantes.all() if v.activa and stock_total_variante(v) > 0
             )
 
-        talles = (
-            Talle.objects.filter(variante__activa=True, variante__stock__gt=0, variante__producto__activo=True)
-            .distinct()
-            .order_by('nombre')
+        from productos.models import orden_talle
+        talles = sorted(
+            Talle.objects.filter(variante__activa=True, variante__stock__gt=0, variante__producto__activo=True).distinct(),
+            key=lambda talle: orden_talle(talle.nombre),
         )
         colores = (
             Color.objects.filter(variante__activa=True, variante__stock__gt=0, variante__producto__activo=True)
