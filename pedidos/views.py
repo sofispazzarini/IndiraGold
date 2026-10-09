@@ -1210,7 +1210,7 @@ def eliminar_item_carrito(request, variante_id):
 
     carrito = get_or_create_cart(request)
     cart_key = request.POST.get("cart_key") or str(variante_id)
-    next_url = request.POST.get("next") or request.META.get('HTTP_REFERER') or reverse('home:home')
+    next_url = request.POST.get("next") or request.META.get('HTTP_REFERER') or reverse('pedidos:checkout')  # sin Referer vuelve al checkout
     variante_id_int, _color_token = _parse_cart_item_key(cart_key)
     if not variante_id_int:
         variante_id_int = int(variante_id)
