@@ -224,9 +224,21 @@ def vincular_carrito_con_usuario(request, session_id_previo=None, carrito_sesion
     from .models import Carrito, CarritoItem
     from productos.models import Variante, Producto
 
+    from django.contrib import messages
+    from productos.stock import stock_disponible
+
     # 1. Obtener o crear el carrito del usuario autenticado
     cliente, _ = Cliente.objects.get_or_create(user=request.user)
     carrito_user, _ = Carrito.objects.get_or_create(cliente=cliente, activo=True)
+    productos_ajustados = []
+
+    def limitar_al_stock(variante, color_nombre, cantidad_deseada):
+        """Al fusionar carritos no se puede superar el stock del talle/color."""
+        disponible = max(stock_disponible(variante, color_nombre), 0)
+        if cantidad_deseada > disponible:
+            productos_ajustados.append(variante.producto.nombre)
+            return disponible
+        return cantidad_deseada
 
     # 2. Si hay un carrito anterior de invitado en la BD, fusionarlo
     if session_id_previo:
@@ -244,16 +256,27 @@ def vincular_carrito_con_usuario(request, session_id_previo=None, carrito_sesion
                     color_hex=item_invitado.color_hex or None,
                 ).first()
                 if item_existente:
-                    # Sumar cantidades si ya existe (mismo variante + mismo color)
-                    item_existente.cantidad += item_invitado.cantidad
-                    item_existente.precio_total = (
-                        item_existente.cantidad * item_existente.precio_unitario
+                    # Sumar cantidades si ya existe (mismo variante + mismo color), sin pasar el stock
+                    item_existente.cantidad = limitar_al_stock(
+                        item_existente.variante,
+                        item_existente.color_nombre,
+                        item_existente.cantidad + item_invitado.cantidad,
                     )
-                    item_existente.save()
+                    if item_existente.cantidad > 0:
+                        item_existente.save()
+                    else:
+                        item_existente.delete()
+                    item_invitado.delete()
                 else:
                     # Transferir item al carrito del usuario
-                    item_invitado.carrito = carrito_user
-                    item_invitado.save()
+                    item_invitado.cantidad = limitar_al_stock(
+                        item_invitado.variante, item_invitado.color_nombre, item_invitado.cantidad
+                    )
+                    if item_invitado.cantidad > 0:
+                        item_invitado.carrito = carrito_user
+                        item_invitado.save()
+                    else:
+                        item_invitado.delete()
             
             # Desactivar carrito de invitado
             carrito_invitado.activo = False
@@ -297,10 +320,15 @@ def vincular_carrito_con_usuario(request, session_id_previo=None, carrito_sesion
             ).first()
 
             if item_existente:
-                item_existente.cantidad += qty_int
-                item_existente.precio_total = item_existente.cantidad * item_existente.precio_unitario
-                item_existente.save()
+                item_existente.cantidad = limitar_al_stock(variante, color_nombre, item_existente.cantidad + qty_int)
+                if item_existente.cantidad > 0:
+                    item_existente.save()
+                else:
+                    item_existente.delete()
             else:
+                qty_int = limitar_al_stock(variante, color_nombre, qty_int)
+                if qty_int <= 0:
+                    continue
                 precio = precio_unitario_vigente(variante)
                 CarritoItem.objects.create(
                     carrito=carrito_user,
@@ -313,6 +341,13 @@ def vincular_carrito_con_usuario(request, session_id_previo=None, carrito_sesion
                 )
         except Exception:
             continue
+    if productos_ajustados:
+        messages.warning(
+            request,
+            'Ajustamos la cantidad de ' + ', '.join(sorted(set(productos_ajustados)))
+            + ' en tu carrito al stock disponible.'
+        )
+
     # Limpiar la sesión después de fusionar
     request.session['carrito'] = {}
     request.session.modified = True
