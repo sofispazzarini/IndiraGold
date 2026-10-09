@@ -2277,7 +2277,8 @@ def pago_exitoso(request):
         f"¡Tu pago fue realizado con éxito! Pedido #{pedido.id} confirmado."
     )
 
-    return redirect('pedidos:checkout')
+    # Después de pagar se ve el pedido confirmado (antes volvía al checkout vacío)
+    return redirect('pedidos:estado_pedido', pedido_id=pedido.id)
     
 @admin_required
 def estadisticas_ventas(request):

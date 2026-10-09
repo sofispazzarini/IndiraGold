@@ -256,6 +256,10 @@
     color: var(--burgundy);
   }
 
+  /* Carrito vacío: solo el aviso y el botón para ir a la tienda (sin entrega, pago ni "Pagar ahora") */
+  .checkout-vacio .checkout-card:not(.checkout-card--productos),
+  .checkout-vacio .checkout-right { display: none !important; }
+
   .empty-cart {
     text-align: center;
     padding: 2rem;
@@ -889,7 +893,7 @@
 {% endblock %}
 
 {% block content %}
-<div class="checkout-main">
+<div class="checkout-main{% if not items %} checkout-vacio{% endif %}">
 
   <div class="page-header">
     <p class="header-eyebrow">Carrito</p>
@@ -905,7 +909,7 @@
       <div class="checkout-left">
 
         <!-- Productos -->
-        <div class="checkout-card">
+        <div class="checkout-card checkout-card--productos">
           <h3 class="card-title"><span>1</span> Resumen de productos</h3>
 
           {% if cart_expires_in and cart_expires_in > 0 %}
@@ -961,6 +965,9 @@
             <div class="empty-cart">
               <i class="bi bi-cart" style="font-size: 2.5rem; opacity: 0.2;"></i>
               <p style="margin-top: 1rem;">No hay productos en tu carrito.</p>
+              <a href="{% url 'home:home' %}#catalogo" class="btn-agregar-mas" style="display:inline-flex; margin-top:.5rem;">
+                <i class="bi bi-bag"></i> Ir a la tienda
+              </a>
             </div>
           {% endif %}
         </div>
