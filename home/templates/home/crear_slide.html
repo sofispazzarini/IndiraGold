@@ -16,9 +16,15 @@
         border-radius: 18px;
         box-shadow: 0 4px 32px rgba(60,72,100,0.10);
         padding: 2.5rem 2rem 2rem 2rem;
-        max-width: 620px;
         margin: 0 auto;
-        margin-left: 40%;
+    }
+    /* Card y "Volver" en la misma columna centrada (.main > * de base.html pone max-width 100%) */
+    .main > .modern-card,
+    .main > .slide-volver {
+        max-width: 620px;
+    }
+    .slide-volver {
+        margin-bottom: 1.5rem;
     }
     .modern-title {
         font-family: 'Cormorant Garamond', serif;
@@ -328,14 +334,15 @@
         .modern-card {
             padding: 1.2rem 0.5rem 1.5rem 0.5rem;
             max-width: 98vw;
-            margin-left: auto;
         }
         .modern-row {
             flex-direction: column;
             gap: 0;
         }
+        /* En columna la base de 220px pasaba a ser altura y dejaba huecos en blanco */
         .modern-col {
             min-width: 0;
+            flex-basis: auto;
         }
         .modern-actions {
             flex-direction: column;
@@ -345,9 +352,11 @@
 {% endblock %}
 
 {% block content %}
-<a href="{% url 'home:gestion_carrousel' %}" class="back-btn mb-4">
-    <i class="bi bi-arrow-left"></i> Volver
-</a>
+<div class="slide-volver">
+    <a href="{% url 'home:gestion_carrousel' %}" class="back-btn">
+        <i class="bi bi-arrow-left"></i> Volver
+    </a>
+</div>
 <div class="modern-card">
     <div class="modern-title">{% if slide %}Editar Slide{% else %}Nuevo Slide{% endif %}</div>
     <div class="modern-sub">{% if slide %}Modificar imagen{% else %}Agregar al carrousel{% endif %}</div>
