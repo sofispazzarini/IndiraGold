@@ -1558,19 +1558,19 @@
                     <div class="row g-3">
                         <div class="col-md-4">
                             <label class="form-label small fw-semibold text-muted">ETIQUETA</label>
-                            <input type="text" name="etiqueta" class="form-control" style="border-radius:12px; padding:0.75rem 1rem; border-color:#e8dfd4;" placeholder="Casa, Trabajo..." required>
+                            <input type="text" name="etiqueta" maxlength="50" class="form-control" style="border-radius:12px; padding:0.75rem 1rem; border-color:#e8dfd4;" placeholder="Casa, Trabajo..." required>
                         </div>
                         <div class="col-md-5">
                             <label class="form-label small fw-semibold text-muted">CALLE</label>
-                            <input type="text" name="calle" class="form-control" style="border-radius:12px; padding:0.75rem 1rem; border-color:#e8dfd4;" required>
+                            <input type="text" name="calle" maxlength="100" class="form-control" style="border-radius:12px; padding:0.75rem 1rem; border-color:#e8dfd4;" required>
                         </div>
                         <div class="col-md-3">
                             <label class="form-label small fw-semibold text-muted">NÚMERO</label>
-                            <input type="text" name="numero" class="form-control" style="border-radius:12px; padding:0.75rem 1rem; border-color:#e8dfd4;" required>
+                            <input type="text" name="numero" maxlength="10" class="form-control" style="border-radius:12px; padding:0.75rem 1rem; border-color:#e8dfd4;" required>
                         </div>
                         <div class="col-md-4">
                             <label class="form-label small fw-semibold text-muted">CIUDAD</label>
-                            <input type="text" name="ciudad" class="form-control" style="border-radius:12px; padding:0.75rem 1rem; border-color:#e8dfd4;" required>
+                            <input type="text" name="ciudad" maxlength="50" class="form-control" style="border-radius:12px; padding:0.75rem 1rem; border-color:#e8dfd4;" required>
                         </div>
                         <div class="col-md-4">
                             <label class="form-label small fw-semibold text-muted">PROVINCIA</label>
@@ -1578,11 +1578,11 @@
                         </div>
                         <div class="col-md-4">
                             <label class="form-label small fw-semibold text-muted">CÓDIGO POSTAL</label>
-                            <input type="text" name="codigo_postal" class="form-control" style="border-radius:12px; padding:0.75rem 1rem; border-color:#e8dfd4;" required>
+                            <input type="text" name="codigo_postal" maxlength="4" inputmode="numeric" pattern="[0-9]{4}" title="4 números" class="form-control" style="border-radius:12px; padding:0.75rem 1rem; border-color:#e8dfd4;" required>
                         </div>
                         <div class="col-12">
                             <label class="form-label small fw-semibold text-muted">REFERENCIA (opcional)</label>
-                            <input type="text" name="referencia" class="form-control" style="border-radius:12px; padding:0.75rem 1rem; border-color:#e8dfd4;" placeholder="Ej: portón verde, timbre roto, entre calles...">
+                            <input type="text" name="referencia" maxlength="255" class="form-control" style="border-radius:12px; padding:0.75rem 1rem; border-color:#e8dfd4;" placeholder="Ej: portón verde, timbre roto, entre calles...">
                         </div>
                     </div>
                 </div>

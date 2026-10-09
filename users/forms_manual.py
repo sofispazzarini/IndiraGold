@@ -157,6 +157,13 @@ class NuevaDireccionForm(forms.ModelForm):
     def clean_referencia(self):
         return capitalizar_texto(self.cleaned_data.get('referencia', ''))
 
+    def clean_codigo_postal(self):
+        # Misma regla que el registro: 4 dígitos (un CP inválido rompe la cotización y los tickets)
+        codigo_postal = (self.cleaned_data.get('codigo_postal') or '').strip()
+        if not codigo_postal.isdigit() or len(codigo_postal) != 4:
+            raise forms.ValidationError('El código postal debe tener 4 números.')
+        return codigo_postal
+
     def clean(self):
         cleaned_data = super().clean()
         calle = cleaned_data.get('calle')

@@ -1568,19 +1568,19 @@
           <div class="row g-3">
             <div class="col-md-6">
               <label class="form-label">Etiqueta (ej: casa, trabajo, etc)</label>
-              <input type="text" name="etiqueta" class="form-control" placeholder="Casa" required>
+              <input type="text" name="etiqueta" maxlength="50" class="form-control" placeholder="Casa" required>
             </div>
             <div class="col-md-6">
               <label class="form-label">Calle</label>
-              <input type="text" name="calle" class="form-control" required>
+              <input type="text" name="calle" maxlength="100" class="form-control" required>
             </div>
             <div class="col-md-6">
               <label class="form-label">Numero</label>
-              <input type="text" name="numero" class="form-control" required>
+              <input type="text" name="numero" maxlength="10" class="form-control" required>
             </div>
             <div class="col-md-6">
               <label class="form-label">Ciudad</label>
-              <input type="text" name="ciudad" class="form-control" required>
+              <input type="text" name="ciudad" maxlength="50" class="form-control" required>
             </div>
             <div class="col-md-6">
               <label class="form-label">Provincia</label>
@@ -1588,11 +1588,11 @@
             </div>
             <div class="col-md-6">
               <label class="form-label">Codigo postal</label>
-              <input type="text" name="codigo_postal" class="form-control" required>
+              <input type="text" name="codigo_postal" maxlength="4" inputmode="numeric" pattern="[0-9]{4}" title="4 números" class="form-control" required>
             </div>
             <div class="col-12">
               <label class="form-label">Referencia opcional</label>
-              <input type="text" name="referencia" class="form-control" placeholder="Ej: Porton verde, timbre roto">
+              <input type="text" name="referencia" maxlength="255" class="form-control" placeholder="Ej: Porton verde, timbre roto">
             </div>
           </div>
           <div class="alert-warning" id="direccion-checkout-error" style="display:none; margin-top:1rem;"></div>

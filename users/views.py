@@ -862,38 +862,34 @@ def crear_cliente_ajax(request):
     })
 
 
+def guardar_direccion_ajax(request, cliente):
+    """Alta de dirección por AJAX (POS y checkout) con las mismas reglas que el perfil y el registro:
+    CP de 4 números, provincia del listado, largos máximos y sin repetir. Devuelve (direccion, error)."""
+    datos = request.POST.copy()
+    datos['provincia'] = normalizar_provincia(datos.get('provincia', ''))
+    form = NuevaDireccionForm(datos, initial={'cliente': cliente})
+    if not form.is_valid():
+        if 'provincia' in form.errors:
+            return None, 'Elegí una provincia de la lista.'
+        for campo, lista in form.errors.items():
+            etiqueta = form.fields[campo].label if campo in form.fields else ''
+            return None, f'{etiqueta}: {lista[0]}' if etiqueta and not lista[0].startswith(('El ', 'Ya ', 'Esta ')) else lista[0]
+        return None, 'Revisá los datos de la dirección.'
+    direccion = form.save(commit=False)
+    direccion.cliente = cliente
+    direccion.save()
+    return direccion, None
+
+
 @user_passes_test(lambda u: u.is_superuser)
 @require_POST
 def crear_direccion_ajax(request):
     cliente_id = request.POST.get('cliente_id')
     cliente = get_object_or_404(Cliente, user_id=cliente_id)
 
-    etiqueta = capitalizar_texto(request.POST.get('etiqueta', ''))
-    calle = capitalizar_texto(request.POST.get('calle', ''))
-    numero = request.POST.get('numero', '').strip()
-    ciudad = capitalizar_texto(request.POST.get('ciudad', ''))
-    provincia = normalizar_provincia(request.POST.get('provincia', ''))
-    codigo_postal = request.POST.get('codigo_postal', '').strip()
-    referencia = capitalizar_texto(request.POST.get('referencia', ''))
-
-    if not all([etiqueta, calle, numero, ciudad, provincia, codigo_postal]):
-        return JsonResponse({'success': False, 'error': 'Completá los datos obligatorios de la dirección.'}, status=400)
-
-    clave = Direccion.clave_unica(etiqueta, calle, numero, ciudad, provincia, codigo_postal, referencia)
-    for direccion_existente in cliente.direcciones.all():
-        if direccion_existente.clave_normalizada == clave:
-            return JsonResponse({'success': False, 'error': 'Esa dirección ya está cargada para la clienta.'}, status=400)
-
-    direccion = Direccion.objects.create(
-        cliente=cliente,
-        etiqueta=etiqueta,
-        calle=calle,
-        numero=numero,
-        ciudad=ciudad,
-        provincia=provincia,
-        codigo_postal=codigo_postal,
-        referencia=referencia,
-    )
+    direccion, error = guardar_direccion_ajax(request, cliente)
+    if error:
+        return JsonResponse({'success': False, 'error': error}, status=400)
 
     return JsonResponse({
         'success': True,
@@ -909,32 +905,9 @@ def crear_direccion_ajax(request):
 def crear_direccion_cliente_ajax(request):
     cliente, _ = Cliente.objects.get_or_create(user=request.user)
 
-    etiqueta = capitalizar_texto(request.POST.get('etiqueta', ''))
-    calle = capitalizar_texto(request.POST.get('calle', ''))
-    numero = request.POST.get('numero', '').strip()
-    ciudad = capitalizar_texto(request.POST.get('ciudad', ''))
-    provincia = normalizar_provincia(request.POST.get('provincia', ''))
-    codigo_postal = request.POST.get('codigo_postal', '').strip()
-    referencia = capitalizar_texto(request.POST.get('referencia', ''))
-
-    if not all([etiqueta, calle, numero, ciudad, provincia, codigo_postal]):
-        return JsonResponse({'success': False, 'error': 'Completa los datos obligatorios de la direccion.'}, status=400)
-
-    clave = Direccion.clave_unica(etiqueta, calle, numero, ciudad, provincia, codigo_postal, referencia)
-    for direccion_existente in cliente.direcciones.all():
-        if direccion_existente.clave_normalizada == clave:
-            return JsonResponse({'success': False, 'error': 'Esa direccion ya esta cargada en tu cuenta.'}, status=400)
-
-    direccion = Direccion.objects.create(
-        cliente=cliente,
-        etiqueta=etiqueta,
-        calle=calle,
-        numero=numero,
-        ciudad=ciudad,
-        provincia=provincia,
-        codigo_postal=codigo_postal,
-        referencia=referencia,
-    )
+    direccion, error = guardar_direccion_ajax(request, cliente)
+    if error:
+        return JsonResponse({'success': False, 'error': error}, status=400)
 
     return JsonResponse({
         'success': True,
