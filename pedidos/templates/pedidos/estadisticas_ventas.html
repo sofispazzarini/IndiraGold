@@ -1,5 +1,5 @@
 {% extends 'users/dashboard_admin.html' %}
-{% load static %}
+{% load static l10n %}
 
 {% block extra_head %}
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,600&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -574,7 +574,7 @@ document.addEventListener('DOMContentLoaded', function() {
         labels: [{% for item in productos_top %}'{{ item.variante__producto__nombre|truncatechars:20|escapejs }}'{% if not forloop.last %}, {% endif %}{% endfor %}],
         datasets: [{
           label: 'Unidades Vendidas',
-          data: [{% for item in productos_top %}{{ item.cantidad_total }}{% if not forloop.last %}, {% endif %}{% endfor %}],
+          data: [{% for item in productos_top %}{{ item.cantidad_total|unlocalize }}{% if not forloop.last %}, {% endif %}{% endfor %}],
           backgroundColor: 'rgba(110, 14, 46, 0.8)',
           borderColor: 'rgba(110, 14, 46, 1)',
           borderWidth: 1,
@@ -602,7 +602,7 @@ document.addEventListener('DOMContentLoaded', function() {
         datasets: [
           {
             label: 'Total Ventas ($)',
-            data: [{% for dia in evolucion_diaria %}{{ dia.total|default:0 }}{% if not forloop.last %}, {% endif %}{% endfor %}],
+            data: [{% for dia in evolucion_diaria %}{{ dia.total|default:0|unlocalize }}{% if not forloop.last %}, {% endif %}{% endfor %}],
             borderColor: 'rgba(184, 146, 42, 1)',
             backgroundColor: 'rgba(184, 146, 42, 0.1)',
             borderWidth: 2,
@@ -616,7 +616,7 @@ document.addEventListener('DOMContentLoaded', function() {
           },
           {
             label: 'Cantidad Pedidos',
-            data: [{% for dia in evolucion_diaria %}{{ dia.cantidad|default:0 }}{% if not forloop.last %}, {% endif %}{% endfor %}],
+            data: [{% for dia in evolucion_diaria %}{{ dia.cantidad|default:0|unlocalize }}{% if not forloop.last %}, {% endif %}{% endfor %}],
             borderColor: 'rgba(110, 14, 46, 1)',
             backgroundColor: 'rgba(110, 14, 46, 0.05)',
             borderWidth: 2,
