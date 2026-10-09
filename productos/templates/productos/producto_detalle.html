@@ -328,14 +328,19 @@
         margin-bottom: 1rem;
     }
     
+    /* flex-wrap: cada botón crece con su texto (un talle "Único talle especial" se salía del botón) */
     .talles-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+        display: flex;
+        flex-wrap: wrap;
         gap: 0.75rem;
         margin-bottom: 1.5rem;
     }
     
     .talle-btn {
+        min-width: 60px;
+        flex: 0 0 auto;
+        max-width: 100%;
+        overflow-wrap: anywhere;
         padding: 0.75rem;
         border: 2px solid #e8dfd4;
         background: white;
