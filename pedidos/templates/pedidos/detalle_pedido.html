@@ -326,9 +326,11 @@
     <a href="{% url 'pedidos:ticket_cambio_pedido' pedido.id %}" target="_blank" class="btn-act btn-hist">
         <i class="bi bi-printer"></i> Ticket de cambio
     </a>
+    {% if pedido.metodo_entrega != 'local' %}
     <a href="{% url 'pedidos:ticket_envio_pedido' pedido.id %}" target="_blank" class="btn-act btn-hist">
         <i class="bi bi-truck"></i> Ticket de envío
     </a>
+    {% endif %}
 </div>
 
 <!-- Body grid -->

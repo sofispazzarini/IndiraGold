@@ -3077,10 +3077,10 @@ async function abrirDetalleVenta(ventaId){
                         <i class="bi bi-printer me-1"></i>
                         Imprimir ticket de cambio
                     </a>
-                    <a href="${data.ticket_envio_url}" target="_blank" class="btn btn-sm btn-outline-dark rounded-pill">
+                    ${data.tiene_envio ? `<a href="${data.ticket_envio_url}" target="_blank" class="btn btn-sm btn-outline-dark rounded-pill">
                         <i class="bi bi-truck me-1"></i>
                         Imprimir ticket de envío
-                    </a>
+                    </a>` : ''}
                 </div>
 
             `

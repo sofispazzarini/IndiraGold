@@ -3358,7 +3358,8 @@ def detalle_venta_local(request, venta_id):
 
         'ticket_envio_url': f'/pedidos/venta-local/{venta.id}/ticket-envio/',
 
-        'tiene_envio': True,
+        # El ticket de envío solo tiene sentido si la venta se envía (no con retiro en el local)
+        'tiene_envio': venta.metodo_entrega == 'envio',
 
         'direccion': (
             f'{venta.direccion.etiqueta}: {venta.direccion.calle} {venta.direccion.numero}, '
