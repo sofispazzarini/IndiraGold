@@ -1924,6 +1924,11 @@ document.getElementById('formNuevoClienteVenta').addEventListener('submit', asyn
     const errorBox = document.getElementById('nuevoClienteError')
     errorBox.classList.add('d-none')
     errorBox.innerText = ''
+    // Mientras se guarda (manda el mail de bienvenida y puede tardar) el botón queda deshabilitado
+    const botonGuardar = this.querySelector('button[type="submit"]')
+    if(botonGuardar.disabled) return
+    botonGuardar.disabled = true
+    botonGuardar.innerText = 'Guardando...'
 
     try{
         const response = await fetch('/users/ajax/crear-cliente/', {
@@ -1946,6 +1951,9 @@ document.getElementById('formNuevoClienteVenta').addEventListener('submit', asyn
     }catch(error){
         errorBox.innerText = error.message
         errorBox.classList.remove('d-none')
+    }finally{
+        botonGuardar.disabled = false
+        botonGuardar.innerText = 'Guardar cliente'
     }
 })
 
