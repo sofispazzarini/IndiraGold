@@ -598,22 +598,23 @@ def _build_producto_detail_context(producto: Producto | None):
 def _build_home_context(request):
 	expire_cart_if_needed(request.session)
 
-	productos = Producto.objects.filter(activo=True).prefetch_related('variantes__talle', 'variantes__colores')
+	productos = Producto.objects.filter(activo=True).prefetch_related('variantes__talle', 'variantes__variante_colores__color')
 
 	for producto in productos:
 		variantes_data = []
-		for v in producto.variantes.filter(activa=True).select_related('talle').prefetch_related('colores'):
+		for v in producto.variantes.filter(activa=True).select_related('talle').prefetch_related('variante_colores__color'):
+			colores_con_stock = []
+			for vc in v.variante_colores.filter(activo=True):
+				colores_con_stock.append({
+					'nombre': vc.color.nombre,
+					'codigo_hex': vc.color.codigo_hex or '#888888',
+					'stock': vc.stock,
+				})
 			variantes_data.append({
 				'id': v.id,
 				'talle': v.talle.nombre,
 				'stock': v.stock,
-				'colores': [
-					{
-						'nombre': color.nombre,
-						'codigo_hex': color.codigo_hex or '#888888',
-					}
-					for color in v.colores.all()
-				],
+				'colores': colores_con_stock,
 			})
 		producto.variantes_json = json.dumps(variantes_data)
 
