@@ -395,7 +395,8 @@ def detalle_producto(request, producto_id):
             cart_qty_by_color[color_key] = cart_qty_by_color.get(color_key, 0) + item.get('cantidad', 0)
 
     def colores_de_variante(variante):
-        colores_stock = [vc for vc in variante.variante_colores.all() if vc.activo]
+        # "Sin color" (cargado antes con "No aplica color") no se ofrece como color
+        colores_stock = [vc for vc in variante.variante_colores.all() if vc.activo and vc.color.nombre.strip().lower() != 'sin color']
         if colores_stock:
             return [
                 {
@@ -417,7 +418,7 @@ def detalle_producto(request, producto_id):
                 'stock': None,
                 'en_carrito': 0,
             }
-            for color in variante.colores.all()
+            for color in variante.colores.all() if color.nombre.strip().lower() != 'sin color'
         ]
 
     # Obtener planes de cuotas para mostrar en el detalle
@@ -552,6 +553,10 @@ def agregar_producto(request, subcat_id):
                         # 3. VINCULAR COLORES (Importante: es ManyToMany)
                         colores_data = v.get('colores', [])
                         for c in colores_data:
+                            # "No aplica color": el talle no tiene colores (antes se creaba un color "Sin color"
+                            # que la tienda ofrecía como un círculo gris); su stock es el del talle
+                            if c.get('colorNinguno') or (not c.get('colorHex') and (c.get('colorNombre') or '').strip().lower() == 'sin color'):
+                                continue
                             nombre_color = c.get('colorNombre') or c.get('colorHex')
                             codigo_hex = normalizar_hex_color(
                                 nombre_color,

@@ -31,7 +31,7 @@ def variantes_json(producto):
                 'codigo_hex': normalizar_hex_color(vc.color.nombre, vc.color.codigo_hex),
                 'stock': vc.stock,
             }
-            for vc in v.variante_colores.all() if vc.activo
+            for vc in v.variante_colores.all() if vc.activo and vc.color.nombre.strip().lower() != 'sin color'
         ]
         # Con stock por color, el disponible del talle es la suma de sus colores
         stock_talle = sum(c['stock'] for c in colores_con_stock) if colores_con_stock else v.stock
@@ -44,7 +44,7 @@ def variantes_json(producto):
                     'codigo_hex': normalizar_hex_color(color.nombre, color.codigo_hex),
                     'stock': v.stock,
                 }
-                for color in v.colores.all()
+                for color in v.colores.all() if color.nombre.strip().lower() != 'sin color'
             ]
         variantes_data.append({
             'id': v.id,
