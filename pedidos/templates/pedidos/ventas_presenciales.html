@@ -805,7 +805,7 @@
 
                                 <span class="productos-count">
                                     <i class="bi bi-bag"></i>
-                                    {{ venta.items.count }} productos
+                                    {{ venta.cantidad_unidades }} producto{{ venta.cantidad_unidades|pluralize }}
                                 </span>
 
                             </td>
@@ -1229,13 +1229,9 @@
 
                                 </h5>
 
-                                <span id="cantidad-productos">
-
-                                    0
-
+                                <span class="small text-muted text-nowrap">
+                                    <span id="cantidad-productos">0</span> <span id="cantidad-productos-texto">productos</span>
                                 </span>
-
-                                productos
 
                             </div>
 
@@ -2805,7 +2801,6 @@ document.getElementById(
 function eliminarProductoVenta(index){
     productosVenta.splice(index, 1)
     renderProductosVenta()
-    document.getElementById('cantidad-productos').innerText = productosVenta.length
 }
 
 function renderProductosVenta(){
@@ -2916,14 +2911,9 @@ function renderProductosVenta(){
 
             0
         )
-    console.log(
-        document.getElementById(
-            'cantidad-productos'
-        )
-    )
-    document.getElementById(
-        'cantidad-productos'
-    ).innerText = totalProductos
+    // Cuenta unidades (no líneas), en singular o plural
+    document.getElementById('cantidad-productos').innerText = totalProductos
+    document.getElementById('cantidad-productos-texto').innerText = totalProductos === 1 ? 'producto' : 'productos'
 }
 function mostrarMensaje(texto){
 

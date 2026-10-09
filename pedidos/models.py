@@ -336,6 +336,11 @@ class VentaLocal(models.Model):
 
         return f"Venta #{self.id}"
 
+    @property
+    def cantidad_unidades(self):
+        # Suma unidades, no líneas (2 de un producto y 1 de otro son 3); usa los items ya precargados
+        return sum(item.cantidad for item in self.items.all())
+
 
 class VentaLocalItem(models.Model):
 
