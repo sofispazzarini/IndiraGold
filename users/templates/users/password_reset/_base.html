@@ -175,6 +175,10 @@
       padding: 0.75rem 0.5rem;
     }
   }
+
+  .reset-text { color: var(--text); font-size: .92rem; line-height: 1.6; margin-bottom: 1.25rem; text-align: center; }
+  .alert-ok { background: #eef6ea; border: 1px solid #c6e0bb; color: #3d6e2a; border-radius: 10px; padding: .85rem 1rem; font-size: .9rem; margin-bottom: 1.25rem; }
+  .field-error { color: var(--burgundy); font-size: .8rem; margin-top: .35rem; }
 </style>
 
 <div class="login-wrapper">
@@ -184,47 +188,7 @@
       <span class="brand-name">Indira Gold</span>
     </div>
 
-    <h1 class="login-title">Iniciar sesión</h1>
-
-    {% if error %}
-    <div class="alert-error">{{ error }}</div>
-    {% endif %}
-
-    <form method="post">
-      {% csrf_token %}
-
-      <div class="form-group">
-        <label class="form-label">DNI (Usuario)</label>
-        <input type="text"
-               class="form-input"
-               name="username"
-               placeholder="Ingresá tu DNI"
-               required
-               pattern="\d{7,8}"
-               maxlength="8">
-      </div>
-
-      <div class="form-group">
-        <label class="form-label">Contraseña</label>
-        <input type="password"
-               class="form-input"
-               name="password"
-               placeholder="Tu contraseña"
-               required>
-      </div>
-
-      <button type="submit" class="btn-login">
-        INGRESAR
-      </button>
-    </form>
-
-    <p class="register-link" style="margin-top:1rem;">
-      <a href="{% url 'users:password_reset' %}">¿Olvidaste tu contraseña?</a>
-    </p>
-
-    <p class="register-link">
-      ¿No tenés cuenta? <a href="{% url 'users:registro' %}">Registrate</a>
-    </p>
+    {% block tarjeta %}{% endblock %}
 
   </div>
 </div>

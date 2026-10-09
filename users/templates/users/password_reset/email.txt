@@ -1,0 +1,12 @@
+{% autoescape off %}Hola{% if user.first_name %} {{ user.first_name }}{% endif %}:
+
+Recibimos un pedido para cambiar la contraseña de tu cuenta de Indira Gold.
+Tu usuario para entrar es tu DNI: {{ user.username }}
+
+Para elegir una contraseña nueva entrá a este link (vale por unos días y se puede usar una sola vez):
+{{ protocol }}://{{ domain }}{% url 'users:password_reset_confirm' uidb64=uid token=token %}
+
+Si no pediste el cambio, ignorá este mensaje: tu contraseña sigue igual.
+
+Indira Gold
+{% endautoescape %}

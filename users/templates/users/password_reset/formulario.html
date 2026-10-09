@@ -1,0 +1,20 @@
+{% extends 'users/password_reset/_base.html' %}
+
+{% block tarjeta %}
+    <h1 class="login-title">Recuperar contraseña</h1>
+    <p class="reset-text">Ingresá el email de tu cuenta y te mandamos un link para elegir una contraseña nueva.</p>
+
+    <form method="post">
+      {% csrf_token %}
+      <div class="form-group">
+        <label class="form-label">Email</label>
+        <input type="email" class="form-input" name="email" value="{{ form.email.value|default:'' }}" placeholder="tu@email.com" required maxlength="254" autocomplete="email">
+        {% if form.email.errors %}<div class="field-error">{{ form.email.errors.0 }}</div>{% endif %}
+      </div>
+      <button type="submit" class="btn-login">ENVIAR LINK</button>
+    </form>
+
+    <p class="register-link">
+      <a href="{% url 'users:login' %}">Volver a iniciar sesión</a>
+    </p>
+{% endblock %}

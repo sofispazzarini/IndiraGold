@@ -1,0 +1,10 @@
+{% extends 'users/password_reset/_base.html' %}
+
+{% block tarjeta %}
+    <h1 class="login-title">Revisá tu email</h1>
+    <div class="alert-ok">Si el email corresponde a una cuenta, en unos minutos te llega un link para elegir una contraseña nueva.</div>
+    <p class="reset-text">Si no lo ves, fijate en la carpeta de spam o promociones.</p>
+    <p class="register-link">
+      <a href="{% url 'users:login' %}">Volver a iniciar sesión</a>
+    </p>
+{% endblock %}

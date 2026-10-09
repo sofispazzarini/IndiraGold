@@ -1,0 +1,7 @@
+{% extends 'users/password_reset/_base.html' %}
+
+{% block tarjeta %}
+    <h1 class="login-title">Contraseña actualizada</h1>
+    <div class="alert-ok">Ya podés entrar con tu DNI y la contraseña nueva.</div>
+    <a href="{% url 'users:login' %}" class="btn-login" style="display:block; text-align:center; text-decoration:none;">INICIAR SESIÓN</a>
+{% endblock %}

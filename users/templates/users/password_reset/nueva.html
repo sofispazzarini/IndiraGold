@@ -1,0 +1,29 @@
+{% extends 'users/password_reset/_base.html' %}
+
+{% block tarjeta %}
+  {% if validlink %}
+    <h1 class="login-title">Nueva contraseña</h1>
+    <p class="reset-text">Tu usuario para entrar sigue siendo tu DNI.</p>
+    <form method="post">
+      {% csrf_token %}
+      {% if form.non_field_errors %}<div class="alert-error">{{ form.non_field_errors.0 }}</div>{% endif %}
+      <div class="form-group">
+        <label class="form-label">Contraseña nueva</label>
+        <input type="password" class="form-input" name="new_password1" required autocomplete="new-password">
+        {% for error in form.new_password1.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
+      </div>
+      <div class="form-group">
+        <label class="form-label">Repetí la contraseña</label>
+        <input type="password" class="form-input" name="new_password2" required autocomplete="new-password">
+        {% for error in form.new_password2.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
+      </div>
+      <button type="submit" class="btn-login">GUARDAR CONTRASEÑA</button>
+    </form>
+  {% else %}
+    <h1 class="login-title">Link vencido</h1>
+    <div class="alert-error">Este link ya se usó o venció. Pedí uno nuevo.</div>
+    <p class="register-link">
+      <a href="{% url 'users:password_reset' %}">Pedir un link nuevo</a>
+    </p>
+  {% endif %}
+{% endblock %}
