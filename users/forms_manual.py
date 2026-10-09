@@ -4,7 +4,7 @@ from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 
 
-from .forms import PROVINCIAS, capitalizar_texto, email_en_uso, normalizar_email
+from .forms import PROVINCIAS, capitalizar_texto, email_en_uso, normalizar_email, validar_nombre_persona, validar_telefono
 
 class RegistroManualClienteForm(forms.ModelForm):
     dni = forms.CharField(label='DNI', max_length=8, required=True)
@@ -42,10 +42,13 @@ class RegistroManualClienteForm(forms.ModelForm):
         return email
 
     def clean_nombre(self):
-        return capitalizar_texto(self.cleaned_data['nombre'])
+        return validar_nombre_persona(self.cleaned_data['nombre'], 'nombre')
 
     def clean_apellido(self):
-        return capitalizar_texto(self.cleaned_data['apellido'])
+        return validar_nombre_persona(self.cleaned_data['apellido'], 'apellido')
+
+    def clean_telefono(self):
+        return validar_telefono(self.cleaned_data['telefono'])
 
     def clean_etiqueta(self):
         return capitalizar_texto(self.cleaned_data['etiqueta'])
@@ -82,6 +85,12 @@ class EditarClienteForm(forms.ModelForm):
         self.fields['email'].widget.attrs['class'] = 'form-control'
         self.fields['telefono'].widget.attrs['class'] = 'form-control'
         self.fields['dni'].widget.attrs['class'] = 'form-control'
+
+    def clean_nombre(self):
+        return validar_nombre_persona(self.cleaned_data['nombre'], 'nombre', maximo=150)
+
+    def clean_telefono(self):
+        return validar_telefono(self.cleaned_data['telefono'])
 
     def clean_email(self):
         email = normalizar_email(self.cleaned_data['email'])

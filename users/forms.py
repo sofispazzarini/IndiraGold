@@ -145,10 +145,13 @@ class RegistroUsuarioForm(forms.ModelForm):
 
         return dni
     def clean_nombre(self):
-        return capitalizar_texto(self.cleaned_data['nombre'])
+        return validar_nombre_persona(self.cleaned_data['nombre'], 'nombre')
 
     def clean_apellido(self):
-        return capitalizar_texto(self.cleaned_data['apellido'])
+        return validar_nombre_persona(self.cleaned_data['apellido'], 'apellido')
+
+    def clean_telefono(self):
+        return validar_telefono(self.cleaned_data['telefono'])
 
     def clean_etiqueta(self):
         return capitalizar_texto(self.cleaned_data['etiqueta'])

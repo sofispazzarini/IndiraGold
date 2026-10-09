@@ -756,6 +756,12 @@ def crear_cliente_ajax(request):
         validate_email(email)
     except ValidationError:
         return JsonResponse({'success': False, 'error': 'Ingresá un email válido.'}, status=400)
+    try:
+        nombre = validar_nombre_persona(nombre, 'nombre')
+        apellido = validar_nombre_persona(apellido, 'apellido')
+        telefono = validar_telefono(telefono)
+    except ValidationError as error:
+        return JsonResponse({'success': False, 'error': error.messages[0]}, status=400)
     if not dni.isdigit() or len(dni) not in [7, 8]:
         return JsonResponse({'success': False, 'error': 'El DNI debe tener 7 u 8 números.'}, status=400)
     if User.objects.filter(username=dni).exists() or Cliente.objects.filter(dni=dni).exists():
