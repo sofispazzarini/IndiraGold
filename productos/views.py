@@ -26,7 +26,7 @@ from django.db import transaction
 from django.db.models import Q, Sum
 from decimal import Decimal, InvalidOperation
 from django.utils import timezone
-from .stock import repartir_stock_en_colores, sincronizar_stock_variante
+from .stock import repartir_stock_en_colores, sincronizar_stock_variante, usa_stock_por_color
 from carritos.utils import (
     get_or_create_cart,
     precio_unitario_vigente,
@@ -1136,7 +1136,12 @@ def editar_variante(request, variante_id):
     form = VarianteForm(instance=variante)
     
     # Pasamos los datos actuales para rellenar los inputs
-    stock_colores = {vc.color_id: vc.stock for vc in VarianteColor.objects.filter(variante=variante)}
+    if usa_stock_por_color(variante):
+        stock_colores = {vc.color_id: vc.stock for vc in VarianteColor.objects.filter(variante=variante)}
+    else:
+        # Talle con colores pero todavía sin stock por color: se propone el stock del talle
+        # repartido entre sus colores (si no, el form muestra 0 y al guardar se pierde el stock)
+        stock_colores = repartir_stock_en_colores(variante.stock, variante.colores.all())
     colores_stock = [
         {'color': color, 'stock': stock_colores.get(color.id, 0)}
         for color in variante.colores.all()
