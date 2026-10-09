@@ -163,6 +163,22 @@ def color_desde_form(nombre, codigo_hex):
     return color_obj
 
 
+def tiene_ventas(producto=None, variante=None):
+    """True si el producto o talle aparece en pedidos o ventas presenciales."""
+    from pedidos.models import PedidoItem, VentaLocalItem
+
+    if variante is not None:
+        return (
+            PedidoItem.objects.filter(variante=variante).exists()
+            or VentaLocalItem.objects.filter(variante=variante).exists()
+        )
+    return (
+        PedidoItem.objects.filter(variante__producto=producto).exists()
+        or VentaLocalItem.objects.filter(producto=producto).exists()
+        or VentaLocalItem.objects.filter(variante__producto=producto).exists()
+    )
+
+
 # --- DECORADOR AUXILIAR ---
 def admin_required(view_func):
     return login_required(user_passes_test(lambda u: u.is_superuser)(view_func))
@@ -630,8 +646,18 @@ def eliminar_esquema_tecnico(request, prod_id):
 def eliminar_producto(request, prod_id):
     producto = get_object_or_404(Producto, id=prod_id)
     subcat_id = producto.subcategoria.id if producto.subcategoria else None
-    producto.delete()
-    messages.success(request, 'Producto eliminado correctamente.')
+    if tiene_ventas(producto=producto):
+        # Borrarlo eliminaría ítems de pedidos y ventas ya hechos: se desactiva en su lugar
+        producto.activo = False
+        producto.save(update_fields=['activo'])
+        messages.warning(
+            request,
+            f'"{producto.nombre}" tiene ventas registradas, así que no se puede borrar sin perder '
+            'el historial. Lo desactivamos: ya no aparece en la tienda y podés reactivarlo desde Editar producto.'
+        )
+    else:
+        producto.delete()
+        messages.success(request, 'Producto eliminado correctamente.')
     if subcat_id:
         return redirect('productos:productos_por_subcategoria', subcat_id=subcat_id)
     return redirect('productos:gestion_productos')
@@ -644,6 +670,17 @@ def eliminar_variante(request, variante_id):
     variante = get_object_or_404(Variante, id=variante_id)
     producto = variante.producto
     producto_id = producto.id
+    if tiene_ventas(variante=variante):
+        # Borrarlo eliminaría ítems de pedidos y ventas ya hechos: se desactiva en su lugar
+        variante.activa = False
+        variante.save(update_fields=['activa'])
+        recalcular_stock_producto(producto)
+        messages.warning(
+            request,
+            f'El talle {variante.talle.nombre} tiene ventas registradas, así que no se puede borrar sin '
+            'perder el historial. Lo desactivamos: ya no se ofrece en la tienda.'
+        )
+        return redirect('productos:editar_producto', prod_id=producto_id)
     variante.delete()
     recalcular_stock_producto(producto)
     messages.success(request, 'Variante eliminada correctamente.')

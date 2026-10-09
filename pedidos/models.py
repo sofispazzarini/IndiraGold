@@ -183,7 +183,8 @@ class Pedido(models.Model):
 
 class PedidoItem(models.Model):
     pedido = models.ForeignKey(Pedido, on_delete=models.CASCADE, related_name='items')
-    variante = models.ForeignKey(Variante, on_delete=models.CASCADE)
+    # PROTECT: borrar un producto/talle no puede borrar ítems de pedidos ya hechos
+    variante = models.ForeignKey(Variante, on_delete=models.PROTECT)
     color_nombre = models.CharField(max_length=100, blank=True, null=True)
     cantidad = models.PositiveIntegerField()
     precio_unitario = models.DecimalField(max_digits=10, decimal_places=2)
@@ -333,14 +334,15 @@ class VentaLocalItem(models.Model):
         related_name='items'
     )
 
+    # PROTECT: borrar un producto/talle no puede borrar ítems de ventas ya hechas
     producto = models.ForeignKey(
         Producto,
-        on_delete=models.CASCADE
+        on_delete=models.PROTECT
     )
 
     variante = models.ForeignKey(
         Variante,
-        on_delete=models.CASCADE
+        on_delete=models.PROTECT
     )
 
     color = models.CharField(
