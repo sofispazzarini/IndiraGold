@@ -749,6 +749,7 @@ def detalle_pedido(request, pedido_id):
         'pago': pago,
         'pagos_registrados': pagos_registrados,
         'saldo_pendiente': saldo_pendiente,
+        'subtotal_items': sum((item.precio_total for item in pedido.items.all()), Decimal('0.00')),
         'items': pedido.items.all(),
         'variantes_disponibles': variantes_disponibles,
     }

@@ -393,12 +393,24 @@
             </div>
             <div class="detail-rows">
                 <div class="detail-row">
-                    <span class="detail-lbl">Subtotal</span>
-                    <span class="detail-val">${{ pedido.total }}</span>
+                    <span class="detail-lbl">Subtotal productos</span>
+                    <span class="detail-val">${{ subtotal_items }}</span>
                 </div>
+                {% if pedido.descuento_monto > 0 %}
                 <div class="detail-row">
-                    <span class="detail-lbl">Envio</span>
-                    <span class="detail-val" style="color:#9c8c7c;font-weight:400;">A coordinar</span>
+                    <span class="detail-lbl">Descuento{% if pedido.codigo_descuento %} ({{ pedido.codigo_descuento }}{% if pedido.descuento_porcentaje %} · {{ pedido.descuento_porcentaje }}%{% endif %}){% endif %}</span>
+                    <span class="detail-val" style="color:#2f6b38;">-${{ pedido.descuento_monto }}</span>
+                </div>
+                {% endif %}
+                <div class="detail-row">
+                    <span class="detail-lbl">Envío</span>
+                    {% if pedido.metodo_entrega == 'local' %}
+                    <span class="detail-val" style="color:#9c8c7c;font-weight:400;">Retiro en local</span>
+                    {% elif pedido.costo_envio > 0 %}
+                    <span class="detail-val">${{ pedido.costo_envio }}</span>
+                    {% else %}
+                    <span class="detail-val" style="color:#2f6b38;">Gratis</span>
+                    {% endif %}
                 </div>
                 <div class="detail-row">
                     <span class="detail-lbl">Articulos</span>
