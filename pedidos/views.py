@@ -476,8 +476,16 @@ def descontar_stock_variante(variante, cantidad, color_nombre=None):
 
 
 def reponer_stock_pedido(pedido):
+    """Al cancelar: vuelve al stock lo que el cliente todavía tiene del pedido. Las unidades ya
+    devueltas con nota de crédito o cambiadas ya volvieron al stock en su momento; en cambio, lo
+    que se entregó en un cambio sí vuelve ahora."""
     for item in pedido.items.select_related('variante__producto', 'variante__talle'):
-        reponer_stock(item.variante, item.cantidad, item.color_nombre)
+        pendientes = unidades_devolvibles(item)
+        if pendientes:
+            reponer_stock(item.variante, pendientes, item.color_nombre)
+    for cambio in pedido.cambios.select_related('variante_entregada__producto', 'variante_entregada__talle'):
+        if cambio.variante_entregada:
+            reponer_stock(cambio.variante_entregada, cambio.cantidad_entregada or 1, cambio.color_entregado or None)
 
 
 def cambiar_estado_pedido(pedido, nuevo_estado):
@@ -3696,6 +3704,8 @@ def registrar_cambio(request, pedido_id):
                         producto_devuelto=variante_devuelta.producto,
                         variante_entregada=variante_entregada,
                         producto_entregado=variante_entregada.producto,
+                        color_devuelto=item_devuelto.color_nombre or '',
+                        color_entregado=color_entregado or '',
                         motivo=motivo,
                     )
             except ValueError as error:
@@ -3709,22 +3719,27 @@ def registrar_cambio(request, pedido_id):
     return redirect('pedidos:detalle_pedido', pedido_id=pedido.id)
 
 
-def unidades_cambiables(pedido_item):
-    """Unidades de un ítem que todavía se pueden cambiar: lo comprado menos los cambios ya
-    registrados de ese talle en el pedido y lo devuelto con notas de crédito."""
-    cambios_previos = Cambio.objects.filter(
+def unidades_cambiadas(pedido_item):
+    """Unidades de un ítem que ya se cambiaron por otro producto."""
+    return Cambio.objects.filter(
         pedido=pedido_item.pedido,
         variante_devuelta=pedido_item.variante,
+    ).filter(
+        Q(color_devuelto=(pedido_item.color_nombre or '')) | Q(color_devuelto='')
     ).count()
-    return max(unidades_devolvibles(pedido_item) - cambios_previos, 0)
 
 
 def unidades_devolvibles(pedido_item):
-    """Unidades de un ítem que todavía se pueden devolver con nota de crédito."""
+    """Unidades de un ítem que el cliente todavía tiene: lo comprado menos lo devuelto con notas
+    de crédito (no anuladas) y lo ya cambiado. Es el máximo para una nueva NC o un nuevo cambio."""
     devueltas = pedido_item.devoluciones.exclude(nota_credito__estado='anulada').aggregate(
         total=Sum('cantidad')
     )['total'] or 0
-    return max(pedido_item.cantidad - devueltas, 0)
+    return max(pedido_item.cantidad - devueltas - unidades_cambiadas(pedido_item), 0)
+
+
+def unidades_cambiables(pedido_item):
+    return unidades_devolvibles(pedido_item)
 
 
 @admin_required

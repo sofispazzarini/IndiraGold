@@ -649,6 +649,9 @@ class Cambio(models.Model):
         verbose_name='Variante entregada'
     )
     cantidad_entregada = models.PositiveIntegerField(default=1)
+    # Colores del ítem devuelto y del entregado: para mover el stock por color si después se cancela
+    color_devuelto = models.CharField(max_length=100, blank=True, default='')
+    color_entregado = models.CharField(max_length=100, blank=True, default='')
 
     motivo = models.TextField(blank=True)
     fecha = models.DateTimeField(auto_now_add=True)
