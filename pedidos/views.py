@@ -513,6 +513,10 @@ def cambiar_estado_pedido(pedido, nuevo_estado):
     if estado_anterior in Pedido.ESTADOS_CON_STOCK_DESCONTADO and nuevo_estado == 'cancelado':
         reponer_stock_pedido(pedido)
 
+    # Un pedido cancelado, rechazado o vencido ya no se cobra
+    if nuevo_estado in ('cancelado', 'rechazado', 'vencido'):
+        pedido.deuda = Decimal('0.00')
+
     pedido.estado = nuevo_estado
     return True
 
@@ -612,21 +616,20 @@ def listado_gastos(request):
     return render(request, 'pedidos/listado_gastos.html', context)
 
 
-@admin_required
-def listado_deudas(request):
-    """
-    Listado de deudas pendientes: pedidos online y ventas presenciales con saldo.
-    """
+def deudas_pendientes(q=''):
+    """Deudas a cobrar: pedidos confirmados con saldo (no pendientes de confirmación ni
+    cancelados, rechazados o vencidos) y ventas presenciales con saldo. Ordenadas por monto."""
     pedidos_con_deuda = Pedido.objects.filter(
         deuda__gt=0
-    ).select_related('cliente__user').order_by('-deuda')
+    ).exclude(
+        estado__in=['pendiente', 'cancelado', 'rechazado', 'vencido']
+    ).select_related('cliente__user')
 
     ventas_con_deuda = VentaLocal.objects.filter(
         saldo_pendiente__gt=0
     ).select_related('cliente__user')
 
-    # Búsqueda por cliente o número de pedido/venta
-    q = request.GET.get('q', '').strip()
+    q = (q or '').strip()
     if q:
         filtro_cliente = (
             Q(cliente__user__first_name__icontains=q) |
@@ -663,7 +666,16 @@ def listado_deudas(request):
         for venta in ventas_con_deuda
     ]
     deudas.sort(key=lambda deuda: deuda['pendiente'], reverse=True)
+    return deudas
 
+
+@admin_required
+def listado_deudas(request):
+    """
+    Listado de deudas pendientes: pedidos online y ventas presenciales con saldo.
+    """
+    q = request.GET.get('q', '').strip()
+    deudas = deudas_pendientes(q)
     total_deudas = sum((deuda['pendiente'] for deuda in deudas), Decimal('0.00'))
 
     context = {

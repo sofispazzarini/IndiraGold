@@ -166,10 +166,12 @@ def dashboard_admin(request):
     pedidos_en_preparacion = Pedido.objects.filter(estado='en_preparacion').count()
     pedidos_enviados = Pedido.objects.filter(estado='enviado').count()
 
-    # Deudas activas
-    pedidos_con_deuda = Pedido.objects.filter(deuda__gt=0).select_related('cliente__user').order_by('-deuda')[:10]
-    total_deudas = Pedido.objects.filter(deuda__gt=0).aggregate(total=Sum('deuda'))['total'] or 0
-    cantidad_deudas = Pedido.objects.filter(deuda__gt=0).count()
+    # Deudas activas: mismas que en Gestión de deudas (pedidos confirmados y ventas presenciales)
+    from pedidos.views import deudas_pendientes
+    deudas = deudas_pendientes()
+    pedidos_con_deuda = deudas[:10]
+    total_deudas = sum(deuda['pendiente'] for deuda in deudas)
+    cantidad_deudas = len(deudas)
 
     context = {
         'total_clientes': total_clientes,

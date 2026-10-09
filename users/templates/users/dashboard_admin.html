@@ -557,7 +557,7 @@
       <div class="deudas-card-head">
         <div class="deudas-card-head-left">
           <i class="bi bi-exclamation-triangle" style="color:var(--burgundy);font-size:0.95rem;"></i>
-          <span>Pedidos con deuda</span>
+          <span>Pedidos y ventas con deuda</span>
         </div>
         <span class="deudas-total">Total: {{ total_deudas|pesos }}</span>
       </div>
@@ -573,20 +573,20 @@
           </tr>
         </thead>
         <tbody>
-          {% for pedido in pedidos_con_deuda %}
+          {% for deuda in pedidos_con_deuda %}
           <tr>
-            <td>#{{ pedido.id }}</td>
+            <td>{% if deuda.tipo != 'Pedido' %}Venta {% endif %}#{{ deuda.id }}</td>
             <td>
-              {% if pedido.cliente and pedido.cliente.user %}
-                {{ pedido.cliente.user.first_name }} {{ pedido.cliente.user.last_name }}
+              {% if deuda.cliente and deuda.cliente.user %}
+                {{ deuda.cliente.user.first_name }} {{ deuda.cliente.user.last_name }}
               {% else %}
                 <em style="color: var(--muted);">Sin cliente</em>
               {% endif %}
             </td>
-            <td>{{ pedido.total|pesos }}</td>
-            <td class="deuda-monto">{{ pedido.deuda|pesos }}</td>
+            <td>{{ deuda.total|pesos }}</td>
+            <td class="deuda-monto">{{ deuda.pendiente|pesos }}</td>
             <td>
-              <a href="{% url 'pedidos:detalle_pedido' pedido.id %}" class="deudas-ver-link">
+              <a href="{{ deuda.url }}" class="deudas-ver-link">
                 Ver <i class="bi bi-arrow-right"></i>
               </a>
             </td>
