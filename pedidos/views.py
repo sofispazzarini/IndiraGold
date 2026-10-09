@@ -64,6 +64,20 @@ def formato_pesos(valor):
     return f"${int(valor):,}".replace(",", ".")
 
 
+def leer_monto(valor):
+    """Convierte un monto ingresado por el usuario a Decimal con 2 decimales.
+    Devuelve None si está vacío, no es numérico o no es finito."""
+    if valor is None:
+        return None
+    try:
+        monto = Decimal(str(valor).strip().replace(',', '.'))
+    except (InvalidOperation, ValueError):
+        return None
+    if not monto.is_finite() or abs(monto) >= Decimal('1e12'):
+        return None
+    return monto.quantize(Decimal('0.01'))
+
+
 def monto_decimal(valor):
     return Decimal(valor).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
 
@@ -3079,11 +3093,25 @@ def registrar_pago_venta(request, venta_id):
         id=venta_id
     )
 
-    data = json.loads(request.body)
+    try:
+        data = json.loads(request.body)
+    except (json.JSONDecodeError, ValueError):
+        data = {}
 
-    monto = Decimal(
-        str(data.get('monto', 0))
-    )
+    monto = leer_monto(data.get('monto'))
+    saldo_actual = venta.total - venta.monto_pagado
+
+    if monto is None or monto <= 0:
+        return JsonResponse({'success': False, 'error': 'Ingresá un monto mayor a 0.'}, status=400)
+
+    if saldo_actual <= 0:
+        return JsonResponse({'success': False, 'error': 'Esta venta no tiene saldo pendiente.'}, status=400)
+
+    if monto > saldo_actual:
+        return JsonResponse({
+            'success': False,
+            'error': f'El monto no puede superar el saldo pendiente (${saldo_actual}).'
+        }, status=400)
 
     venta.monto_pagado += monto
 

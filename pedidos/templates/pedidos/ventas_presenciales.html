@@ -3136,7 +3136,7 @@ async function registrarPago(ventaId){
             boton.innerText = 'Guardar'
         }
 
-        alert('Error al registrar pago')
+        alert(data.error || 'Error al registrar pago')
     }
 }
 </script>
