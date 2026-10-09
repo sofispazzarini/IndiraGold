@@ -93,6 +93,7 @@
     .layout {
       margin-left: 240px;
       flex: 1;
+      min-width: 0; /* sin esto el layout crece al ancho mínimo de una tabla */
       display: flex;
       flex-direction: column;
       min-height: 100vh;
@@ -161,6 +162,19 @@
       padding: 2.5rem;
       max-width: 1200px;
       width: 100%;
+      /* Centrado en el espacio al lado del sidebar y sin crecer por contenido ancho (tablas) */
+      margin: 0 auto;
+      box-sizing: border-box;
+      min-width: 0;
+    }
+
+    /* Las pantallas traían su contenedor con width:100% + margin-left en % (15-40%) para "centrarse":
+       sumado al sidebar generaba scroll horizontal en notebooks y mobile. El centrado lo hace .main. */
+    .main > * {
+      box-sizing: border-box;
+      max-width: 100%;
+      margin-left: auto !important;
+      margin-right: auto !important;
     }
 
     /* ── MESSAGES ── */
