@@ -414,8 +414,13 @@ def eliminar_producto(request):
 @require_POST
 def expirar_carrito(request):
 	next_url = request.POST.get("next") or request.GET.get("next") or reverse("home:home")
-	clear_cart_session(request.session)
-	messages.info(request, "El tiempo del carrito expiró y los productos fueron eliminados.")
+	if request.user.is_authenticated:
+		# El carrito del cliente vive en la base: get_or_create_cart lo vacía si ya venció.
+		# Si todavía no venció (por ejemplo, reloj del navegador adelantado) no se toca.
+		get_or_create_cart(request)
+	else:
+		clear_cart_session(request.session)
+		messages.info(request, "El tiempo del carrito expiró y los productos fueron eliminados.")
 
 	if _is_ajax(request):
 		return _render_cart_fragment(request)

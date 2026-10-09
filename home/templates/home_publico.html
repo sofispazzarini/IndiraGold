@@ -1543,6 +1543,9 @@ function scrollCatOrden{{ cat_orden.id }}(dir) {
     expireValue.textContent = formatCountdown(cartExpiresIn);
   }
 
+  let expiracionIntentada = false;
+  let cuentaRegresivaActiva = cartExpiresIn > 0;
+
   function startCartExpiryTicker() {
     if (cartExpireTimer) clearInterval(cartExpireTimer);
     cartExpireTimer = setInterval(() => {
@@ -1557,8 +1560,11 @@ function scrollCatOrden{{ cat_orden.id }}(dir) {
         renderCartExpiry();
       }
 
-      if (cartExpiresIn <= 0 && !expiringNow && cartCount > 0) {
+      // Se intenta vencer una sola vez por cuenta regresiva: si el server dice que el carrito
+      // sigue vigente (o no tiene vencimiento) no se reintenta en bucle
+      if (cartExpiresIn <= 0 && !expiringNow && !expiracionIntentada && cartCount > 0 && cuentaRegresivaActiva) {
         expiringNow = true;
+        expiracionIntentada = true;
         expireCartNow();
       }
     }, 1000);
@@ -1613,6 +1619,10 @@ function scrollCatOrden{{ cat_orden.id }}(dir) {
     }
 
     cartExpiresIn = parseInt(fragment.dataset.cartExpiresIn || '0', 10) || 0;
+    if (cartExpiresIn > 0) {
+      cuentaRegresivaActiva = true;
+      expiracionIntentada = false;
+    }
     renderCartExpiry();
 
     const flashMessages = doc.querySelectorAll('.cart-flash-message');

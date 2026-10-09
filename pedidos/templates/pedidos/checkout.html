@@ -2478,8 +2478,8 @@ async function expireCheckoutCart() {
       }
     });
     if (response.ok) {
-      alert('Tu carrito expiró. Serás redirigido a la tienda.');
-      window.location.href = '{% url "home:home" %}';
+      // El server vacía el carrito solo si de verdad venció; recargar muestra el estado real
+      window.location.reload();
     }
   } catch (err) {
     console.error('Error expirando carrito:', err);

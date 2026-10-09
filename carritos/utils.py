@@ -172,6 +172,20 @@ def expire_cart_if_needed(session) -> bool:
     return False
 
 
+def vaciar_carrito_si_vencio(request, carrito):
+    """El carrito de un cliente logueado vence igual que el de un invitado (1 hora desde que
+    agregó el primer producto): si venció, se vacía en la base y se avisa una sola vez."""
+    if carrito is None or not carrito.expires_at or carrito.expires_at > timezone.now():
+        return False
+    if not carrito.items.exists():
+        return False
+    carrito.items.all().delete()
+    clear_cart_session(request.session)
+    from django.contrib import messages
+    messages.info(request, "Tu carrito expiró luego de 1 hora y los productos fueron eliminados.")
+    return True
+
+
 def get_or_create_cart(request):
     """
     Busca el carrito actual del usuario (ya sea logueado o anónimo).
@@ -191,6 +205,7 @@ def get_or_create_cart(request):
             activo=True
         )
 
+        vaciar_carrito_si_vencio(request, carrito)
 
         return carrito
 
