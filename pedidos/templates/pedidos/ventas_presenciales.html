@@ -2514,10 +2514,17 @@ document.getElementById(
             return
         }
 
-        if(cantidad > stockDisponible){
+        // Restar lo que ya está cargado en esta venta para el mismo talle
+        const yaEnVenta = productosVenta
+            .filter(p => p.variante_id == variante.id)
+            .reduce((acc, p) => acc + p.cantidad, 0)
+
+        if(cantidad + yaEnVenta > stockDisponible){
 
             mostrarMensaje(
-                'No hay stock suficiente para ese talle y color'
+                yaEnVenta > 0
+                    ? `No hay stock suficiente: ya agregaste ${yaEnVenta} y quedan ${stockDisponible} en total`
+                    : 'No hay stock suficiente para ese talle y color'
             )
 
             return

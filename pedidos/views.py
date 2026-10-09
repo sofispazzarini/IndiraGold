@@ -2653,7 +2653,13 @@ def registrar_venta_local(request):
         direccion_id = data.get('direccion_id')
         es_regalo = bool(data.get('es_regalo'))
         
-        nueva_deuda = Decimal(str(data.get('nueva_deuda', 0)))
+        nueva_deuda = leer_monto(data.get('nueva_deuda') or 0)
+
+        if nueva_deuda is None:
+            return JsonResponse({
+                'success': False,
+                'error': 'El monto de la deuda no es válido'
+            }, status=400)
 
         if not cliente_id or not productos:
 
@@ -2692,33 +2698,22 @@ def registrar_venta_local(request):
                     'error': 'Seleccioná una dirección de envío'
                 }, status=400)
 
-        total = 0
-
-        venta = VentaLocal.objects.create(
-
-            cliente=cliente,
-
-            total=0,
-
-            monto_pagado=0,
-
-            saldo_pendiente=0,
-
-            estado_pago='PAGADO',
-            
-            metodo_pago=metodo_pago,
-            metodo_entrega=metodo_entrega,
-            direccion=direccion,
-            es_regalo=es_regalo
-        )
+        # Validar todos los ítems y la deuda ANTES de guardar nada, para no dejar
+        # ventas a medias ni descontar stock si algo falla.
+        total = Decimal('0.00')
+        lineas = []
+        pedidas_por_variante = {}
 
         for item in productos:
 
-            variante = Variante.objects.get(
-                id=item['variante_id']
+            variante = Variante.objects.select_for_update().select_related('producto').get(
+                id=item.get('variante_id')
             )
 
-            cantidad = int(item['cantidad'])
+            try:
+                cantidad = int(item.get('cantidad'))
+            except (TypeError, ValueError):
+                cantidad = 0
 
             if cantidad < 1:
                 return JsonResponse({
@@ -2726,10 +2721,15 @@ def registrar_venta_local(request):
                     'error': 'La cantidad debe ser mayor a cero'
                 }, status=400)
 
-            if variante.stock < cantidad:
+            pedidas_por_variante[variante.id] = pedidas_por_variante.get(variante.id, 0) + cantidad
+
+            if variante.stock < pedidas_por_variante[variante.id]:
                 return JsonResponse({
                     'success': False,
-                    'error': f'No hay stock suficiente para {variante.producto.nombre}'
+                    'error': (
+                        f'No hay stock suficiente para {variante.producto.nombre}. '
+                        f'Disponible: {variante.stock}, en la venta: {pedidas_por_variante[variante.id]}'
+                    )
                 }, status=400)
 
             # Usar precio de variante o del producto si es 0
@@ -2744,30 +2744,9 @@ def registrar_venta_local(request):
                 precio_unitario = precio_base
 
             subtotal = precio_unitario * cantidad
-
-            VentaLocalItem.objects.create(
-
-                venta=venta,
-
-                producto=variante.producto,
-
-                variante=variante,
-
-                color=item['color'],
-
-                cantidad=cantidad,
-
-                precio_unitario=precio_unitario,
-
-                subtotal=subtotal
-
-            )
-
-            descontar_stock_variante(variante, cantidad)
-
             total += subtotal
+            lineas.append((variante, item.get('color') or '', cantidad, precio_unitario, subtotal))
 
-        venta.total = total
         if nueva_deuda < 0:
             return JsonResponse({
                 'success': False,
@@ -2778,6 +2757,46 @@ def registrar_venta_local(request):
                 'success': False,
                 'error': 'La deuda no puede ser mayor al total de la venta'
             }, status=400)
+
+        venta = VentaLocal.objects.create(
+
+            cliente=cliente,
+
+            total=total,
+
+            monto_pagado=0,
+
+            saldo_pendiente=0,
+
+            estado_pago='PAGADO',
+            
+            metodo_pago=metodo_pago,
+            metodo_entrega=metodo_entrega,
+            direccion=direccion,
+            es_regalo=es_regalo
+        )
+
+        for variante, color, cantidad, precio_unitario, subtotal in lineas:
+
+            VentaLocalItem.objects.create(
+
+                venta=venta,
+
+                producto=variante.producto,
+
+                variante=variante,
+
+                color=color,
+
+                cantidad=cantidad,
+
+                precio_unitario=precio_unitario,
+
+                subtotal=subtotal
+
+            )
+
+            descontar_stock_variante(variante, cantidad)
 
         monto_pagado = total - nueva_deuda
         saldo_pendiente = nueva_deuda
@@ -2820,11 +2839,13 @@ def registrar_venta_local(request):
         })
     
     except Cliente.DoesNotExist:
+        transaction.set_rollback(True)
         return JsonResponse({
             'success': False,
             'error': 'Cliente no encontrado'
         }, status=404)
     except Variante.DoesNotExist:
+        transaction.set_rollback(True)
         return JsonResponse({
             'success': False,
             'error': 'Producto no encontrado'
@@ -2835,6 +2856,7 @@ def registrar_venta_local(request):
             'error': 'Formato de datos inválido'
         }, status=400)
     except Exception as e:
+        transaction.set_rollback(True)
         return JsonResponse({
             'success': False,
             'error': f'Error al registrar venta: {str(e)}'
