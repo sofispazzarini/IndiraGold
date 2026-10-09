@@ -61,7 +61,10 @@
       letter-spacing: .15em; text-transform: uppercase; margin-top: .3rem;
     }
 
-    .sidebar__nav { padding: 1rem 0; flex: 1; overflow-y: auto; }
+    .sidebar__nav { padding: 1rem 0; flex: 1; overflow-y: auto; scrollbar-width: thin; scrollbar-color: rgba(184,146,42,.55) transparent; }
+    /* Barra de scroll del menú visible (antes era del color del fondo y no se notaba que había más opciones) */
+    .sidebar__nav::-webkit-scrollbar { width: 6px; }
+    .sidebar__nav::-webkit-scrollbar-thumb { background: rgba(184,146,42,.55); border-radius: 99px; }
 
     .nav-section {
       padding: .75rem 1.25rem .3rem; font-size: .6rem;
@@ -418,12 +421,22 @@
   // Sidebar scroll persistence
   const sidebarNav = document.querySelector('.sidebar__nav');
   if (sidebarNav) {
-    const savedScroll = sessionStorage.getItem('sidebarScroll');
+    let savedScroll = null;
+    try { savedScroll = sessionStorage.getItem('sidebarScroll'); } catch (e) {}
     if (savedScroll) {
       sidebarNav.scrollTop = parseInt(savedScroll, 10);
     }
+    // La opción de la pantalla actual siempre queda a la vista
+    const activo = sidebarNav.querySelector('.nav-link.active');
+    if (activo) {
+      const navRect = sidebarNav.getBoundingClientRect();
+      const linkRect = activo.getBoundingClientRect();
+      if (linkRect.top < navRect.top || linkRect.bottom > navRect.bottom) {
+        activo.scrollIntoView({ block: 'center' });
+      }
+    }
     sidebarNav.addEventListener('scroll', function() {
-      sessionStorage.setItem('sidebarScroll', this.scrollTop);
+      try { sessionStorage.setItem('sidebarScroll', this.scrollTop); } catch (e) {}
     });
   }
 
