@@ -156,7 +156,8 @@ def dashboard_admin(request):
     from pedidos.models import Pedido
     from django.db.models import Sum
 
-    total_clientes = Cliente.objects.count()
+    # El admin también tiene Cliente: no se cuenta como clienta
+    total_clientes = Cliente.objects.filter(user__is_superuser=False).count()
     total_categorias = Categoria.objects.count()
     total_productos = Producto.objects.count()
     pedidos_activos = Pedido.objects.exclude(estado__in=['entregado', 'cancelado', 'vencido']).count()
@@ -174,6 +175,49 @@ def dashboard_admin(request):
     total_deudas = sum(deuda['pendiente'] for deuda in deudas)
     cantidad_deudas = len(deudas)
 
+    # Actividad reciente: últimos pedidos, ventas presenciales, clientas y productos nuevos
+    from django.utils.html import format_html
+    from django.utils.timesince import timesince
+    from pedidos.models import VentaLocal
+    from pedidos.templatetags.moneda import pesos
+
+    def nombre_cliente(cliente):
+        if cliente and cliente.user:
+            return f'{cliente.user.first_name} {cliente.user.last_name}'.strip() or cliente.user.username
+        return 'Sin cliente'
+
+    eventos = []
+    for pedido in Pedido.objects.select_related('cliente__user').order_by('-created_at')[:6]:
+        cerrado = pedido.estado in ('cancelado', 'rechazado', 'vencido')
+        eventos.append((pedido.created_at, {
+            'tipo': 'cancelled' if cerrado else 'new-order',
+            'icono': 'x-circle' if cerrado else 'bag-check',
+            'texto': format_html('Pedido <strong>#{}</strong> de {} · {}', pedido.id, nombre_cliente(pedido.cliente), pedido.get_estado_display()),
+        }))
+    for venta in VentaLocal.objects.select_related('cliente__user').order_by('-created_at')[:6]:
+        eventos.append((venta.created_at, {
+            'tipo': 'new-order',
+            'icono': 'shop',
+            'texto': format_html('Venta presencial <strong>#{}</strong> a {} · {}', venta.id, nombre_cliente(venta.cliente), pesos(venta.total)),
+        }))
+    for cliente in Cliente.objects.select_related('user').filter(user__is_superuser=False).order_by('-user__date_joined')[:6]:
+        eventos.append((cliente.user.date_joined, {
+            'tipo': 'new-client',
+            'icono': 'person-plus',
+            'texto': format_html('Nueva clienta: <strong>{}</strong>', nombre_cliente(cliente)),
+        }))
+    for producto in Producto.objects.order_by('-created_at')[:6]:
+        eventos.append((producto.created_at, {
+            'tipo': 'new-product',
+            'icono': 'box-seam',
+            'texto': format_html('Producto nuevo: <strong>{}</strong>', producto.nombre),
+        }))
+    eventos.sort(key=lambda evento: evento[0], reverse=True)
+    actividades_recientes = [
+        dict(evento, tiempo=f"hace {timesince(fecha).split(',')[0]}")
+        for fecha, evento in eventos[:8]
+    ]
+
     context = {
         'total_clientes': total_clientes,
         'total_categorias': total_categorias,
@@ -186,6 +230,7 @@ def dashboard_admin(request):
         'pedidos_con_deuda': pedidos_con_deuda,
         'total_deudas': total_deudas,
         'cantidad_deudas': cantidad_deudas,
+        'actividades_recientes': actividades_recientes,
     }
     return render(request, 'users/dashboard_admin.html', context)
 # Vista para listado y búsqueda de clientes (solo admin)
