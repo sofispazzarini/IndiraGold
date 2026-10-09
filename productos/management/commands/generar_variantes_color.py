@@ -1,5 +1,6 @@
 from django.core.management.base import BaseCommand
 from productos.models import Variante, VarianteColor
+from productos.stock import repartir_stock_en_colores
 
 
 class Command(BaseCommand):
@@ -37,7 +38,14 @@ class Command(BaseCommand):
         errores = 0
 
         for variante in variantes:
-            for color in variante.colores.all():
+            colores = list(variante.colores.all())
+            # Un talle sin registros por color reparte su stock entre los colores nuevos
+            reparto = (
+                repartir_stock_en_colores(variante.stock, colores)
+                if not VarianteColor.objects.filter(variante=variante).exists()
+                else {}
+            )
+            for color in colores:
                 if dry_run:
                     existe = VarianteColor.objects.filter(variante=variante, color=color).exists()
                     if existe:
@@ -51,7 +59,7 @@ class Command(BaseCommand):
                         vc, created = VarianteColor.objects.get_or_create(
                             variante=variante,
                             color=color,
-                            defaults={'activo': variante.activa}
+                            defaults={'activo': variante.activa, 'stock': reparto.get(color.id, 0)}
                         )
                         if created:
                             creados += 1

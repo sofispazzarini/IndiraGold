@@ -122,3 +122,14 @@ def reponer_stock(variante, cantidad, color_nombre=None):
         variante.stock += cantidad
         variante.save(update_fields=['stock'])
     sincronizar_stock_variante(variante)
+
+
+def repartir_stock_en_colores(stock, colores):
+    """Reparte el stock de un talle entre sus colores en partes iguales (el resto va a los
+    primeros). Devuelve {color_id: stock}. Se usa cuando un talle pasa a tener stock por color
+    y no hay otro dato: así no se pierden unidades vendibles."""
+    colores = list(colores)
+    if not colores:
+        return {}
+    base, resto = divmod(max(stock, 0), len(colores))
+    return {color.id: base + (1 if index < resto else 0) for index, color in enumerate(colores)}

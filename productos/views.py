@@ -25,7 +25,7 @@ from .forms import (
 from django.db.models import Q, Sum
 from decimal import Decimal
 from django.utils import timezone
-from .stock import sincronizar_stock_variante
+from .stock import repartir_stock_en_colores, sincronizar_stock_variante
 from carritos.utils import (
     get_or_create_cart,
     precio_unitario_vigente,
@@ -96,6 +96,14 @@ def sincronizar_qrs_variante_color(variante, regenerar_qr=False):
     registros_actuales = list(VarianteColor.objects.filter(variante=variante).select_related('color'))
     ids_nuevos = {color.id for color in colores_actuales}
 
+    # Si el talle todavía no tenía stock por color, los registros nuevos reciben el stock
+    # del talle repartido entre sus colores (antes se creaban en 0 y el producto dejaba de venderse)
+    reparto_inicial = (
+        repartir_stock_en_colores(variante.stock, colores_actuales)
+        if not registros_actuales
+        else {}
+    )
+
     para_borrar = [vc for vc in registros_actuales if vc.color_id not in ids_nuevos]
     for vc in para_borrar:
         vc.delete()
@@ -104,7 +112,7 @@ def sincronizar_qrs_variante_color(variante, regenerar_qr=False):
         vc, created = VarianteColor.objects.get_or_create(
             variante=variante,
             color=color,
-            defaults={'activo': True}
+            defaults={'activo': True, 'stock': reparto_inicial.get(color.id, 0)}
         )
         if created or regenerar_qr or not vc.qr_code:
             vc.qr_code = str(uuid.uuid4())
@@ -1128,8 +1136,21 @@ def producto_qrs_impresion(request, producto_id):
 
     # Generar VarianteColor automáticamente si no existen y revalidar la sincronización de QR
     variantes = producto.variantes.filter(activa=True).prefetch_related('colores')
+    talles_repartidos = []
     for variante in variantes:
+        cantidad_colores = variante.colores.count()
+        sin_registros = not VarianteColor.objects.filter(variante=variante).exists()
         sincronizar_qrs_variante_color(variante)
+        if sin_registros and cantidad_colores > 1 and variante.stock > 0:
+            talles_repartidos.append(variante.talle.nombre)
+
+    if talles_repartidos:
+        messages.warning(
+            request,
+            'Se generaron los QR por color. El stock de los talles '
+            f"{', '.join(talles_repartidos)} se repartió en partes iguales entre sus colores: "
+            'revisalo en Editar producto.'
+        )
 
     variantes_color = VarianteColor.objects.filter(
         variante__producto=producto,
