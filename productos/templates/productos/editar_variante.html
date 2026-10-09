@@ -117,6 +117,8 @@
 document.getElementById('btnAgregarColor').addEventListener('click', function() {
     const colorHex = document.getElementById('colorPicker').value;
     const colorNombre = document.getElementById('colorNombreInput').value.trim() || colorHex;
+    // Escapado para el HTML: un nombre con comillas no corta el valor del input
+    const colorNombreHtml = colorNombre.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     const contenedor = document.getElementById('contenedorColores');
 
     // Eliminar mensaje de "sin colores"
@@ -124,10 +126,10 @@ document.getElementById('btnAgregarColor').addEventListener('click', function() 
     if (msgVacio) msgVacio.remove();
 
     const html = `
-        <span class="color-chip d-inline-flex align-items-center gap-1 px-2 py-1 rounded" style="background: #333;" title="${colorNombre}">
+        <span class="color-chip d-inline-flex align-items-center gap-1 px-2 py-1 rounded" style="background: #333;" title="${colorNombreHtml}">
             <span style="display:inline-block; width:20px; height:20px; background-color:${colorHex}; border-radius:50%; border:2px solid #fff;"></span>
-            <span class="text-white small">${colorNombre}</span>
-            <input type="hidden" name="colores" value="${colorNombre}|${colorHex}">
+            <span class="text-white small">${colorNombreHtml}</span>
+            <input type="hidden" name="colores" value="${colorNombreHtml}|${colorHex}">
             <input type="number" name="stock_color" class="form-control form-control-sm stock-color-input" value="0" min="0" style="width:64px; padding:2px 6px;" title="Stock de este color" oninput="recalcularStockTalle()">
             <button type="button" class="btn-close btn-close-white ms-1" style="font-size:0.4rem" onclick="this.parentElement.remove(); recalcularStockTalle()"></button>
         </span>
