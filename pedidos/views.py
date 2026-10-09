@@ -2308,18 +2308,33 @@ def estadisticas_ventas(request):
             item['estado']
         )
 
-    # Productos más vendidos
-    productos_top = (
-        PedidoItem.objects
-        .filter(pedido__in=pedidos)
-        .values('variante__producto__nombre')
-        .annotate(
-            cantidad_total=Sum('cantidad'),
-            ingresos=Sum('precio_total'),
-            precio_promedio=Avg('precio_unitario')
-        )
-        .order_by('-cantidad_total')[:6]
+    # Ventas presenciales del período: también son ventas (top, por tipo y evolución)
+    ventas_locales_periodo = VentaLocal.objects.filter(
+        created_at__date__gte=fecha_inicio,
+        created_at__date__lte=fecha_fin
     )
+
+    # Productos más vendidos: pedidos confirmados + ventas presenciales
+    acumulado_top = {}
+    filas_pedidos = (
+        PedidoItem.objects.filter(pedido__in=pedidos)
+        .values('variante__producto__nombre')
+        .annotate(cantidad_total=Sum('cantidad'), ingresos=Sum('precio_total'))
+    )
+    filas_locales = (
+        VentaLocalItem.objects.filter(venta__in=ventas_locales_periodo)
+        .values('producto__nombre')
+        .annotate(cantidad_total=Sum('cantidad'), ingresos=Sum('subtotal'))
+    )
+    for nombre, fila in [(f['variante__producto__nombre'], f) for f in filas_pedidos] + [(f['producto__nombre'], f) for f in filas_locales]:
+        actual = acumulado_top.setdefault(nombre, {'variante__producto__nombre': nombre, 'cantidad_total': 0, 'ingresos': Decimal('0.00')})
+        actual['cantidad_total'] += fila['cantidad_total'] or 0
+        actual['ingresos'] += fila['ingresos'] or Decimal('0.00')
+    for actual in acumulado_top.values():
+        actual['precio_promedio'] = (
+            actual['ingresos'] / actual['cantidad_total'] if actual['cantidad_total'] else Decimal('0.00')
+        )
+    productos_top = sorted(acumulado_top.values(), key=lambda fila: fila['cantidad_total'], reverse=True)[:6]
 
     # Ventas por tipo
     ventas_por_tipo = (
@@ -2336,12 +2351,22 @@ def estadisticas_ventas(request):
         for valor, label in Pedido.TIPOS_VENTA
     }
 
+    ventas_por_tipo = list(ventas_por_tipo)
     for item in ventas_por_tipo:
 
         item['tipo_label'] = tipos_venta_dict.get(
             item['tipo_venta'],
             item['tipo_venta']
         )
+
+    if ventas_locales_periodo.exists():
+        ventas_por_tipo.append({
+            'tipo_venta': 'venta_local',
+            'tipo_label': 'Ventas en el local',
+            'cantidad': ventas_locales_periodo.count(),
+            'total': ventas_locales_periodo.aggregate(total=Sum('total'))['total'] or Decimal('0.00'),
+        })
+        ventas_por_tipo.sort(key=lambda item: item['cantidad'], reverse=True)
 
     # Evolución diaria
     evolucion_diaria = []
@@ -2355,12 +2380,14 @@ def estadisticas_ventas(request):
             estado__in=Pedido.ESTADOS_CON_STOCK_DESCONTADO,
         )
 
+        ventas_locales_dia = VentaLocal.objects.filter(created_at__date=fecha)
+
         total_dia = (
-            pedidos_dia.aggregate(Sum('total'))['total__sum']
-            or Decimal('0.00')
+            (pedidos_dia.aggregate(Sum('total'))['total__sum'] or Decimal('0.00'))
+            + (ventas_locales_dia.aggregate(Sum('total'))['total__sum'] or Decimal('0.00'))
         )
 
-        cantidad_dia = pedidos_dia.count()
+        cantidad_dia = pedidos_dia.count() + ventas_locales_dia.count()
 
         evolucion_diaria.append({
             'fecha': fecha.strftime('%d/%m/%Y'),
