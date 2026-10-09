@@ -203,7 +203,7 @@ def listado_clientes(request):
 @login_required
 @user_passes_test(lambda u: u.is_superuser)
 def agregar_direccion(request, cliente_id):
-    cliente = Cliente.objects.get(pk=cliente_id)
+    cliente = get_object_or_404(Cliente, pk=cliente_id)
     direcciones = direcciones_sin_duplicados(cliente.direcciones.all().order_by('etiqueta', 'calle', 'numero'))
     mensaje = None
     if request.method == 'POST':
@@ -239,7 +239,7 @@ def agregar_direccion(request, cliente_id):
 @login_required
 @user_passes_test(lambda u: u.is_superuser)
 def editar_cliente(request, cliente_id):
-    cliente = Cliente.objects.select_related('user').get(pk=cliente_id)
+    cliente = get_object_or_404(Cliente.objects.select_related('user'), pk=cliente_id)
     user = cliente.user
     mensaje = None
     if request.method == 'POST':
