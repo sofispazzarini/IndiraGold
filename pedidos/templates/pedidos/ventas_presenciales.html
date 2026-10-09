@@ -2067,6 +2067,12 @@ function obtenerStockSeleccionado(){
         return null
     }
 
+    // Si el talle tiene stock por color, el disponible es el del color elegido
+    const colorElegido = variante.colores.find(c => (c.nombre || c) === color)
+    if(colorElegido && colorElegido.stock !== null && colorElegido.stock !== undefined){
+        return colorElegido.stock
+    }
+
     return variante.stock
 }
 
@@ -2476,9 +2482,15 @@ document.getElementById(
                 btn.className = 'color-btn';
                 btn.dataset.color = nombre;
                 btn.dataset.hex = hex;
-                btn.title = nombre;
+                const sinStock = color.stock === 0;
+                btn.title = sinStock ? `${nombre} (sin stock)` : (color.stock != null ? `${nombre} (${color.stock} disponibles)` : nombre);
                 btn.innerHTML = `<span style="display:inline-block; width:28px; height:28px; border-radius:50%; background-color:${escHtml(hex)}; border:2px solid #ddd;"></span>`;
                 btn.style.cssText = 'padding:4px; border:2px solid transparent; border-radius:8px; background:none; cursor:pointer;';
+                if (sinStock) {
+                    btn.disabled = true;
+                    btn.style.opacity = '0.35';
+                    btn.style.cursor = 'not-allowed';
+                }
                 btn.onclick = function() {
                     document.querySelectorAll('.color-btn').forEach(b => b.style.borderColor = 'transparent');
                     this.style.borderColor = '#b8922a';
@@ -2566,8 +2578,9 @@ document.getElementById(
         }
 
         // Restar lo que ya está cargado en esta venta para el mismo talle
+        const usaStockPorColor = variante.colores.some(c => c.stock !== null && c.stock !== undefined)
         const yaEnVenta = productosVenta
-            .filter(p => p.variante_id == variante.id)
+            .filter(p => p.variante_id == variante.id && (!usaStockPorColor || p.color === color))
             .reduce((acc, p) => acc + p.cantidad, 0)
 
         if(cantidad + yaEnVenta > stockDisponible){

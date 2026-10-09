@@ -1178,7 +1178,8 @@ def obtener_variantes_producto(request, producto_id):
         activa=True,
         stock__gt=0
     ).prefetch_related(
-        'colores'
+        'colores',
+        'variante_colores__color',
     )
 
     data = []
@@ -1186,12 +1187,23 @@ def obtener_variantes_producto(request, producto_id):
     for variante in variantes:
 
         colores = []
+        colores_con_stock = [vc for vc in variante.variante_colores.all() if vc.activo]
 
-        for color in variante.colores.all():
-            colores.append({
-                'nombre': color.nombre,
-                'hex': color.codigo_hex
-            })
+        if colores_con_stock:
+            # El talle tiene stock por color: se informa el stock de cada color
+            for vc in colores_con_stock:
+                colores.append({
+                    'nombre': vc.color.nombre,
+                    'hex': vc.color.codigo_hex,
+                    'stock': vc.stock,
+                })
+        else:
+            for color in variante.colores.all():
+                colores.append({
+                    'nombre': color.nombre,
+                    'hex': color.codigo_hex,
+                    'stock': None,
+                })
 
         # El precio publicado es el del producto (el del talle solo si el producto no tiene)
         precio_base = producto.precio or variante.precio
