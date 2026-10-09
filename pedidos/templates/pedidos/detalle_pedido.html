@@ -51,9 +51,11 @@
     }
     .client-line {
         font-size: 0.8rem; color: #9c8c7c; margin-top: 0.6rem;
-        display: flex; align-items: center; gap: 0.5rem;
+        display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;
     }
     .client-line strong { color: #3d342a; font-weight: 600; }
+    .client-line a { color: inherit; text-decoration: none; }
+    .client-line a:hover { color: #b8922a; }
     .header-actions { display: flex; align-items: center; gap: 0.75rem; flex-shrink: 0; }
     .btn-act {
         display: inline-flex; align-items: center; gap: 0.5rem;
@@ -281,9 +283,18 @@
         </h1>
         <div class="client-line">
             <i class="bi bi-person" style="color:#b8922a;font-size:0.85rem;"></i>
-            <strong>{{ pedido.cliente.user.username }}</strong>
+            {# Nombre y contacto del cliente (antes se mostraba el DNI dos veces) #}
+            <strong>{{ pedido.cliente.user.get_full_name|default:pedido.cliente.user.username }}</strong>
             <span style="color:#e8dfd4;">·</span>
             DNI: {{ pedido.cliente.dni }}
+            {% if pedido.cliente.telefono %}
+            <span style="color:#e8dfd4;">·</span>
+            <a href="tel:{{ pedido.cliente.telefono }}"><i class="bi bi-telephone"></i> {{ pedido.cliente.telefono }}</a>
+            {% endif %}
+            {% if pedido.cliente.user.email %}
+            <span style="color:#e8dfd4;">·</span>
+            <a href="mailto:{{ pedido.cliente.user.email }}"><i class="bi bi-envelope"></i> {{ pedido.cliente.user.email }}</a>
+            {% endif %}
         </div>
     </div>
     <div class="header-actions">
