@@ -19,6 +19,42 @@ from config.contacto import whatsapp_numero
 from .models import SlideCarrousel, ConfiguracionHero
 from .forms import SlideCarrouselForm
 
+def variantes_json(producto):
+    """Talles del producto para el modal "Agregar" de la home: stock y colores de cada talle."""
+    from productos.views import normalizar_hex_color
+
+    variantes_data = []
+    for v in producto.variantes.filter(activa=True).select_related('talle').prefetch_related('colores', 'variante_colores__color'):
+        colores_con_stock = [
+            {
+                'nombre': vc.color.nombre,
+                'codigo_hex': normalizar_hex_color(vc.color.nombre, vc.color.codigo_hex),
+                'stock': vc.stock,
+            }
+            for vc in v.variante_colores.all() if vc.activo
+        ]
+        # Con stock por color, el disponible del talle es la suma de sus colores
+        stock_talle = sum(c['stock'] for c in colores_con_stock) if colores_con_stock else v.stock
+        if not colores_con_stock:
+            # Talle con colores pero sin stock por color: igual se elige el color
+            # (comparten el stock del talle), como en el detalle del producto
+            colores_con_stock = [
+                {
+                    'nombre': color.nombre,
+                    'codigo_hex': normalizar_hex_color(color.nombre, color.codigo_hex),
+                    'stock': v.stock,
+                }
+                for color in v.colores.all()
+            ]
+        variantes_data.append({
+            'id': v.id,
+            'talle': v.talle.nombre,
+            'stock': stock_talle,
+            'colores': colores_con_stock,
+        })
+    return json.dumps(variantes_data)
+
+
 class HomePublicaView(TemplateView):
     template_name = 'home_publico.html'
     def get_context_data(self, **kwargs):
@@ -28,23 +64,7 @@ class HomePublicaView(TemplateView):
         productos = Producto.objects.filter(activo=True).prefetch_related('variantes__talle', 'variantes__colores')
 
         for producto in productos:
-            variantes_data = []
-            for v in producto.variantes.filter(activa=True).select_related('talle').prefetch_related('colores', 'variante_colores__color'):
-                colores_con_stock = []
-                for vc in v.variante_colores.filter(activo=True):
-                    colores_con_stock.append({
-                        'nombre': vc.color.nombre,
-                        'codigo_hex': vc.color.codigo_hex or '#888888',
-                        'stock': vc.stock,
-                    })
-                variantes_data.append({
-                    'id': v.id,
-                    'talle': v.talle.nombre,
-                    # Con stock por color, el disponible del talle es la suma de sus colores
-                    'stock': sum(c['stock'] for c in colores_con_stock) if colores_con_stock else v.stock,
-                    'colores': colores_con_stock,
-                })
-            producto.variantes_json = json.dumps(variantes_data)
+            producto.variantes_json = variantes_json(producto)
 
         talles = (
             Talle.objects.filter(variante__activa=True, variante__stock__gt=0, variante__producto__activo=True)
@@ -223,22 +243,7 @@ class HomePublicaView(TemplateView):
             for rel in cat_orden.categoriaordenproducto_set.all():
                 producto = rel.producto
                 if not hasattr(producto, 'variantes_json') or not producto.variantes_json:
-                    variantes_data = []
-                    for v in producto.variantes.filter(activa=True).prefetch_related('variante_colores__color'):
-                        colores_con_stock = []
-                        for vc in v.variante_colores.filter(activo=True):
-                            colores_con_stock.append({
-                                'nombre': vc.color.nombre,
-                                'codigo_hex': vc.color.codigo_hex or '#888888',
-                                'stock': vc.stock,
-                            })
-                        variantes_data.append({
-                            'id': v.id,
-                            'talle': v.talle.nombre,
-                            'stock': v.stock,
-                            'colores': colores_con_stock,
-                        })
-                    producto.variantes_json = json.dumps(variantes_data)
+                    producto.variantes_json = variantes_json(producto)
         ctx['categorias_orden'] = categorias_orden
 
         # Obtener planes de cuotas para el banner
