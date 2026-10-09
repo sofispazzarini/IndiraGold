@@ -383,11 +383,11 @@ def confirmar_direccion(request):
                 return render(request, "users/confirmar_direccion.html", {
                     "data": data,
                     "form": form,
-                    "error": "Ya existe una cuenta con ese DNI o correo. Inicia sesion con tu DNI o volve al registro con otros datos.",
+                    "error": "Ya existe una cuenta con ese DNI o correo. Iniciá sesión con tu DNI o volvé al registro con otros datos.",
                 })
             request.session.pop("registro_data", None)
             return redirect("users:login")
-        return render(request, "users/confirmar_direccion.html", {"data": data, "form": form, "error": "No pudimos confirmar la direcciÃ³n. RevisÃ¡ los datos e intentÃ¡ de nuevo."})
+        return render(request, "users/confirmar_direccion.html", {"data": data, "form": form, "error": "No pudimos confirmar la dirección. Revisá los datos e intentá de nuevo."})
 
     # Render normal
     form = RegistroUsuarioForm(initial=data)
