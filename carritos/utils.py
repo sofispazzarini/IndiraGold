@@ -35,7 +35,9 @@ def _normalize_color_token(value) -> str:
 
 def _make_cart_item_key(variante_id, color_nombre=None, color_hex=None) -> str:
     base_key = str(int(variante_id))
-    color_token = _normalize_color_token(color_hex or color_nombre)
+    # El nombre identifica al color; varios colores pueden compartir el mismo hex
+    # (ej. Marrón y Beige con #888888), así que el hex solo se usa si no hay nombre.
+    color_token = _normalize_color_token(color_nombre or color_hex)
     return f"{base_key}{SESSION_CART_ITEM_KEY_SEPARATOR}{color_token}" if color_token else base_key
 
 
