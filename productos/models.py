@@ -1,6 +1,7 @@
 import uuid
 import io
 from django.db import models
+from django.core.validators import MinValueValidator
 from decimal import Decimal
 # Tipos de medida globales (ej: Largo, Ancho, Circunferencia)
 class TipoMedida(models.Model):
@@ -53,7 +54,11 @@ class Producto(models.Model):
     tipo = models.CharField(max_length=150)
     tela = models.CharField(max_length=150)
     descripcion = models.TextField(blank=True, null=True)
-    precio = models.DecimalField(max_digits=10, decimal_places=2)
+    precio = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        validators=[MinValueValidator(Decimal('0.01'), message='El precio tiene que ser mayor a 0.')],
+    )
     stock = models.PositiveIntegerField()
     categoria = models.ForeignKey(Categoria, on_delete=models.CASCADE)
     # PROTECT: borrar una subcategoría o un proveedor no puede borrar sus productos
