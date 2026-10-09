@@ -603,7 +603,16 @@
             gap: 0.75rem;
         }
         .relacionado-card {
-            padding: 0.75rem;
+            /* Sin padding extra: el de .relacionado-body alcanza (con los dos el precio se salía de la card) */
+            padding: 0;
+            min-width: 0;
+        }
+        .relacionado-body {
+            padding: 0.6rem;
+        }
+        .relacionado-precio {
+            font-size: 0.95rem;
+            overflow-wrap: anywhere;
         }
         .relacionado-nombre {
             font-size: 0.85rem;
