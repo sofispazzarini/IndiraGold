@@ -9,6 +9,7 @@ from django.core.mail import send_mail
 from django.conf import settings
 from config.contacto import whatsapp_numero_visible
 from django.shortcuts import render, redirect, get_object_or_404
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.contrib.auth import authenticate, login as auth_login
 from .forms import RegistroUsuarioForm, capitalizar_texto, normalizar_provincia
 from .models import Cliente, Direccion, direcciones_sin_duplicados
@@ -437,6 +438,13 @@ def login_view(request):
             # Vincular carrito de invitado con usuario (ANTES de cualquier redirect)
             from carritos.utils import vincular_carrito_con_usuario, get_or_create_cart
             vincular_carrito_con_usuario(request, session_id_previo=old_session_key, carrito_sesion=carrito_temporal)
+
+            # Si vino de una página que pedía login (?next=), vuelve ahí (solo URLs de este sitio)
+            next_url = request.POST.get('next') or request.GET.get('next')
+            if next_url and url_has_allowed_host_and_scheme(
+                next_url, allowed_hosts={request.get_host()}, require_https=request.is_secure()
+            ):
+                return redirect(next_url)
 
             # REDIRECCIÓN INTELIGENTE
             if user.is_superuser:
