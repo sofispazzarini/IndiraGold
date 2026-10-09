@@ -14,6 +14,14 @@
     --border: #e8dfd4;
   }
 
+  /* El padding y el borde quedan dentro del ancho: sin esto la tarjeta se salía por la derecha en mobile */
+  .login-wrapper,
+  .login-wrapper *,
+  .login-wrapper *::before,
+  .login-wrapper *::after {
+    box-sizing: border-box;
+  }
+
   .login-wrapper {
     width: 100%;
     padding: 1rem;
