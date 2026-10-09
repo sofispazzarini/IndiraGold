@@ -625,7 +625,7 @@
         <span>Estado de pedidos</span>
       </div>
 
-      <a href="{% url 'pedidos:gestion_pedidos' %}" class="pending-item">
+      <a href="{% url 'pedidos:gestion_pedidos' %}?estado=pendiente" class="pending-item">
         <div class="pi-left">
           <div class="pi-dot {% if pedidos_pendientes > 0 %}urgent{% else %}ok{% endif %}"></div>
           <span class="pi-label">Pendientes</span>
@@ -635,7 +635,7 @@
         </span>
       </a>
 
-      <a href="{% url 'pedidos:gestion_pedidos' %}" class="pending-item">
+      <a href="{% url 'pedidos:gestion_pedidos' %}?estado=aceptado" class="pending-item">
         <div class="pi-left">
           <div class="pi-dot {% if pedidos_aceptados > 0 %}warning{% else %}ok{% endif %}"></div>
           <span class="pi-label">Aceptados</span>
@@ -645,7 +645,7 @@
         </span>
       </a>
 
-      <a href="{% url 'pedidos:gestion_pedidos' %}" class="pending-item">
+      <a href="{% url 'pedidos:gestion_pedidos' %}?estado=en_preparacion" class="pending-item">
         <div class="pi-left">
           <div class="pi-dot {% if pedidos_en_preparacion > 0 %}warning{% else %}ok{% endif %}"></div>
           <span class="pi-label">En preparación</span>
@@ -655,7 +655,7 @@
         </span>
       </a>
 
-      <a href="{% url 'pedidos:gestion_pedidos' %}" class="pending-item">
+      <a href="{% url 'pedidos:gestion_pedidos' %}?estado=enviado" class="pending-item">
         <div class="pi-left">
           <div class="pi-dot {% if pedidos_enviados > 0 %}ok{% else %}ok{% endif %}"></div>
           <span class="pi-label">Enviados</span>
