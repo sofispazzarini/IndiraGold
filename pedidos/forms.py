@@ -80,6 +80,17 @@ class OpcionEnvioFlexForm(forms.ModelForm):
             }),
         }
 
+    def clean_nombre(self):
+        # El modelo guarda el nombre en formato título: se valida igual para que "flex caba"
+        # choque con "Flex Caba" acá (mensaje en el form) y no en la base (error 500)
+        nombre = (self.cleaned_data.get('nombre') or '').strip().title()
+        repetida = OpcionEnvioFlex.objects.filter(nombre__iexact=nombre)
+        if self.instance.pk:
+            repetida = repetida.exclude(pk=self.instance.pk)
+        if repetida.exists():
+            raise forms.ValidationError(f'Ya existe una opción de envío llamada "{nombre}".')
+        return nombre
+
 
 OpcionEnvioFlexFormSet = modelformset_factory(
     OpcionEnvioFlex,
