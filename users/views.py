@@ -335,6 +335,10 @@ def registro(request):
             form = RegistroUsuarioForm(initial=initial_data)
         else:
             form = RegistroUsuarioForm()
+        # Vuelve de Confirmar dirección sin haber verificado el mail: se reabre el modal del código
+        error = request.session.pop('registro_error', None)
+        if error and request.session.get('codigo_verificacion'):
+            show_verification_modal = True
     return render(request, 'users/registro.html', {
         'form': form,
         'error': error,
@@ -361,6 +365,11 @@ def confirmar_direccion(request):
     if not data:
         return redirect("users:registro")
 
+    # Sin el código de verificación del email no se puede terminar el registro
+    if not request.session.get("email_verificado"):
+        request.session["registro_error"] = "Ingresá el código que te enviamos por mail para verificar tu correo."
+        return redirect("users:registro")
+
     # Si POST con campos de dirección: actualizar sesión y devolver JSON
     if request.method == "POST" and all(k in request.POST for k in ["etiqueta", "calle", "numero", "ciudad", "provincia", "codigo_postal"]):
         data['etiqueta'] = capitalizar_texto(request.POST.get('etiqueta', data.get('etiqueta')))
@@ -382,7 +391,8 @@ def confirmar_direccion(request):
             except IntegrityError:
                 request.session["confirmar_direccion_error"] = "Ya existe una cuenta con ese DNI o correo. Iniciá sesión con tu DNI o volvé al registro con otros datos."
                 return redirect("users:confirmar_direccion")
-            request.session.pop("registro_data", None)
+            for clave in ("registro_data", "codigo_verificacion", "email_verificado"):
+                request.session.pop(clave, None)
             return redirect("users:login")
         # Redirect (no render) para que recargar la página no reenvíe la confirmación
         request.session["confirmar_direccion_error"] = "No pudimos confirmar la dirección. Revisá los datos e intentá de nuevo."
