@@ -435,6 +435,7 @@
     <div class="kpi-card">
       <div class="kpi-label"><i class="bi bi-cash-coin"></i> Subtotal Ventas</div>
       <div class="kpi-value"><span class="currency">$</span>{{ total_con_deudas|floatformat:0 }}</div>
+      {% if total_notas_credito %}<div style="font-size:.72rem; color:var(--muted); margin-top:.25rem;">Ya descuenta ${{ total_notas_credito|floatformat:0 }} de notas de crédito</div>{% endif %}
     </div>
     <div class="kpi-card">
       <div class="kpi-label"><i class="bi bi-wallet2"></i> Ingresos Brutos</div>
@@ -453,8 +454,9 @@
   <!-- KPIs secundarios -->
   <div class="kpi-grid" style="margin-top: 1px;">
     <div class="kpi-card">
-      <div class="kpi-label"><i class="bi bi-bag-check"></i> Pedidos</div>
+      <div class="kpi-label"><i class="bi bi-bag-check"></i> Pedidos confirmados</div>
       <div class="kpi-value">{{ cantidad_pedidos }}</div>
+      {% if pendientes_cantidad %}<div style="font-size:.72rem; color:var(--muted); margin-top:.25rem;">+ {{ pendientes_cantidad }} pendiente{{ pendientes_cantidad|pluralize }} de confirmar (${{ pendientes_total|floatformat:0 }}), no incluidos</div>{% endif %}
     </div>
     <div class="kpi-card">
       <div class="kpi-label"><i class="bi bi-calculator"></i> Promedio/Pedido</div>

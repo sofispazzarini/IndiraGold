@@ -2220,10 +2220,23 @@ def estadisticas_ventas(request):
         fecha_inicio = hoy - timedelta(days=30)
         fecha_fin = hoy
 
-    # Filtrar pedidos
-    pedidos = Pedido.objects.filter(
+    # Pedidos del período (todos, para el cuadro "Pedidos por estado")
+    pedidos_periodo = Pedido.objects.filter(
         created_at__date__gte=fecha_inicio,
         created_at__date__lte=fecha_fin
+    )
+
+    # Solo cuentan como venta los pedidos confirmados (pago aceptado en adelante).
+    # Pendientes, rechazados, cancelados y vencidos no son ventas.
+    pedidos = pedidos_periodo.filter(estado__in=Pedido.ESTADOS_CON_STOCK_DESCONTADO)
+    pedidos_pendientes = pedidos_periodo.filter(estado='pendiente')
+    pendientes_cantidad = pedidos_pendientes.count()
+    pendientes_total = pedidos_pendientes.aggregate(total=Sum('total'))['total'] or Decimal('0.00')
+
+    # Notas de crédito emitidas sobre las ventas del período: restan de lo vendido
+    total_notas_credito = (
+        NotaCredito.objects.filter(pedido__in=pedidos).aggregate(total=Sum('monto'))['total']
+        or Decimal('0.00')
     )
 
     # Estadísticas generales
@@ -2242,7 +2255,7 @@ def estadisticas_ventas(request):
 
     # Pedidos por estado
     pedidos_por_estado = (
-        pedidos.values('estado')
+        pedidos_periodo.values('estado')
         .annotate(
             cantidad=Count('id'),
             total=Sum('total')
@@ -2305,7 +2318,8 @@ def estadisticas_ventas(request):
         fecha = hoy - timedelta(days=30 - i)
 
         pedidos_dia = Pedido.objects.filter(
-            created_at__date=fecha
+            created_at__date=fecha,
+            estado__in=Pedido.ESTADOS_CON_STOCK_DESCONTADO,
         )
 
         total_dia = (
@@ -2375,8 +2389,8 @@ def estadisticas_ventas(request):
     # Total retenciones = MP online + tarjeta presencial
     total_retenciones = retenciones_mp + retenciones_presenciales
 
-    # Total con deudas (ventas totales incluyendo lo que falta cobrar)
-    total_con_deudas = total_ventas + total_ventas_locales
+    # Total con deudas (ventas confirmadas incluyendo lo que falta cobrar), menos notas de crédito
+    total_con_deudas = total_ventas + total_ventas_locales - total_notas_credito
 
     # Lo realmente cobrado = monto_pagado de pedidos + monto_pagado de ventas locales
     cobrado_pedidos = (
@@ -2409,6 +2423,9 @@ def estadisticas_ventas(request):
         'total_con_deudas': total_con_deudas,
         'ingresos_brutos': ingresos_brutos,
         'neto_negocio': neto_negocio,
+        'total_notas_credito': total_notas_credito,
+        'pendientes_cantidad': pendientes_cantidad,
+        'pendientes_total': pendientes_total,
     }
 
     return render(
