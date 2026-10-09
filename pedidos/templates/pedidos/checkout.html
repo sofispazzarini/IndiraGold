@@ -1806,6 +1806,14 @@ document.querySelector('input[name="codigo_postal_sucursal"]')?.addEventListener
 actualizarEntrega();
 actualizarTipoCorreo();
 
+// Al volver con "Atrás" el navegador restaura los radios después de este script: se vuelve a
+// sincronizar el panel y el botón con lo que quedó marcado
+window.addEventListener('pageshow', () => {
+  actualizarEntrega();
+  actualizarTipoCorreo();
+  if (typeof actualizarBotonPago === 'function') actualizarBotonPago();
+});
+
 function valorSeleccionado(nombre) {
   const item = document.querySelector(`input[name="${nombre}"]:checked`);
   return item ? item.value : '';
