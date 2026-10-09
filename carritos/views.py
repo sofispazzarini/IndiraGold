@@ -946,51 +946,57 @@ def restaurar_carrito(request):
     cart = {}
     cart_colors = {}
 
-    variante_ids = []
-    items_by_id = {}
+    from productos.stock import stock_disponible
 
+    variante_ids = []
+    lineas = []
+
+    # Una línea por talle + color (antes se indexaba por talle y se pisaban los colores)
     for item in items:
         try:
             vid = int(item.get('variante_id', 0))
             qty = int(item.get('cantidad', 0))
-            color = item.get('color_nombre') or ''
-            cart_key = item.get('cart_key') or ''
+            color = (item.get('color_nombre') or '').strip()
 
             if vid > 0 and qty > 0:
                 variante_ids.append(vid)
-                items_by_id[vid] = {'cantidad': qty, 'color_nombre': color.strip(), 'cart_key': cart_key.strip()}
+                lineas.append({'variante_id': vid, 'cantidad': qty, 'color_nombre': color})
         except (TypeError, ValueError):
             continue
 
     if not variante_ids:
         return _render_cart_fragment(request)
 
-    valid_variantes = Variante.objects.filter(
-        id__in=variante_ids,
-        activa=True,
-        producto__activo=True
-    ).values('id', 'stock')
+    valid_by_id = {
+        v.id: v
+        for v in Variante.objects.select_related('producto').filter(
+            id__in=variante_ids,
+            activa=True,
+            producto__activo=True
+        )
+    }
 
-    valid_by_id = {v['id']: v for v in valid_variantes}
-
-    for vid, item_data in items_by_id.items():
-        if vid not in valid_by_id:
+    for linea in lineas:
+        variante = valid_by_id.get(linea['variante_id'])
+        if not variante:
             continue
 
-        variante = valid_by_id[vid]
-        qty = min(item_data['cantidad'], variante['stock'])
+        color_nombre = linea['color_nombre'] or None
+        color_hex = None
+        if color_nombre:
+            color_obj = variante.colores.filter(nombre__iexact=color_nombre).first()
+            if color_obj:
+                color_nombre = color_obj.nombre
+                color_hex = _normalize_hex(color_obj.codigo_hex)
+
+        item_key = _make_cart_item_key(variante.id, color_nombre=color_nombre, color_hex=color_hex)
+        qty = min(cart.get(item_key, 0) + linea['cantidad'], max(stock_disponible(variante, color_nombre), 0))
 
         if qty > 0:
-            color_nombre = item_data['color_nombre'] or None
-            saved_cart_key = item_data.get('cart_key')
-            if saved_cart_key:
-                item_key = saved_cart_key
-            else:
-                item_key = _make_cart_item_key(vid, color_nombre=color_nombre)
             cart[item_key] = qty
             cart_colors[item_key] = {
                 "nombre": color_nombre,
-                "hex": None,
+                "hex": color_hex,
             }
 
     if cart:

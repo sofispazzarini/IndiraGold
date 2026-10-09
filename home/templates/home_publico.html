@@ -1284,17 +1284,13 @@ function scrollCatOrden{{ cat_orden.id }}(dir) {
 
       const cartKeyInput = form.querySelector('input[name="cart_key"]');
       const qtyEl = item.querySelector('.qty-num');
-      const colorMeta = item.querySelector('.cart-item__meta');
 
       if (cartKeyInput && qtyEl) {
         const cartKey = cartKeyInput.value;
         const varianteId = parseInt(cartKey.split('::')[0], 10);
         const cantidad = parseInt(qtyEl.textContent, 10);
-        let colorNombre = null;
-
-        if (colorMeta && colorMeta.textContent.includes('Color:')) {
-          colorNombre = colorMeta.textContent.replace('Color:', '').trim();
-        }
+        // El nombre del color viene en un data-attribute (el texto de la línea solo tiene un punto de color)
+        const colorNombre = item.dataset.colorNombre || null;
 
         if (varianteId && cantidad > 0) {
           items.push({ cart_key: cartKey, variante_id: varianteId, cantidad, color_nombre: colorNombre });
