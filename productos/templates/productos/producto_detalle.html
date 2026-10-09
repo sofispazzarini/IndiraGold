@@ -553,6 +553,12 @@
         font-size: 0.9rem;
         margin-bottom: 0.5rem;
         line-height: 1.3;
+        /* Nombres largos: 3 líneas como máximo */
+        overflow-wrap: anywhere;
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
     }
     
     .relacionado-precio {
