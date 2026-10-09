@@ -3,6 +3,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.urls import reverse
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.core.paginator import Paginator
+import logging
 from django.db import transaction
 from django.contrib import messages
 from django.db.models import Sum, Count, Avg, Q, F
@@ -58,6 +59,8 @@ from django.db import transaction
 from django.utils.html import escape
 from django.utils import timezone
 from .servicios_envio import ErrorEnvio, calcular_paquete_envio, cotizar_correo_argentino
+logger = logging.getLogger(__name__)
+
 # Decorador para verificar que es administrador
 def admin_required(view_func):
     return login_required(login_url="/users/login/")(user_passes_test(lambda u: u.is_superuser, login_url="/users/login/")(view_func))
@@ -335,7 +338,9 @@ def crear_qr_link_pago_mercado_pago(productos, external_reference):
     if preference_response.get("status") not in [200, 201]:
         mp_error = preference_response.get("response", {})
         detalle = mp_error.get("message") or mp_error.get("error") or str(mp_error)
-        raise ValueError(f"Mercado Pago respondio: {detalle}")
+        # El detalle técnico (en inglés) va al log; al cliente, un mensaje entendible
+        logger.warning("Mercado Pago rechazó la preferencia del QR: %s", detalle)
+        raise ValueError("Mercado Pago no respondió bien.")
 
     preference = preference_response.get("response", {})
     init_point = preference.get("init_point")
@@ -1697,8 +1702,11 @@ def _crear_pago(request):
                     productos,
                     f"pedido_qr_{uuid.uuid4().hex[:16]}"
                 )
-            except ValueError as error:
-                messages.error(request, f"No pudimos generar el QR de Mercado Pago. {error}")
+            except ValueError:
+                messages.error(
+                    request,
+                    "No pudimos generar el QR de Mercado Pago. Probá de nuevo en unos minutos o elegí transferencia."
+                )
                 return redirect('pedidos:checkout')
 
         pedido = Pedido.objects.create(
@@ -1797,7 +1805,11 @@ def _crear_pago(request):
 
         mp_error = preference_response.get("response", {})
         detalle = mp_error.get("message") or mp_error.get("error") or str(mp_error)
-        messages.error(request, f"No pudimos iniciar el pago online. Mercado Pago respondio: {detalle}")
+        logger.warning("Mercado Pago rechazó la preferencia del checkout: %s", detalle)
+        messages.error(
+            request,
+            "No pudimos conectar con Mercado Pago. Probá de nuevo en unos minutos o elegí transferencia."
+        )
 
         return redirect('pedidos:checkout')
 
