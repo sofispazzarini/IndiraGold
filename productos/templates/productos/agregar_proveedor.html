@@ -519,15 +519,15 @@
       <div class="prov-actions">
         <button class="btn-action edit js-edit-trigger"
                 data-id="{{ proveedor.id }}"
-                data-nombre="{{ proveedor.nombre|escapejs }}"
-                data-telefono="{{ proveedor.telefono|escapejs }}"
-                data-info="{{ proveedor.informacion_adicional|default:''|escapejs }}"
+                data-nombre="{{ proveedor.nombre }}"
+                data-telefono="{{ proveedor.telefono }}"
+                data-info="{{ proveedor.informacion_adicional|default:'' }}"
                 title="Editar">
           <i class="bi bi-pencil"></i>
         </button>
         <button class="btn-action js-delete-trigger"
                 data-id="{{ proveedor.id }}"
-                data-nombre="{{ proveedor.nombre|escapejs }}"
+                data-nombre="{{ proveedor.nombre }}"
                 title="Eliminar">
           <i class="bi bi-x"></i>
         </button>
