@@ -2861,6 +2861,7 @@ def ventas_presenciales(request):
         {
             'ventas': page_obj.object_list,
             'page_obj': page_obj,
+            'opciones_flex': OpcionEnvioFlex.objects.filter(activo=True),
             'q': q,
             'dia': dia,
             'mes': mes,
@@ -2918,6 +2919,8 @@ def registrar_venta_local(request):
         )
 
         direccion = None
+        opcion_flex = None
+        costo_envio = Decimal('0.00')
         if metodo_entrega == 'envio':
             direccion = Direccion.objects.filter(
                 id=direccion_id,
@@ -2928,6 +2931,19 @@ def registrar_venta_local(request):
                     'success': False,
                     'error': 'Seleccioná una dirección de envío'
                 }, status=400)
+            if OpcionEnvioFlex.objects.filter(activo=True).exists():
+                opcion_flex = OpcionEnvioFlex.objects.filter(id=data.get('opcion_flex_id') or None, activo=True).first()
+                if not opcion_flex:
+                    return JsonResponse({
+                        'success': False,
+                        'error': 'Elegí la opción de envío'
+                    }, status=400)
+                if not opcion_flex.incluye_direccion(direccion):
+                    return JsonResponse({
+                        'success': False,
+                        'error': f'La dirección no está dentro de las zonas de {opcion_flex.nombre}'
+                    }, status=400)
+                costo_envio = opcion_flex.costo_actual
 
         # Validar todos los ítems y la deuda ANTES de guardar nada, para no dejar
         # ventas a medias ni descontar stock si algo falla.
@@ -2979,6 +2995,9 @@ def registrar_venta_local(request):
             total += subtotal
             lineas.append((variante, color, cantidad, precio_unitario, subtotal))
 
+        # El envío se cobra junto con los productos
+        total += costo_envio
+
         if nueva_deuda < 0:
             return JsonResponse({
                 'success': False,
@@ -3005,7 +3024,9 @@ def registrar_venta_local(request):
             metodo_pago=metodo_pago,
             metodo_entrega=metodo_entrega,
             direccion=direccion,
-            es_regalo=es_regalo
+            es_regalo=es_regalo,
+            costo_envio=costo_envio,
+            opcion_flex=opcion_flex,
         )
 
         for variante, color, cantidad, precio_unitario, subtotal in lineas:
@@ -3192,12 +3213,7 @@ def contexto_ticket_venta(venta):
             'cantidad': item.cantidad,
             'subtotal': formato_pesos(item.subtotal),
         })
-    configuracion_envio = ConfiguracionEnvio.actual()
-    costo_envio = (
-        Decimal(configuracion_envio.costo_flex)
-        if venta.metodo_entrega == 'envio'
-        else Decimal('0')
-    )
+    costo_envio = venta.costo_envio if venta.metodo_entrega == 'envio' else Decimal('0')
 
     return {
         'venta': venta,

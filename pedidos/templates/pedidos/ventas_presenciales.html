@@ -1305,6 +1305,15 @@
                                     Elegí una dirección guardada de la clienta.
                                 </small>
 
+                                <label class="form-label fw-bold mb-2 mt-3" for="opcion-envio">Opción de envío</label>
+                                <select id="opcion-envio" class="form-select rounded-4">
+                                    <option value="">Seleccioná una dirección primero</option>
+                                    {% for opcion in opciones_flex %}
+                                    <option value="{{ opcion.id }}" data-precio="{{ opcion.costo_actual|stringformat:'s' }}" data-zonas="{{ opcion.zonas }}" data-nombre="{{ opcion.nombre }}">{{ opcion.nombre }} · {{ opcion.texto_costo }}</option>
+                                    {% endfor %}
+                                </select>
+                                <small class="text-muted d-block mt-2" id="opcion-envio-help"></small>
+
                             </div>
 
                             <div class="form-check form-switch mb-4">
@@ -1691,13 +1700,62 @@ function renderDireccionesVenta(direcciones){
 
     // Reset ciudad seleccionada
     direccionSeleccionadaCiudad = '';
+    actualizarOpcionesEnvio();
     renderProductosVenta();
+}
+
+// Opciones de Envío Flex configuradas (mismas reglas de zona que el checkout)
+const opcionEnvioSelect = document.getElementById('opcion-envio')
+const opcionEnvioHelp = document.getElementById('opcion-envio-help')
+
+function normalizarZona(texto){
+    return (texto || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().split(/\s+/).filter(Boolean).join(' ')
+}
+
+function opcionCubreDireccion(option, direccion){
+    const zonas = (option.dataset.zonas || '').split(',').map(normalizarZona).filter(Boolean)
+    if(!zonas.length) return true
+    const ubicacion = normalizarZona(`${direccion.ciudad} ${direccion.provincia} ${direccion.codigo_postal}`)
+    return zonas.some(zona => ubicacion.includes(zona))
+}
+
+function actualizarOpcionesEnvio(){
+    if(!opcionEnvioSelect) return
+    const direccion = direccionesClienteData.find(d => String(d.id) === String(direccionEnvioSelect.value))
+    let disponibles = 0
+    Array.from(opcionEnvioSelect.options).forEach(option => {
+        if(!option.value) return
+        const cubre = Boolean(direccion) && opcionCubreDireccion(option, direccion)
+        option.hidden = !cubre
+        option.disabled = !cubre
+        if(cubre) disponibles++
+    })
+    const actual = opcionEnvioSelect.selectedOptions[0]
+    if(!actual || !actual.value || actual.disabled){
+        const primera = Array.from(opcionEnvioSelect.options).find(o => o.value && !o.disabled)
+        opcionEnvioSelect.value = primera ? primera.value : ''
+    }
+    opcionEnvioSelect.options[0].textContent = direccion ? 'Elegí la opción de envío' : 'Seleccioná una dirección primero'
+    opcionEnvioHelp.textContent = direccion && !disponibles
+        ? 'Ninguna opción de Envío Flex llega a esta dirección. Revisá las zonas en Configurar envíos.'
+        : ''
+}
+
+function opcionEnvioSeleccionada(){
+    const option = opcionEnvioSelect ? opcionEnvioSelect.selectedOptions[0] : null
+    return option && option.value ? option : null
+}
+
+if(opcionEnvioSelect){
+    // renderProductosVenta se define en el script siguiente: se llama recién al cambiar
+    opcionEnvioSelect.addEventListener('change', () => renderProductosVenta())
 }
 
 // Cuando cambia la dirección seleccionada
 direccionEnvioSelect.addEventListener('change', function() {
     const selectedOption = this.options[this.selectedIndex];
     direccionSeleccionadaCiudad = selectedOption ? (selectedOption.dataset.ciudad || '') : '';
+    actualizarOpcionesEnvio();
     renderProductosVenta();
 });
 
@@ -1885,6 +1943,7 @@ document.getElementById('formNuevaDireccionVenta').addEventListener('submit', as
 
         await cargarDireccionesCliente(window.clienteSeleccionado)
         direccionEnvioSelect.value = data.direccion.id
+        direccionEnvioSelect.dispatchEvent(new Event('change'))
         this.reset()
         bootstrap.Modal.getInstance(document.getElementById('modalNuevaDireccionVenta')).hide()
     }catch(error){
@@ -1957,7 +2016,7 @@ document.getElementById(
         const totalVenta = productosVenta.reduce(
             (acc, p) => acc + (parseFloat(p.precio) * p.cantidad),
             0
-        )
+        ) + (metodoEntrega === 'envio' && opcionEnvioSeleccionada() ? (parseFloat(opcionEnvioSeleccionada().dataset.precio) || 0) : 0)
         const deudaNumerica = parseFloat(nuevaDeuda) || 0
 
         if(deudaNumerica < 0 || deudaNumerica > totalVenta){
@@ -2014,6 +2073,8 @@ document.getElementById(
                         metodo_entrega: metodoEntrega,
 
                         direccion_id: direccionId,
+
+                        opcion_flex_id: metodoEntrega === 'envio' && opcionEnvioSeleccionada() ? opcionEnvioSeleccionada().value : '',
 
                         es_regalo: esRegalo
 
@@ -2716,28 +2777,11 @@ function renderProductosVenta(){
     let envioTexto = '';
     let ciudadNormalizada = direccionSeleccionadaCiudad.toLowerCase().trim();
 
-    if (metodoEntrega === 'envio' && ciudadNormalizada) {
-        // Verificar si está en zona gratis
-        const enZonaGratis = ZONAS_FLEX_GRATIS.some(zona =>
-            ciudadNormalizada.includes(zona) || zona.includes(ciudadNormalizada)
-        );
-        // Verificar si está en zona con precio
-        const enZonaPago = ZONAS_FLEX.some(zona =>
-            ciudadNormalizada.includes(zona) || zona.includes(ciudadNormalizada)
-        );
-
-        if (enZonaGratis) {
-            costoEnvio = 0;
-            envioGratis = true;
-            envioTexto = 'Envío Flex Gratis';
-        } else if (enZonaPago) {
-            costoEnvio = PRECIO_FLEX;
-            envioTexto = 'Envío Flex';
-        } else {
-            // No está en ninguna zona configurada
-            costoEnvio = PRECIO_FLEX;
-            envioTexto = 'Envío Flex';
-        }
+    const opcionEnvio = opcionEnvioSeleccionada()
+    if (metodoEntrega === 'envio' && ciudadNormalizada && opcionEnvio) {
+        costoEnvio = parseFloat(opcionEnvio.dataset.precio) || 0;
+        envioGratis = costoEnvio === 0;
+        envioTexto = opcionEnvio.dataset.nombre || 'Envío Flex';
     }
 
     const total = subtotalProductos + costoEnvio
@@ -2745,7 +2789,7 @@ function renderProductosVenta(){
     // Mostrar desglose de envío
     const envioInfoEl = document.getElementById('envio-info')
     if (envioInfoEl) {
-        if (metodoEntrega === 'envio' && direccionSeleccionadaCiudad) {
+        if (metodoEntrega === 'envio' && direccionSeleccionadaCiudad && opcionEnvio) {
             envioInfoEl.innerHTML = `
                 <div class="d-flex justify-content-between text-muted small mb-2">
                     <span>Subtotal productos</span>
@@ -2757,10 +2801,10 @@ function renderProductosVenta(){
                 </div>
             `
             envioInfoEl.style.display = 'block'
-        } else if (metodoEntrega === 'envio' && !direccionSeleccionadaCiudad) {
+        } else if (metodoEntrega === 'envio') {
             envioInfoEl.innerHTML = `
                 <div class="small text-muted mb-2">
-                    <i class="bi bi-info-circle me-1"></i>Seleccioná una dirección para calcular el envío
+                    <i class="bi bi-info-circle me-1"></i>${direccionSeleccionadaCiudad ? 'Elegí la opción de envío para calcular el costo' : 'Seleccioná una dirección para calcular el envío'}
                 </div>
             `
             envioInfoEl.style.display = 'block'

@@ -306,6 +306,16 @@ class VentaLocal(models.Model):
         default='local'
     )
 
+    # Envío Flex cobrado en la venta presencial (0 si es retiro en local)
+    costo_envio = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    opcion_flex = models.ForeignKey(
+        'OpcionEnvioFlex',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='ventas_locales',
+    )
+
     direccion = models.ForeignKey(
         'users.Direccion',
         on_delete=models.SET_NULL,
