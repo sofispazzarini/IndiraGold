@@ -70,6 +70,16 @@ class RegistroUsuarioForm(forms.ModelForm):
     class Meta:
         model = Cliente
         fields = ['dni', 'telefono']
+
+    def __init__(self, *args, password_hash=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Confirmación final del registro: la contraseña llega ya hasheada desde la sesión
+        # (nunca se guarda en claro en django_session)
+        self.password_hash = password_hash
+        if password_hash:
+            self.fields['password1'].required = False
+            self.fields['password2'].required = False
+
     def clean_codigo_postal(self):
         cp = self.cleaned_data['codigo_postal']
 
@@ -119,7 +129,7 @@ class RegistroUsuarioForm(forms.ModelForm):
 
     def clean(self):
         cleaned_data = super().clean()
-        if cleaned_data.get("password1") != cleaned_data.get("password2"):
+        if not self.password_hash and cleaned_data.get("password1") != cleaned_data.get("password2"):
             raise ValidationError("Las contraseñas no coinciden.")
         return cleaned_data
     @transaction.atomic #esto hace que si falla el guardado de la direccion, no se crea ningun user ni cliente
@@ -132,10 +142,13 @@ class RegistroUsuarioForm(forms.ModelForm):
         user = User.objects.create_user(
             username=dni,
             email=self.cleaned_data['email'],
-            password=self.cleaned_data['password1'],
+            password=None if self.password_hash else self.cleaned_data['password1'],
             first_name=nombre,
             last_name=apellido
         )
+        if self.password_hash:
+            user.password = self.password_hash
+            user.save(update_fields=['password'])
 
         # Crear cliente
         cliente = Cliente.objects.create(

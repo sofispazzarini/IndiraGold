@@ -10,6 +10,7 @@ from django.conf import settings
 from config.contacto import whatsapp_numero_visible
 from django.shortcuts import render, redirect, get_object_or_404
 from django.utils.http import url_has_allowed_host_and_scheme
+from django.contrib.auth.hashers import make_password
 from django.contrib.auth import authenticate, login as auth_login
 from .forms import RegistroUsuarioForm, capitalizar_texto, normalizar_provincia
 from .models import Cliente, Direccion, direcciones_sin_duplicados
@@ -362,7 +363,11 @@ def registro(request):
                 # Generar código de verificación
                 codigo = str(random.randint(100000, 999999))
                 # Guardar datos y código en sesión
-                request.session['registro_data'] = form.cleaned_data
+                # La contraseña no queda en claro en la sesión (tabla django_session): solo su hash
+                datos_sesion = dict(form.cleaned_data)
+                datos_sesion['password_hash'] = make_password(datos_sesion.pop('password1'))
+                datos_sesion.pop('password2', None)
+                request.session['registro_data'] = datos_sesion
                 request.session['codigo_verificacion'] = codigo
                 request.session['email_verificado'] = False
                 # Enviar email (si falla, se avisa y el formulario conserva lo cargado)
@@ -439,7 +444,7 @@ def confirmar_direccion(request):
 
     # Confirmación final de dirección (POST sin campos de dirección)
     elif request.method == "POST":
-        form = RegistroUsuarioForm(data)
+        form = RegistroUsuarioForm(data, password_hash=data.get("password_hash"))
         if form.is_valid():
             try:
                 form.save()
@@ -456,7 +461,7 @@ def confirmar_direccion(request):
     # Render normal (con el error de la confirmación anterior, si hubo)
     error = request.session.pop("confirmar_direccion_error", None)
     if error:
-        form = RegistroUsuarioForm(data)
+        form = RegistroUsuarioForm(data, password_hash=data.get("password_hash"))
         form.is_valid()
     else:
         form = RegistroUsuarioForm(initial=data)
