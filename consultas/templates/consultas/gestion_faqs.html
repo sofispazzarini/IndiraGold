@@ -459,6 +459,9 @@
       margin-top: 0.5rem;
     }
   }
+
+  /* Textos largos sin espacios (hasta el máximo permitido): parten línea en vez de desbordar */
+  .faq-info, .faq-meta, .faq-tema, .faq-question, .faq-answer { overflow-wrap: anywhere; word-break: break-word; min-width: 0; }
 </style>
 {% endblock %}
 

@@ -1128,6 +1128,9 @@ function scrollOfertas(dir) {
     border-color: var(--gold);
     color: var(--gold);
   }
+
+  /* Textos largos sin espacios (hasta el máximo permitido): parten línea en vez de desbordar */
+  .faq-tema__title, .faq-question, .faq-answer { overflow-wrap: anywhere; word-break: break-word; min-width: 0; }
 </style>
 
 <script>

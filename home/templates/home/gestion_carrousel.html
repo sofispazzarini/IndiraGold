@@ -458,6 +458,9 @@
       transform: none;
     }
   }
+
+  /* Textos largos sin espacios (hasta el máximo permitido): parten línea en vez de desbordar */
+  .slide-title, .slide-subtitle { overflow-wrap: anywhere; word-break: break-word; min-width: 0; }
 </style>
 {% endblock %}
 

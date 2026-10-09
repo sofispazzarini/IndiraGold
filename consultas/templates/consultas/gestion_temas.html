@@ -405,6 +405,9 @@
       margin-top: 0.5rem;
     }
   }
+
+  /* Textos largos sin espacios (hasta el máximo permitido): parten línea en vez de desbordar */
+  .tema-nombre { overflow-wrap: anywhere; word-break: break-word; min-width: 0; }
 </style>
 {% endblock %}
 
