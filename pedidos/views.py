@@ -36,6 +36,7 @@ from productos.models import Variante, Oferta
 from productos.stock import descontar_stock, reponer_stock, stock_disponible, validar_stock
 import mercadopago
 from django.conf import settings
+from config.contacto import whatsapp_numero, whatsapp_numero_visible
 from django.views.decorators.http import require_POST
 from django.core.mail import send_mail
 from django.conf import settings
@@ -115,7 +116,7 @@ def calcular_descuento_cupon(subtotal, codigo):
 
 
 def whatsapp_comprobante_url(pedido):
-    numero = getattr(settings, 'COMPROBANTE_WHATSAPP', '5492216375660')
+    numero = whatsapp_numero()
     cliente = pedido.cliente
     nombre_completo = f'{cliente.user.first_name} {cliente.user.last_name}'.strip() or cliente.user.username
     email = cliente.user.email or 'Sin email'
@@ -129,7 +130,7 @@ def whatsapp_comprobante_url(pedido):
 
 
 def whatsapp_transferencia_url(pedido):
-    numero = getattr(settings, 'COMPROBANTE_WHATSAPP', '5492216375660')
+    numero = whatsapp_numero()
     cliente = pedido.cliente
     nombre_completo = f'{cliente.user.first_name} {cliente.user.last_name}'.strip() or cliente.user.username
     email = cliente.user.email or 'Sin email'
@@ -253,7 +254,7 @@ def enviar_email_confirmacion_pedido(pedido):
             <tr>
               <td style="padding:24px 34px 34px;text-align:center;">
                 <p style="margin:0;font-size:13px;color:#786b60;">
-                  ¿Tenés dudas? Escribinos por WhatsApp al +54 9 221 637 5660
+                  ¿Tenés dudas? Escribinos por WhatsApp al {whatsapp_numero_visible()}
                 </p>
               </td>
             </tr>
@@ -1648,7 +1649,7 @@ def crear_pago(request):
                 'qr_image_url': qr_pago['qr_image'],
                 'payment_url': qr_pago['payment_url'],
                 'whatsapp_url': whatsapp_comprobante_url(pedido),
-                'whatsapp_numero': '+54 9 221 637 5660',
+                'whatsapp_numero': whatsapp_numero_visible(),
             })
 
         if metodo_pago == 'transferencia':
@@ -1657,7 +1658,7 @@ def crear_pago(request):
                 'pedido': pedido,
                 'configuracion_pago': configuracion_pago,
                 'whatsapp_url': whatsapp_transferencia_url(pedido),
-                'whatsapp_numero': '+54 9 221 637 5660',
+                'whatsapp_numero': whatsapp_numero_visible(),
             })
 
         vaciar_carrito_completo(request, carrito)

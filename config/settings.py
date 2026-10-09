@@ -19,6 +19,20 @@ load_dotenv()
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
+def env_bool(nombre, defecto):
+    """Lee un booleano del entorno ("true", "1", "yes", "si" = True)."""
+    valor = os.getenv(nombre)
+    if valor is None or valor.strip() == '':
+        return defecto
+    return valor.strip().lower() in ('true', '1', 'yes', 'si', 'sí')
+
+
+def env_lista(nombre, defecto=''):
+    """Lee una lista separada por comas del entorno."""
+    return [item.strip() for item in os.getenv(nombre, defecto).split(',') if item.strip()]
+
+
+# Todas las variables de entorno están documentadas en .env.example
 
 MERCADO_PAGO_ACCESS_TOKEN = os.getenv("MERCADO_PAGO_ACCESS_TOKEN", "")
 MERCADO_PAGO_QR_IMAGE_URL = os.getenv("MERCADO_PAGO_QR_IMAGE_URL", "")
@@ -32,13 +46,9 @@ COMPROBANTE_WHATSAPP = os.getenv("COMPROBANTE_WHATSAPP", "5492216375660")
 SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-rm6jga7-aoj+xaek*-b!6328_$yk#tfhu=)h#rm*e*t+@s-zi2')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv('DEBUG', 'True').lower() in ('true', '1', 'yes')
+DEBUG = env_bool('DEBUG', True)
 
-ALLOWED_HOSTS = [
-    host.strip()
-    for host in os.getenv("ALLOWED_HOSTS", "").split(",")
-    if host.strip()
-]
+ALLOWED_HOSTS = env_lista("ALLOWED_HOSTS")
 
 if DEBUG:
     ALLOWED_HOSTS += [
@@ -48,11 +58,7 @@ if DEBUG:
         ".ngrok-free.dev",
     ]
 
-CSRF_TRUSTED_ORIGINS = [
-    origin.strip()
-    for origin in os.getenv("CSRF_TRUSTED_ORIGINS", "").split(",")
-    if origin.strip()
-]
+CSRF_TRUSTED_ORIGINS = env_lista("CSRF_TRUSTED_ORIGINS")
 
 
 
@@ -110,12 +116,13 @@ WSGI_APPLICATION = 'config.wsgi.application'
 
 DATABASES = {
     'default': {
+        # Defaults iguales a los del README (PostgreSQL local, base indiragold_db)
         'ENGINE': os.getenv('DB_ENGINE', 'django.db.backends.postgresql'),
-        'NAME': os.getenv('DB_NAME'),
-        'USER': os.getenv('DB_USER'),
-        'PASSWORD': os.getenv('DB_PASSWORD'),
-        'HOST': os.getenv('DB_HOST'),
-        'PORT': os.getenv('DB_PORT', ''),
+        'NAME': os.getenv('DB_NAME', 'indiragold_db'),
+        'USER': os.getenv('DB_USER', 'postgres'),
+        'PASSWORD': os.getenv('DB_PASSWORD', ''),
+        'HOST': os.getenv('DB_HOST', 'localhost'),
+        'PORT': os.getenv('DB_PORT', '5432'),
     }
 }
 
@@ -162,12 +169,19 @@ STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')] if os.path.exists(os.path.
 LOGIN_URL = '/users/login/'
 LOGIN_REDIRECT_URL = 'home:home'
 
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER')
-EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD')
+EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.gmail.com')
+EMAIL_PORT = int(os.getenv('EMAIL_PORT', '587'))
+EMAIL_USE_TLS = env_bool('EMAIL_USE_TLS', True)
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', '') or EMAIL_HOST_USER or 'webmaster@localhost'
+# Sin credenciales SMTP los mails se imprimen en la consola en lugar de fallar
+EMAIL_BACKEND = os.getenv(
+    'EMAIL_BACKEND',
+    'django.core.mail.backends.smtp.EmailBackend'
+    if EMAIL_HOST_USER and EMAIL_HOST_PASSWORD
+    else 'django.core.mail.backends.console.EmailBackend'
+)
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')

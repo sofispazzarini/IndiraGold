@@ -1,7 +1,7 @@
 import sys
 sys.path.insert(0, '.')
 import os
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'IndiraGold.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 import django
 django.setup()
 

@@ -7,6 +7,7 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 import random
 from django.core.mail import send_mail
 from django.conf import settings
+from config.contacto import whatsapp_numero_visible
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login as auth_login
 from .forms import RegistroUsuarioForm, capitalizar_texto
@@ -676,7 +677,7 @@ def crear_cliente_ajax(request):
             <tr>
               <td style="padding:0 34px 34px;text-align:center;">
                 <p style="margin:0;font-size:13px;color:#786b60;">
-                  ¿Tenés dudas? Escribinos por WhatsApp al +54 9 221 637 5660
+                  ¿Tenés dudas? Escribinos por WhatsApp al {whatsapp_numero_visible()}
                 </p>
               </td>
             </tr>

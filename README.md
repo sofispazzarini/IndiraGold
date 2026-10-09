@@ -54,7 +54,7 @@ Si el archivo no existe, instalar manualmente:
 
 pip install django psycopg2-binary python-dotenv
 4️⃣ Configurar variables de entorno
-Crear un archivo .env en la raíz del proyecto con el siguiente contenido:
+Copiar .env.example a .env (ahí están todas las variables, con sus defaults y para qué sirve cada una). Lo mínimo para desarrollo:
 
 Fragmento de código
 DB_NAME=indiragold_db

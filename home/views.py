@@ -15,6 +15,7 @@ from carritos.utils import (
 )
 from consultas.models import TemaConsulta
 from pedidos.models import ConfiguracionPago
+from config.contacto import whatsapp_numero
 from .models import SlideCarrousel, ConfiguracionHero
 from .forms import SlideCarrouselForm
 
@@ -93,6 +94,7 @@ class HomePublicaView(TemplateView):
             ).distinct()
 
         ctx['productos_oferta'] = productos_oferta
+        ctx['whatsapp_numero'] = whatsapp_numero()
 
         items = []
         total_qty = 0
