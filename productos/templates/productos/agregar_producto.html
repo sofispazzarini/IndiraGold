@@ -463,13 +463,18 @@
         // Autocolor al escribir
         document.getElementById('colorNombreModal').oninput = (e) => {
             let val = normalizarNombreColor(e.target.value);
-            if(dicColors[val]) document.getElementById('colorPickerModal').value = dicColors[val];
+            if(dicColors[val] && !pickerModalTocado) document.getElementById('colorPickerModal').value = dicColors[val];
         };
+        // Si no se elige el color a mano, sale del nombre (o gris): no queda el color anterior del selector
+        let pickerModalTocado = false;
+        document.getElementById('colorPickerModal').addEventListener('input', () => { pickerModalTocado = true; });
 
         // Botón Agregar Color (DENTRO DEL MODAL)
         document.getElementById('btnPostColor').onclick = () => {
-            let picker = document.getElementById('colorPickerModal').value;
-            let nombre = document.getElementById('colorNombreModal').value.trim() || picker;
+            const nombreEscrito = document.getElementById('colorNombreModal').value.trim();
+            let picker = pickerModalTocado ? document.getElementById('colorPickerModal').value : (dicColors[normalizarNombreColor(nombreEscrito)] || '#888888');
+            pickerModalTocado = false;
+            let nombre = nombreEscrito || picker;
             let ninguno = document.getElementById('colorNingunoModal').checked;
             let stockColor = parseInt(document.getElementById('colorStockModal').value || '0', 10);
 

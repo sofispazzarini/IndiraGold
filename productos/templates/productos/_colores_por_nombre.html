@@ -1,0 +1,35 @@
+<script>
+// Tono por nombre de color (mismos valores que normalizar_hex_color en productos/views.py).
+// Si no se toca el selector, el color sale del nombre; si el nombre no se conoce, va gris
+// (antes quedaba el negro inicial del selector o el color anterior).
+const COLORES_POR_NOMBRE = {
+    'rojo': '#ff0000', 'verde': '#00ff00', 'azul': '#0000ff', 'negro': '#000000', 'blanco': '#ffffff',
+    'gris': '#808080', 'rosa': '#ffc0cb', 'amarillo': '#ffff00', 'celeste': '#87ceeb', 'violeta': '#800080',
+    'naranja': '#ffa500', 'marron': '#8b4513', 'cafe': '#6f4e37', 'beige': '#d2b48c', 'turquesa': '#40e0d0',
+    'dorado': '#d4af37', 'plateado': '#c0c0c0', 'bordo': '#800020', 'fucsia': '#ff00ff', 'crema': '#fffdd0',
+    'nude': '#e3bc9a', 'camel': '#c19a6b', 'suela': '#a0522d', 'chocolate': '#7b3f00', 'natural': '#e8dcc4',
+    'verde militar': '#4b5320', 'azul marino': '#000080'
+};
+
+function normalizarNombreColor(texto) {
+    return (texto || '').toLowerCase().trim().normalize('NFD').replace(/[̀-ͯ]/g, '');
+}
+
+// Conecta un selector de color con el campo del nombre. Devuelve una función que da el hex
+// a guardar para un nombre: el elegido a mano, o el del nombre, o gris.
+function conectarSelectorColor(picker, inputNombre) {
+    let tocado = false;
+    picker.addEventListener('input', () => { tocado = true; });
+    inputNombre.addEventListener('input', () => {
+        const hex = COLORES_POR_NOMBRE[normalizarNombreColor(inputNombre.value)];
+        if (hex && !tocado) picker.value = hex;
+    });
+    const hexPara = (nombre) => {
+        const hex = tocado ? picker.value : (COLORES_POR_NOMBRE[normalizarNombreColor(nombre)] || '#888888');
+        tocado = false;
+        return hex;
+    };
+    hexPara.marcarElegido = () => { tocado = true; };
+    return hexPara;
+}
+</script>

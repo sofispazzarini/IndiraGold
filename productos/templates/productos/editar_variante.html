@@ -112,11 +112,14 @@
     #btnAgregarColor { border-radius: 0 12px 12px 0 !important; }
 </style>
 
+{% include 'productos/_colores_por_nombre.html' %}
 <script>
 // Agregar color
+const hexDelColor = conectarSelectorColor(document.getElementById('colorPicker'), document.getElementById('colorNombreInput'));
 document.getElementById('btnAgregarColor').addEventListener('click', function() {
-    const colorHex = document.getElementById('colorPicker').value;
-    const colorNombre = document.getElementById('colorNombreInput').value.trim() || colorHex;
+    const nombreEscrito = document.getElementById('colorNombreInput').value.trim();
+    const colorHex = hexDelColor(nombreEscrito);
+    const colorNombre = nombreEscrito || colorHex;
     // Escapado para el HTML: un nombre con comillas no corta el valor del input
     const colorNombreHtml = colorNombre.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     const contenedor = document.getElementById('contenedorColores');

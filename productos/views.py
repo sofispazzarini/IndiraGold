@@ -175,14 +175,22 @@ def obtener_talle(nombre):
     return Talle.objects.filter(nombre__iexact=nombre).first() or Talle.objects.create(nombre=nombre)
 
 
-def color_desde_form(nombre, codigo_hex):
-    color_obj, created = Color.objects.get_or_create(
-        nombre=nombre,
-        defaults={'codigo_hex': codigo_hex}
-    )
-    if not created and color_obj.codigo_hex != codigo_hex:
+def color_desde_form(nombre, codigo_hex, producto=None):
+    """Color por nombre (sin distinguir mayúsculas). Los colores son compartidos entre productos:
+    si ya lo usa otro producto, su tono no se cambia desde acá (antes "Blanco" pasaba a negro en
+    toda la tienda). Si es nuevo, o solo lo usa este producto, se guarda el tono elegido."""
+    codigo_hex = normalizar_hex_color(nombre, codigo_hex)
+    color_obj = Color.objects.filter(nombre__iexact=nombre).first()
+    if color_obj is None:
+        return Color.objects.create(nombre=nombre, codigo_hex=codigo_hex)
+    if codigo_hex == '#888888' or (color_obj.codigo_hex or '').lower() == codigo_hex:
+        return color_obj
+    compartido = Variante.objects.filter(colores=color_obj)
+    if producto is not None:
+        compartido = compartido.exclude(producto=producto)
+    if (color_obj.codigo_hex or '').lower() in ('', '#888888') or not compartido.exists():
         color_obj.codigo_hex = codigo_hex
-        color_obj.save()
+        color_obj.save(update_fields=['codigo_hex'])
     return color_obj
 
 
@@ -522,13 +530,7 @@ def agregar_producto(request, subcat_id):
                             )
                             stock_color = int(c.get('stock', 0))
                             if nombre_color:
-                                color_obj, created = Color.objects.get_or_create(
-                                    nombre=nombre_color,
-                                    defaults={'codigo_hex': codigo_hex}
-                                )
-                                if not created and color_obj.codigo_hex != codigo_hex:
-                                    color_obj.codigo_hex = codigo_hex
-                                    color_obj.save()
+                                color_obj = color_desde_form(nombre_color, codigo_hex, producto=nueva_variante.producto)
                                 nueva_variante.colores.add(color_obj)
                                 vc, creado = VarianteColor.objects.get_or_create(
                                     variante=nueva_variante,
@@ -1100,7 +1102,7 @@ def editar_variante(request, variante_id):
         if colores_form:
             colores_objs = []
             for dato_color in colores_form:
-                color_obj = color_desde_form(dato_color['nombre'], dato_color['hex'])
+                color_obj = color_desde_form(dato_color['nombre'], dato_color['hex'], producto=producto)
                 colores_objs.append(color_obj)
                 stock_por_color[color_obj.id] = dato_color['stock']
             var_editada.colores.set(colores_objs)
@@ -1227,7 +1229,7 @@ def agregar_variante(request, producto_id):
 
         # Cada color se guarda con su propio stock; el del talle es la suma
         for dato_color in leer_colores_con_stock(request):
-            color_obj = color_desde_form(dato_color['nombre'], dato_color['hex'])
+            color_obj = color_desde_form(dato_color['nombre'], dato_color['hex'], producto=producto)
             nueva_variante.colores.add(color_obj)
             vc, _ = VarianteColor.objects.get_or_create(
                 variante=nueva_variante,
