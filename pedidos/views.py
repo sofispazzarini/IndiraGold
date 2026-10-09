@@ -58,8 +58,6 @@ from django.db import transaction
 from django.utils.html import escape
 from django.utils import timezone
 from .servicios_envio import ErrorEnvio, calcular_paquete_envio, cotizar_correo_argentino
-print("===== PEDIDOS VIEWS CARGADO =====")
-print("TOKEN MP:", settings.MERCADO_PAGO_ACCESS_TOKEN)
 # Decorador para verificar que es administrador
 def admin_required(view_func):
     return login_required(login_url="/users/login/")(user_passes_test(lambda u: u.is_superuser, login_url="/users/login/")(view_func))
