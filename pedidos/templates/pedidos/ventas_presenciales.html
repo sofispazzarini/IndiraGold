@@ -2834,8 +2834,12 @@ function mostrarMensaje(texto){
 
     `
 
-    // Insertar mensaje en un lugar visible
-    const contenedor = document.querySelector('.card-body') || document.body;
+    // Insertar el mensaje donde el usuario lo vea: dentro del modal abierto (el último, si hay
+    // uno anidado) o arriba de la página. En body quedaba detrás del modal.
+    const modalesAbiertos = document.querySelectorAll('.modal.show .modal-body')
+    const contenedor = modalesAbiertos.length
+        ? modalesAbiertos[modalesAbiertos.length - 1]
+        : (document.querySelector('.ventas-wrapper') || document.body)
     contenedor.prepend(div)
 
     // Scroll al mensaje
