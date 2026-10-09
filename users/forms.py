@@ -36,6 +36,16 @@ PROVINCIAS = [
     ("Tierra del Fuego", "Tierra del Fuego"),
     ("Tucumán", "Tucumán"),
 ]
+def normalizar_provincia(value):
+    """Devuelve la provincia con el valor exacto del select (ej. "caba" o "Ciudad Autónoma..."
+    -> "CABA", "santiago del estero" -> "Santiago del Estero"). Si no coincide, la deja como vino."""
+    texto = " ".join((value or "").strip().split())
+    for valor, etiqueta in PROVINCIAS:
+        if valor and texto.casefold() in (valor.casefold(), etiqueta.casefold()):
+            return valor
+    return texto
+
+
 class RegistroUsuarioForm(forms.ModelForm):
     nombre = forms.CharField(label='Nombre', max_length=150)
     apellido = forms.CharField(label='Apellido', max_length=150)

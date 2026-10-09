@@ -10,7 +10,7 @@ from django.conf import settings
 from config.contacto import whatsapp_numero_visible
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login as auth_login
-from .forms import RegistroUsuarioForm, capitalizar_texto
+from .forms import RegistroUsuarioForm, capitalizar_texto, normalizar_provincia
 from .models import Cliente, Direccion, direcciones_sin_duplicados
 from django.db.models import Q
 from django.db import IntegrityError
@@ -357,7 +357,7 @@ def confirmar_direccion(request):
         data['calle'] = capitalizar_texto(request.POST.get('calle', data.get('calle')))
         data['numero'] = request.POST.get('numero', data.get('numero'))
         data['ciudad'] = capitalizar_texto(request.POST.get('ciudad', data.get('ciudad')))
-        data['provincia'] = capitalizar_texto(request.POST.get('provincia', data.get('provincia')))
+        data['provincia'] = normalizar_provincia(request.POST.get('provincia', data.get('provincia')))
         data['codigo_postal'] = request.POST.get('codigo_postal', data.get('codigo_postal'))
         data['referencia'] = capitalizar_texto(request.POST.get('referencia', data.get('referencia', '')))
         request.session['registro_data'] = data
@@ -721,7 +721,7 @@ def crear_direccion_ajax(request):
     calle = capitalizar_texto(request.POST.get('calle', ''))
     numero = request.POST.get('numero', '').strip()
     ciudad = capitalizar_texto(request.POST.get('ciudad', ''))
-    provincia = capitalizar_texto(request.POST.get('provincia', ''))
+    provincia = normalizar_provincia(request.POST.get('provincia', ''))
     codigo_postal = request.POST.get('codigo_postal', '').strip()
     referencia = capitalizar_texto(request.POST.get('referencia', ''))
 
@@ -762,7 +762,7 @@ def crear_direccion_cliente_ajax(request):
     calle = capitalizar_texto(request.POST.get('calle', ''))
     numero = request.POST.get('numero', '').strip()
     ciudad = capitalizar_texto(request.POST.get('ciudad', ''))
-    provincia = capitalizar_texto(request.POST.get('provincia', ''))
+    provincia = normalizar_provincia(request.POST.get('provincia', ''))
     codigo_postal = request.POST.get('codigo_postal', '').strip()
     referencia = capitalizar_texto(request.POST.get('referencia', ''))
 
