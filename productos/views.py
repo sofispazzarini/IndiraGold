@@ -27,6 +27,7 @@ from decimal import Decimal
 from django.utils import timezone
 from carritos.utils import (
     get_or_create_cart,
+    precio_unitario_vigente,
     get_cart_seconds_left,
     expire_cart_if_needed,
     SESSION_CART_COLORS_KEY,
@@ -188,12 +189,12 @@ def detalle_producto(request, producto_id):
                     "nombre": item_db.variante.producto.nombre,
                     "precio": item_db.precio_unitario,
                     "cantidad": item_db.cantidad,
-                    "subtotal": item_db.precio_total,
+                    "subtotal": item_db.subtotal,
                     "color_nombre": item_db.color_nombre,
                     "color_hex": color_hex,
                 })
                 cart_count += item_db.cantidad
-                cart_total += item_db.precio_total
+                cart_total += item_db.subtotal
         except Exception:
             pass
     else:
@@ -238,7 +239,7 @@ def detalle_producto(request, producto_id):
                         variante.colores.filter(nombre__iexact=color_nombre)
                         .values_list('codigo_hex', flat=True).first()
                     )
-                precio = variante.precio or variante.producto.precio
+                precio = precio_unitario_vigente(variante)
                 subtotal = precio * qty
 
                 cart_items.append({

@@ -60,6 +60,32 @@ def _to_int(value) -> int | None:
     except (TypeError, ValueError):
         return None
 
+def precio_unitario_vigente(variante):
+    """Precio que se cobra hoy por una variante: precio propio (o el del producto)
+    con la oferta activa aplicada. Es el mismo para invitados y clientes logueados."""
+    from decimal import Decimal
+
+    producto = variante.producto
+    precio_base = variante.precio or producto.precio or Decimal('0')
+    oferta = producto.obtener_oferta_activa()
+    if oferta:
+        descuento = Decimal(oferta.descuento) / Decimal(100)
+        return (precio_base * (1 - descuento)).quantize(Decimal('0.01'))
+    return precio_base
+
+
+def refrescar_precios_carrito(carrito):
+    """Actualiza el precio de cada ítem del carrito al precio vigente (ofertas incluidas)
+    antes de mostrar el checkout o cobrar."""
+    if carrito is None:
+        return
+    for item in carrito.items.select_related('variante__producto'):
+        precio = precio_unitario_vigente(item.variante)
+        if item.precio_unitario != precio:
+            item.precio_unitario = precio
+            item.save()
+
+
 def obtener_o_crear_carrito(request):
     if request.user.is_authenticated:
         carrito, _ = Carrito.objects.get_or_create(cliente=request.user)
@@ -271,7 +297,7 @@ def vincular_carrito_con_usuario(request, session_id_previo=None, carrito_sesion
                 item_existente.precio_total = item_existente.cantidad * item_existente.precio_unitario
                 item_existente.save()
             else:
-                precio = variante.precio or variante.producto.precio or 0
+                precio = precio_unitario_vigente(variante)
                 CarritoItem.objects.create(
                     carrito=carrito_user,
                     variante=variante,

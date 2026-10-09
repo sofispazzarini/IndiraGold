@@ -9,7 +9,7 @@ from django.shortcuts import render, redirect
 from django.urls import resolve, reverse
 from django.utils import timezone
 from django.views.decorators.http import require_POST
-from carritos.utils import vincular_carrito_con_usuario, get_or_create_cart
+from carritos.utils import vincular_carrito_con_usuario, get_or_create_cart, precio_unitario_vigente
 
 from productos.models import Categoria
 from productos.models import Producto
@@ -234,14 +234,8 @@ def agregar_producto(request):
 				carrito.expires_at = timezone.now() + timedelta(hours=1)
 				carrito.save()
 
-			# Calcular precio con descuento si hay oferta activa
-			precio_base = variante.precio or producto.precio
-			oferta = producto.obtener_oferta_activa()
-			if oferta:
-				descuento = Decimal(oferta.descuento) / Decimal(100)
-				precio_con_descuento = precio_base * (1 - descuento)
-			else:
-				precio_con_descuento = precio_base
+			# Precio con la oferta activa aplicada (mismo cálculo que para invitados)
+			precio_con_descuento = precio_unitario_vigente(variante)
 
 			item = carrito.items.filter(
 				variante=variante,
@@ -731,7 +725,7 @@ def _build_home_context(request):
 				color_hex = _normalize_hex(
 					variante.colores.filter(nombre__iexact=color_nombre).values_list('codigo_hex', flat=True).first()
 				)
-			precio = variante.precio or variante.producto.precio
+			precio = precio_unitario_vigente(variante)
 			subtotal = precio * qty
 
 			items.append({
@@ -823,8 +817,8 @@ def sumar_producto(request):
 				cantidad=1,
 				color_nombre=color_nombre,
 				color_hex=color_hex,
-				precio_unitario=variante.precio,
-				precio_total=variante.precio,
+				precio_unitario=precio_unitario_vigente(variante),
+				precio_total=0,
 			)
 
 		# Sincronizar sesión con BD

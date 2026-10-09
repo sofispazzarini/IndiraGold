@@ -30,7 +30,7 @@ from .forms import GastoForm, ConfiguracionEnvioForm, ConfiguracionPagoForm
 from pedidos.forms import GastoForm, ConfiguracionEnvioForm, ConfiguracionPagoForm
 from .models import Gasto, Pedido, PedidoItem
 from carritos.models import Carrito, CarritoItem
-from carritos.utils import clear_cart_session, get_or_create_cart, vincular_carrito_con_usuario, get_cart_seconds_left
+from carritos.utils import clear_cart_session, get_or_create_cart, vincular_carrito_con_usuario, get_cart_seconds_left, refrescar_precios_carrito
 from users.models import Cliente, Direccion, direcciones_sin_duplicados
 from productos.models import Variante, Oferta
 import mercadopago
@@ -800,6 +800,9 @@ def checkout_view(request):
         messages.error(request, "No se pudo acceder al carrito.")
         return redirect("home:home")
 
+    # Precios al día (ofertas, cambios de precio) antes de mostrar el resumen
+    refrescar_precios_carrito(carrito)
+
     # Traemos los items con sus variantes y fotos
     items = carrito.items.all().select_related('variante__producto', 'variante__talle')
     configuracion_envio = ConfiguracionEnvio.actual()
@@ -1293,6 +1296,7 @@ def buscar_sucursales_correo(request):
 def crear_pago(request):
 
     carrito = get_or_create_cart(request)
+    refrescar_precios_carrito(carrito)
 
     # Traer items del carrito
     items = carrito.items.all().select_related(
@@ -1615,6 +1619,7 @@ def crear_pago(request):
 def pago_exitoso(request):
 
     carrito = get_or_create_cart(request)
+    refrescar_precios_carrito(carrito)
 
     items = carrito.items.all().select_related(
         'variante__producto',
