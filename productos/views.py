@@ -172,6 +172,31 @@ def leer_colores_con_stock(request):
     return list(colores.values())
 
 
+def medida_a_decimal(valor):
+    """Medida en cm escrita por el admin: "12,5 cm" -> 12.5; vacío -> 0. ValueError si no es un número."""
+    texto = (valor or '').strip().lower().replace('cm', '').replace(',', '.').strip()
+    if not texto:
+        return Decimal('0')
+    try:
+        numero = Decimal(texto)
+    except InvalidOperation:
+        raise ValueError(valor)
+    if not numero.is_finite() or numero < 0 or numero >= 10000:
+        raise ValueError(valor)
+    return numero
+
+
+def error_en_medidas(request):
+    """Mensaje si alguna medida del form no es un número válido (se valida antes de guardar nada)."""
+    for campo, etiqueta in (('alto', 'Alto'), ('ancho', 'Ancho'), ('largo', 'Largo'), ('tiro', 'Tiro')):
+        for valor in request.POST.getlist(campo):
+            try:
+                medida_a_decimal(valor)
+            except ValueError:
+                return f'{etiqueta}: "{valor}" no es una medida válida. Usá solo números (ej: 12,5).'
+    return None
+
+
 def obtener_talle(nombre):
     """Talle por nombre sin distinguir mayúsculas ("s" y "S" son el mismo talle)."""
     nombre = (nombre or '').strip() or 'Sin talle'
@@ -1088,6 +1113,11 @@ def editar_variante(request, variante_id):
     colores_originales_ids = list(variante.colores.values_list('id', flat=True))
 
     if request.method == 'POST':
+        error_medidas = error_en_medidas(request)
+        if error_medidas:
+            messages.error(request, error_medidas)
+            return redirect('productos:editar_variante', variante_id=variante.id)
+
         # Actualizar talle
         talle_nombre = request.POST.get('talle_nombre', '').strip()
         if talle_nombre:
@@ -1123,11 +1153,7 @@ def editar_variante(request, variante_id):
             var_editada.colores.clear()
 
         # 2. CAPTURAR Y GUARDAR MEDIDAS (múltiples)
-        def limpiar_decimal(valor):
-            """Convierte comas a puntos y maneja valores vacíos"""
-            if not valor:
-                return 0
-            return valor.replace(',', '.')
+        limpiar_decimal = medida_a_decimal  # ya validadas arriba
 
         medidas_ids = request.POST.getlist('medida_id')
         altos = request.POST.getlist('alto')
@@ -1205,8 +1231,11 @@ def agregar_variante(request, producto_id):
 
     if request.method == 'POST':
         talle_nombre = request.POST.get('talle_nombre', '').strip() or 'Sin talle'
-        if producto.variantes.filter(talle__nombre__iexact=talle_nombre).exists():
-            messages.error(request, f'El producto ya tiene el talle {talle_nombre}. Cambiá el nombre o editalo desde la lista de talles.')
+        error_form = error_en_medidas(request)
+        if not error_form and producto.variantes.filter(talle__nombre__iexact=talle_nombre).exists():
+            error_form = f'El producto ya tiene el talle {talle_nombre}. Cambiá el nombre o editalo desde la lista de talles.'
+        if error_form:
+            messages.error(request, error_form)
             # Se vuelve a mostrar el form con lo cargado (colores, stock y medidas), sin redirect
             medidas_previas = [
                 {'alto': alto, 'ancho': ancho, 'largo': largo, 'tiro': tiro}
@@ -1252,10 +1281,7 @@ def agregar_variante(request, producto_id):
             vc.activo = True
             vc.save()
 
-        def limpiar_decimal(valor):
-            if not valor:
-                return 0
-            return valor.replace(',', '.')
+        limpiar_decimal = medida_a_decimal  # ya validadas arriba
 
         medidas_ids = request.POST.getlist('medida_id')
         altos = request.POST.getlist('alto')
