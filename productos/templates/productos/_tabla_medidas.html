@@ -270,15 +270,8 @@
         <div class="medidas-section">
             <div class="medidas-title">Medidas por talle</div>
 
-            {% with has_medidas=False %}
-                {% for variante in variantes %}
-                    {% if variante.medidas.all %}
-                        {% with has_medidas=True %}{% endwith %}
-                    {% endif %}
-                {% endfor %}
-            {% endwith %}
-
-            {% if variantes.0.medidas.all %}
+            {# Hay tabla si algún talle tiene medidas (no solo el primero) #}
+            {% if filas_medidas %}
                 <div class="tabla-medidas-scroll{% if filas_medidas > 3 %} is-scroll{% endif %}">
                 <table class="tabla-medidas">
                     <thead>
