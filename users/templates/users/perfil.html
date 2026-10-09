@@ -943,6 +943,8 @@ document.addEventListener('DOMContentLoaded', function() {
   document.body.appendChild(charToast);
 
   let toastTimeout = null;
+  // Global: el segundo bloque (formularios de dirección) también la usa
+  window.showCharToast = showCharToast;
   function showCharToast() {
     charToast.classList.add('show');
     if (toastTimeout) clearTimeout(toastTimeout);
@@ -1046,7 +1048,7 @@ document.addEventListener('DOMContentLoaded', function() {
     updateCounter();
     input.addEventListener('input', function() {
       updateCounter();
-      if (this.value.length >= maxLen) showCharToast();
+      if (this.value.length >= maxLen && window.showCharToast) window.showCharToast();
     });
   });
 });
