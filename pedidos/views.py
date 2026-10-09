@@ -993,6 +993,9 @@ def checkout_view(request):
 @login_required
 @transaction.atomic
 def confirmar_pedido(request):
+    # Flujo viejo: creaba el pedido y descontaba stock sin pasar por el checkout (sin pago,
+    # sin validar stock por color y sin reponer al cancelar). Todas las compras van por el checkout.
+    return redirect('pedidos:checkout')
     # 1. USAR get_or_create_cart para traer los datos reales de la base de datos
     carrito = get_or_create_cart(request)
     items_del_carrito = carrito.items.all().select_related('variante__producto', 'variante__talle')

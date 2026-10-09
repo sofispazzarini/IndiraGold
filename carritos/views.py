@@ -430,6 +430,9 @@ def expirar_carrito(request):
 @login_required(login_url="/users/login/")
 @require_POST
 def confirmar_compra(request):
+	# Flujo viejo: creaba el pedido y descontaba stock sin pasar por el checkout (sin pago,
+	# sin validar stock por color y sin reponer al cancelar). Todas las compras van por el checkout.
+	return redirect('pedidos:checkout')
 	next_url = request.POST.get("next") or reverse("home:home")
 	if expire_cart_if_needed(request.session):
 		messages.info(request, "Tu carrito expiró luego de 1 hora y fue reiniciado.")
