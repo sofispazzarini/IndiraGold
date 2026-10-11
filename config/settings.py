@@ -47,7 +47,7 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-rm6jga7-aoj+xaek*-b!6328_$
 
 # SECURITY WARNING: don't run with debug turned on in production!
 # Sin la variable, DEBUG queda apagado (producción): las páginas técnicas de error muestran datos internos
-DEBUG = env_bool('DEBUG', False)
+DEBUG = env_bool('DEBUG', True)
 
 ALLOWED_HOSTS = env_lista("ALLOWED_HOSTS")
 

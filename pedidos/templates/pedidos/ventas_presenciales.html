@@ -26,6 +26,14 @@
         background-color: rgba(26, 22, 18, 0.6);
     }
 
+    /* Modal sobre modal - fondo más oscuro */
+    #modalNuevoClienteVenta.show,
+    #modalNuevaDireccionVenta.show {
+        background-color: rgba(26, 22, 18, 0.7);
+        backdrop-filter: blur(4px);
+        -webkit-backdrop-filter: blur(4px);
+    }
+
     .ventas-wrapper{
         min-height:100vh;
         width:100%;
@@ -1517,7 +1525,7 @@
             <form id="formNuevoClienteVenta">
                 {% csrf_token %}
                 <div class="modal-body px-4">
-                    <div id="nuevoClienteError" class="alert alert-danger d-none small"></div>
+                    <div id="nuevoClienteError" class="alert alert-danger d-none rounded-3 py-3 fw-bold" style="background:#ffe0e0; border:2px solid #dc3545; color:#721c24;"></div>
                     <div class="row g-3">
                         <div class="col-md-6">
                             <label class="form-label fw-bold">Nombre <span class="char-limit">máx. 50</span></label>
@@ -1944,9 +1952,6 @@ function abrirModalSobreVenta(id){
 document.getElementById('formNuevoClienteVenta').addEventListener('submit', async function(e){
     e.preventDefault()
     const errorBox = document.getElementById('nuevoClienteError')
-    errorBox.classList.add('d-none')
-    errorBox.innerText = ''
-    // Mientras se guarda (manda el mail de bienvenida y puede tardar) el botón queda deshabilitado
     const botonGuardar = this.querySelector('button[type="submit"]')
     if(botonGuardar.disabled) return
     botonGuardar.disabled = true
@@ -1965,14 +1970,24 @@ document.getElementById('formNuevoClienteVenta').addEventListener('submit', asyn
             throw new Error(data.error || 'No se pudo crear el cliente')
         }
 
+        errorBox.classList.add('d-none')
+        errorBox.innerText = ''
         window.clienteSeleccionado = data.cliente.id
         inputCliente.value = data.cliente.nombre
         renderDireccionesVenta([])
         this.reset()
         bootstrap.Modal.getInstance(document.getElementById('modalNuevoClienteVenta')).hide()
     }catch(error){
-        errorBox.innerText = error.message
-        errorBox.classList.remove('d-none')
+        let errDiv = document.getElementById('nuevoClienteError')
+        if(!errDiv){
+            errDiv = document.createElement('div')
+            errDiv.id = 'nuevoClienteError'
+            const modalBody = document.querySelector('#formNuevoClienteVenta .modal-body')
+            if(modalBody) modalBody.insertBefore(errDiv, modalBody.firstChild)
+        }
+        errDiv.textContent = error.message
+        errDiv.className = 'alert alert-danger rounded-3 py-3 fw-bold mb-3'
+        errDiv.style.cssText = 'display:block; background:#ffe0e0; border:2px solid #dc3545; color:#721c24;'
     }finally{
         botonGuardar.disabled = false
         botonGuardar.innerText = 'Guardar cliente'
