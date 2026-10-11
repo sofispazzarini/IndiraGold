@@ -58,8 +58,15 @@ class Pedido(models.Model):
             'entregado',
             'cancelado',
         ],
+
+        # Pago que llegó tarde: se puede reactivar si todavía hay stock (se vuelve a descontar)
+        'vencido': [
+            'aceptado',
+        ],
     }
-    # Estados en los que el stock del pedido ya fue descontado (al aceptarlo o al pagarlo con MP)
+    # Estados de un pedido confirmado (pago aceptado en adelante): cuentan como venta y admiten
+    # cambios y notas de crédito. Si el stock está descontado o no lo indica stock_descontado
+    # (un pendiente nuevo ya tiene sus unidades reservadas).
     ESTADOS_CON_STOCK_DESCONTADO = (
         'aceptado',
         'en_preparacion',
@@ -106,7 +113,8 @@ class Pedido(models.Model):
 
     @property
     def es_final(self):
-        return self.estado in self.ESTADOS_FINALES
+        # Vencido es final salvo que se pueda reactivar (pasarlo a Pago aceptado)
+        return self.estado in self.ESTADOS_FINALES and not self.estados_siguientes()
     costo_envio = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     opcion_flex = models.ForeignKey(
         'OpcionEnvioFlex',
@@ -133,6 +141,9 @@ class Pedido(models.Model):
         default='pendiente'
     )
     metodo_pago = models.CharField(max_length=20, choices=METODOS_PAGO, null=True, blank=True)
+    # True mientras las unidades del pedido están descontadas del stock (reservadas o vendidas).
+    # Es la marca que evita descontar o reponer dos veces.
+    stock_descontado = models.BooleanField(default=False)
     monto_pagado = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     deuda = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     es_presencial = models.BooleanField(default=False)

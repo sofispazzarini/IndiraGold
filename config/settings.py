@@ -91,6 +91,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'config.middleware.PaginaError405Middleware',
+    'pedidos.middleware.VencerReservasMiddleware',
 ]
 
 ROOT_URLCONF = 'config.urls'
@@ -196,6 +197,18 @@ try:
     FOTO_PERFIL_MAX_MB = max(float(os.getenv('FOTO_PERFIL_MAX_MB', '5')), 0.1)
 except ValueError:
     FOTO_PERFIL_MAX_MB = 5.0
+
+# Reserva de stock de los pedidos online sin pagar (ver pedidos/stock_pedidos.py):
+# horas que un pedido pendiente (transferencia, QR, efectivo) retiene sus unidades antes de vencer,
+# y minutos para pagar en Mercado Pago (el link de pago vence a la misma hora).
+try:
+    PEDIDO_PENDIENTE_VENCE_HORAS = max(float(os.getenv('PEDIDO_PENDIENTE_VENCE_HORAS', '48')), 1)
+except ValueError:
+    PEDIDO_PENDIENTE_VENCE_HORAS = 48.0
+try:
+    MP_RESERVA_MINUTOS = max(int(os.getenv('MP_RESERVA_MINUTOS', '60')), 10)
+except ValueError:
+    MP_RESERVA_MINUTOS = 60
 
 # Security settings for production (HTTPS)
 if not DEBUG:

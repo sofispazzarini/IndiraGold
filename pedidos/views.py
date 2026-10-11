@@ -37,6 +37,15 @@ from carritos.utils import clear_cart_session, get_or_create_cart, vincular_carr
 from users.models import Cliente, Direccion, direcciones_sin_duplicados
 from productos.models import Variante, Oferta
 from productos.stock import descontar_stock, reponer_stock, stock_disponible, validar_stock
+from .stock_pedidos import (
+    descontar_stock_pedido,
+    liberar_reservas_mercado_pago,
+    plazo_reserva_mercado_pago,
+    reponer_stock_pedido,
+    unidades_cambiadas,
+    unidades_devolvibles,
+    vencer_reservas,
+)
 import mercadopago
 from django.conf import settings
 from config.contacto import whatsapp_numero, whatsapp_numero_visible
@@ -46,6 +55,7 @@ from django.conf import settings
 from django.db.models import Q
 from django.core.paginator import Paginator
 import json
+import re
 import unicodedata
 from urllib.parse import quote, urlencode
 import uuid
@@ -468,39 +478,21 @@ def errores_stock_items(lineas):
     return errores
 
 
-def descontar_stock_pedido(pedido):
-    items = list(pedido.items.select_related('variante__producto', 'variante__talle'))
-    errores = errores_stock_items(
-        (item.variante, item.color_nombre, item.cantidad) for item in items
-    )
-    if errores:
-        raise ValueError(' '.join(errores))
-
-    for item in items:
-        descontar_stock(item.variante, item.cantidad, item.color_nombre)
-
-
 def descontar_stock_variante(variante, cantidad, color_nombre=None):
     descontar_stock(variante, cantidad, color_nombre)
 
 
-def reponer_stock_pedido(pedido):
-    """Al cancelar: vuelve al stock lo que el cliente todavía tiene del pedido. Las unidades ya
-    devueltas con nota de crédito o cambiadas ya volvieron al stock en su momento; en cambio, lo
-    que se entregó en un cambio sí vuelve ahora."""
-    for item in pedido.items.select_related('variante__producto', 'variante__talle'):
-        pendientes = unidades_devolvibles(item)
-        if pendientes:
-            reponer_stock(item.variante, pendientes, item.color_nombre)
-    for cambio in pedido.cambios.select_related('variante_entregada__producto', 'variante_entregada__talle'):
-        if cambio.variante_entregada:
-            reponer_stock(cambio.variante_entregada, cambio.cantidad_entregada or 1, cambio.color_entregado or None)
+class ErrorPreferenciaMercadoPago(Exception):
+    """Mercado Pago no creó el link de pago (se deshace el pedido y su reserva)."""
 
 
 def cambiar_estado_pedido(pedido, nuevo_estado):
-    """Aplica un cambio de estado respetando Pedido.TRANSICIONES y moviendo el stock una sola vez:
-    se descuenta al aceptar un pedido pendiente y se repone al cancelar uno que ya lo había
-    descontado. No guarda el pedido. Lanza ValueError si el cambio no está permitido."""
+    """Aplica un cambio de estado respetando Pedido.TRANSICIONES y moviendo el stock una sola vez
+    (Pedido.stock_descontado): los pedidos nuevos ya tienen sus unidades reservadas desde el
+    checkout, así que aceptarlos no descuenta de nuevo; solo descuenta un pendiente anterior a la
+    reserva o un vencido que se reactiva (si todavía hay stock). Cancelar, rechazar o vencer
+    devuelve las unidades. No guarda el pedido. Lanza ValueError si el cambio no está permitido
+    o si no alcanza el stock."""
     estado_anterior = pedido.estado
     if nuevo_estado == estado_anterior:
         return False
@@ -512,19 +504,23 @@ def cambiar_estado_pedido(pedido, nuevo_estado):
             f'a "{nombres.get(nuevo_estado, nuevo_estado)}".'
         )
 
-    if (
-        estado_anterior == 'pendiente'
-        and nuevo_estado == 'aceptado'
-        and pedido.metodo_pago in ['mercado_pago_qr', 'efectivo', 'transferencia']
-    ):
-        descontar_stock_pedido(pedido)
+    if nuevo_estado == 'aceptado':
+        try:
+            descontar_stock_pedido(pedido)
+        except ValueError as error:
+            if estado_anterior == 'vencido':
+                raise ValueError(f'No se puede reactivar el pedido: ya no hay stock suficiente. {error}')
+            raise
 
-    if estado_anterior in Pedido.ESTADOS_CON_STOCK_DESCONTADO and nuevo_estado == 'cancelado':
+    if nuevo_estado in ('cancelado', 'rechazado', 'vencido'):
         reponer_stock_pedido(pedido)
 
     # Un pedido cancelado, rechazado o vencido ya no se cobra
     if nuevo_estado in ('cancelado', 'rechazado', 'vencido'):
         pedido.deuda = Decimal('0.00')
+    elif estado_anterior == 'vencido':
+        # Al reactivarlo vuelve a deber lo que no pagó
+        pedido.deuda = max(pedido.total - pedido.monto_pagado, Decimal('0.00'))
 
     pedido.estado = nuevo_estado
     return True
@@ -866,11 +862,12 @@ def editar_pedido(request, pedido_id):
         return redirect('pedidos:detalle_pedido', pedido_id=pedido.id)
     
     if request.method == 'POST':
-        # Si el pedido ya descontó stock (aceptado en adelante), los cambios de cantidad o de
-        # ítems mueven stock (talle y color); si está pendiente, solo se valida que alcance.
-        stock_descontado = pedido.estado in Pedido.ESTADOS_CON_STOCK_DESCONTADO
         try:
             with transaction.atomic():
+                # Si el pedido tiene sus unidades descontadas (reservadas o vendidas), los cambios de
+                # cantidad o de ítems mueven stock (talle y color); si no, solo se valida que alcance.
+                pedido = Pedido.objects.select_for_update().get(pk=pedido.pk)
+                stock_descontado = pedido.stock_descontado
                 ids_a_eliminar = set(request.POST.getlist('eliminar_item'))
                 for item in list(PedidoItem.objects.filter(pedido=pedido).select_related('variante__producto', 'variante__talle')):
                     try:
@@ -1543,6 +1540,10 @@ def crear_pago(request):
 def _crear_pago(request):
 
     carrito = get_or_create_cart(request)
+    # Antes de validar el stock: liberar las reservas vencidas y el intento anterior de pagar con
+    # Mercado Pago de esta clienta (este checkout lo reemplaza), así no se bloquea con sus propias unidades
+    vencer_reservas()
+    liberar_reservas_mercado_pago(Cliente.objects.get_or_create(user=request.user)[0])
     refrescar_precios_carrito(carrito)
     if quitar_items_no_disponibles(request, carrito):
         return redirect('pedidos:checkout')
@@ -1746,8 +1747,48 @@ def _crear_pago(request):
             "unit_price": float(costo_envio)
         })
 
+    total_pedido = (subtotal_productos - descuento_monto) + costo_envio
+    direccion_pedido = direccion_flex or direccion_correo
+
+    def crear_pedido_pendiente(metodo):
+        """Crea el pedido pendiente con sus ítems (sin tocar el stock todavía)."""
+        pedido = Pedido.objects.create(
+            cliente=cliente,
+            total=total_pedido,
+            costo_envio=costo_envio,
+            opcion_flex=opcion_flex,
+            codigo_descuento=cupon.codigo if cupon else None,
+            descuento_porcentaje=cupon.descuento if cupon else 0,
+            descuento_monto=descuento_monto,
+            metodo_entrega=request.session['metodo_entrega'],
+            direccion=direccion_pedido,
+            codigo_postal=direccion_pedido.codigo_postal if direccion_pedido else None,
+            localidad=direccion_pedido.ciudad if direccion_pedido else None,
+            calle_numero=f'{direccion_pedido.calle} {direccion_pedido.numero}' if direccion_pedido else None,
+            correo=request.session.get('correo'),
+            tipo_correo=request.session.get('tipo_correo'),
+            sucursal_correo=request.session.get('sucursal_correo'),
+            sucursal_correo_id=request.session.get('sucursal_correo_id'),
+            metodo_pago=metodo,
+            monto_pagado=Decimal('0.00'),
+            deuda=total_pedido,
+            tipo_venta='online',
+            estado='pendiente',
+            es_regalo=request.session['es_regalo'],
+        )
+        crear_envio_pedido(pedido)
+        for item in items:
+            PedidoItem.objects.create(
+                pedido=pedido,
+                variante=item.variante,
+                color_nombre=item.color_nombre,
+                cantidad=item.cantidad,
+                precio_unitario=item.precio_unitario,
+                precio_total=item.subtotal
+            )
+        return pedido
+
     if metodo_pago in ['efectivo', 'mercado_pago_qr', 'transferencia']:
-        total_pedido = (subtotal_productos - descuento_monto) + costo_envio
         qr_pago = None
         if metodo_pago == 'mercado_pago_qr':
             try:
@@ -1762,43 +1803,17 @@ def _crear_pago(request):
                 )
                 return redirect('pedidos:checkout')
 
-        pedido = Pedido.objects.create(
-            cliente=cliente,
-            total=total_pedido,
-            costo_envio=costo_envio,
-            opcion_flex=opcion_flex,
-            codigo_descuento=cupon.codigo if cupon else None,
-            descuento_porcentaje=cupon.descuento if cupon else 0,
-            descuento_monto=descuento_monto,
-            metodo_entrega=request.session['metodo_entrega'],
-            direccion=direccion_flex or direccion_correo,
-            codigo_postal=(direccion_flex or direccion_correo).codigo_postal if (direccion_flex or direccion_correo) else None,
-            localidad=(direccion_flex or direccion_correo).ciudad if (direccion_flex or direccion_correo) else None,
-            calle_numero=f'{(direccion_flex or direccion_correo).calle} {(direccion_flex or direccion_correo).numero}' if (direccion_flex or direccion_correo) else None,
-            correo=request.session.get('correo'),
-            tipo_correo=request.session.get('tipo_correo'),
-            sucursal_correo=request.session.get('sucursal_correo'),
-            sucursal_correo_id=request.session.get('sucursal_correo_id'),
-            metodo_pago=metodo_pago,
-            monto_pagado=Decimal('0.00'),
-            deuda=total_pedido,
-            tipo_venta='online',
-            estado='pendiente',
-            es_regalo=request.session['es_regalo'],
-        )
+        try:
+            with transaction.atomic():
+                pedido = crear_pedido_pendiente(metodo_pago)
+                # Las unidades se reservan ya (no cuando el admin acepta el pago): si otra clienta
+                # compró la última mientras tanto, no se crea el pedido. Si no se paga, vence solo.
+                descontar_stock_pedido(pedido)
+        except ValueError as error:
+            messages.error(request, f'No hay stock suficiente: {error}')
+            return redirect('pedidos:checkout')
         if cupon:
             cupon.registrar_uso()
-        crear_envio_pedido(pedido)
-
-        for item in items:
-            PedidoItem.objects.create(
-                pedido=pedido,
-                variante=item.variante,
-                color_nombre=item.color_nombre,
-                cantidad=item.cantidad,
-                precio_unitario=item.precio_unitario,
-                precio_total=item.subtotal
-            )
 
         enviar_email_confirmacion_pedido(pedido)
 
@@ -1826,63 +1841,179 @@ def _crear_pago(request):
     )
     max_cuotas = max(cuotas_activas) if cuotas_activas else 1
 
-    # CREAR PREFERENCIA
+    # MERCADO PAGO: el pedido se crea pendiente con sus unidades reservadas antes de ir a pagar, así
+    # nadie más compra esas unidades mientras la clienta paga. El link de pago vence junto con la
+    # reserva; pago_exitoso confirma este mismo pedido y, si no se paga, vence solo.
     site_url = settings.SITE_URL.rstrip('/')
-    referencia_mp = f"carrito_{carrito.id}_{uuid.uuid4().hex[:16]}"
+    desde = timezone.localtime()
+    hasta = desde + plazo_reserva_mercado_pago()
+    try:
+        with transaction.atomic():
+            pedido = crear_pedido_pendiente('mercado_pago')
+            referencia_mp = f"pedido_{pedido.id}_{uuid.uuid4().hex[:12]}"
+            preference_data = {
+                "items": productos,
+                "external_reference": referencia_mp,
+                "back_urls": {
+                    "success": f"{site_url}/pedidos/pago-exitoso/",
+                    "failure": f"{site_url}/",
+                    "pending": f"{site_url}/"
+                },
+                "auto_return": "approved",
+                "expires": True,
+                "expiration_date_from": desde.isoformat(timespec='milliseconds'),
+                "expiration_date_to": hasta.isoformat(timespec='milliseconds'),
+                "payment_methods": {
+                    "installments": max_cuotas,
+                    "excluded_payment_types": [
+                        {"id": "ticket"},
+                        {"id": "atm"},
+                        {"id": "bank_transfer"}
+                    ]
+                }
+            }
+            preference_response = sdk.preference().create(preference_data)
+
+            # VALIDAR RESPUESTA (si falla, no queda pedido ni reserva)
+            if preference_response.get("status") != 201:
+                mp_error = preference_response.get("response", {})
+                detalle = mp_error.get("message") or mp_error.get("error") or str(mp_error)
+                logger.warning("Mercado Pago rechazó la preferencia del checkout: %s", detalle)
+                raise ErrorPreferenciaMercadoPago(
+                    "No pudimos conectar con Mercado Pago. Probá de nuevo en unos minutos o elegí transferencia."
+                )
+            init_point = preference_response.get("response", {}).get("init_point")
+            if not init_point:
+                raise ErrorPreferenciaMercadoPago("MercadoPago no devolvió el link de pago.")
+
+            descontar_stock_pedido(pedido)
+    except ValueError as error:
+        messages.error(request, f'No hay stock suficiente: {error}')
+        return redirect('pedidos:checkout')
+    except ErrorPreferenciaMercadoPago as error:
+        messages.error(request, str(error))
+        return redirect('pedidos:checkout')
+
     request.session['mp_external_reference'] = referencia_mp
     request.session.modified = True
-    preference_data = {
-        "items": productos,
-        "external_reference": referencia_mp,
-        "back_urls": {
-            "success": f"{site_url}/pedidos/pago-exitoso/",
-            "failure": f"{site_url}/",
-            "pending": f"{site_url}/"
-        },
-        "auto_return": "approved",
-        "payment_methods": {
-            "installments": max_cuotas,
-            "excluded_payment_types": [
-                {"id": "ticket"},
-                {"id": "atm"},
-                {"id": "bank_transfer"}
-            ]
-        }
-    }
-    preference_response = sdk.preference().create(preference_data)
-
-    # VALIDAR RESPUESTA
-    if preference_response.get("status") != 201:
-
-        mp_error = preference_response.get("response", {})
-        detalle = mp_error.get("message") or mp_error.get("error") or str(mp_error)
-        logger.warning("Mercado Pago rechazó la preferencia del checkout: %s", detalle)
-        messages.error(
-            request,
-            "No pudimos conectar con Mercado Pago. Probá de nuevo en unos minutos o elegí transferencia."
-        )
-
-        return redirect('pedidos:checkout')
-
-    preference = preference_response.get("response", {})
-
-    init_point = preference.get("init_point")
-
-    if not init_point:
-
-        messages.error(
-            request,
-            "MercadoPago no devolvió el link de pago."
-        )
-
-        return redirect('pedidos:checkout')
-
     return redirect(init_point)
 @login_required
-@transaction.atomic
 def pago_exitoso(request):
+    """Retorno de Mercado Pago con el pago aprobado. El pago se verifica siempre con la API de
+    Mercado Pago (no con los datos de la URL). Los links creados desde la reserva de stock
+    (referencia pedido_<id>_...) confirman ese pedido; los anteriores (carrito_...) crean el pedido
+    desde el carrito como antes."""
+    mercado_pago = resumen_pago_mercado_pago(request)
+    pedido_id = pedido_id_de_referencia((mercado_pago['detalle'] or {}).get('external_reference'))
+    if pedido_id is None:
+        return _pago_exitoso_desde_carrito(request, mercado_pago)
+    return _confirmar_pago_reservado(request, mercado_pago, pedido_id)
+
+
+def pedido_id_de_referencia(referencia):
+    """Id del pedido de una referencia de Mercado Pago 'pedido_<id>_<código>', o None."""
+    coincidencia = re.fullmatch(r'pedido_(\d+)_[0-9a-f]+', referencia or '')
+    return int(coincidencia.group(1)) if coincidencia else None
+
+
+def _confirmar_pago_reservado(request, mercado_pago, pedido_id):
+    """Confirma el pedido pendiente que se creó (con sus unidades reservadas) al ir a pagar.
+    Idempotente: la fila del pedido se bloquea y un retorno repetido ve el pago ya registrado,
+    sin crear otro pago ni mover stock."""
+    detalle_pago = mercado_pago['detalle']
+    payment_id = mercado_pago['payment_id']
+    cliente, _ = Cliente.objects.get_or_create(user=request.user)
+    pedido = Pedido.objects.filter(pk=pedido_id, cliente=cliente).first()
+
+    error_pago = None
+    if not pedido:
+        error_pago = 'El pago informado no corresponde a esta compra.'
+    elif detalle_pago.get('status') != 'approved':
+        error_pago = 'Mercado Pago todavía no aprobó tu pago.'
+    elif decimal_mp(detalle_pago.get('transaction_amount')) + Decimal('1.00') < pedido.total:
+        error_pago = 'El monto pagado no coincide con el total de tu compra.'
+    if error_pago:
+        messages.error(
+            request,
+            f'{error_pago} Tu pedido no fue confirmado. Si el dinero se debitó, '
+            'escribinos por WhatsApp con el comprobante.'
+        )
+        return redirect('pedidos:checkout')
+
+    aviso_admin = ''
+    with transaction.atomic():
+        pedido = Pedido.objects.select_for_update().get(pk=pedido.pk)
+        pago_registrado = Pago.objects.filter(Q(mercado_pago_payment_id=payment_id) | Q(pedido=pedido)).first()
+        if pago_registrado:
+            messages.info(request, f'Tu pago ya estaba registrado. Pedido #{pago_registrado.pedido_id}.')
+            return redirect('pedidos:estado_pedido', pedido_id=pago_registrado.pedido_id)
+
+        estado_anterior = pedido.estado
+        if estado_anterior in ('pendiente', 'vencido'):
+            # Pendiente: las unidades ya están reservadas (no se descuenta de nuevo).
+            # Vencido: la reserva venció antes de que llegara el pago; se vuelve a reservar si hay stock.
+            try:
+                descontar_stock_pedido(pedido)
+                pedido.estado = 'aceptado'
+            except ValueError as error:
+                aviso_admin = (
+                    f'ATENCIÓN: el pago llegó con el pedido vencido y ya no hay stock. Hay que reintegrar '
+                    f'el pago o resolverlo con la clienta. {error}'
+                )
+        elif estado_anterior in ('cancelado', 'rechazado'):
+            aviso_admin = (
+                f'ATENCIÓN: llegó un pago aprobado para un pedido {pedido.get_estado_display().lower()}. '
+                'Hay que reintegrarlo o reactivar el pedido.'
+            )
+
+        if pedido.estado != 'vencido' and not aviso_admin:
+            pedido.monto_pagado = pedido.total
+            pedido.deuda = Decimal('0.00')
+        pedido.metodo_pago = 'mercado_pago'
+        pedido.save()
+
+        Pago.objects.create(
+            pedido=pedido,
+            metodo='Mercado Pago',
+            monto=pedido.total,
+            mercado_pago_payment_id=payment_id,
+            cuotas=mercado_pago['cuotas'],
+            retencion_mercado_pago=mercado_pago['retencion'],
+            neto_recibido=mercado_pago['neto'] or (pedido.total - mercado_pago['retencion']),
+            detalle_mercado_pago=detalle_pago,
+        )
+        if pedido.estado == 'aceptado' and estado_anterior != 'aceptado' and pedido.codigo_descuento:
+            cupon, _ = buscar_cupon(pedido.codigo_descuento)
+            if cupon:
+                cupon.registrar_uso()
+
+    if aviso_admin:
+        logger.error('Pago de Mercado Pago %s para el pedido %s: %s', payment_id, pedido.id, aviso_admin)
+    enviar_emails_pago_mercado_pago(pedido, aviso_admin)
+
+    request.session.pop('mp_external_reference', None)
+    carrito = Carrito.objects.filter(cliente=cliente, activo=True).first()
+    if carrito:
+        vaciar_carrito_completo(request, carrito)
+    if aviso_admin:
+        messages.warning(
+            request,
+            f'Recibimos tu pago del pedido #{pedido.id}, pero las unidades ya no están disponibles. '
+            'Te vamos a contactar para resolverlo; también podés escribirnos por WhatsApp.'
+        )
+    else:
+        messages.success(request, f"¡Tu pago fue realizado con éxito! Pedido #{pedido.id} confirmado.")
+    return redirect('pedidos:estado_pedido', pedido_id=pedido.id)
+
+
+@transaction.atomic
+def _pago_exitoso_desde_carrito(request, mercado_pago):
+    """Links de pago creados antes de la reserva de stock (referencia carrito_...): el pedido se
+    crea al volver con el pago aprobado, desde el carrito."""
 
     carrito = get_or_create_cart(request)
+    # Carrito bloqueado: un retorno repetido de Mercado Pago espera y después ve el pago ya registrado
+    Carrito.objects.select_for_update().filter(pk=carrito.pk).first()
     refrescar_precios_carrito(carrito)
 
     items = carrito.items.all().select_related(
@@ -1939,7 +2070,6 @@ def pago_exitoso(request):
             cliente=cliente
         ).first()
 
-    mercado_pago = resumen_pago_mercado_pago(request)
     detalle_pago = mercado_pago['detalle']
     total_esperado = total_productos_con_descuento + costo_envio
     referencia_esperada = request.session.get('mp_external_reference')
@@ -2005,7 +2135,7 @@ def pago_exitoso(request):
     )
     crear_envio_pedido(pedido)
 
-    # CREAR ITEMS Y DESCONTAR STOCK
+    # CREAR ITEMS
     for item in items:
 
         PedidoItem.objects.create(
@@ -2017,17 +2147,31 @@ def pago_exitoso(request):
             precio_total=item.subtotal
         )
 
-        try:
-            descontar_stock_variante(item.variante, item.cantidad, item.color_nombre)
-        except ValueError:
-            # El pago ya fue aprobado: se registra el pedido igual y se descuenta lo que haya
-            disponible = stock_disponible(item.variante, item.color_nombre)
-            if disponible > 0:
-                try:
-                    descontar_stock_variante(item.variante, disponible, item.color_nombre)
-                except ValueError:
-                    pass
+    # Descuento atómico (todo o nada). El pago ya está aprobado: si el stock no alcanza, el pedido
+    # se registra igual sin descontar y se avisa al admin para reintegrar o resolverlo.
+    aviso_admin = ''
+    try:
+        descontar_stock_pedido(pedido)
+    except ValueError as error:
+        aviso_admin = f'ATENCIÓN: no alcanzó el stock y no se descontó. {error}'
+        logger.error('Pedido %s pagado con Mercado Pago sin stock suficiente: %s', pedido.id, error)
 
+    enviar_emails_pago_mercado_pago(pedido, aviso_admin)
+
+    # VACIAR CARRITO
+    vaciar_carrito_completo(request, carrito)
+
+    messages.success(
+        request,
+        f"¡Tu pago fue realizado con éxito! Pedido #{pedido.id} confirmado."
+    )
+
+    # Después de pagar se ve el pedido confirmado (antes volvía al checkout vacío)
+    return redirect('pedidos:estado_pedido', pedido_id=pedido.id)
+
+
+def enviar_emails_pago_mercado_pago(pedido, aviso_admin=''):
+    """Mails de compra pagada a la clienta y al admin (con el aviso, si hay algo para revisar)."""
     items_pedido = pedido.items.select_related(
         'variante__producto',
         'variante__talle'
@@ -2238,7 +2382,7 @@ def pago_exitoso(request):
 </html>
 """
 
-    if pedido.cliente.user.email:
+    if pedido.cliente.user.email and not aviso_admin:
         send_mail(
             subject=f'Pago aprobado - Pedido #{pedido.id}',
             message=(
@@ -2258,9 +2402,9 @@ def pago_exitoso(request):
 
     if admin_email:
         send_mail(
-            subject=f'Nueva compra pagada - Pedido #{pedido.id}',
+            subject=f'{"[REVISAR] " if aviso_admin else ""}Nueva compra pagada - Pedido #{pedido.id}',
             message=(
-                f'Nueva compra pagada.\n\n'
+                f'{aviso_admin + chr(10) + chr(10) if aviso_admin else ""}Nueva compra pagada.\n\n'
                 f'Pedido: #{pedido.id}\n'
                 f'Cliente: {cliente_nombre_completo}\n'
                 f'Email: {pedido.cliente.user.email}\n'
@@ -2277,17 +2421,7 @@ def pago_exitoso(request):
             html_message=html_admin
         )
 
-    # VACIAR CARRITO
-    vaciar_carrito_completo(request, carrito)
 
-    messages.success(
-        request,
-        f"¡Tu pago fue realizado con éxito! Pedido #{pedido.id} confirmado."
-    )
-
-    # Después de pagar se ve el pedido confirmado (antes volvía al checkout vacío)
-    return redirect('pedidos:estado_pedido', pedido_id=pedido.id)
-    
 @admin_required
 def estadisticas_ventas(request):
     """
@@ -2810,8 +2944,13 @@ def actualizar_estado_pedido(request, pedido_id):
     if nuevo_estado in estados_validos:
         try:
             with transaction.atomic():
-                cambiar_estado_pedido(pedido, nuevo_estado)
-                pedido.save()
+                # Fila bloqueada: dos cambios simultáneos (doble clic, dos pestañas) se aplican de a
+                # uno y el segundo ve el estado ya cambiado (no mueve stock dos veces)
+                bloqueado = Pedido.objects.select_for_update().get(pk=pedido.pk)
+                estado_anterior = bloqueado.estado
+                cambiar_estado_pedido(bloqueado, nuevo_estado)
+                bloqueado.save()
+            pedido.estado = bloqueado.estado
         except ValueError as error:
             messages.error(request, str(error))
             return redirect('pedidos:gestion_pedidos')
@@ -3153,9 +3292,14 @@ def registrar_venta_local(request):
         lineas = []
         pedidas_por_variante = {}
 
+        # Bloquea los talles de la venta en orden de id (igual que el checkout online), así una venta
+        # en el local y una compra online simultáneas no se traban; el stock se valida bloqueado
+        ids_variantes = sorted({str(item.get('variante_id')) for item in productos if str(item.get('variante_id')).isdigit()})
+        list(Variante.objects.select_for_update(of=('self',)).filter(id__in=ids_variantes).order_by('id'))
+
         for item in productos:
 
-            variante = Variante.objects.select_for_update().select_related('producto').get(
+            variante = Variante.objects.select_for_update(of=('self',)).select_related('producto').get(
                 id=item.get('variante_id')
             )
 
@@ -3700,6 +3844,14 @@ def registrar_pago_pedido(request, pedido_id):
         monto = saldo_pendiente
 
     with transaction.atomic():
+        # Fila bloqueada y releída: dos pagos registrados a la vez no se pisan
+        pedido = Pedido.objects.select_for_update().get(pk=pedido.pk)
+        saldo_pendiente = pedido.total - pedido.monto_pagado
+        if saldo_pendiente <= 0:
+            return JsonResponse({'success': False, 'error': 'Este pedido ya está pagado.'})
+        if monto > saldo_pendiente:
+            vuelto += monto - saldo_pendiente
+            monto = saldo_pendiente
         pedido.monto_pagado += monto
         pedido.deuda = pedido.total - pedido.monto_pagado
 
@@ -3707,8 +3859,9 @@ def registrar_pago_pedido(request, pedido_id):
             pedido.deuda = 0
             pedido.metodo_pago = metodo_pago
 
-            # Un pedido pendiente que queda saldado pasa a "Pago aceptado" y descuenta stock,
-            # igual que al aceptarlo desde la gestión de pedidos. Nunca se marca "Entregado" por un pago.
+            # Un pedido pendiente que queda saldado pasa a "Pago aceptado". Sus unidades ya están
+            # reservadas desde el checkout (solo se descuentan si es un pendiente anterior a la
+            # reserva). Nunca se marca "Entregado" por un pago.
             if pedido.estado == 'pendiente':
                 try:
                     descontar_stock_pedido(pedido)
@@ -3966,25 +4119,6 @@ def registrar_cambio(request, pedido_id):
             messages.error(request, 'Debes seleccionar el producto devuelto y el entregado.')
 
     return redirect('pedidos:detalle_pedido', pedido_id=pedido.id)
-
-
-def unidades_cambiadas(pedido_item):
-    """Unidades de un ítem que ya se cambiaron por otro producto."""
-    return Cambio.objects.filter(
-        pedido=pedido_item.pedido,
-        variante_devuelta=pedido_item.variante,
-    ).filter(
-        Q(color_devuelto=(pedido_item.color_nombre or '')) | Q(color_devuelto='')
-    ).count()
-
-
-def unidades_devolvibles(pedido_item):
-    """Unidades de un ítem que el cliente todavía tiene: lo comprado menos lo devuelto con notas
-    de crédito (no anuladas) y lo ya cambiado. Es el máximo para una nueva NC o un nuevo cambio."""
-    devueltas = pedido_item.devoluciones.exclude(nota_credito__estado='anulada').aggregate(
-        total=Sum('cantidad')
-    )['total'] or 0
-    return max(pedido_item.cantidad - devueltas - unidades_cambiadas(pedido_item), 0)
 
 
 def unidades_cambiables(pedido_item):

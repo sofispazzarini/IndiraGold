@@ -8,10 +8,17 @@ Regla única para toda la app:
 
 Todas las ventas (online, presenciales, cambios) deben validar y mover stock con estas
 funciones para que talle y colores no se desincronicen.
-"""
-from django.db.models import Sum
 
-from .models import Variante, VarianteColor
+Concurrencia: descontar y reponer bloquean (SELECT ... FOR UPDATE) las filas de los talles,
+colores y productos involucrados antes de leer el stock, siempre en el mismo orden (talles,
+colores y productos, cada uno por id). Así dos compras simultáneas de la última unidad se
+ejecutan una detrás de la otra: la segunda ve el stock ya descontado y falla. En SQLite el
+bloqueo no existe (se usa solo para desarrollo/QA).
+"""
+from django.db import transaction
+from django.db.models import F, Sum
+
+from .models import Producto, Variante, VarianteColor
 
 
 def colores_con_stock(variante):
@@ -94,34 +101,103 @@ def validar_stock(variante, cantidad, color_nombre=None):
     return variante_color
 
 
+def _agrupar_lineas(lineas):
+    """Suma las cantidades de las líneas del mismo talle y color: {(variante_id, color): [variante, color_nombre, cantidad]}."""
+    agrupadas = {}
+    for variante, cantidad, color_nombre in lineas:
+        if not cantidad:
+            continue
+        clave = (variante.pk, (color_nombre or '').strip().lower())
+        if clave not in agrupadas:
+            agrupadas[clave] = [variante, color_nombre, 0]
+        agrupadas[clave][2] += cantidad
+    return agrupadas
+
+
+def _bloquear_stock(variante_ids):
+    """Bloquea talles, colores y productos de esas variantes (en ese orden y por id, para que dos
+    operaciones simultáneas no se traben entre sí) y devuelve {id: Variante} con el stock actual."""
+    variantes = {
+        variante.pk: variante
+        for variante in Variante.objects.select_for_update(of=('self',))
+        .select_related('producto', 'talle')
+        .filter(pk__in=variante_ids)
+        .order_by('pk')
+    }
+    list(VarianteColor.objects.select_for_update().filter(variante_id__in=variante_ids).order_by('pk'))
+    producto_ids = {variante.producto_id for variante in variantes.values()}
+    list(Producto.objects.select_for_update().filter(pk__in=producto_ids).order_by('pk'))
+    return variantes
+
+
+def descontar_stock_lineas(lineas):
+    """Descuenta de una sola vez varias líneas (variante, cantidad, color_nombre).
+    Atómico: valida todas las cantidades con las filas bloqueadas y, si alguna no alcanza, lanza
+    ValueError sin descontar nada (no quedan descuentos parciales)."""
+    agrupadas = _agrupar_lineas(lineas)
+    if not agrupadas:
+        return
+    with transaction.atomic():
+        variantes = _bloquear_stock({variante_id for variante_id, _ in agrupadas})
+        errores = []
+        a_descontar = []
+        for (variante_id, _), (_, color_nombre, cantidad) in agrupadas.items():
+            variante = variantes[variante_id]
+            try:
+                a_descontar.append((variante, validar_stock(variante, cantidad, color_nombre), cantidad))
+            except ValueError as error:
+                errores.append(str(error))
+        if errores:
+            raise ValueError(' '.join(errores))
+
+        for variante, variante_color, cantidad in a_descontar:
+            # Descuento condicional: aunque algo se saltee el bloqueo, nunca deja stock negativo
+            if variante_color:
+                actualizadas = VarianteColor.objects.filter(pk=variante_color.pk, stock__gte=cantidad).update(
+                    stock=F('stock') - cantidad
+                )
+            else:
+                actualizadas = Variante.objects.filter(pk=variante.pk, stock__gte=cantidad).update(
+                    stock=F('stock') - cantidad
+                )
+            if not actualizadas:
+                raise ValueError(f'No hay stock suficiente para {variante.producto.nombre} (talle {variante.talle.nombre}).')
+        for variante in variantes.values():
+            sincronizar_stock_variante(variante)
+
+
+def reponer_stock_lineas(lineas):
+    """Devuelve al stock varias líneas (variante, cantidad, color_nombre), con las filas bloqueadas."""
+    agrupadas = _agrupar_lineas(lineas)
+    if not agrupadas:
+        return
+    with transaction.atomic():
+        variantes = _bloquear_stock({variante_id for variante_id, _ in agrupadas})
+        for (variante_id, _), (_, color_nombre, cantidad) in agrupadas.items():
+            variante = variantes[variante_id]
+            variante_color = obtener_variante_color(variante, color_nombre)
+            if not variante_color and usa_stock_por_color(variante):
+                # Sin color identificable: devolver al primer color activo para no perder unidades
+                variante_color = colores_con_stock(variante).order_by('id').first()
+            if variante_color:
+                VarianteColor.objects.filter(pk=variante_color.pk).update(stock=F('stock') + cantidad)
+            else:
+                Variante.objects.filter(pk=variante.pk).update(stock=F('stock') + cantidad)
+        for variante in variantes.values():
+            sincronizar_stock_variante(variante)
+
+
 def descontar_stock(variante, cantidad, color_nombre=None):
     """Descuenta unidades vendidas del color (si corresponde) y del talle.
     Lanza ValueError si no hay stock suficiente."""
-    variante_color = validar_stock(variante, cantidad, color_nombre)
-    if variante_color:
-        variante_color.stock -= cantidad
-        variante_color.save(update_fields=['stock'])
-    else:
-        variante.stock -= cantidad
-        variante.save(update_fields=['stock'])
-    sincronizar_stock_variante(variante)
+    descontar_stock_lineas([(variante, cantidad, color_nombre)])
+    variante.refresh_from_db(fields=['stock'])
 
 
 def reponer_stock(variante, cantidad, color_nombre=None):
     """Devuelve unidades al color (si corresponde) y al talle."""
-    variante_color = obtener_variante_color(variante, color_nombre)
-    if variante_color:
-        variante_color.stock += cantidad
-        variante_color.save(update_fields=['stock'])
-    elif usa_stock_por_color(variante):
-        # Sin color identificable: devolver al primer color activo para no perder unidades
-        primero = colores_con_stock(variante).order_by('id').first()
-        primero.stock += cantidad
-        primero.save(update_fields=['stock'])
-    else:
-        variante.stock += cantidad
-        variante.save(update_fields=['stock'])
-    sincronizar_stock_variante(variante)
+    reponer_stock_lineas([(variante, cantidad, color_nombre)])
+    variante.refresh_from_db(fields=['stock'])
 
 
 def repartir_stock_en_colores(stock, colores):
