@@ -457,6 +457,7 @@
     <div class="kpi-card">
       <div class="kpi-label"><i class="bi bi-building"></i> Neto Negocio</div>
       <div class="kpi-value"><span class="currency">$</span>{{ neto_negocio|pesos_numero }}</div>
+      <div style="font-size:.72rem; color:var(--muted); margin-top:.25rem;">Cobrado − notas de crédito − gastos − retenciones. No incluye deudas sin cobrar.</div>
     </div>
   </div>
 
@@ -474,10 +475,13 @@
     <div class="kpi-card">
       <div class="kpi-label"><i class="bi bi-exclamation-triangle"></i> Deudas</div>
       <div class="kpi-value" style="color: var(--burgundy);"><span class="currency">$</span>{{ total_deudas|pesos_numero }}</div>
+      <div style="font-size:.72rem; color:var(--muted); margin-top:.25rem;">Saldo sin cobrar de pedidos y ventas del local</div>
     </div>
     <div class="kpi-card">
       <div class="kpi-label"><i class="bi bi-credit-card"></i> Retenciones</div>
       <div class="kpi-value" style="color: var(--muted);"><span class="currency">$</span>{{ total_retenciones|pesos_numero }}</div>
+      <div style="font-size:.72rem; color:var(--muted); margin-top:.25rem;">Costos informados por Mercado Pago y % estimado de los cobros del local</div>
+      {% if pagos_sin_costos %}<div style="font-size:.72rem; color:var(--burgundy); margin-top:.25rem;">{{ pagos_sin_costos }} pago{{ pagos_sin_costos|pluralize }} de Mercado Pago sin datos de costos: no incluido{{ pagos_sin_costos|pluralize }}</div>{% endif %}
     </div>
   </div>
 

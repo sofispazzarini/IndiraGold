@@ -213,8 +213,17 @@ class Pago(models.Model):
     monto = models.DecimalField(max_digits=10, decimal_places=2)
     mercado_pago_payment_id = models.CharField(max_length=80, blank=True, null=True)
     cuotas = models.PositiveIntegerField(default=1)
-    retencion_mercado_pago = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-    neto_recibido = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    # Importes informados por la API de Mercado Pago. Vacío (NULL) = la API no lo informó: desconocido,
+    # no cero. Los pagos anteriores a esta versión conservan los valores que se guardaron entonces.
+    # Costos del comercio: cargos de fee_details que paga el comercio (comisión, costo de cuotas sin interés)
+    retencion_mercado_pago = models.DecimalField(max_digits=10, decimal_places=2, default=0, null=True, blank=True)
+    # Lo que acredita Mercado Pago (transaction_details.net_received_amount)
+    neto_recibido = models.DecimalField(max_digits=10, decimal_places=2, default=0, null=True, blank=True)
+    # Cargos que paga la clienta (por ejemplo el interés de cuotas con interés): no son costo del comercio
+    cargos_cliente_mercado_pago = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    # Bruto - costos del comercio - neto: retenciones impositivas u otros descuentos que la API solo
+    # refleja en el neto, sin detallarlos
+    otros_descuentos_mercado_pago = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     detalle_mercado_pago = models.JSONField(default=dict, blank=True)
     fecha_pago = models.DateTimeField(auto_now_add=True)
 
@@ -404,6 +413,10 @@ class PagoVentaLocal(models.Model):
     monto = models.DecimalField(max_digits=10, decimal_places=2)
 
     fecha = models.DateTimeField(auto_now_add=True)
+
+    # Medio y retención estimada de cada cobro (vacíos en los cobros anteriores a esta versión)
+    metodo_pago = models.CharField(max_length=20, choices=VentaLocal.METODOS_PAGO, null=True, blank=True)
+    retencion = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
 class ConfiguracionEnvio(models.Model):
     # Envío Flex con precio
     flex_activo = models.BooleanField(
@@ -634,6 +647,12 @@ class ConfiguracionPago(models.Model):
         decimal_places=2,
         default=0,
         help_text="Porcentaje de retención para pagos con tarjeta/posnet"
+    )
+    retencion_mercado_pago_presencial_porcentaje = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=0,
+        help_text="Porcentaje de retención para ventas del local cobradas con Mercado Pago"
     )
 
     def __str__(self):

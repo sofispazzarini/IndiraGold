@@ -69,6 +69,12 @@ from django.db import transaction
 from django.utils.html import escape
 from django.utils import timezone
 from .servicios_envio import ErrorEnvio, SERVICIOS_CORREO, calcular_paquete_envio, cotizar_correo_argentino
+from .costos_cobro import (
+    METODOS_PAGO_PRESENCIAL,
+    campos_costos_pago,
+    desglose_pago_mercado_pago,
+    retencion_cobro_presencial,
+)
 logger = logging.getLogger(__name__)
 
 # Decorador para verificar que es administrador
@@ -1326,47 +1332,16 @@ def obtener_detalle_pago_mercado_pago(payment_id):
     return respuesta.get('response') or {}
 
 
-def total_retenciones_mercado_pago(detalle_pago):
-    fee_details = detalle_pago.get('fee_details') or []
-    cargos = detalle_pago.get('charges_details') or []
-    total = Decimal('0.00')
-
-    for fee in fee_details:
-        total += decimal_mp(fee.get('amount'))
-
-    if total:
-        return total
-
-    for cargo in cargos:
-        amounts = cargo.get('amounts') or {}
-        total += decimal_mp(amounts.get('original') or amounts.get('paid'))
-
-    return total
-
-
 def resumen_pago_mercado_pago(request):
     payment_id = obtener_id_pago_mercado_pago(request)
     detalle_pago = obtener_detalle_pago_mercado_pago(payment_id)
     cuotas = int(detalle_pago.get('installments') or 1) if detalle_pago else 1
-    tipo_pago = detalle_pago.get('payment_type_id') if detalle_pago else ''
-    es_tarjeta_en_cuotas = tipo_pago == 'credit_card' and cuotas > 1
-    retencion = (
-        total_retenciones_mercado_pago(detalle_pago)
-        if es_tarjeta_en_cuotas
-        else Decimal('0.00')
-    )
-    monto = decimal_mp(detalle_pago.get('transaction_amount')) if detalle_pago else Decimal('0.00')
-    neto = decimal_mp(detalle_pago.get('net_received_amount')) if detalle_pago else Decimal('0.00')
-
-    if detalle_pago and not neto:
-        neto = monto - retencion
 
     return {
         'payment_id': str(payment_id or ''),
         'cuotas': cuotas,
-        'retencion': retencion,
-        'neto': neto,
         'detalle': detalle_pago,
+        **desglose_pago_mercado_pago(detalle_pago),
     }
 
 
@@ -2024,8 +1999,8 @@ def _confirmar_pago_reservado(request, mercado_pago, pedido_id):
             monto=pedido.total,
             mercado_pago_payment_id=payment_id,
             cuotas=mercado_pago['cuotas'],
-            retencion_mercado_pago=mercado_pago['retencion'],
-            neto_recibido=mercado_pago['neto'] or (pedido.total - mercado_pago['retencion']),
+            # Importes de la API; lo que no informa queda vacío (desconocido), no se calcula a mano
+            **campos_costos_pago(mercado_pago),
             detalle_mercado_pago=detalle_pago,
         )
         if pedido.estado == 'aceptado' and estado_anterior != 'aceptado' and pedido.codigo_descuento:
@@ -2179,8 +2154,7 @@ def _pago_exitoso_desde_carrito(request, mercado_pago):
         monto=pedido.total,
         mercado_pago_payment_id=mercado_pago['payment_id'],
         cuotas=mercado_pago['cuotas'],
-        retencion_mercado_pago=mercado_pago['retencion'],
-        neto_recibido=mercado_pago['neto'] or (pedido.total - mercado_pago['retencion']),
+        **campos_costos_pago(mercado_pago),
         detalle_mercado_pago=mercado_pago['detalle'],
     )
     crear_envio_pedido(pedido)
@@ -2561,8 +2535,12 @@ def estadisticas_ventas(request):
     pendientes_total = pedidos_pendientes.aggregate(total=Sum('total'))['total'] or Decimal('0.00')
 
     # Notas de crédito emitidas sobre las ventas del período: restan de lo vendido
+    # (de pedidos confirmados y de ventas del local del período; las anuladas no cuentan)
     total_notas_credito = (
-        NotaCredito.objects.filter(pedido__in=pedidos).exclude(estado='anulada').aggregate(total=Sum('monto'))['total']
+        NotaCredito.objects.filter(
+            Q(pedido__in=pedidos)
+            | Q(venta_local__created_at__date__gte=fecha_inicio, venta_local__created_at__date__lte=fecha_fin)
+        ).exclude(estado='anulada').aggregate(total=Sum('monto'))['total']
         or Decimal('0.00')
     )
 
@@ -2701,19 +2679,20 @@ def estadisticas_ventas(request):
         or Decimal('0.00')
     )
 
-    # Deudas en pedidos del período
-    total_deudas = (
-        pedidos.aggregate(total=Sum('deuda'))['total']
-        or Decimal('0.00')
+    # Costos de cobro de Mercado Pago en pedidos online, según lo que informó la API en cada pago:
+    # costos del comercio + otros descuentos (= bruto - neto). El neto no se vuelve a restar, así
+    # ningún cargo se descuenta dos veces. Los cargos que paga la clienta no son costo del comercio.
+    pagos_online = Pago.objects.filter(pedido__in=pedidos)
+    costos_pagos_online = pagos_online.aggregate(
+        costos=Sum('retencion_mercado_pago'),
+        otros=Sum('otros_descuentos_mercado_pago'),
     )
-
-    # Retenciones de MercadoPago en pedidos online
-    retenciones_mp = (
-        Pago.objects.filter(
-            pedido__in=pedidos
-        ).aggregate(total=Sum('retencion_mercado_pago'))['total']
-        or Decimal('0.00')
-    )
+    retenciones_mp = (costos_pagos_online['costos'] or Decimal('0.00')) + (costos_pagos_online['otros'] or Decimal('0.00'))
+    # Pagos sin datos de costos (la API no los informó): no se cuentan como cero, se avisan aparte
+    pagos_sin_costos = pagos_online.filter(
+        retencion_mercado_pago__isnull=True,
+        otros_descuentos_mercado_pago__isnull=True,
+    ).count()
 
     # Neto recibido (lo que realmente entró en la billetera por MP)
     total_neto_recibido = (
@@ -2737,14 +2716,20 @@ def estadisticas_ventas(request):
         or Decimal('0.00')
     )
 
-    # Retenciones de ventas presenciales (tarjeta/MP)
+    # Retenciones estimadas de ventas presenciales (% de Posnet o de Mercado Pago en el local de cada cobro)
     retenciones_presenciales = (
         ventas_locales.aggregate(total=Sum('retencion'))['total']
         or Decimal('0.00')
     )
 
-    # Total retenciones = MP online + tarjeta presencial
+    # Total retenciones = costos de Mercado Pago online + retenciones estimadas del local
     total_retenciones = retenciones_mp + retenciones_presenciales
+
+    # Deudas: saldo sin cobrar de los pedidos confirmados y de las ventas del local del período
+    total_deudas = (
+        (pedidos.aggregate(total=Sum('deuda'))['total'] or Decimal('0.00'))
+        + (ventas_locales.aggregate(total=Sum('saldo_pendiente'))['total'] or Decimal('0.00'))
+    )
 
     # Total con deudas (ventas confirmadas incluyendo lo que falta cobrar), menos notas de crédito
     total_con_deudas = total_ventas + total_ventas_locales - total_notas_credito
@@ -2756,8 +2741,9 @@ def estadisticas_ventas(request):
     )
     ingresos_brutos = cobrado_pedidos + cobrado_ventas_locales
 
-    # Neto negocio = subtotal ventas - gastos - retenciones
-    neto_negocio = total_con_deudas - total_gastos - total_retenciones
+    # Neto negocio = lo cobrado - notas de crédito - gastos - costos y retenciones de cobro. Las deudas
+    # todavía no cobradas no cuentan (antes partía de las ventas, con deudas incluidas).
+    neto_negocio = ingresos_brutos - total_notas_credito - total_gastos - total_retenciones
 
     context = {
         'total_ventas': total_ventas,
@@ -2776,6 +2762,7 @@ def estadisticas_ventas(request):
         'total_gastos': total_gastos,
         'total_deudas': total_deudas,
         'total_retenciones': total_retenciones,
+        'pagos_sin_costos': pagos_sin_costos,
         'total_neto_recibido': total_neto_recibido,
         'total_con_deudas': total_con_deudas,
         'ingresos_brutos': ingresos_brutos,
@@ -3460,11 +3447,11 @@ def registrar_venta_local(request):
         venta.saldo_pendiente = saldo_pendiente
         venta.estado_pago = estado_pago
 
-        # Calcular retención si pago con tarjeta/MP
-        if metodo_pago in ['tarjeta', 'mercado_pago', 'mercado_pago_qr'] and monto_pagado > 0:
-            config = ConfiguracionPago.actual()
-            porcentaje = config.retencion_tarjeta_porcentaje or Decimal('0')
-            venta.retencion = (monto_pagado * porcentaje) / Decimal('100')
+        # Retención estimada solo sobre lo cobrado ahora y con el % del medio usado (Posnet para
+        # tarjeta, el de Mercado Pago en el local para Mercado Pago). Lo que queda debiendo no
+        # tiene retención hasta que se cobra.
+        retencion_cobro = retencion_cobro_presencial(monto_pagado, metodo_pago)
+        venta.retencion = retencion_cobro
 
         venta.save()
         if saldo_pendiente > 0:
@@ -3476,7 +3463,11 @@ def registrar_venta_local(request):
 
                 venta=venta,
 
-                monto=monto_pagado
+                monto=monto_pagado,
+
+                metodo_pago=metodo_pago,
+
+                retencion=retencion_cobro,
             )
 
         return JsonResponse({
@@ -3543,6 +3534,9 @@ def detalle_venta_local(request, venta_id):
         'estado': venta.estado_pago,
         
         'metodo_pago': venta.get_metodo_pago_display() if hasattr(venta, 'get_metodo_pago_display') else venta.metodo_pago,
+
+        # Medio sugerido para registrar un pago posterior (se puede cambiar)
+        'metodo_pago_codigo': venta.metodo_pago,
 
         'metodo_entrega': venta.get_metodo_entrega_display() if hasattr(venta, 'get_metodo_entrega_display') else venta.metodo_entrega,
 
@@ -3812,47 +3806,67 @@ def registrar_pago_venta(request, venta_id):
         data = json.loads(request.body)
     except (json.JSONDecodeError, ValueError):
         data = {}
+    if not isinstance(data, dict):
+        data = {}
 
     monto = leer_monto(data.get('monto'))
-    saldo_actual = venta.total - venta.monto_pagado
+    # Medio de este cobro (define su retención). Sin dato (pantalla abierta antes de esta versión)
+    # se usa el medio con el que se registró la venta.
+    metodo_pago = data.get('metodo_pago') or venta.metodo_pago
 
     if monto is None or monto <= 0:
         return JsonResponse({'success': False, 'error': 'Ingresá un monto mayor a 0.'}, status=400)
 
-    if saldo_actual <= 0:
-        return JsonResponse({'success': False, 'error': 'Esta venta no tiene saldo pendiente.'}, status=400)
+    if metodo_pago not in METODOS_PAGO_PRESENCIAL:
+        return JsonResponse({'success': False, 'error': 'Elegí el medio de pago del cobro.'}, status=400)
 
-    if monto > saldo_actual:
-        return JsonResponse({
-            'success': False,
-            'error': f'El monto no puede superar el saldo pendiente ({pesos(saldo_actual)}).'
-        }, status=400)
+    # Venta bloqueada: dos cobros a la vez no superan el saldo ni suman la retención de más
+    with transaction.atomic():
+        venta = VentaLocal.objects.select_for_update().get(pk=venta.pk)
+        saldo_actual = venta.total - venta.monto_pagado
 
-    venta.monto_pagado += monto
+        if saldo_actual <= 0:
+            return JsonResponse({'success': False, 'error': 'Esta venta no tiene saldo pendiente.'}, status=400)
 
-    venta.saldo_pendiente = (
-        venta.total - venta.monto_pagado
-    )
+        if monto > saldo_actual:
+            return JsonResponse({
+                'success': False,
+                'error': f'El monto no puede superar el saldo pendiente ({pesos(saldo_actual)}).'
+            }, status=400)
 
-    if venta.cliente_id:
-        cliente = venta.cliente
-        cliente.deuda_total = max(Decimal('0.00'), cliente.deuda_total - monto)
-        cliente.save(update_fields=['deuda_total'])
+        venta.monto_pagado += monto
 
-    if venta.saldo_pendiente <= 0:
+        venta.saldo_pendiente = (
+            venta.total - venta.monto_pagado
+        )
 
-        venta.saldo_pendiente = 0
+        if venta.cliente_id:
+            cliente = venta.cliente
+            cliente.deuda_total = max(Decimal('0.00'), cliente.deuda_total - monto)
+            cliente.save(update_fields=['deuda_total'])
 
-        venta.estado_pago = 'PAGADO'
+        if venta.saldo_pendiente <= 0:
 
-    venta.save()
+            venta.saldo_pendiente = 0
 
-    PagoVentaLocal.objects.create(
+            venta.estado_pago = 'PAGADO'
 
-        venta=venta,
+        # Retención estimada de este cobro, con el % de su medio
+        retencion_cobro = retencion_cobro_presencial(monto, metodo_pago)
+        venta.retencion = (venta.retencion or Decimal('0.00')) + retencion_cobro
 
-        monto=monto
-    )
+        venta.save()
+
+        PagoVentaLocal.objects.create(
+
+            venta=venta,
+
+            monto=monto,
+
+            metodo_pago=metodo_pago,
+
+            retencion=retencion_cobro,
+        )
 
     items = venta.items.all()
 
@@ -4053,6 +4067,7 @@ def configurar_pagos(request):
     configuracion = ConfiguracionPago.actual()
     planes_cuotas = configuracion.planes_cuotas.all()
     retencion_tarjeta = configuracion.retencion_tarjeta_porcentaje or Decimal('0')
+    retencion_mp_presencial = configuracion.retencion_mercado_pago_presencial_porcentaje or Decimal('0')
     errores = []
 
     if request.method == 'POST':
@@ -4064,6 +4079,10 @@ def configurar_pagos(request):
         retencion_tarjeta_valor = leer_porcentaje(retencion_tarjeta)
         if retencion_tarjeta_valor is None:
             errores.append('La retención por tarjeta/posnet tiene que ser un porcentaje entre 0 y 100.')
+        retencion_mp_presencial = request.POST.get('retencion_mercado_pago_presencial_porcentaje', '')
+        retencion_mp_presencial_valor = leer_porcentaje(retencion_mp_presencial)
+        if retencion_mp_presencial_valor is None:
+            errores.append('La retención de Mercado Pago en el local tiene que ser un porcentaje entre 0 y 100.')
 
         cuotas = request.POST.getlist('cuotas[]')
         retenciones = request.POST.getlist('retencion_porcentaje[]')
@@ -4113,6 +4132,7 @@ def configurar_pagos(request):
             with transaction.atomic():
                 configuracion = form.save(commit=False)
                 configuracion.retencion_tarjeta_porcentaje = retencion_tarjeta_valor
+                configuracion.retencion_mercado_pago_presencial_porcentaje = retencion_mp_presencial_valor
                 configuracion.save()
                 configuracion.planes_cuotas.all().delete()
                 PlanCuotasMercadoPago.objects.bulk_create(planes_validos)
@@ -4127,6 +4147,7 @@ def configurar_pagos(request):
         'configuracion': configuracion,
         'planes_cuotas': planes_cuotas,
         'retencion_tarjeta': retencion_tarjeta,
+        'retencion_mp_presencial': retencion_mp_presencial,
         'errores': errores,
     })
 

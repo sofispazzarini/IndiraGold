@@ -3392,15 +3392,22 @@ async function abrirDetalleVenta(ventaId){
 
                         </label>
 
-                        <div class="d-flex gap-2">
+                        <div class="d-flex gap-2 flex-wrap">
 
                             <input
                                 type="number"
                                 id="nuevo-pago"
                                 class="form-control rounded-pill"
+                                style="flex:1 1 140px;"
                                 min="0"
                                 step="0.01"
                             >
+
+                            <select id="nuevo-pago-metodo" class="form-select rounded-pill" style="flex:1 1 140px;" aria-label="Medio de pago del cobro">
+                                <option value="efectivo" ${data.metodo_pago_codigo === 'efectivo' ? 'selected' : ''}>Efectivo</option>
+                                <option value="mercado_pago" ${data.metodo_pago_codigo === 'mercado_pago' ? 'selected' : ''}>Mercado Pago</option>
+                                <option value="tarjeta" ${data.metodo_pago_codigo === 'tarjeta' ? 'selected' : ''}>Tarjeta</option>
+                            </select>
 
                             <button
                                 class="btn btn-gold rounded-pill"
@@ -3705,7 +3712,10 @@ async function registrarPago(ventaId){
 
             body: JSON.stringify({
 
-                monto: monto
+                monto: monto,
+
+                // Medio de este cobro: define su retención (Posnet, Mercado Pago o ninguna)
+                metodo_pago: document.getElementById('nuevo-pago-metodo')?.value || ''
 
             })
 

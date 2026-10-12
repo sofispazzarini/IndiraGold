@@ -289,13 +289,21 @@
     </section>
 
     <section class="pago-section">
-      <div class="pago-section-title"><i class="bi bi-credit-card-2-front"></i> Retención por tarjeta/posnet</div>
-      <p class="pago-help">Porcentaje que se descuenta en ventas presenciales pagadas con tarjeta o posnet.</p>
-      <div style="display:flex; align-items:center; gap:0.5rem; margin-top:0.5rem;">
+      <div class="pago-section-title"><i class="bi bi-credit-card-2-front"></i> Retenciones en el local</div>
+      <p class="pago-help">Porcentajes estimados que se descuentan de cada cobro en el local según su medio de pago. Se aplican sobre lo cobrado, no sobre lo que queda debiendo. El efectivo no tiene retención.</p>
+      <label class="field-label" style="margin-top:0.75rem;">Tarjeta (Posnet)</label>
+      <div style="display:flex; align-items:center; gap:0.5rem;">
         <input type="number" name="retencion_tarjeta_porcentaje" class="envio-input" style="width:100px;"
                value="{{ retencion_tarjeta|unlocalize }}" min="0" max="100" step="0.01">
         <span>%</span>
       </div>
+      <label class="field-label" style="margin-top:0.75rem;">Mercado Pago en el local (QR, link o Point)</label>
+      <div style="display:flex; align-items:center; gap:0.5rem;">
+        <input type="number" name="retencion_mercado_pago_presencial_porcentaje" class="envio-input" style="width:100px;"
+               value="{{ retencion_mp_presencial|unlocalize }}" min="0" max="100" step="0.01">
+        <span>%</span>
+      </div>
+      <p class="pago-help">Si lo dejás en 0, a los cobros con Mercado Pago en el local no se les descuenta nada. Los pagos online no usan estos porcentajes: toman los costos que informa Mercado Pago en cada operación.</p>
     </section>
 
     <section class="pago-section">
@@ -306,7 +314,7 @@
       <div style="margin-top:1.25rem; display:flex; justify-content:space-between; align-items:center; gap:1rem;">
         <div>
           <strong>Planes de cuotas</strong>
-          <p class="pago-help">Carga la retencion estimada que Mercado Pago le cobra al comercio por ofrecer cada plan.</p>
+          <p class="pago-help">El costo por plan es solo de referencia y no se usa en los cálculos: en cada pago online el sistema toma los costos reales que informa Mercado Pago.</p>
         </div>
         <button type="button" class="btn-add-plan" id="add-plan-btn"><i class="bi bi-plus-lg"></i> Agregar plan</button>
       </div>
@@ -316,7 +324,7 @@
         <thead>
           <tr>
             <th>Cuotas</th>
-            <th>Retencion MP</th>
+            <th>Costo estimado (informativo)</th>
             <th>Sin interes</th>
             <th>Activo</th>
             <th></th>
