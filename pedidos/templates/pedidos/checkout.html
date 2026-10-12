@@ -1291,6 +1291,15 @@
                 <!-- COTIZACION (siempre visible arriba) -->
                 <div class="alert-success" id="correo-cotizacion-box" style="margin-bottom:1rem; display:none;"></div>
 
+                <!-- SERVICIO (Clásico / Expreso, con el precio y el plazo que informa Correo Argentino) -->
+                <div class="form-group" id="correo-servicios-box" style="margin-bottom:1rem; display:none;">
+
+                <label>Servicio</label>
+
+                <div id="correo-servicios-lista"></div>
+
+                </div>
+
                 <!-- SUCURSAL -->
                 <div class="form-group" id="correo-sucursal-box">
 
@@ -1638,7 +1647,9 @@ let costoCorreo = costoCorreoBase;
 let descuentoAplicado = parseFloat("{{ descuento_monto|floatformat:'2' }}".replace(',', '.')) || 0;
 
 function formatearPesos(valor) {
-  return '$' + valor.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+  // Igual que el filtro |pesos: sin centavos si es entero y, si los tiene, siempre dos ($5.000,50)
+  const decimales = Number.isInteger(Math.round(valor * 100) / 100) ? 0 : 2;
+  return '$' + valor.toLocaleString('es-AR', { minimumFractionDigits: decimales, maximumFractionDigits: 2 });
 }
 </script>
 <script>
@@ -1677,6 +1688,13 @@ const extraTransferencia = document.getElementById('extra-transferencia');
 const correoSucursalBox = document.getElementById('correo-sucursal-box');
 const correoDireccionesBox = document.getElementById('correo-direcciones-box');
 const correoCotizacionBox = document.getElementById('correo-cotizacion-box');
+const correoServiciosBox = document.getElementById('correo-servicios-box');
+const correoServiciosLista = document.getElementById('correo-servicios-lista');
+// Servicios de Correo Argentino cotizados por el servidor. Acá solo se muestran: al pagar, el
+// servidor vuelve a tomar el precio de su cotización con el código del servicio elegido.
+let serviciosCorreo = [];
+let servicioCorreoSeleccionado = '';
+let cotizacionCorreoActual = 0;
 
 function actualizarTipoCorreo() {
   const tipoCorreo = valorSeleccionado('tipo_correo') || 'domicilio';
@@ -1832,9 +1850,74 @@ function agregarCampo(form, nombre, valor) {
   form.appendChild(input);
 }
 
+function formatearPrecioServicio(valor) {
+  return '$' + Number(valor).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+// Sin una cotización vigente no queda ningún precio anterior a la vista ni para enviar
+function limpiarServiciosCorreo() {
+  serviciosCorreo = [];
+  costoCorreo = null;
+  if (correoServiciosLista) correoServiciosLista.textContent = '';
+  if (correoServiciosBox) correoServiciosBox.style.display = 'none';
+}
+
+function elegirServicioCorreo(codigo) {
+  const servicio = serviciosCorreo.find(item => item.codigo === codigo);
+  if (!servicio) return;
+  servicioCorreoSeleccionado = servicio.codigo;
+  const precio = parseFloat(servicio.precio);
+  costoCorreo = Number.isFinite(precio) && precio > 0 ? precio : null;
+  actualizarEntrega();
+}
+
+function mostrarServiciosCorreo() {
+  if (!correoServiciosLista || !correoServiciosBox) return;
+  correoServiciosLista.textContent = '';
+  serviciosCorreo.forEach(servicio => {
+    const tarjeta = document.createElement('label');
+    tarjeta.className = 'direccion-card';
+
+    const radio = document.createElement('input');
+    radio.type = 'radio';
+    radio.name = 'servicio_correo';
+    radio.value = servicio.codigo;
+    radio.checked = servicio.codigo === servicioCorreoSeleccionado;
+    radio.addEventListener('change', () => elegirServicioCorreo(servicio.codigo));
+
+    const contenido = document.createElement('div');
+    contenido.className = 'direccion-content';
+
+    const datos = document.createElement('div');
+    const nombre = document.createElement('div');
+    nombre.className = 'direccion-alias';
+    nombre.textContent = servicio.nombre;
+    const plazo = document.createElement('div');
+    plazo.className = 'direccion-detail';
+    plazo.textContent = servicio.plazo || 'Plazo no informado';
+    datos.append(nombre, plazo);
+
+    const precio = document.createElement('div');
+    precio.className = 'direccion-alias';
+    precio.style.whiteSpace = 'nowrap';
+    precio.style.marginLeft = '0.75rem';
+    precio.textContent = formatearPrecioServicio(servicio.precio);
+
+    contenido.append(datos, precio);
+    tarjeta.append(radio, contenido);
+    correoServiciosLista.appendChild(tarjeta);
+  });
+  correoServiciosBox.style.display = serviciosCorreo.length ? 'block' : 'none';
+}
+
 async function cotizarCorreo() {
   const metodoEntrega = valorSeleccionado('metodo_entrega') || 'local';
   if (metodoEntrega !== 'correo') return;
+
+  // Cada cotización nueva invalida la anterior y su precio hasta que responda el servidor
+  const cotizacionId = ++cotizacionCorreoActual;
+  limpiarServiciosCorreo();
+  actualizarEntrega();
 
   const tipoCorreo = valorSeleccionado('tipo_correo') || 'domicilio';
   const direccionId = valorSeleccionado('direccion_correo_id');
@@ -1867,8 +1950,8 @@ async function cotizarCorreo() {
   data.append('tipo_correo', tipoCorreo);
   if (direccionId) data.append('direccion_correo_id', direccionId);
   if (cpSucursal) data.append('codigo_postal', cpSucursal);
-
-  console.log('Cotizando:', {tipoCorreo, direccionId, cpSucursal});
+  // Solo el código (CP o EP): el servidor lo conserva si sigue disponible y pone los precios
+  if (servicioCorreoSeleccionado) data.append('servicio_correo', servicioCorreoSeleccionado);
 
   try {
     const response = await fetch("{% url 'pedidos:cotizar_correo_argentino' %}", {
@@ -1877,18 +1960,21 @@ async function cotizarCorreo() {
       headers: { 'X-Requested-With': 'XMLHttpRequest' }
     });
     const result = await response.json();
-    console.log('Respuesta cotizacion:', result);
+    if (cotizacionId !== cotizacionCorreoActual) return;  // ya hay una cotización más nueva
     if (!response.ok || !result.success) throw new Error(result.error || 'No se pudo cotizar.');
 
-    costoCorreo = parseFloat(result.importe);
-    if (!Number.isFinite(costoCorreo) || costoCorreo <= 0) costoCorreo = null;
-    if (correoCotizacionBox) {
-      correoCotizacionBox.textContent = `Correo Argentino: ${formatearPesos(costoCorreo)}`;
-    }
-    actualizarEntrega();
+    serviciosCorreo = Array.isArray(result.servicios) ? result.servicios : [];
+    if (!serviciosCorreo.length) throw new Error('No se pudo cotizar.');
+    const seleccionado = serviciosCorreo.find(item => item.codigo === result.servicio_seleccionado) || serviciosCorreo[0];
+    servicioCorreoSeleccionado = seleccionado.codigo;
+    if (correoCotizacionBox) correoCotizacionBox.style.display = 'none';
+    mostrarServiciosCorreo();
+    elegirServicioCorreo(servicioCorreoSeleccionado);
   } catch (error) {
-    costoCorreo = null;
+    if (cotizacionId !== cotizacionCorreoActual) return;
+    limpiarServiciosCorreo();
     if (correoCotizacionBox) {
+      correoCotizacionBox.style.display = 'block';
       correoCotizacionBox.textContent = error.message;
     }
     actualizarEntrega();
@@ -1967,6 +2053,7 @@ function enviarCheckout() {
   agregarCampo(form, 'sucursal_correo', document.getElementById('sucursal_correo_hidden')?.value || '');
   agregarCampo(form, 'sucursal_correo_id', document.getElementById('sucursal_correo_id_hidden')?.value || '');
   agregarCampo(form, 'codigo_postal_sucursal', document.getElementById('codigo_postal_sucursal_hidden')?.value || '');
+  agregarCampo(form, 'servicio_correo', metodoEntrega === 'correo' ? servicioCorreoSeleccionado : '');
   agregarCampo(form, 'codigo_descuento', couponHidden ? couponHidden.value : '');
   if (document.getElementById('es-regalo-check')?.checked) {
     agregarCampo(form, 'es_regalo', '1');

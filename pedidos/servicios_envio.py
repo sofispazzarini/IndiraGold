@@ -1,8 +1,9 @@
 import json
 import os
 import base64
+import unicodedata
 from dataclasses import dataclass
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
@@ -275,153 +276,99 @@ def completar_endpoint(endpoint, envio, tracking=''):
     )
 
 
-def extraer_importe_cotizacion(respuesta):
-    # Verificar si rates está vacío
-    if isinstance(respuesta, dict) and respuesta.get('rates') == []:
+# Servicios de Correo Argentino que se ofrecen en el checkout. El precio y el plazo salen siempre
+# de la respuesta de la API; este nombre solo se usa si la API no devuelve uno que lo identifique.
+SERVICIOS_CORREO = {
+    'CP': 'Correo Argentino Clásico',
+    'EP': 'Correo Argentino Expreso',
+}
+
+
+def codigo_servicio_correo(nombre):
+    """CP o EP según el nombre del servicio guardado en el pedido. Sin nombre (pedidos anteriores a
+    la elección del servicio) o con cualquier otro nombre se usa CP, el servicio que se enviaba siempre."""
+    texto = unicodedata.normalize('NFKD', str(nombre or ''))
+    texto = ''.join(caracter for caracter in texto if not unicodedata.combining(caracter)).casefold()
+    return 'EP' if 'expres' in texto else 'CP'
+
+
+def dias_api(valor):
+    """Cantidad entera de días informada por la API, o None si no viene o no es válida."""
+    try:
+        dias = Decimal(str(valor).strip())
+    except (InvalidOperation, ValueError):
+        return None
+    if not dias.is_finite() or dias < 0 or dias != dias.to_integral_value():
+        return None
+    return int(dias)
+
+
+def texto_dias(dias):
+    return f'{dias} día' if dias == 1 else f'{dias} días'
+
+
+def plazo_entrega(rate):
+    """Plazo armado solo con deliveryTimeMin y deliveryTimeMax de la API. Si no vienen queda vacío:
+    el plazo no se inventa."""
+    minimo = dias_api(rate.get('deliveryTimeMin'))
+    maximo = dias_api(rate.get('deliveryTimeMax'))
+    if minimo is None and maximo is None:
+        return ''
+    if minimo is None:
+        return f'Hasta {texto_dias(maximo)}'
+    if maximo is None:
+        return f'Desde {texto_dias(minimo)}'
+    if minimo == maximo:
+        return texto_dias(minimo)
+    return f'{minimo} a {maximo} días'
+
+
+def extraer_servicios_correo(respuesta, delivered_type):
+    """Servicios Clásico (CP) y Expreso (EP) de la respuesta de MiCorreo para la modalidad cotizada,
+    del más barato al más caro: [{'codigo', 'nombre', 'precio' (Decimal), 'plazo'}]."""
+    rates = respuesta.get('rates') if isinstance(respuesta, dict) else None
+    if rates == []:
         raise ErrorEnvio('Correo Argentino no tiene tarifas para esta ruta. Verifica que tu cuenta tenga cotizacion habilitada.')
 
-    candidatos = [
-        respuesta,
-        respuesta.get('rate') if isinstance(respuesta, dict) else None,
-        respuesta.get('rates', [{}])[0] if isinstance(respuesta, dict) and respuesta.get('rates') else None,
-        respuesta.get('data') if isinstance(respuesta, dict) else None,
-    ]
-
-    for item in candidatos:
-        if not isinstance(item, dict):
-            continue
-        for clave in ['total', 'amount', 'price', 'precio', 'importe', 'valor', 'shipping_cost']:
-            valor = item.get(clave)
-            if valor not in [None, '']:
-                return Decimal(str(valor)).quantize(Decimal('0.01'))
-
-    raise ErrorEnvio('La API cotizo, pero no devolvio un importe reconocible.')
-
-
-def extraer_todas_las_tarifas(respuesta):
-    """Extrae todas las tarifas disponibles de la respuesta de cotización."""
-    if isinstance(respuesta, dict) and respuesta.get('rates') == []:
-        raise ErrorEnvio('Correo Argentino no tiene tarifas para esta ruta.')
-
-    rates = respuesta.get('rates', []) if isinstance(respuesta, dict) else []
-
-    # Debug: ver qué devuelve la API
-    print(f"DEBUG extraer_todas_las_tarifas: rates={rates}")
-
-    if not rates:
-        # Si no hay rates, intentar con la respuesta directa
-        importe = extraer_importe_cotizacion(respuesta)
-        return [{'id': 'standard', 'nombre': 'Envío Estándar', 'precio': importe, 'dias': None}]
-
-    tarifas = []
-    for rate in rates:
+    servicios = {}
+    for rate in rates or []:
         if not isinstance(rate, dict):
             continue
-
-        # Debug: ver campos de cada rate
-        print(f"DEBUG rate keys: {rate.keys()}")
-
-        # Extraer precio
-        precio = None
-        for clave in ['total', 'amount', 'price', 'precio', 'importe', 'valor', 'shipping_cost']:
-            valor = rate.get(clave)
-            if valor not in [None, '']:
-                precio = Decimal(str(valor)).quantize(Decimal('0.01'))
-                break
-        if precio is None:
+        codigo = str(rate.get('productType') or '').strip().upper()
+        if codigo not in SERVICIOS_CORREO:
             continue
+        # Solo tarifas de la modalidad pedida (D domicilio, S sucursal)
+        if rate.get('deliveredType') and str(rate['deliveredType']).strip().upper() != delivered_type:
+            continue
+        try:
+            precio = Decimal(str(rate.get('price')).strip())
+        except (InvalidOperation, ValueError):
+            continue
+        if not precio.is_finite() or precio <= 0:
+            continue
+        precio = precio.quantize(Decimal('0.01'))
 
-        # Extraer nombre del servicio - buscar en más campos
-        nombre = (
-            rate.get('serviceName') or
-            rate.get('serviceDescription') or
-            rate.get('name') or
-            rate.get('service') or
-            rate.get('description') or
-            rate.get('productName') or
-            rate.get('product') or
-            rate.get('tipo') or
-            rate.get('type') or
-            None
-        )
+        # El nombre se guarda en el pedido y define el servicio de la etiqueta (codigo_servicio_correo)
+        nombre = str(rate.get('productName') or '').strip()[:100]
+        if not nombre or codigo_servicio_correo(nombre) != codigo:
+            nombre = SERVICIOS_CORREO[codigo]
 
-        # Extraer ID del servicio
-        service_id = (
-            rate.get('serviceId') or
-            rate.get('serviceCode') or
-            rate.get('id') or
-            rate.get('code') or
-            rate.get('productId') or
-            None
-        )
+        if codigo not in servicios or precio < servicios[codigo]['precio']:
+            servicios[codigo] = {
+                'codigo': codigo,
+                'nombre': nombre,
+                'precio': precio,
+                'plazo': plazo_entrega(rate),
+            }
 
-        # Extraer días de entrega - buscar en más campos
-        dias = (
-            rate.get('deliveryTime') or
-            rate.get('deliveryDays') or
-            rate.get('transitDays') or
-            rate.get('days') or
-            rate.get('diasEntrega') or
-            rate.get('estimatedDays') or
-            rate.get('tiempoEntrega') or
-            None
-        )
+    if not servicios:
+        raise ErrorEnvio('Correo Argentino no devolvio tarifas de los servicios Clasico ni Expreso para este envio.')
 
-        # Convertir días a texto si es número
-        if dias is not None:
-            try:
-                dias_num = int(dias)
-                dias = f"{dias_num} día{'s' if dias_num != 1 else ''}"
-            except (ValueError, TypeError):
-                dias = str(dias)
-
-        tarifas.append({
-            'id': str(service_id) if service_id else f'rate_{len(tarifas)}',
-            'nombre': nombre,
-            'precio': precio,
-            'dias': dias,
-        })
-
-    if not tarifas:
-        raise ErrorEnvio('No se encontraron tarifas en la respuesta.')
-
-    # Ordenar por precio (más barato primero)
-    tarifas.sort(key=lambda x: x['precio'])
-
-    # Asignar nombres descriptivos y tiempos estimados si no tienen
-    for i, tarifa in enumerate(tarifas):
-        nombre_lower = (tarifa['nombre'] or '').lower()
-
-        # Asignar días según el tipo de servicio
-        if not tarifa['dias']:
-            if 'expres' in nombre_lower or 'express' in nombre_lower or 'priorit' in nombre_lower or 'rapido' in nombre_lower or 'rápido' in nombre_lower:
-                tarifa['dias'] = '3 a 5 días hábiles'
-            elif 'clasic' in nombre_lower or 'clásic' in nombre_lower or 'estandar' in nombre_lower or 'estándar' in nombre_lower or 'standard' in nombre_lower:
-                tarifa['dias'] = '7 a 12 días hábiles'
-            elif i == len(tarifas) - 1 and len(tarifas) > 1:
-                # El más caro suele ser el más rápido
-                tarifa['dias'] = '3 a 5 días hábiles'
-            elif i == 0 and len(tarifas) > 1:
-                # El más barato suele ser el más lento
-                tarifa['dias'] = '7 a 12 días hábiles'
-            else:
-                tarifa['dias'] = '5 a 10 días hábiles'
-
-        # Si no tiene nombre, asignar uno descriptivo
-        if not tarifa['nombre'] or nombre_lower in ['envío', 'envio', 'shipping']:
-            if len(tarifas) == 1:
-                tarifa['nombre'] = 'Envío Estándar'
-            elif i == 0:
-                tarifa['nombre'] = 'Envío Económico'
-            elif i == len(tarifas) - 1:
-                tarifa['nombre'] = 'Envío Express'
-            else:
-                tarifa['nombre'] = 'Envío Estándar'
-
-    return tarifas
+    return sorted(servicios.values(), key=lambda servicio: (servicio['precio'], servicio['codigo']))
 
 
 def cotizar_correo_argentino(codigo_postal, tipo_entrega='domicilio', items=None):
+    """Cotiza con MiCorreo y devuelve los servicios Clásico y Expreso (ver extraer_servicios_correo)."""
     config = config_proveedor('correo_argentino')
     if not (config.base_url and config.cotizar_endpoint and config.customer_id and config.postal_code_origin and (config.token or (config.usuario and config.password and config.auth_endpoint))):
         raise ErrorEnvio('Falta configurar la cotizacion de Correo Argentino MiCorreo.')
@@ -438,28 +385,7 @@ def cotizar_correo_argentino(codigo_postal, tipo_entrega='domicilio', items=None
         'dimensions': dimensiones,
     }
     respuesta = request_json('POST', url, token, payload)
-    return extraer_importe_cotizacion(respuesta), respuesta
-
-
-def cotizar_correo_argentino_todas_tarifas(codigo_postal, tipo_entrega='domicilio', items=None):
-    """Cotiza y devuelve todas las tarifas disponibles."""
-    config = config_proveedor('correo_argentino')
-    if not (config.base_url and config.cotizar_endpoint and config.customer_id and config.postal_code_origin and (config.token or (config.usuario and config.password and config.auth_endpoint))):
-        raise ErrorEnvio('Falta configurar la cotizacion de Correo Argentino MiCorreo.')
-
-    token = obtener_token(config)
-    url = f'{config.base_url}{config.cotizar_endpoint}'
-    delivered_type = 'S' if tipo_entrega == 'sucursal' else 'D'
-    dimensiones = calcular_paquete_envio(items or [])
-    payload = {
-        'customerId': config.customer_id,
-        'postalCodeOrigin': config.postal_code_origin,
-        'postalCodeDestination': codigo_postal,
-        'deliveredType': delivered_type,
-        'dimensions': dimensiones,
-    }
-    respuesta = request_json('POST', url, token, payload)
-    return extraer_todas_las_tarifas(respuesta)
+    return extraer_servicios_correo(respuesta, delivered_type)
 
 
 CODIGOS_PROVINCIA = {
@@ -594,7 +520,8 @@ def crear_envio_paqar(envio):
             'deliveryType': tipo_entrega,
             'agencyId': envio.sucursal_id or '',
             'saleDate': fecha_venta,
-            'serviceType': 'CP',
+            # Servicio elegido por la clienta (guardado en el pedido); pedidos anteriores sin servicio: CP
+            'serviceType': codigo_servicio_correo(pedido.tarifa_correo_nombre),
             'shipmentClientId': str(pedido.id),
         }
     }

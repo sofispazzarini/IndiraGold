@@ -239,19 +239,22 @@ class CotizacionTests(CatalogoMixin, TestCase):
         return resultado, request_json.call_args[0][3]
 
     def test_la_cotizacion_envia_las_medidas_configuradas(self):
-        (importe, _), payload = self.cotizar(
-            servicios_envio.cotizar_correo_argentino, {'rates': [{'price': 4321.5}]}, [self.item('grande')]
+        servicios, payload = self.cotizar(
+            servicios_envio.cotizar_correo_argentino, {'rates': [{'productType': 'CP', 'price': 4321.5}]}, [self.item('grande')]
         )
-        self.assertEqual(importe, Decimal('4321.50'))
+        self.assertEqual(servicios[0]['precio'], Decimal('4321.50'))
         self.assertEqual(payload['dimensions'], dimensiones('grande'))
         self.assertEqual(payload['postalCodeDestination'], '1900')
 
-    def test_todas_las_tarifas_envian_las_medidas_configuradas(self):
-        respuesta = {'rates': [{'price': 5000, 'serviceName': 'Clasico'}, {'price': 7000, 'serviceName': 'Expreso'}]}
-        tarifas, payload = self.cotizar(
-            servicios_envio.cotizar_correo_argentino_todas_tarifas, respuesta, [self.item('chico', 3)]
+    def test_todos_los_servicios_envian_las_medidas_configuradas(self):
+        respuesta = {'rates': [
+            {'productType': 'CP', 'price': 5000, 'productName': 'Clasico'},
+            {'productType': 'EP', 'price': 7000, 'productName': 'Expreso'},
+        ]}
+        servicios, payload = self.cotizar(
+            servicios_envio.cotizar_correo_argentino, respuesta, [self.item('chico', 3)]
         )
-        self.assertEqual([t['precio'] for t in tarifas], [Decimal('5000.00'), Decimal('7000.00')])
+        self.assertEqual([s['precio'] for s in servicios], [Decimal('5000.00'), Decimal('7000.00')])
         self.assertEqual(payload['dimensions'], {'weight': 333, 'height': 6, 'width': 11, 'length': 12})
 
     def test_si_falta_un_tamano_la_cotizacion_no_llama_a_la_api(self):
@@ -279,7 +282,8 @@ class CotizacionCheckoutTests(CatalogoMixin, TestCase):
         self.url = reverse('pedidos:cotizar_correo_argentino')
 
     def test_la_cotizacion_del_checkout_usa_la_configuracion(self):
-        with mock.patch('pedidos.views.cotizar_correo_argentino', return_value=(Decimal('3500.00'), {})):
+        servicios = [{'codigo': 'CP', 'nombre': 'Correo Argentino Clasico', 'precio': Decimal('3500.00'), 'plazo': ''}]
+        with mock.patch('pedidos.views.cotizar_correo_argentino', return_value=servicios):
             respuesta = self.client.post(self.url, {'tipo_correo': 'sucursal', 'codigo_postal': 'B1900AVW'})
         datos = respuesta.json()
         self.assertTrue(datos['success'])

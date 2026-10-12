@@ -68,7 +68,7 @@ from django.views.decorators.http import require_POST
 from django.db import transaction
 from django.utils.html import escape
 from django.utils import timezone
-from .servicios_envio import ErrorEnvio, calcular_paquete_envio, cotizar_correo_argentino
+from .servicios_envio import ErrorEnvio, SERVICIOS_CORREO, calcular_paquete_envio, cotizar_correo_argentino
 logger = logging.getLogger(__name__)
 
 # Decorador para verificar que es administrador
@@ -397,27 +397,60 @@ def costo_envio_checkout(metodo_entrega, configuracion_envio):
     return Decimal('0')
 
 
-def costo_correo_argentino_desde_sesion(request, codigo_postal, tipo_entrega, items=None):
-    cotizacion = request.session.get('correo_cotizacion') or {}
-    paquete = calcular_paquete_envio(items or [])
-    if (
-        cotizacion.get('codigo_postal') == codigo_postal
-        and cotizacion.get('tipo_entrega') == tipo_entrega
-        and cotizacion.get('paquete') == paquete
-        and cotizacion.get('importe')
-    ):
-        return monto_decimal(Decimal(str(cotizacion['importe'])))
+def normalizar_codigo_postal(codigo_postal):
+    """Los 4 números del código postal que se cotizan (ej: "B1900AVW" -> "1900")."""
+    codigo_postal = (codigo_postal or '').strip()
+    numeros = re.findall(r'\d+', codigo_postal)
+    return numeros[0][:4] if numeros else codigo_postal
 
-    importe, detalle = cotizar_correo_argentino(codigo_postal, tipo_entrega, items)
+
+def elegir_servicio_correo(servicios, codigo=None):
+    """Servicio de la cotización con ese código (CP o EP); sin código, el más barato."""
+    codigo = (codigo or '').strip().upper()
+    if not codigo:
+        return servicios[0]  # la cotización está ordenada por precio
+    for servicio in servicios:
+        if servicio['codigo'] == codigo:
+            return servicio
+    if codigo in SERVICIOS_CORREO:
+        raise ErrorEnvio(
+            f'El servicio {SERVICIOS_CORREO[codigo]} ya no está disponible para este envío. '
+            'Volvé a cotizar y elegí otra opción.'
+        )
+    raise ErrorEnvio('Elegí un servicio de Correo Argentino válido.')
+
+
+def guardar_cotizacion_correo(request, codigo_postal, tipo_entrega, paquete, servicios, elegido):
     request.session['correo_cotizacion'] = {
-        'importe': str(importe),
         'codigo_postal': codigo_postal,
         'tipo_entrega': tipo_entrega,
         'paquete': paquete,
-        'detalle': detalle,
+        'servicios': [dict(servicio, precio=str(servicio['precio'])) for servicio in servicios],
+        'servicio': elegido['codigo'],
+        'servicio_nombre': elegido['nombre'],
     }
     request.session.modified = True
-    return importe
+
+
+def costo_correo_argentino_desde_sesion(request, codigo_postal, tipo_entrega, items=None, servicio=None):
+    """(importe, nombre) del servicio de Correo Argentino elegido (CP o EP; sin servicio, el más
+    barato). Los precios son los cotizados por el servidor: se reutiliza la cotización de la sesión
+    solo si el código postal, el tipo de entrega y el paquete son los mismos; si no, se recotiza."""
+    codigo_postal = normalizar_codigo_postal(codigo_postal)
+    cotizacion = request.session.get('correo_cotizacion') or {}
+    paquete = calcular_paquete_envio(items or [])
+    servicios = cotizacion.get('servicios')
+    if not (
+        servicios
+        and cotizacion.get('codigo_postal') == codigo_postal
+        and cotizacion.get('tipo_entrega') == tipo_entrega
+        and cotizacion.get('paquete') == paquete
+    ):
+        servicios = cotizar_correo_argentino(codigo_postal, tipo_entrega, items)
+
+    elegido = elegir_servicio_correo(servicios, servicio)
+    guardar_cotizacion_correo(request, codigo_postal, tipo_entrega, paquete, servicios, elegido)
+    return monto_decimal(Decimal(str(elegido['precio']))), elegido['nombre']
 
 
 def crear_envio_pedido(pedido):
@@ -1092,6 +1125,7 @@ def confirmar_pedido(request):
         opcion_flex_id = request.POST.get('opcion_flex_id')
         opcion_flex = None
         costo_envio = Decimal('0')
+        servicio_correo_nombre = None
 
         cliente, _ = Cliente.objects.get_or_create(user=request.user)
         subtotal_productos = sum(item.precio_total for item in items_del_carrito)
@@ -1144,11 +1178,12 @@ def confirmar_pedido(request):
                     messages.error(request, 'Indica el codigo postal para cotizar Correo Argentino.')
                     return redirect("pedidos:checkout")
                 try:
-                    costo_envio = costo_correo_argentino_desde_sesion(
+                    costo_envio, servicio_correo_nombre = costo_correo_argentino_desde_sesion(
                         request,
                         codigo_postal_cotizacion,
                         request.POST.get('tipo_correo') or 'domicilio',
                         items_del_carrito,
+                        request.POST.get('servicio_correo'),
                     )
                 except ErrorEnvio as error:
                     messages.error(request, str(error))
@@ -1178,6 +1213,7 @@ def confirmar_pedido(request):
             calle_numero=f'{direccion.calle} {direccion.numero}' if direccion else request.POST.get('calle_numero'),
             correo=request.POST.get('correo'),
             tipo_correo=request.POST.get('tipo_correo'),
+            tarifa_correo_nombre=servicio_correo_nombre,
             sucursal_correo=request.POST.get('sucursal_correo'),
             sucursal_correo_id=request.POST.get('sucursal_correo_id'),
             tipo_venta='online',
@@ -1394,14 +1430,11 @@ def quitar_codigo_descuento(request):
 @login_required
 @require_POST
 def cotizar_correo_argentino_checkout(request):
-    import re
     cliente, _ = Cliente.objects.get_or_create(user=request.user)
     carrito = get_or_create_cart(request)
     items = carrito.items.all().select_related('variante__producto')
     tipo_entrega = request.POST.get('tipo_correo') or 'domicilio'
     codigo_postal = request.POST.get('codigo_postal', '').strip()
-
-    print(f"DEBUG cotizar: tipo={tipo_entrega}, cp_post={codigo_postal}, dir_id={request.POST.get('direccion_correo_id')}")
 
     if tipo_entrega == 'domicilio':
         direccion = Direccion.objects.filter(
@@ -1409,27 +1442,23 @@ def cotizar_correo_argentino_checkout(request):
             cliente=cliente
         ).first()
         if not direccion:
-            print(f"DEBUG: No se encontro direccion para cliente {cliente.id}")
             return JsonResponse({'success': False, 'error': 'Seleccioná una dirección.'}, status=400)
         codigo_postal = direccion.codigo_postal
-        print(f"DEBUG: Direccion encontrada, cp={codigo_postal}")
 
     if not codigo_postal:
-        print("DEBUG: codigo_postal vacio")
         return JsonResponse({'success': False, 'error': 'Indica un codigo postal.'}, status=400)
 
     # Extraer solo los 4 digitos del codigo postal (ej: "B1900AVW" -> "1900")
-    numeros = re.findall(r'\d+', codigo_postal)
-    if numeros:
-        codigo_postal = numeros[0][:4]
-    print(f"DEBUG: codigo_postal final={codigo_postal}")
+    codigo_postal = normalizar_codigo_postal(codigo_postal)
 
     # Dentro del try: si falta configurar un paquete se responde el error (no un 500)
     paquete = None
     try:
         paquete = calcular_paquete_envio(items)
-        importe, detalle = cotizar_correo_argentino(codigo_postal, tipo_entrega, items)
+        servicios = cotizar_correo_argentino(codigo_postal, tipo_entrega, items)
     except ErrorEnvio as error:
+        # Sin cotización válida no queda en la sesión un precio anterior
+        request.session.pop('correo_cotizacion', None)
         return JsonResponse({
             'success': False,
             'error': str(error),
@@ -1441,20 +1470,31 @@ def cotizar_correo_argentino_checkout(request):
             }
         }, status=400)
 
-    request.session['correo_cotizacion'] = {
-        'importe': str(importe),
-        'codigo_postal': codigo_postal,
-        'tipo_entrega': tipo_entrega,
-        'paquete': paquete,
-        'detalle': detalle,
-    }
-    request.session.modified = True
+    # Se conserva el servicio que la clienta ya había elegido si sigue disponible; si no, el más barato
+    preferido = (
+        request.POST.get('servicio_correo')
+        or (request.session.get('correo_cotizacion') or {}).get('servicio')
+        or ''
+    ).strip().upper()
+    disponibles = [servicio['codigo'] for servicio in servicios]
+    elegido = elegir_servicio_correo(servicios, preferido if preferido in disponibles else None)
+    guardar_cotizacion_correo(request, codigo_postal, tipo_entrega, paquete, servicios, elegido)
 
     return JsonResponse({
         'success': True,
-        'importe': float(importe),
+        'importe': float(elegido['precio']),
         'codigo_postal': codigo_postal,
         'paquete': paquete,
+        'servicios': [
+            {
+                'codigo': servicio['codigo'],
+                'nombre': servicio['nombre'],
+                'precio': str(servicio['precio']),
+                'plazo': servicio['plazo'],
+            }
+            for servicio in servicios
+        ],
+        'servicio_seleccionado': elegido['codigo'],
     })
 
 
@@ -1720,6 +1760,8 @@ def _crear_pago(request):
     costo_envio = costo_envio_checkout(request.session['metodo_entrega'], configuracion_envio)
     if opcion_flex:
         costo_envio = opcion_flex.costo_actual
+    # Nombre del servicio de Correo Argentino (Clásico/Expreso) según la cotización del servidor
+    servicio_correo_nombre = None
     if request.session['metodo_entrega'] == 'correo' and request.session.get('correo') == 'correo_argentino':
         codigo_postal_cotizacion = (
             direccion_correo.codigo_postal
@@ -1727,16 +1769,18 @@ def _crear_pago(request):
             else request.session.get('codigo_postal_sucursal')
         )
         try:
-            costo_envio = costo_correo_argentino_desde_sesion(
+            costo_envio, servicio_correo_nombre = costo_correo_argentino_desde_sesion(
                 request,
                 codigo_postal_cotizacion,
                 request.session.get('tipo_correo') or 'domicilio',
                 items,
+                request.POST.get('servicio_correo'),
             )
         except ErrorEnvio as error:
             messages.error(request, str(error))
             return redirect('pedidos:checkout')
         request.session['correo_costo_final'] = str(costo_envio)
+        request.session['correo_servicio_final'] = servicio_correo_nombre
         request.session.modified = True
 
     if costo_envio > 0:
@@ -1768,6 +1812,7 @@ def _crear_pago(request):
             calle_numero=f'{direccion_pedido.calle} {direccion_pedido.numero}' if direccion_pedido else None,
             correo=request.session.get('correo'),
             tipo_correo=request.session.get('tipo_correo'),
+            tarifa_correo_nombre=servicio_correo_nombre,
             sucursal_correo=request.session.get('sucursal_correo'),
             sucursal_correo_id=request.session.get('sucursal_correo_id'),
             metodo_pago=metodo,
@@ -2056,8 +2101,11 @@ def _pago_exitoso_desde_carrito(request, mercado_pago):
         opcion_flex = OpcionEnvioFlex.objects.filter(id=request.session.get('opcion_flex_id')).first()
         if opcion_flex:
             costo_envio = opcion_flex.costo_actual
+    servicio_correo_nombre = None
     if metodo_entrega == 'correo' and request.session.get('correo') == 'correo_argentino':
         costo_envio = monto_decimal(Decimal(str(request.session.get('correo_costo_final') or '0')))
+        # Mismo servicio que se cotizó junto con ese costo al ir a pagar
+        servicio_correo_nombre = request.session.get('correo_servicio_final') or None
     direccion = None
 
     if metodo_entrega == 'flex':
@@ -2114,6 +2162,7 @@ def _pago_exitoso_desde_carrito(request, mercado_pago):
         calle_numero=f'{direccion.calle} {direccion.numero}' if direccion else request.session.get('calle_numero'),
         correo=request.session.get('correo'),
         tipo_correo=request.session.get('tipo_correo'),
+        tarifa_correo_nombre=servicio_correo_nombre,
         sucursal_correo=request.session.get('sucursal_correo'),
         sucursal_correo_id=request.session.get('sucursal_correo_id'),
         tipo_venta='online',
