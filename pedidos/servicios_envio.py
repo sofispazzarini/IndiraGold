@@ -8,16 +8,12 @@ from urllib.request import Request, urlopen
 
 from django.core.files.base import ContentFile
 
+from productos.models import Producto
+from .models import ConfiguracionPaquete
+
 
 class ErrorEnvio(Exception):
     pass
-
-
-PAQUETES_ENVIO = {
-    'chico': {'weight': 200, 'height': 3, 'width': 20, 'length': 25},      # Accesorios, remeras
-    'mediano': {'weight': 400, 'height': 5, 'width': 25, 'length': 35},    # Buzos, pantalones
-    'grande': {'weight': 800, 'height': 10, 'width': 35, 'length': 45},    # Camperas, zapatillas
-}
 
 
 @dataclass
@@ -47,22 +43,53 @@ def decimal_a_float(valor):
     return valor
 
 
-def paquete_producto(producto):
-    return PAQUETES_ENVIO.get(getattr(producto, 'tamano_paquete', 'mediano'), PAQUETES_ENVIO['mediano'])
+def paquetes_configurados():
+    """Peso y medidas de cada tamaño cargados en Administración > Paquetes de envío, en el formato de
+    MiCorreo: gramos y centímetros enteros. {tamaño: {'weight', 'height', 'width', 'length'}}"""
+    return {
+        configuracion.tamano: {
+            'weight': configuracion.peso_gramos,
+            'height': configuracion.alto_cm,
+            'width': configuracion.ancho_cm,
+            'length': configuracion.largo_cm,
+        }
+        for configuracion in ConfiguracionPaquete.objects.all()
+    }
+
+
+def paquete_de_tamano(paquetes, tamano):
+    """Medidas de un tamaño. Si no está cargado no se inventan valores: se avisa con ErrorEnvio."""
+    if tamano not in paquetes:
+        nombre = dict(Producto.TAMANOS_PAQUETE).get(tamano, tamano).split(' - ')[0]
+        raise ErrorEnvio(
+            f'No se puede cotizar el envío: falta configurar el paquete "{nombre}" '
+            '(Administración > Paquetes de envío).'
+        )
+    return paquetes[tamano]
+
+
+def paquete_producto(producto, paquetes):
+    tamano = getattr(producto, 'tamano_paquete', None) or 'mediano'
+    # Un valor que no es chico/mediano/grande se cotiza como mediano (igual que antes)
+    if tamano not in dict(Producto.TAMANOS_PAQUETE):
+        tamano = 'mediano'
+    return paquete_de_tamano(paquetes, tamano)
 
 
 def calcular_paquete_envio(items):
+    paquetes = paquetes_configurados()
+    chico = paquete_de_tamano(paquetes, 'chico')
     paquete = {
         'weight': 0,
         'height': 0,
-        'width': PAQUETES_ENVIO['chico']['width'],
-        'length': PAQUETES_ENVIO['chico']['length'],
+        'width': chico['width'],
+        'length': chico['length'],
     }
 
     for item in items:
         producto = item.variante.producto
         cantidad = int(getattr(item, 'cantidad', 1) or 1)
-        dimensiones = paquete_producto(producto)
+        dimensiones = paquete_producto(producto, paquetes)
 
         paquete['weight'] += dimensiones['weight'] * cantidad
         paquete['height'] += dimensiones['height'] * cantidad
@@ -70,7 +97,7 @@ def calcular_paquete_envio(items):
         paquete['length'] = max(paquete['length'], dimensiones['length'])
 
     if paquete['weight'] <= 0:
-        return dict(PAQUETES_ENVIO['mediano'])
+        return dict(paquete_de_tamano(paquetes, 'mediano'))
 
     # Limites maximos para Correo Argentino
     paquete['weight'] = min(paquete['weight'], 25000)  # Max 25 kg

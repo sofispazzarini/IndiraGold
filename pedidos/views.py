@@ -1424,9 +1424,10 @@ def cotizar_correo_argentino_checkout(request):
         codigo_postal = numeros[0][:4]
     print(f"DEBUG: codigo_postal final={codigo_postal}")
 
-    paquete = calcular_paquete_envio(items)
-
+    # Dentro del try: si falta configurar un paquete se responde el error (no un 500)
+    paquete = None
     try:
+        paquete = calcular_paquete_envio(items)
         importe, detalle = cotizar_correo_argentino(codigo_postal, tipo_entrega, items)
     except ErrorEnvio as error:
         return JsonResponse({

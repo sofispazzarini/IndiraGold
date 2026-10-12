@@ -1,4 +1,5 @@
 from config.textos import capitalizar_texto
+from django.core.validators import MinValueValidator
 from django.db import models
 from users.models import Cliente
 from productos.models import Producto
@@ -467,6 +468,61 @@ class ConfiguracionEnvio(models.Model):
             for zona in self.zonas_flex_gratis.split(',')
             if zona.strip()
         ]
+
+
+class ConfiguracionPaquete(models.Model):
+    """Peso y medidas del paquete ya embalado para cada tamaño (chico, mediano, grande). Cada producto
+    solo elige su tamaño (Producto.tamano_paquete) y con estos datos se cotiza Correo Argentino.
+    Gramos y centímetros enteros: es lo que espera MiCorreo en "dimensions"."""
+    # Clave primaria explícita: no depende de DEFAULT_AUTO_FIELD (que cambia según la versión de
+    # Django) y así no genera migraciones de "alter id"
+    id = models.AutoField(primary_key=True)
+    tamano = models.CharField(
+        'Tamaño',
+        max_length=20,
+        choices=Producto.TAMANOS_PAQUETE,
+        unique=True,
+        error_messages={'unique': 'Ya existe una configuración para ese tamaño de paquete.'},
+    )
+    peso_gramos = models.PositiveIntegerField(
+        'Peso embalado (g)',
+        validators=[MinValueValidator(1, message='El peso tiene que ser mayor que 0.')],
+        help_text='Peso total del paquete ya embalado, en gramos.',
+    )
+    alto_cm = models.PositiveIntegerField(
+        'Alto (cm)',
+        validators=[MinValueValidator(1, message='El alto tiene que ser mayor que 0.')],
+    )
+    ancho_cm = models.PositiveIntegerField(
+        'Ancho (cm)',
+        validators=[MinValueValidator(1, message='El ancho tiene que ser mayor que 0.')],
+    )
+    largo_cm = models.PositiveIntegerField(
+        'Largo (cm)',
+        validators=[MinValueValidator(1, message='El largo tiene que ser mayor que 0.')],
+    )
+
+    class Meta:
+        verbose_name = 'Paquete de envío'
+        verbose_name_plural = 'Paquetes de envío'
+        ordering = ['id']
+        constraints = [
+            models.CheckConstraint(
+                condition=(
+                    models.Q(peso_gramos__gt=0)
+                    & models.Q(alto_cm__gt=0)
+                    & models.Q(ancho_cm__gt=0)
+                    & models.Q(largo_cm__gt=0)
+                ),
+                name='configuracionpaquete_valores_mayores_a_cero',
+            ),
+        ]
+
+    def __str__(self):
+        return (
+            f'{self.get_tamano_display()}: {self.peso_gramos} g, '
+            f'{self.alto_cm} x {self.ancho_cm} x {self.largo_cm} cm'
+        )
 
 
 class OpcionEnvioFlex(models.Model):

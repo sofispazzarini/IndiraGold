@@ -1,6 +1,8 @@
 from django.contrib import admin
 from .models import Pedido, PedidoItem, Pago, Gasto, Cambio, NotaCredito
 from .models import VentaLocal, VentaLocalItem, ConfiguracionEnvio, ConfiguracionPago, PlanCuotasMercadoPago, EnvioPedido
+from .models import ConfiguracionPaquete
+from productos.models import Producto
 
 admin.site.register(VentaLocalItem)
 
@@ -42,6 +44,27 @@ class ConfiguracionEnvioAdmin(admin.ModelAdmin):
         if ConfiguracionEnvio.objects.exists():
             return False
         return super().has_add_permission(request)
+
+
+@admin.register(ConfiguracionPaquete)
+class ConfiguracionPaqueteAdmin(admin.ModelAdmin):
+    """Peso y medidas de los paquetes chico, mediano y grande para cotizar Correo Argentino."""
+    list_display = ('tamano', 'peso_gramos', 'alto_cm', 'ancho_cm', 'largo_cm')
+    fields = ('tamano', 'peso_gramos', 'alto_cm', 'ancho_cm', 'largo_cm')
+
+    def get_readonly_fields(self, request, obj=None):
+        # El tamaño de una configuración ya cargada no se cambia: se editan sus medidas
+        return ('tamano',) if obj else ()
+
+    def has_add_permission(self, request):
+        # Solo se puede agregar un tamaño que falte (hay uno por cada opción del producto)
+        if ConfiguracionPaquete.objects.count() >= len(Producto.TAMANOS_PAQUETE):
+            return False
+        return super().has_add_permission(request)
+
+    def has_delete_permission(self, request, obj=None):
+        # Sin los tres tamaños no se puede cotizar el envío
+        return False
 
 
 class PlanCuotasMercadoPagoInline(admin.TabularInline):
