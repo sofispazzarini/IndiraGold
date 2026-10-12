@@ -505,6 +505,7 @@
             }
             renderTempColores();
             actualizarStockVariante();
+            ocultarAvisoColores();
             document.getElementById('colorNombreModal').value = '';
             document.getElementById('colorStockModal').value = '';
             // Avisa del cambio para que el contador de caracteres vuelva a 0
@@ -536,7 +537,8 @@
                     return;
                 }
                 if (tempColores.length === 0) {
-                    alert('Sumá al menos un color con stock para continuar.');
+                    // Aviso dentro del formulario; el talle y lo cargado quedan como estaban
+                    mostrarAvisoColores(talle);
                     return;
                 }
                 if (Number.isNaN(stock) || stock <= 0) {
@@ -554,6 +556,7 @@
                 e.target.reset();
                 e.target.querySelectorAll('.char-input').forEach(i => i.dispatchEvent(new Event('input')));
                 renderTempColores(); renderTempMedidas();
+                ocultarAvisoColores();
                 document.getElementById('stockVarianteTotal').textContent = '0';
             } catch(err) {
                 console.error('Error al guardar variante:', err);
@@ -678,6 +681,27 @@
                 <button type="button" class="btn-close btn-close-white ms-1" style="font-size:0.45rem" onclick="eliminarColor(${i})"></button>
             </span>
         `).join('');
+    }
+
+    // Aviso integrado al formulario cuando el talle no tiene ningún color con stock
+    function mostrarAvisoColores(talle) {
+        const aviso = document.getElementById('avisoColoresVariante');
+        const texto = document.getElementById('avisoColoresVarianteTexto');
+        if (!aviso || !texto) return;
+        // En mayúsculas, como los mensajes del servidor sobre talles
+        const talleVisible = (talle || '').toUpperCase();
+        texto.textContent = talleVisible
+            ? `Agregá al menos un color con stock para el talle ${talleVisible}.`
+            : 'Agregá al menos un color con stock para esta variante.';
+        aviso.classList.remove('d-none');
+        document.getElementById('seccionColoresVariante')?.classList.add('seccion-con-aviso');
+        aviso.scrollIntoView({ block: 'nearest' });
+        document.getElementById('colorNombreModal')?.focus({ preventScroll: true });
+    }
+
+    function ocultarAvisoColores() {
+        document.getElementById('avisoColoresVariante')?.classList.add('d-none');
+        document.getElementById('seccionColoresVariante')?.classList.remove('seccion-con-aviso');
     }
 
     function eliminarColor(index) {

@@ -1,3 +1,36 @@
+<style>
+  /* Aviso dentro del formulario cuando el talle no tiene ningún color con stock (en vez del alert del navegador) */
+  .aviso-variante {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6rem;
+    margin: 0 0 0.75rem;
+    padding: 0.7rem 0.85rem;
+    background: #fbf3f5;
+    border: 1px solid rgba(110, 14, 46, 0.18);
+    border-left: 3px solid #6E0E2E;
+    border-radius: 10px;
+    color: #6E0E2E;
+    font-size: 0.85rem;
+    line-height: 1.35;
+    animation: avisoVarianteEntrada 0.2s ease-out;
+  }
+  .aviso-variante i { font-size: 1rem; line-height: 1.25; flex: 0 0 auto; }
+  .aviso-variante small { display: block; color: #8c7e70; margin-top: 0.15rem; font-size: 0.78rem; }
+  .seccion-con-aviso {
+    border-radius: 12px;
+    outline: 2px solid rgba(110, 14, 46, 0.25);
+    outline-offset: 6px;
+    transition: outline-color 0.2s;
+  }
+  @keyframes avisoVarianteEntrada {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: none; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .aviso-variante { animation: none; }
+  }
+</style>
 <div class="modal fade" id="modalVariante" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content" style="border-radius: 15px; border: none; shadow: 0 10px 30px rgba(0,0,0,0.1);">
@@ -15,8 +48,15 @@
             <div class="char-counter"><span class="char-count">0</span>/20</div>
           </div>
 
-          <div class="mb-4">
+          <div class="mb-4" id="seccionColoresVariante">
             <label class="form-label fw-bold" style="color: #8c7e70; font-size: 0.8rem;">COLORES Y STOCK <span class="char-limit">máx. 30</span></label>
+            <div id="avisoColoresVariante" class="aviso-variante d-none" role="alert">
+              <i class="bi bi-exclamation-circle" aria-hidden="true"></i>
+              <div>
+                <strong id="avisoColoresVarianteTexto"></strong>
+                <small>Elegí el color (o marcá «No aplica color»), cargá el stock y tocá +.</small>
+              </div>
+            </div>
             <div class="row g-2 mb-2">
               <div class="col-auto">
                 <input type="color" class="form-control form-control-color" id="colorPickerModal" value="#000000" title="Elegir color"
