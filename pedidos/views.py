@@ -4,7 +4,7 @@ from django.urls import reverse
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.core.paginator import Paginator
 import logging
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.contrib import messages
 from django.db.models import Sum, Count, Avg, Q, F
 from datetime import datetime, timedelta
@@ -3569,17 +3569,57 @@ def detalle_venta_local(request, venta_id):
 
         data['productos'].append({
 
+            'id': item.id,
+
             'producto': item.producto.nombre,
 
             'talle': item.variante.talle.nombre,
 
             'color': item.color,
 
+            'color_nombre': color_item_venta(item),
+
             'cantidad': item.cantidad,
 
-            'subtotal': float(item.subtotal)
+            'precio_unitario': float(item.precio_unitario),
+
+            'subtotal': float(item.subtotal),
+
+            # Unidades que todavía se pueden cambiar (lo comprado menos lo ya cambiado)
+            'cambiables': unidades_cambiables_venta(item),
 
         })
+
+    # Cambios registrados de la venta y notas de crédito que generaron
+    data['cambio_url'] = reverse('pedidos:registrar_cambio_venta_local', args=[venta.id])
+    data['cambios'] = [
+        {
+            'fecha': timezone.localtime(cambio.fecha).strftime('%d/%m/%Y %H:%M'),
+            'devuelto': describir_producto_cambio(cambio.producto_devuelto, cambio.variante_devuelta, cambio.color_devuelto),
+            'cantidad_devuelta': cambio.cantidad_devuelta,
+            'entregado': describir_producto_cambio(cambio.producto_entregado, cambio.variante_entregada, cambio.color_entregado),
+            'cantidad_entregada': cambio.cantidad_entregada,
+            'diferencia': float(cambio.diferencia) if cambio.diferencia is not None else None,
+            'usuario': (
+                (cambio.registrado_por.get_full_name() or cambio.registrado_por.username)
+                if cambio.registrado_por else ''
+            ),
+            'motivo': cambio.motivo,
+        }
+        for cambio in venta.cambios.select_related(
+            'producto_devuelto', 'variante_devuelta__talle', 'producto_entregado',
+            'variante_entregada__talle', 'registrado_por',
+        ).order_by('-fecha', '-id')
+    ]
+    data['notas_credito'] = [
+        {
+            'fecha': timezone.localtime(nota.fecha_creacion).strftime('%d/%m/%Y'),
+            'monto': float(nota.monto),
+            'estado': nota.get_estado_display(),
+            'motivo': nota.motivo,
+        }
+        for nota in venta.notas_credito.order_by('-fecha_creacion', '-id')
+    ]
 
     return JsonResponse(data)
 
@@ -4173,6 +4213,246 @@ def registrar_cambio(request, pedido_id):
 
 def unidades_cambiables(pedido_item):
     return unidades_devolvibles(pedido_item)
+
+
+def color_item_venta(item):
+    """Color de una línea de venta presencial por su nombre (las ventas viejas guardaban el hex)."""
+    color = (item.color or '').strip()
+    if color.startswith('#'):
+        encontrado = item.variante.colores.filter(codigo_hex__iexact=color).first()
+        return encontrado.nombre if encontrado else ''
+    return color
+
+
+def unidades_cambiables_venta(item):
+    """Unidades de ese talle y color que el cliente todavía puede cambiar en la venta presencial:
+    las compradas (sumando las líneas iguales de la venta) menos las ya cambiadas."""
+    color = color_item_venta(item)
+    compradas = sum(
+        linea.cantidad
+        for linea in item.venta.items.select_related('variante').filter(variante_id=item.variante_id)
+        if color_item_venta(linea).lower() == color.lower()
+    )
+    cambiadas = Cambio.objects.filter(
+        venta_local_id=item.venta_id,
+        variante_devuelta_id=item.variante_id,
+        color_devuelto__iexact=color,
+    ).aggregate(total=Sum('cantidad_devuelta'))['total'] or 0
+    return max(compradas - cambiadas, 0)
+
+
+def leer_cantidad(valor):
+    """Cantidad entera mayor a cero, o None."""
+    try:
+        cantidad = int(str(valor).strip())
+    except (TypeError, ValueError):
+        return None
+    return cantidad if cantidad >= 1 else None
+
+
+def preparar_cambio_venta(venta, datos):
+    """Valida un cambio de la venta presencial y calcula sus importes en el servidor: los precios
+    nunca vienen del navegador y el producto devuelto tiene que ser de esta venta. No guarda nada.
+    Lanza ValueError con un mensaje para mostrar."""
+    item_id = str(datos.get('item_id') or '').strip()
+    item = venta.items.select_related('producto', 'variante__producto', 'variante__talle').filter(
+        id=item_id if item_id.isdigit() else None
+    ).first()
+    if not item:
+        raise ValueError('Elegí un producto de esta venta para devolver.')
+
+    cantidad_devuelta = leer_cantidad(datos.get('cantidad_devuelta'))
+    cantidad_entregada = leer_cantidad(datos.get('cantidad_entregada'))
+    if not cantidad_devuelta or not cantidad_entregada:
+        raise ValueError('Las cantidades tienen que ser números enteros mayores a cero.')
+
+    cambiables = unidades_cambiables_venta(item)
+    if cantidad_devuelta > cambiables:
+        raise ValueError(
+            f'De {item.producto.nombre} (talle {item.variante.talle.nombre}) se pueden cambiar como '
+            f'máximo {cambiables} unidad(es).'
+        )
+
+    # Entregado: "<variante_id>|<color>" (color vacío si el talle no usa stock por color)
+    variante_id, _, color_pedido = str(datos.get('variante_entregada') or '').partition('|')
+    variante_entregada = Variante.objects.select_related('producto', 'talle').filter(
+        pk=variante_id if variante_id.isdigit() else None,
+        activa=True,
+    ).first()
+    if not variante_entregada:
+        raise ValueError('Elegí el producto que se lleva el cliente.')
+    variante_color = validar_stock(variante_entregada, cantidad_entregada, color_pedido.strip() or None)
+
+    # Mismo criterio que los cambios online: lo entregado al precio de hoy, lo devuelto a lo que se pagó
+    precio_devuelto = monto_decimal(item.precio_unitario)
+    precio_entregado = monto_decimal(precio_unitario_vigente(variante_entregada))
+    return {
+        'item': item,
+        'cantidad_devuelta': cantidad_devuelta,
+        'color_devuelto': color_item_venta(item),
+        'precio_devuelto': precio_devuelto,
+        'variante_entregada': variante_entregada,
+        'cantidad_entregada': cantidad_entregada,
+        'color_entregado': variante_color.color.nombre if variante_color else '',
+        'precio_entregado': precio_entregado,
+        'diferencia': precio_entregado * cantidad_entregada - precio_devuelto * cantidad_devuelta,
+        'motivo': str(datos.get('motivo') or '').strip()[:500],
+    }
+
+
+def describir_producto_cambio(producto, variante, color):
+    nombre = producto.nombre if producto else 'Producto eliminado'
+    talle = f' · Talle {variante.talle.nombre}' if variante else ''
+    return f'{nombre}{talle}{f" · {color}" if color else ""}'
+
+
+def detalle_diferencia_cambio(diferencia, registrado=False):
+    if diferencia > 0:
+        if registrado:
+            return f'El cliente debe abonar {pesos(diferencia)} de diferencia: quedó en el saldo pendiente de la venta.'
+        return f'El cliente abona {pesos(diferencia)} de diferencia: se suma al saldo pendiente de la venta.'
+    if diferencia < 0:
+        verbo = 'Se generó' if registrado else 'Se genera'
+        return f'{verbo} una nota de crédito por {pesos(-diferencia)} a favor del cliente.'
+    return 'Sin diferencia de precio.'
+
+
+def resumen_cambio_venta(cambio):
+    def lado(producto, variante, color, cantidad, precio):
+        return {
+            'descripcion': describir_producto_cambio(producto, variante, color),
+            'cantidad': cantidad,
+            'precio_unitario': str(precio),
+            'subtotal': str(precio * cantidad),
+        }
+
+    diferencia = cambio['diferencia']
+    return {
+        'devuelto': lado(cambio['item'].producto, cambio['item'].variante, cambio['color_devuelto'],
+                         cambio['cantidad_devuelta'], cambio['precio_devuelto']),
+        'entregado': lado(cambio['variante_entregada'].producto, cambio['variante_entregada'],
+                          cambio['color_entregado'], cambio['cantidad_entregada'], cambio['precio_entregado']),
+        'diferencia': str(diferencia),
+        'resultado': 'cobrar' if diferencia > 0 else ('nota_credito' if diferencia < 0 else 'sin_diferencia'),
+        'detalle': detalle_diferencia_cambio(diferencia),
+    }
+
+
+@admin_required
+def registrar_cambio_venta_local(request, venta_id):
+    """Cambio de productos de una venta presencial.
+    - GET: talles y colores con stock para elegir lo que se lleva el cliente.
+    - POST (JSON) sin "confirmar": valida y devuelve el resumen calculado en el servidor.
+    - POST con "confirmar" y el "operacion_id" del resumen: registra el cambio, devuelve lo
+      cambiado al stock y descuenta lo entregado, todo o nada. Repetir la misma operación (doble
+      clic, reenvío) no registra otro cambio."""
+    venta = get_object_or_404(VentaLocal, pk=venta_id)
+
+    if request.method == 'GET':
+        return JsonResponse({'success': True, 'variantes': opciones_variantes_con_stock()})
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Método no permitido.'}, status=405)
+
+    try:
+        datos = json.loads(request.body or b'{}')
+    except (json.JSONDecodeError, ValueError):
+        datos = None
+    if not isinstance(datos, dict):
+        return JsonResponse({'success': False, 'error': 'Formato de datos inválido.'}, status=400)
+
+    if not datos.get('confirmar'):
+        try:
+            cambio = preparar_cambio_venta(venta, datos)
+        except ValueError as error:
+            return JsonResponse({'success': False, 'error': str(error)}, status=400)
+        return JsonResponse({
+            'success': True,
+            'confirmado': False,
+            'operacion_id': uuid.uuid4().hex,
+            'resumen': resumen_cambio_venta(cambio),
+        })
+
+    operacion_id = str(datos.get('operacion_id') or '').strip()
+    if not re.fullmatch(r'[0-9a-f]{32}', operacion_id):
+        return JsonResponse({'success': False, 'error': 'Revisá el cambio antes de confirmarlo.'}, status=400)
+
+    respuesta_repetida = {
+        'success': True,
+        'confirmado': True,
+        'duplicado': True,
+        'mensaje': 'Este cambio ya estaba registrado; no se registró de nuevo.',
+    }
+    try:
+        with transaction.atomic():
+            # Venta bloqueada: dos confirmaciones a la vez se procesan de a una y la segunda ve el
+            # cambio ya registrado y las unidades ya cambiadas
+            venta = VentaLocal.objects.select_for_update().get(pk=venta.pk)
+            existente = Cambio.objects.filter(operacion_id=operacion_id).first()
+            if existente:
+                if existente.venta_local_id != venta.pk:
+                    return JsonResponse({'success': False, 'error': 'Revisá el cambio antes de confirmarlo.'}, status=400)
+                return JsonResponse(respuesta_repetida)
+
+            cambio = preparar_cambio_venta(venta, datos)
+            item = cambio['item']
+            entregada = cambio['variante_entregada']
+
+            # Primero sale lo que se lleva el cliente (si no alcanza el stock no se registra nada) y
+            # después vuelve al stock lo devuelto, en su talle y color
+            descontar_stock(entregada, cambio['cantidad_entregada'], cambio['color_entregado'] or None)
+            reponer_stock(item.variante, cambio['cantidad_devuelta'], cambio['color_devuelto'] or None)
+
+            diferencia = cambio['diferencia']
+            if diferencia > 0:
+                # A cobrar: se suma al total y al saldo de la venta, y a la deuda del cliente (se cobra
+                # con "Registrar pago", igual que el saldo de una venta)
+                venta.total += diferencia
+                venta.saldo_pendiente = max(venta.total - venta.monto_pagado, Decimal('0.00'))
+                venta.estado_pago = 'PARCIAL' if venta.saldo_pendiente > 0 else 'PAGADO'
+                venta.save(update_fields=['total', 'saldo_pendiente', 'estado_pago'])
+                Cliente.objects.filter(pk=venta.cliente_id).update(deuda_total=F('deuda_total') + diferencia)
+            elif diferencia < 0:
+                # A favor del cliente: nota de crédito vigente, igual que en los cambios online
+                NotaCredito.objects.create(
+                    venta_local=venta,
+                    monto=-diferencia,
+                    motivo=(
+                        f'Diferencia a favor por cambio de {item.producto.nombre} por '
+                        f'{entregada.producto.nombre} (venta #{venta.id})'
+                    ),
+                )
+
+            Cambio.objects.create(
+                venta_local=venta,
+                producto_devuelto=item.producto,
+                variante_devuelta=item.variante,
+                cantidad_devuelta=cambio['cantidad_devuelta'],
+                color_devuelto=cambio['color_devuelto'],
+                producto_entregado=entregada.producto,
+                variante_entregada=entregada,
+                cantidad_entregada=cambio['cantidad_entregada'],
+                color_entregado=cambio['color_entregado'],
+                motivo=cambio['motivo'],
+                precio_devuelto=cambio['precio_devuelto'],
+                precio_entregado=cambio['precio_entregado'],
+                diferencia=diferencia,
+                registrado_por=request.user,
+                operacion_id=operacion_id,
+            )
+    except ValueError as error:
+        return JsonResponse({'success': False, 'error': str(error)}, status=400)
+    except IntegrityError:
+        # La misma operación confirmada a la vez por otro request (índice único de operacion_id)
+        if Cambio.objects.filter(operacion_id=operacion_id, venta_local_id=venta.pk).exists():
+            return JsonResponse(respuesta_repetida)
+        logger.exception('Error al registrar un cambio de la venta presencial %s', venta.pk)
+        return JsonResponse({'success': False, 'error': 'No pudimos registrar el cambio. Probá de nuevo.'}, status=400)
+
+    return JsonResponse({
+        'success': True,
+        'confirmado': True,
+        'mensaje': f'Cambio registrado y stock actualizado. {detalle_diferencia_cambio(diferencia, registrado=True)}',
+    })
 
 
 @admin_required

@@ -38,6 +38,7 @@ urlpatterns = [
     path('registrar-venta-local/',views.registrar_venta_local,name='registrar_venta_local'),
     path('detalle-venta/<int:venta_id>/',views.detalle_venta_local,name='detalle_venta_local'),
     path('venta-local/<int:venta_id>/ticket-cambio/', views.ticket_cambio_venta_local, name='ticket_cambio_venta_local'),
+    path('venta-local/<int:venta_id>/cambio/', views.registrar_cambio_venta_local, name='registrar_cambio_venta_local'),
     path('venta-local/<int:venta_id>/ticket-envio/', views.ticket_envio_venta_local, name='ticket_envio_venta_local'),
     path('registrar-pago/<int:venta_id>/',views.registrar_pago_venta,name='registrar_pago_venta'),
     path('registrar-pago-pedido/<int:pedido_id>/',views.registrar_pago_pedido,name='registrar_pago_pedido'),

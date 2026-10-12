@@ -1,4 +1,5 @@
 from config.textos import capitalizar_texto
+from django.conf import settings
 from django.core.validators import MinValueValidator
 from django.db import models
 from users.models import Cliente
@@ -719,6 +720,22 @@ class Cambio(models.Model):
 
     motivo = models.TextField(blank=True)
     fecha = models.DateTimeField(auto_now_add=True)
+
+    # Importes del cambio (los guardan los cambios de ventas presenciales; vacíos en los anteriores):
+    # precio unitario de lo devuelto (lo pagado) y de lo entregado (vigente al cambiar), y la
+    # diferencia total (positiva: a cobrar; negativa: nota de crédito a favor del cliente)
+    precio_devuelto = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    precio_entregado = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    diferencia = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    registrado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='cambios_registrados',
+    )
+    # Identifica el envío del formulario: un doble clic o un reenvío no registra el cambio dos veces
+    operacion_id = models.CharField(max_length=40, null=True, blank=True, unique=True)
 
     class Meta:
         verbose_name = 'Cambio'

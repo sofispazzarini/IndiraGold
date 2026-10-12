@@ -3216,7 +3216,16 @@ async function abrirDetalleVenta(ventaId){
                         <i class="bi bi-truck me-1"></i>
                         Imprimir ticket de envío
                     </a>` : ''}
+                    <button type="button" class="btn btn-sm btn-outline-dark rounded-pill" onclick="abrirFormularioCambio(${Number(ventaId)})">
+                        <i class="bi bi-arrow-left-right me-1"></i>
+                        Registrar cambio
+                    </button>
                 </div>
+                <small class="text-muted d-block mb-3" style="margin-top:-1rem;">
+                    Imprimir el ticket de cambio no registra el cambio: para mover el stock usá "Registrar cambio".
+                </small>
+
+                <div id="cambio-venta" class="mb-4 d-none"></div>
 
             `
 
@@ -3293,6 +3302,39 @@ async function abrirDetalleVenta(ventaId){
             })
 
             html += `</div>`
+
+            // Historial de cambios registrados y notas de crédito de la venta
+            if((data.cambios || []).length){
+                html += `<div class="mb-4"><div class="fw-bold mb-2">Cambios registrados</div>`
+                data.cambios.forEach(c => {
+                    const diferencia = c.diferencia === null ? '' : (
+                        c.diferencia > 0 ? `A cobrar: ${formatoPesos(c.diferencia)}` :
+                        c.diferencia < 0 ? `Nota de crédito: ${formatoPesos(-c.diferencia)}` : 'Sin diferencia'
+                    )
+                    html += `
+                        <div class="rounded-4 p-3 mb-2" style="background:#faf7f2;">
+                            <small class="text-muted">${escHtml(c.fecha)}${c.usuario ? ` · ${escHtml(c.usuario)}` : ''}</small>
+                            <div class="small"><i class="bi bi-arrow-return-left me-1"></i>Devuelve ${escHtml(c.cantidad_devuelta)} × ${escHtml(c.devuelto)}</div>
+                            <div class="small"><i class="bi bi-arrow-right me-1"></i>Se lleva ${escHtml(c.cantidad_entregada)} × ${escHtml(c.entregado)}</div>
+                            ${diferencia ? `<div class="small fw-bold">${escHtml(diferencia)}</div>` : ''}
+                            ${c.motivo ? `<small class="text-muted fst-italic">${escHtml(c.motivo)}</small>` : ''}
+                        </div>
+                    `
+                })
+                html += `</div>`
+            }
+            if((data.notas_credito || []).length){
+                html += `<div class="mb-4"><div class="fw-bold mb-2">Notas de crédito</div>`
+                data.notas_credito.forEach(nc => {
+                    html += `
+                        <div class="d-flex justify-content-between small mb-1">
+                            <span>${escHtml(nc.fecha)} · ${escHtml(nc.estado)}</span>
+                            <span class="fw-bold">${formatoPesos(nc.monto)}</span>
+                        </div>
+                    `
+                })
+                html += `</div>`
+            }
 
             html += `
 
@@ -3379,8 +3421,10 @@ async function abrirDetalleVenta(ventaId){
             document.getElementById(
                 'contenido-detalle-venta'
             ).innerHTML = html
+            window.detalleVentaActual = data
 
-            const modal = new bootstrap.Modal(
+            // getOrCreateInstance: al volver a cargar el detalle (después de un cambio) no se abre otro modal encima
+            const modal = bootstrap.Modal.getOrCreateInstance(
 
                 document.getElementById(
                     'modalDetalleVenta'
@@ -3391,6 +3435,211 @@ async function abrirDetalleVenta(ventaId){
             modal.show()
 
         }
+}
+
+// ---- Cambio de productos de la venta (registra el cambio y mueve el stock) ----
+// El navegador solo elige qué se devuelve y qué se lleva: precios, diferencia y stock los valida
+// y calcula el servidor. La confirmación repite exactamente lo que se revisó.
+let cambioVentaRevisado = null
+
+function cambioVentaUrl(){
+    return (window.detalleVentaActual || {}).cambio_url
+}
+
+function mostrarErrorCambio(mensaje){
+    const caja = document.getElementById('cambio-error')
+    if(!caja) return
+    caja.textContent = mensaje || ''
+    caja.classList.toggle('d-none', !mensaje)
+}
+
+function bloquearFormularioCambio(bloquear){
+    document.querySelectorAll('#cambio-venta .campo-cambio').forEach(campo => { campo.disabled = bloquear })
+}
+
+async function abrirFormularioCambio(ventaId){
+    const caja = document.getElementById('cambio-venta')
+    const data = window.detalleVentaActual || {}
+    if(!caja || !data.cambio_url) return
+    cambioVentaRevisado = null
+    caja.classList.remove('d-none')
+    caja.innerHTML = `
+        <div class="rounded-4 p-3" style="background:#faf7f2;">
+            <div class="fw-bold mb-3"><i class="bi bi-arrow-left-right me-1"></i> Registrar cambio</div>
+            <label class="form-label small fw-bold" for="cambio-item">Producto que devuelve el cliente</label>
+            <select id="cambio-item" class="form-select rounded-pill mb-2 campo-cambio"></select>
+            <label class="form-label small fw-bold" for="cambio-cantidad-devuelta">Cantidad que devuelve</label>
+            <input id="cambio-cantidad-devuelta" type="number" min="1" step="1" value="1" class="form-control rounded-pill mb-3 campo-cambio">
+            <label class="form-label small fw-bold" for="cambio-variante">Producto que se lleva (talle y color con stock)</label>
+            <select id="cambio-variante" class="form-select rounded-pill mb-2 campo-cambio"></select>
+            <label class="form-label small fw-bold" for="cambio-cantidad-entregada">Cantidad que se lleva</label>
+            <input id="cambio-cantidad-entregada" type="number" min="1" step="1" value="1" class="form-control rounded-pill mb-3 campo-cambio">
+            <label class="form-label small fw-bold" for="cambio-motivo">Motivo (opcional)</label>
+            <textarea id="cambio-motivo" class="form-control mb-3 campo-cambio" rows="2" maxlength="500" style="border-radius:14px;"></textarea>
+            <div id="cambio-error" class="alert alert-danger d-none rounded-4 py-2 small"></div>
+            <div id="cambio-resumen"></div>
+            <div class="d-flex flex-wrap gap-2 justify-content-end" id="cambio-acciones"></div>
+        </div>
+    `
+
+    // Productos de esta venta: solo los que todavía tienen unidades para cambiar
+    const selectItem = document.getElementById('cambio-item')
+    const vacia = document.createElement('option')
+    vacia.value = ''
+    vacia.textContent = 'Seleccionar...'
+    selectItem.appendChild(vacia)
+    ;(data.productos || []).forEach(p => {
+        const opcion = document.createElement('option')
+        opcion.value = p.id
+        opcion.textContent = `${p.producto} · Talle ${p.talle}${p.color_nombre ? ` · ${p.color_nombre}` : ''} · ${formatoPesos(p.precio_unitario)} (${p.cambiables} para cambiar)`
+        opcion.disabled = !(p.cambiables > 0)
+        selectItem.appendChild(opcion)
+    })
+
+    mostrarAccionesCambio('editar', ventaId)
+
+    const selectVariante = document.getElementById('cambio-variante')
+    selectVariante.innerHTML = '<option value="">Cargando productos con stock...</option>'
+    try{
+        const response = await fetch(data.cambio_url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+        const resultado = await response.json()
+        if(!response.ok || !resultado.success) throw new Error(resultado.error || '')
+        selectVariante.textContent = ''
+        const primera = document.createElement('option')
+        primera.value = ''
+        primera.textContent = resultado.variantes.length ? 'Seleccionar...' : 'No hay productos con stock'
+        selectVariante.appendChild(primera)
+        resultado.variantes.forEach(v => {
+            const opcion = document.createElement('option')
+            opcion.value = v.valor
+            opcion.textContent = v.etiqueta
+            selectVariante.appendChild(opcion)
+        })
+    }catch(error){
+        selectVariante.innerHTML = '<option value="">No se pudieron cargar los productos</option>'
+        mostrarErrorCambio('No pudimos cargar los productos con stock. Cerrá y volvé a abrir el detalle.')
+    }
+}
+
+function mostrarAccionesCambio(paso, ventaId){
+    const acciones = document.getElementById('cambio-acciones')
+    if(!acciones) return
+    if(paso === 'editar'){
+        acciones.innerHTML = `
+            <button type="button" class="btn btn-soft" onclick="cerrarFormularioCambio()">Cancelar</button>
+            <button type="button" class="btn btn-gold" id="btn-revisar-cambio" onclick="revisarCambioVenta(${Number(ventaId)})">Revisar cambio</button>
+        `
+    }else{
+        acciones.innerHTML = `
+            <button type="button" class="btn btn-soft" onclick="volverAEditarCambio(${Number(ventaId)})">Volver</button>
+            <button type="button" class="btn btn-gold" id="btn-confirmar-cambio" onclick="confirmarCambioVenta(${Number(ventaId)})">Confirmar cambio</button>
+        `
+    }
+}
+
+function cerrarFormularioCambio(){
+    cambioVentaRevisado = null
+    const caja = document.getElementById('cambio-venta')
+    if(caja){
+        caja.innerHTML = ''
+        caja.classList.add('d-none')
+    }
+}
+
+function volverAEditarCambio(ventaId){
+    cambioVentaRevisado = null
+    document.getElementById('cambio-resumen').innerHTML = ''
+    mostrarErrorCambio('')
+    bloquearFormularioCambio(false)
+    mostrarAccionesCambio('editar', ventaId)
+}
+
+async function enviarCambioVenta(datos){
+    let response
+    try{
+        response = await fetch(cambioVentaUrl(), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+            body: JSON.stringify(datos),
+        })
+        return await response.json()
+    }catch(error){
+        return { success: false, error: 'No pudimos comunicarnos con el servidor. Probá de nuevo.' }
+    }
+}
+
+async function revisarCambioVenta(ventaId){
+    mostrarErrorCambio('')
+    const datos = {
+        item_id: document.getElementById('cambio-item').value,
+        cantidad_devuelta: document.getElementById('cambio-cantidad-devuelta').value,
+        variante_entregada: document.getElementById('cambio-variante').value,
+        cantidad_entregada: document.getElementById('cambio-cantidad-entregada').value,
+        motivo: document.getElementById('cambio-motivo').value,
+    }
+    if(!datos.item_id || !datos.variante_entregada){
+        mostrarErrorCambio('Elegí el producto que devuelve y el que se lleva.')
+        return
+    }
+    const boton = document.getElementById('btn-revisar-cambio')
+    if(boton){ boton.disabled = true; boton.innerText = 'Revisando...' }
+    const resultado = await enviarCambioVenta(datos)
+    if(!resultado.success){
+        if(boton){ boton.disabled = false; boton.innerText = 'Revisar cambio' }
+        mostrarErrorCambio(resultado.error || 'No se pudo revisar el cambio.')
+        return
+    }
+
+    cambioVentaRevisado = { ...datos, operacion_id: resultado.operacion_id }
+    const r = resultado.resumen
+    const diferencia = Number(r.diferencia)
+    document.getElementById('cambio-resumen').innerHTML = `
+        <div class="rounded-4 p-3 mb-3 bg-white border">
+            <div class="fw-bold mb-2">Resumen del cambio</div>
+            <div class="d-flex justify-content-between small gap-2">
+                <span><i class="bi bi-arrow-return-left me-1"></i>Devuelve ${escHtml(r.devuelto.cantidad)} × ${escHtml(r.devuelto.descripcion)} (${formatoPesos(r.devuelto.precio_unitario)} c/u)</span>
+                <span class="fw-bold text-nowrap">${formatoPesos(r.devuelto.subtotal)}</span>
+            </div>
+            <div class="d-flex justify-content-between small gap-2">
+                <span><i class="bi bi-arrow-right me-1"></i>Se lleva ${escHtml(r.entregado.cantidad)} × ${escHtml(r.entregado.descripcion)} (${formatoPesos(r.entregado.precio_unitario)} c/u)</span>
+                <span class="fw-bold text-nowrap">${formatoPesos(r.entregado.subtotal)}</span>
+            </div>
+            <hr class="my-2">
+            <div class="d-flex justify-content-between">
+                <span class="fw-bold">Diferencia</span>
+                <span class="fw-bold ${diferencia > 0 ? 'text-danger' : (diferencia < 0 ? 'text-success' : '')}">${formatoPesos(Math.abs(diferencia))}</span>
+            </div>
+            <small class="text-muted">${escHtml(r.detalle)}</small>
+        </div>
+    `
+    bloquearFormularioCambio(true)
+    mostrarAccionesCambio('confirmar', ventaId)
+}
+
+async function confirmarCambioVenta(ventaId){
+    if(!cambioVentaRevisado) return
+    const boton = document.getElementById('btn-confirmar-cambio')
+    if(boton){
+        if(boton.disabled) return
+        boton.disabled = true
+        boton.innerText = 'Guardando...'
+    }
+    const resultado = await enviarCambioVenta({ ...cambioVentaRevisado, confirmar: true })
+    if(!resultado.success){
+        // Error de stock o validación: no se guardó nada; se puede corregir y volver a revisar
+        volverAEditarCambio(ventaId)
+        mostrarErrorCambio(resultado.error || 'No se pudo registrar el cambio.')
+        return
+    }
+
+    cambioVentaRevisado = null
+    window.recargarVentasAlCerrarDetalle = true
+    await abrirDetalleVenta(ventaId)
+    const contenido = document.getElementById('contenido-detalle-venta')
+    const aviso = document.createElement('div')
+    aviso.className = 'alert alert-success rounded-4 border-0 mb-3'
+    aviso.textContent = resultado.mensaje
+    contenido.prepend(aviso)
 }
 
 document.querySelectorAll(
