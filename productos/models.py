@@ -1,5 +1,9 @@
 import uuid
 import io
+from urllib.parse import urlencode, urlparse
+
+from django.conf import settings
+from django.urls import reverse
 from django.db import models
 from django.core.validators import MinValueValidator
 from decimal import Decimal
@@ -196,10 +200,33 @@ class Variante(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     qr_code = models.CharField(
         max_length=100,
-        unique=True
+        unique=True,
+        blank=True
     )
     class Meta:
         unique_together = ('producto', 'talle')
+
+    def save(self, *args, **kwargs):
+        creando = self.pk is None
+        qr_original = self.qr_code
+
+        if creando and not self.qr_code:
+            self.qr_code = f'__TMP_{uuid.uuid4().hex[:12].upper()}'
+
+        if not creando and not self.qr_code:
+            codigo_existente = type(self).objects.filter(pk=self.pk).values_list('qr_code', flat=True).first()
+            if codigo_existente:
+                self.qr_code = codigo_existente
+
+        if not self.qr_code:
+            self.qr_code = str(uuid.uuid4())
+        super().save(*args, **kwargs)
+
+        if creando and not qr_original:
+            qr_final = f'VAR-{self.pk:04d}'
+            if self.qr_code != qr_final:
+                self.qr_code = qr_final
+                super().save(update_fields=['qr_code'])
 
     def __str__(self):
         return f"{self.producto.nombre} - {self.talle}"
@@ -255,11 +282,18 @@ class VarianteColor(models.Model):
             self.qr_code = str(uuid.uuid4())
         super().save(*args, **kwargs)
 
+    def obtener_url_publica(self):
+        site_url = (getattr(settings, 'SITE_URL', '') or '').strip().rstrip('/')
+        hostname = urlparse(site_url).hostname if site_url else ''
+        if not site_url or hostname in ('localhost', '127.0.0.1'):
+            site_url = 'https://www.indiragold.com.ar'
+        return f"{site_url}{reverse('productos:detalle_producto', args=[self.variante.producto_id])}?{urlencode({'qr': self.qr_code})}"
+
     def generar_qr_image(self):
         """Genera imagen QR con información del producto."""
         import qrcode
 
-        data = f"IG-{self.variante.producto.codigo}-{self.variante.talle.nombre}-{self.color.nombre}-{self.qr_code[:8]}"
+        data = self.obtener_url_publica()
 
         qr = qrcode.QRCode(version=1, box_size=10, border=4)
         qr.add_data(data)

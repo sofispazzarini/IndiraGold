@@ -1188,6 +1188,8 @@
 let varianteSeleccionada = null;
 let colorSeleccionado = '';
 const productoNombre = '{{ producto.nombre|escapejs }}';
+const variantePreseleccionadaId = '{{ variante_preseleccionada_id|default:""|escapejs }}';
+const colorPreseleccionado = '{{ color_preseleccionado|default:""|escapejs }}';
 const variantesData = JSON.parse(document.getElementById('variantes-data').textContent || '[]');
 
 function datosTalle(varianteId) {
@@ -1267,7 +1269,10 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    const primerTalle = document.querySelector('.talle-btn:not([disabled])') || document.querySelector('.talle-btn');
+    const selectorInicial = variantePreseleccionadaId
+        ? `.talle-btn[data-variante-id="${variantePreseleccionadaId}"]:not([disabled])`
+        : '.talle-btn:not([disabled])';
+    const primerTalle = document.querySelector(selectorInicial) || document.querySelector('.talle-btn');
     if (primerTalle) {
         document.querySelectorAll('.talle-btn').forEach(el => el.classList.remove('seleccionado'));
         primerTalle.classList.add('seleccionado');
@@ -1375,6 +1380,15 @@ function renderizarColores(varianteId) {
             colorSeleccionado = color.nombre;
         }
     });
+
+    if (String(varianteId) === String(variantePreseleccionadaId) && colorPreseleccionado) {
+        const colorPreseleccionadoBtn = Array.from(grid.querySelectorAll('.color-btn')).find(btn => btn.dataset.colorNombre === colorPreseleccionado && !btn.disabled);
+        if (colorPreseleccionadoBtn) {
+            grid.querySelectorAll('.color-btn').forEach(btn => btn.classList.remove('seleccionado'));
+            colorPreseleccionadoBtn.classList.add('seleccionado');
+            colorSeleccionado = colorPreseleccionadoBtn.dataset.colorNombre || colorPreseleccionado;
+        }
+    }
 }
 
 async function abrirTablamedidas() {

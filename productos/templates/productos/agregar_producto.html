@@ -87,7 +87,7 @@
                         <div class="char-counter"><span class="char-count">0</span>/150</div>
                     </div>
                     <div class="col-3 border-end border-dark p-2">
-                        <label class="d-block small fw-bold text-muted">ARTÍCULO <span class="char-limit">máx. 50</span></label>
+                        <label class="d-block small fw-bold text-muted">ARTÍCULO / CÓDIGO DEL PRODUCTO <span class="char-limit">máx. 50</span></label>
                         <input type="text" name="codigo" class="form-control border-0 bg-transparent p-0 char-input" data-max="50" maxlength="50" required value="{{ form.codigo.value|default_if_none:'' }}">
                         <div class="char-counter"><span class="char-count">0</span>/50</div>
                     </div>
@@ -536,11 +536,11 @@
                     return;
                 }
                 if (tempColores.length === 0) {
-                    alert('Agregá al menos un color con stock.');
+                    alert('Sumá al menos un color con stock para continuar.');
                     return;
                 }
                 if (Number.isNaN(stock) || stock <= 0) {
-                    alert('El stock total debe ser mayor a 0. Agregá colores con stock.');
+                    alert('El stock total debe ser mayor a 0. Revisá los colores y volvé a intentarlo.');
                     return;
                 }
                 variantes.push({ talle, colores: [...tempColores], medidas: [...tempMedidas], stock, precio: 0 });

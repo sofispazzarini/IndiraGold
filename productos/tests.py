@@ -1,4 +1,6 @@
-from django.test import TestCase
+from django.contrib.auth.models import User
+from django.test import TestCase, override_settings
+from django.urls import reverse
 
 from productos.models import (
     Categoria,
@@ -130,7 +132,6 @@ class VarianteColorQRRegenerationTests(TestCase):
         variante.medidas.set([
             Medida.objects.create(alto='10', ancho='20', largo='30', tiro='40')
         ])
-
         sincronizar_qrs_variante_color(variante)
         qr_anterior = VarianteColor.objects.get(variante=variante, color=color_rojo).qr_code
 
@@ -186,3 +187,96 @@ class VarianteColorQRRegenerationTests(TestCase):
     def test_cambio_de_codigo_de_producto_si_debe_regenerar_qr(self):
         self.assertTrue(producto_debe_regenerar_qr('ABC-1', 'ABC-2'))
         self.assertFalse(producto_debe_regenerar_qr('ABC-1', 'ABC-1'))
+
+
+class VarianteColorURLPublicaTests(TestCase):
+    def setUp(self):
+        categoria = Categoria.objects.create(nombre='Ropa', activa=True)
+        subcategoria = Subcategoria.objects.create(nombre='Prendas', categoria=categoria, activa=True)
+        proveedor = Proveedor.objects.create(nombre='Proveedor Test', telefono='123456789')
+
+        self.producto = Producto.objects.create(
+            codigo='PRD-0042',
+            nombre='Campera Test',
+            tipo='Campera',
+            tela='Gabardina',
+            descripcion='Desc',
+            precio=350,
+            stock=10,
+            categoria=categoria,
+            subcategoria=subcategoria,
+            proveedor=proveedor,
+        )
+        talle = Talle.objects.create(nombre='S')
+        self.variante = Variante.objects.create(
+            producto=self.producto,
+            talle=talle,
+            stock=5,
+            precio=350,
+            qr_code='',
+        )
+        self.color = Color.objects.create(nombre='Negro', codigo_hex='#000000')
+        self.variante.colores.set([self.color])
+        sincronizar_qrs_variante_color(self.variante)
+        self.variante_color = VarianteColor.objects.get(variante=self.variante, color=self.color)
+
+        self.admin = User.objects.create_superuser(username='admin-test', email='admin@test.com', password='test')
+        self.client.force_login(self.admin)
+
+        self.assertRegex(self.variante.qr_code, r'^VAR-\d{4}$')
+
+    @override_settings(SITE_URL='https://www.indiragold.com.ar')
+    def test_obtener_url_publica_usa_dominio_oficial_y_ruta_real(self):
+        url = self.variante_color.obtener_url_publica()
+        esperado = f"https://www.indiragold.com.ar{reverse('productos:detalle_producto', args=[self.producto.id])}?qr={self.variante_color.qr_code}"
+        self.assertEqual(url, esperado)
+
+    @override_settings(SITE_URL='https://www.indiragold.com.ar')
+    def test_buscar_productos_resuelve_url_publica_a_variante_exacta(self):
+        response = self.client.get(reverse('productos:buscar_productos'), {'q': self.variante_color.obtener_url_publica()})
+        self.assertEqual(response.status_code, 200)
+
+        data = response.json()
+        self.assertEqual(len(data), 1)
+        self.assertEqual(data[0]['id'], self.producto.id)
+        self.assertEqual(data[0]['scanned_variante_id'], self.variante.id)
+        self.assertEqual(data[0]['scanned_color'], self.color.nombre)
+
+    def test_buscar_por_codigo_de_producto_devuelve_el_producto(self):
+        response = self.client.get(reverse('productos:buscar_productos'), {'q': self.producto.codigo})
+        self.assertEqual(response.status_code, 200)
+
+        data = response.json()
+        self.assertEqual(len(data), 1)
+        self.assertEqual(data[0]['id'], self.producto.id)
+        self.assertEqual(data[0]['nombre'], self.producto.nombre)
+        self.assertEqual(data[0]['codigo'], self.producto.codigo)
+        self.assertNotIn('scanned_variante_id', data[0])
+
+    def test_buscar_por_codigo_de_variante_devuelve_la_variante_exacta(self):
+        response = self.client.get(reverse('productos:buscar_productos'), {'q': self.variante.qr_code})
+        self.assertEqual(response.status_code, 200)
+
+        data = response.json()
+        self.assertEqual(len(data), 1)
+        self.assertEqual(data[0]['id'], self.producto.id)
+        self.assertEqual(data[0]['scanned_variante_id'], self.variante.id)
+        self.assertEqual(data[0]['scanned_color'], '')
+
+    @override_settings(SITE_URL='https://www.indiragold.com.ar')
+    def test_detalle_producto_preselecciona_la_variante_del_qr(self):
+        response = self.client.get(
+            reverse('productos:detalle_producto', args=[self.producto.id]),
+            {'qr': self.variante_color.qr_code},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, f"const variantePreseleccionadaId = '{self.variante.id}';")
+        self.assertContains(response, f"const colorPreseleccionado = '{self.color.nombre}';")
+
+    def test_buscar_productos_rechaza_url_desconocida(self):
+        response = self.client.get(
+            reverse('productos:buscar_productos'),
+            {'q': 'https://www.indiragold.com.ar/productos/producto/999/?qr=desconocido'},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), [])

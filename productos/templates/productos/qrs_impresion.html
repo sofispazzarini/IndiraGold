@@ -270,6 +270,15 @@
     display: inline-block;
     margin-bottom: 0.4rem;
 }
+.qr-variant-code {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.6rem;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    margin-top: 0.15rem;
+    margin-bottom: 0.25rem;
+}
 .qr-card.selected .qr-code-label {
     background: #fff;
 }
@@ -369,6 +378,7 @@
             <input type="checkbox" class="qr-checkbox no-print" onclick="event.stopPropagation(); toggleCard(this.parentElement);">
             <img src="{% url 'productos:variante_color_qr' vc.id %}" alt="QR {{ vc }}">
             <div class="qr-code-label">{{ producto.codigo }}</div>
+            <div class="qr-variant-code">{{ vc.variante.qr_code }}</div>
             <div class="qr-talle">{{ vc.variante.talle.nombre }}</div>
             <div class="qr-color d-flex align-items-center justify-content-center">
                 <span title="{{ vc.color.nombre }}" style="display:inline-block; width:14px; height:14px; border-radius:50%; background-color:{{ vc.color.nombre|hex_color:vc.color.codigo_hex }}; border:1px solid #d8d0c5; margin-right:4px;"></span>{{ vc.color.nombre }}

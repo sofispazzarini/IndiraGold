@@ -1,6 +1,7 @@
 import json
 import re
 import unicodedata
+from urllib.parse import parse_qs, urlparse
 import uuid
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.views.decorators.http import require_POST, require_http_methods
@@ -145,6 +146,65 @@ def sincronizar_qrs_variante_color(variante, regenerar_qr=False):
 
     return VarianteColor.objects.filter(variante=variante, activo=True).select_related('color')
 
+
+def extraer_token_qr(valor):
+    texto = (valor or '').strip()
+    if not texto:
+        return None, False
+
+    parsed = urlparse(texto)
+    if parsed.scheme and parsed.netloc:
+        query = parse_qs(parsed.query)
+        for key in ('qr', 'vc', 'variante_qr'):
+            for token in query.get(key, []):
+                token = token.strip()
+                if token:
+                    return token, True
+        ultimo_tramo = parsed.path.rstrip('/').rsplit('/', 1)[-1].strip()
+        if ultimo_tramo:
+            return ultimo_tramo, True
+        return None, True
+
+    if texto.upper().startswith('IG-'):
+        match = re.search(r'-([0-9a-fA-F]{8})$', texto)
+        return (match.group(1).lower(), True) if match else (None, True)
+
+    if texto.upper().startswith('VAR-'):
+        return texto, True
+
+    if re.fullmatch(r'[0-9a-fA-F-]{8,36}', texto):
+        return texto.lower(), True
+
+    return None, False
+
+
+def resolver_variante_color_por_qr(valor):
+    token, es_qr = extraer_token_qr(valor)
+    if not token:
+        return None, None, es_qr
+
+    variante_color = VarianteColor.objects.filter(
+        qr_code=token,
+        activo=True,
+        variante__activa=True,
+        variante__producto__activo=True,
+    ).select_related('variante__producto', 'variante__talle', 'color').first()
+
+    if variante_color:
+        return variante_color.variante, variante_color, True
+
+    variante = Variante.objects.filter(
+        qr_code=token,
+        activa=True,
+        stock__gt=0,
+        producto__activo=True,
+    ).select_related('producto', 'talle').first()
+
+    if variante:
+        return variante, None, True
+
+    return None, None, es_qr
+
 def leer_colores_con_stock(request):
     """Lee los colores del form de talle ("nombre|#hex") con su stock ("stock_color", en el
     mismo orden). Si un color se repite, se suman sus stocks."""
@@ -255,6 +315,17 @@ def detalle_producto(request, producto_id):
 
     producto = get_object_or_404(Producto, id=producto_id, activo=True)
     variantes = producto.variantes.filter(activa=True).select_related('talle').prefetch_related('colores', 'medidas', 'variante_colores__color')
+
+    qr_token = (request.GET.get('qr') or request.GET.get('vc') or '').strip()
+    variante_preseleccionada_id = ''
+    color_preseleccionado = ''
+    if qr_token:
+        variante_qr, variante_color_qr, _ = resolver_variante_color_por_qr(qr_token)
+        if variante_color_qr and variante_qr and variante_qr.producto_id != producto.id:
+            return redirect(f"{reverse('productos:detalle_producto', args=[variante_qr.producto_id])}?qr={variante_color_qr.qr_code}")
+        if variante_color_qr and variante_qr and variante_qr.producto_id == producto.id:
+            variante_preseleccionada_id = str(variante_qr.id)
+            color_preseleccionado = variante_color_qr.color.nombre
 
     # Si no hay variantes activas, mostrar que ha sido descontinuado
     if not variantes.exists():
@@ -453,6 +524,8 @@ def detalle_producto(request, producto_id):
         'producto': producto,
         'variantes': variantes,
         'variantes_data': variantes_data,
+        'variante_preseleccionada_id': variante_preseleccionada_id,
+        'color_preseleccionado': color_preseleccionado,
         'productos_relacionados': productos_relacionados,
         'talles_disponibles': [v.talle for v in variantes],
         'producto_anterior': producto_anterior,
@@ -554,7 +627,6 @@ def agregar_producto(request, subcat_id):
                             talle=talle_obj,
                             stock=stock_variante,
                             precio=float(v.get('precio', 0)),
-                            qr_code=str(uuid.uuid4())
                         )
                     
                         # 3. VINCULAR COLORES (Importante: es ManyToMany)
@@ -1285,7 +1357,6 @@ def agregar_variante(request, producto_id):
             talle=talle_obj,
             stock=stock_variante,
             precio=producto.precio or 0,
-            qr_code=str(uuid.uuid4())
         )
 
         # Cada color se guarda con su propio stock; el del talle es la suma
@@ -1387,39 +1458,30 @@ def buscar_productos(request):
     data = []
 
     if q:
-        variante_color = None
-        variante = Variante.objects.filter(
-            qr_code=q,
-            activa=True,
-            stock__gt=0,
-            producto__activo=True
-        ).select_related('producto', 'talle').first()
+        producto_exacto = Producto.objects.filter(
+            codigo__iexact=q,
+            activo=True,
+        ).annotate(
+            stock_disponible=Sum(
+                'variantes__stock',
+                filter=Q(variantes__activa=True)
+            )
+        ).filter(
+            stock_disponible__gt=0
+        ).distinct().first()
 
-        if not variante:
-            # Etiqueta QR: IG-<codigo>-<talle>-<color>-<primeros 8 caracteres del qr_code>.
-            # Solo se busca por QR si la lectura está completa; un fragmento vacío o parcial
-            # (mientras el lector todavía está "tipeando") coincidía con cualquier color.
-            if q.upper().startswith('IG-'):
-                match = re.search(r'-([0-9a-fA-F]{8})$', q)
-                qr_fragment = match.group(1).lower() if match else None
-            elif re.fullmatch(r'[0-9a-fA-F-]{8,36}', q):
-                qr_fragment = q.lower()
-            else:
-                qr_fragment = None
+        if producto_exacto:
+            return JsonResponse([{
+                'id': producto_exacto.id,
+                'nombre': producto_exacto.nombre,
+                'codigo': producto_exacto.codigo,
+            }], safe=False)
 
-            if qr_fragment:
-                variante_color = VarianteColor.objects.filter(
-                    qr_code__startswith=qr_fragment,
-                    activo=True,
-                    variante__activa=True,
-                    variante__stock__gt=0,
-                    variante__producto__activo=True
-                ).select_related('variante__producto', 'variante__talle', 'color').first()
-            if variante_color:
-                variante = variante_color.variante
-            elif q.upper().startswith('IG-'):
-                # Lectura de QR incompleta o sin stock: no mezclar con la búsqueda por nombre
-                return JsonResponse([], safe=False)
+        variante, variante_color, es_qr = resolver_variante_color_por_qr(q)
+
+        if not variante and es_qr:
+            # Si el contenido parece un QR o una URL, no lo mezclamos con la búsqueda por nombre.
+            return JsonResponse([], safe=False)
 
         if variante:
             producto = variante.producto

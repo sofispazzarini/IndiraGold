@@ -1994,35 +1994,131 @@ document.getElementById('formNuevoClienteVenta').addEventListener('submit', asyn
     }
 })
 
-document.getElementById('formNuevaDireccionVenta').addEventListener('submit', async function(e){
-    e.preventDefault()
-    const errorBox = document.getElementById('nuevaDireccionError')
-    errorBox.classList.add('d-none')
-    errorBox.innerText = ''
+document.getElementById('formNuevaDireccionVenta').addEventListener('submit', async function(e) {
+    e.preventDefault();
 
-    try{
+    const form = this;
+    // Búsqueda defensiva del contenedor de error
+    let errorBox = document.getElementById('nuevaDireccionError');
+    const botonGuardar = form.querySelector('button[type="submit"]');
+
+    if (errorBox) {
+        // Limpiar errores anteriores de forma segura
+        errorBox.classList.add('d-none');
+        errorBox.textContent = '';
+    }
+
+    form.querySelectorAll('.is-invalid').forEach(campo => {
+        campo.classList.remove('is-invalid');
+        campo.removeAttribute('aria-invalid');
+    });
+
+    // Validación HTML de campos obligatorios y formatos.
+    if (!form.checkValidity()) {
+        form.reportValidity();
+        return;
+    }
+
+    const botonTextoOriginal = botonGuardar.innerHTML;
+
+    botonGuardar.disabled = true;
+    botonGuardar.innerHTML =
+        '<span class="spinner-border spinner-border-sm me-2" role="status"></span>Guardando...';
+
+    function mostrarError(mensaje) {
+        let currentErrorBox = document.getElementById('nuevaDireccionError');
+        if (!currentErrorBox) {
+            // Creación dinámica defensiva si el elemento no existiera en el DOM
+            currentErrorBox = document.createElement('div');
+            currentErrorBox.id = 'nuevaDireccionError';
+            currentErrorBox.className = 'alert alert-danger small rounded-3 mb-3';
+            const modalBody = form.querySelector('.modal-body');
+            if (modalBody) modalBody.insertBefore(currentErrorBox, modalBody.firstChild);
+        }
+        currentErrorBox.textContent = mensaje;
+        currentErrorBox.classList.remove('d-none');
+        currentErrorBox.setAttribute('role', 'alert');
+        currentErrorBox.scrollIntoView({
+            behavior: 'smooth',
+            block: 'nearest'
+        });
+    }
+
+    try {
         const response = await fetch('/users/ajax/crear-direccion/', {
             method: 'POST',
             headers: {
-                'X-CSRFToken': getCookie('csrftoken')
+                'X-CSRFToken': getCookie('csrftoken'),
+                'X-Requested-With': 'XMLHttpRequest'
             },
-            body: new FormData(this)
-        })
-        const data = await response.json()
-        if(!response.ok || !data.success){
-            throw new Error(data.error || 'No se pudo crear la dirección')
+            body: new FormData(form)
+        });
+
+        const textoRespuesta = await response.text();
+        let data;
+
+        try {
+            data = JSON.parse(textoRespuesta);
+        } catch {
+            if (response.status === 403) {
+                throw new Error(
+                    'No tenés permiso para realizar esta operación. ' +
+                    'Verificá tu sesión e intentá nuevamente.'
+                );
+            }
+
+            if (response.status >= 500) {
+                throw new Error(
+                    'Ocurrió un error en el servidor al guardar la dirección. ' +
+                    'Intentá nuevamente.'
+                );
+            }
+
+            throw new Error(
+                'No se pudo procesar la respuesta. Revisá los datos ' +
+                'e intentá nuevamente.'
+            );
         }
 
-        await cargarDireccionesCliente(window.clienteSeleccionado)
-        direccionEnvioSelect.value = data.direccion.id
-        direccionEnvioSelect.dispatchEvent(new Event('change'))
-        this.reset()
-        bootstrap.Modal.getInstance(document.getElementById('modalNuevaDireccionVenta')).hide()
-    }catch(error){
-        errorBox.innerText = error.message
-        errorBox.classList.remove('d-none')
+        if (!response.ok || !data.success) {
+            throw new Error(
+                data.error ||
+                'No se pudo guardar la dirección. Revisá los datos ingresados.'
+            );
+        }
+
+        if (!data.direccion || !data.direccion.id) {
+            throw new Error(
+                'La dirección se guardó, pero no se pudo actualizar el formulario. ' +
+                'Volvé a consultar las direcciones de la clienta.'
+            );
+        }
+
+        await cargarDireccionesCliente(window.clienteSeleccionado);
+
+        direccionEnvioSelect.value = String(data.direccion.id);
+        direccionEnvioSelect.dispatchEvent(new Event('change'));
+
+        form.reset();
+
+        bootstrap.Modal.getOrCreateInstance(
+            document.getElementById('modalNuevaDireccionVenta')
+        ).hide();
+
+    } catch (error) {
+        console.error('Error al guardar la dirección:', error);
+
+        mostrarError(
+            error.message ||
+            'No se pudo guardar la dirección. Revisá los datos e intentá nuevamente.'
+        );
+
+    } finally {
+        botonGuardar.disabled = false;
+        botonGuardar.innerHTML = botonTextoOriginal;
     }
-})
+});
+
 let registrandoVenta = false
 
 document.getElementById(
@@ -2230,6 +2326,7 @@ function getCookie(name){
 <script>
     
 let productosVenta = []
+let escaneoPendienteDeConfirmacion = false
 
 function obtenerStockSeleccionado(){
 
@@ -2350,10 +2447,10 @@ btnCancelarScanner.addEventListener(
     cancelarModoScanner
 )
 
-// Los QR de las etiquetas tienen el formato IG-<codigo>-<talle>-<color>-<8 hex>.
+// Los QR de las etiquetas pueden venir como URL pública o como el formato legacy IG-<codigo>-<talle>-<color>-<8 hex>.
 // El lector los "tipea" muy rápido: no se busca en cada tecla sino al terminar la lectura
 // (Enter o una pausa corta), y se ignoran respuestas viejas que llegan desordenadas.
-const ES_QR = /^IG-/i
+const ES_QR = /^(IG-|VAR-|https?:\/\/)/i
 let busquedaSeq = 0
 let busquedaTimer = null
 
@@ -2379,9 +2476,9 @@ async function buscarProductos(q){
         btnEscanearQr.style.display = 'inline-block'
         btnCancelarScanner.style.display = 'none'
         modoScannerActivo = false
-        scannerStatus.innerText = 'Producto leído y agregado.'
-        scannerStatus.classList.remove('text-muted')
-        scannerStatus.classList.add('text-success')
+        scannerStatus.innerText = 'Producto leído. Completá talle y color para agregarlo.'
+        scannerStatus.classList.remove('text-success')
+        scannerStatus.classList.add('text-muted')
         return
     }
 
@@ -2571,6 +2668,7 @@ document.addEventListener(
 )
 
 async function seleccionarProducto(producto){
+    escaneoPendienteDeConfirmacion = false
     inputProducto.value = producto.nombre
 
     const responseVariantes = await fetch(
@@ -2608,6 +2706,7 @@ async function seleccionarProducto(producto){
     )
 
     if(producto.scanned_variante_id && producto.scanned_color){
+        escaneoPendienteDeConfirmacion = true
         talleSelect.value = producto.scanned_variante_id
         talleSelect.dispatchEvent(new Event('change'))
 
@@ -2802,6 +2901,14 @@ document.getElementById(
             variante_id: variante.id
 
         })
+
+        if(escaneoPendienteDeConfirmacion){
+            scannerStatus.innerText = 'Producto agregado a la venta.'
+            scannerStatus.classList.remove('text-muted')
+            scannerStatus.classList.add('text-success')
+            escaneoPendienteDeConfirmacion = false
+        }
+
         renderProductosVenta()
         inputProducto.value = ''
         document.getElementById(
