@@ -1,7 +1,7 @@
 from config.textos import capitalizar_texto
 from django import forms
 from django.forms import modelformset_factory
-from .models import Gasto, ConfiguracionEnvio, ConfiguracionPago, OpcionEnvioFlex
+from .models import Gasto, ConfiguracionEnvio, ConfiguracionPago, OpcionEnvioFlex, ConfiguracionPaquete
 
 
 class GastoForm(forms.ModelForm):
@@ -129,4 +129,52 @@ OpcionEnvioFlexFormSet = modelformset_factory(
     formset=BaseOpcionEnvioFlexFormSet,
     extra=1,
     can_delete=True,
+)
+
+class ConfiguracionPaqueteForm(forms.ModelForm):
+    class Meta:
+        model = ConfiguracionPaquete
+        fields = [
+            'tamano',
+            'peso_gramos',
+            'alto_cm',
+            'ancho_cm',
+            'largo_cm',
+        ]
+        widgets = {
+            'tamano': forms.TextInput(attrs={
+                'class': 'envio-input',
+                'readonly': 'readonly',
+            }),
+            'peso_gramos': forms.NumberInput(attrs={
+                'class': 'envio-input',
+                'min': '1',
+                'step': '1',
+            }),
+            'alto_cm': forms.NumberInput(attrs={
+                'class': 'envio-input',
+                'min': '1',
+                'step': '1',
+            }),
+            'ancho_cm': forms.NumberInput(attrs={
+                'class': 'envio-input',
+                'min': '1',
+                'step': '1',
+            }),
+            'largo_cm': forms.NumberInput(attrs={
+                'class': 'envio-input',
+                'min': '1',
+                'step': '1',
+            }),
+        }
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['tamano'].disabled = True
+
+
+ConfiguracionPaqueteFormSet = modelformset_factory(
+    ConfiguracionPaquete,
+    form=ConfiguracionPaqueteForm,
+    extra=0,
+    can_delete=False,
 )

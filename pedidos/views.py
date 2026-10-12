@@ -4007,46 +4007,107 @@ def registrar_pago_pedido(request, pedido_id):
     })
 
 
+
 @admin_required
 def configurar_envios(request):
-    from .forms import OpcionEnvioFlexFormSet
-    from .models import OpcionEnvioFlex
+    from .forms import (
+        OpcionEnvioFlexFormSet,
+        ConfiguracionPaqueteFormSet,
+    )
+    from .models import OpcionEnvioFlex, ConfiguracionPaquete
 
     configuracion = ConfiguracionEnvio.actual()
+    paquetes_qs = ConfiguracionPaquete.objects.all().order_by('id')
 
     if request.method == 'POST':
-        form = ConfiguracionEnvioForm(request.POST, instance=configuracion)
-        formset = OpcionEnvioFlexFormSet(request.POST, prefix='flex')
+        form = ConfiguracionEnvioForm(
+            request.POST,
+            instance=configuracion,
+        )
+        formset = OpcionEnvioFlexFormSet(
+            request.POST,
+            prefix='flex',
+        )
+        paquetes_formset = ConfiguracionPaqueteFormSet(
+            request.POST,
+            queryset=paquetes_qs,
+            prefix='paquetes',
+        )
 
-        if form.is_valid() and formset.is_valid():
+        if (
+            form.is_valid()
+            and formset.is_valid()
+            and paquetes_formset.is_valid()
+        ):
             form.save()
             formset.save()
-            messages.success(request, 'Configuración de envíos actualizada correctamente.')
+            paquetes_formset.save()
+
+            messages.success(
+                request,
+                'Configuración de envíos y paquetes actualizada correctamente.',
+            )
             return redirect('pedidos:configurar_envios')
-        else:
-            # Errores legibles: "Nueva opción · Nombre: ..." (antes se veía el HTML del error y un índice interno)
-            for field, errors in form.errors.items():
-                etiqueta = form.fields[field].label if field in form.fields else 'Configuración'
-                messages.error(request, f'{etiqueta}: {errors[0]}')
-            for flex_form in formset.forms:
-                if not flex_form.errors:
-                    continue
-                opcion = flex_form.instance.nombre if flex_form.instance.pk else 'Nueva opción'
-                for field, errors in flex_form.errors.items():
-                    etiqueta = flex_form.fields[field].label if field in flex_form.fields else ''
-                    messages.error(request, f'{opcion} · {etiqueta}: {errors[0]}' if etiqueta else f'{opcion}: {errors[0]}')
-            for error in formset.non_form_errors():
-                messages.error(request, 'Hay dos opciones Flex con el mismo nombre.' if 'duplicada' in error else error)
+
+        for field, errors in form.errors.items():
+            etiqueta = form.fields[field].label if field in form.fields else 'Configuración'
+            messages.error(request, f'{etiqueta}: {errors[0]}')
+
+        for flex_form in formset.forms:
+            if not flex_form.errors:
+                continue
+            opcion = (
+                flex_form.instance.nombre
+                if flex_form.instance.pk
+                else 'Nueva opción'
+            )
+            for field, errors in flex_form.errors.items():
+                etiqueta = flex_form.fields[field].label if field in flex_form.fields else ''
+                messages.error(
+                    request,
+                    f'{opcion} · {etiqueta}: {errors[0]}'
+                    if etiqueta else f'{opcion}: {errors[0]}',
+                )
+
+        for error in formset.non_form_errors():
+            messages.error(
+                request,
+                'Hay dos opciones Flex con el mismo nombre.'
+                if 'duplicada' in error else error,
+            )
+
+        for paquete_form in paquetes_formset.forms:
+            if paquete_form.errors:
+                nombre = paquete_form.instance.get_tamano_display()
+                for field, errors in paquete_form.errors.items():
+                    etiqueta = (
+                        paquete_form.fields[field].label
+                        if field in paquete_form.fields
+                        else field
+                    )
+                    messages.error(
+                        request,
+                        f'Paquete {nombre} · {etiqueta}: {errors[0]}',
+                    )
     else:
         form = ConfiguracionEnvioForm(instance=configuracion)
-        formset = OpcionEnvioFlexFormSet(queryset=OpcionEnvioFlex.objects.all(), prefix='flex')
+        formset = OpcionEnvioFlexFormSet(
+            queryset=OpcionEnvioFlex.objects.all(),
+            prefix='flex',
+        )
+        paquetes_formset = ConfiguracionPaqueteFormSet(
+            queryset=paquetes_qs,
+            prefix='paquetes',
+        )
 
     return render(request, 'pedidos/configurar_envios.html', {
         'form': form,
         'formset': formset,
+        'paquetes_formset': paquetes_formset,
         'configuracion': configuracion,
         'opciones_flex': OpcionEnvioFlex.objects.filter(activo=True),
     })
+
 
 
 def leer_porcentaje(valor):

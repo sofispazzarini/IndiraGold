@@ -310,6 +310,57 @@
   <form method="post">
     {% csrf_token %}
     {{ formset.management_form }}
+    {{ paquetes_formset.management_form }}
+    
+    <div class="card">
+      <h1>Paquetes para Correo Argentino</h1>
+      <p class="desc">
+        Configurá el peso total embalado y las dimensiones de cada tamaño.
+        Las medidas se expresan en centímetros y el peso en gramos.
+      </p>
+
+      {% for paquete_form in paquetes_formset %}
+        {{ paquete_form.id }}
+
+        <div class="opcion-flex-card">
+          <h2>{{ paquete_form.instance.get_tamano_display }}</h2>
+
+          {% if paquete_form.errors %}
+            <div class="form-errors">
+              {% for field in paquete_form %}
+                {% for error in field.errors %}
+                  <p>{{ field.label }}: {{ error }}</p>
+                {% endfor %}
+              {% endfor %}
+            </div>
+          {% endif %}
+
+          <div class="field">
+            <label class="field-label">Peso embalado (gramos)</label>
+            {{ paquete_form.peso_gramos }}
+          </div>
+
+          <div class="row-2">
+            <div class="field">
+              <label class="field-label">Alto (cm)</label>
+              {{ paquete_form.alto_cm }}
+            </div>
+
+            <div class="field">
+              <label class="field-label">Ancho (cm)</label>
+              {{ paquete_form.ancho_cm }}
+            </div>
+          </div>
+
+          <div class="field">
+            <label class="field-label">Largo (cm)</label>
+            {{ paquete_form.largo_cm }}
+          </div>
+        </div>
+      {% empty %}
+        <p>No hay paquetes configurados en la base de datos.</p>
+      {% endfor %}
+    </div>
 
     <div class="card">
       <h1>Opciones de Envío Flex</h1>
