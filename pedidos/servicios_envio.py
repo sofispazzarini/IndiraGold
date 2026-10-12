@@ -54,6 +54,8 @@ def paquetes_configurados():
             'length': configuracion.largo_cm,
         }
         for configuracion in ConfiguracionPaquete.objects.all()
+        # Un valor en 0 (cargado por fuera del admin) cuenta como no configurado: nunca se cotiza con 0
+        if min(configuracion.peso_gramos, configuracion.alto_cm, configuracion.ancho_cm, configuracion.largo_cm) > 0
     }
 
 
@@ -62,8 +64,8 @@ def paquete_de_tamano(paquetes, tamano):
     if tamano not in paquetes:
         nombre = dict(Producto.TAMANOS_PAQUETE).get(tamano, tamano).split(' - ')[0]
         raise ErrorEnvio(
-            f'No se puede cotizar el envío: falta configurar el paquete "{nombre}" '
-            '(Administración > Paquetes de envío).'
+            f'No se puede cotizar el envío: falta configurar el paquete "{nombre}" con peso y medidas '
+            'mayores que 0 (Administración > Paquetes de envío).'
         )
     return paquetes[tamano]
 

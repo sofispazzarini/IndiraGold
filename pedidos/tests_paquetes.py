@@ -7,7 +7,7 @@ from unittest import mock
 
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
-from django.db import IntegrityError, connection, transaction
+from django.db import DataError, IntegrityError, connection, transaction
 from django.db.migrations.executor import MigrationExecutor
 from django.forms.models import model_to_dict
 from django.test import TestCase, TransactionTestCase
@@ -105,10 +105,11 @@ class ConfiguracionPaqueteAdminTests(TestCase):
         chico.refresh_from_db()
         self.assertEqual(chico.peso_gramos, 200)
 
-        # En la base: la restricción tampoco deja guardar un 0, aunque se saltee la validación
+        # En la base, los campos son enteros sin signo: un negativo no se guarda aunque se saltee la
+        # validación (PostgreSQL/SQLite: CHECK >= 0; MySQL en modo estricto: UNSIGNED fuera de rango)
         for campo in CAMPOS_MEDIDAS:
-            with self.assertRaises(IntegrityError), transaction.atomic():
-                ConfiguracionPaquete.objects.filter(tamano='chico').update(**{campo: 0})
+            with self.assertRaises((IntegrityError, DataError)), transaction.atomic():
+                ConfiguracionPaquete.objects.filter(tamano='chico').update(**{campo: -1})
 
     def test_no_se_permiten_dos_configuraciones_del_mismo_tamano(self):
         duplicada = ConfiguracionPaquete(tamano='chico', peso_gramos=100, alto_cm=1, ancho_cm=1, largo_cm=1)
@@ -180,6 +181,13 @@ class CalculoPaqueteTests(CatalogoMixin, TestCase):
         Producto.objects.filter(pk=self.variantes['chico'].producto_id).update(tamano_paquete='otro')
         self.variantes['chico'].producto.refresh_from_db()
         self.assertEqual(calcular_paquete_envio([self.item('chico')])['weight'], 222)
+
+    def test_un_valor_en_cero_cargado_por_fuera_del_admin_cuenta_como_faltante(self):
+        for campo in CAMPOS_MEDIDAS:
+            cargar_medidas()
+            ConfiguracionPaquete.objects.filter(tamano='grande').update(**{campo: 0})
+            with self.assertRaisesMessage(ErrorEnvio, 'falta configurar el paquete "Grande"'):
+                calcular_paquete_envio([self.item('grande')])
 
     def test_si_falta_un_tamano_se_avisa_sin_inventar_valores(self):
         ConfiguracionPaquete.objects.filter(tamano='grande').delete()

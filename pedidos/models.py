@@ -473,7 +473,9 @@ class ConfiguracionEnvio(models.Model):
 class ConfiguracionPaquete(models.Model):
     """Peso y medidas del paquete ya embalado para cada tamaño (chico, mediano, grande). Cada producto
     solo elige su tamaño (Producto.tamano_paquete) y con estos datos se cotiza Correo Argentino.
-    Gramos y centímetros enteros: es lo que espera MiCorreo en "dimensions"."""
+    Gramos y centímetros enteros: es lo que espera MiCorreo en "dimensions".
+    Compatible con PostgreSQL y MySQL: solo campos estándar y un índice único; la regla "mayor que 0"
+    la valida el admin (MinValueValidator) y el cálculo del envío no usa valores en 0."""
     # Clave primaria explícita: no depende de DEFAULT_AUTO_FIELD (que cambia según la versión de
     # Django) y así no genera migraciones de "alter id"
     id = models.AutoField(primary_key=True)
@@ -506,17 +508,6 @@ class ConfiguracionPaquete(models.Model):
         verbose_name = 'Paquete de envío'
         verbose_name_plural = 'Paquetes de envío'
         ordering = ['id']
-        constraints = [
-            models.CheckConstraint(
-                condition=(
-                    models.Q(peso_gramos__gt=0)
-                    & models.Q(alto_cm__gt=0)
-                    & models.Q(ancho_cm__gt=0)
-                    & models.Q(largo_cm__gt=0)
-                ),
-                name='configuracionpaquete_valores_mayores_a_cero',
-            ),
-        ]
 
     def __str__(self):
         return (

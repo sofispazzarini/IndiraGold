@@ -1,5 +1,7 @@
 # Escrita a mano a partir de "makemigrations --dry-run": solo crea ConfiguracionPaquete y carga los tres
 # tamaños. No incluye los "alter id" que makemigrations agrega según la versión de Django.
+# Compatible con PostgreSQL y MySQL: solo CreateModel con campos estándar (clave primaria AutoField
+# explícita, índice único en "tamano") y RunPython con el ORM; sin SQL propio ni CheckConstraint.
 
 import django.core.validators
 from django.db import migrations, models
@@ -46,7 +48,6 @@ class Migration(migrations.Migration):
                 'verbose_name': 'Paquete de envío',
                 'verbose_name_plural': 'Paquetes de envío',
                 'ordering': ['id'],
-                'constraints': [models.CheckConstraint(condition=models.Q(('peso_gramos__gt', 0), ('alto_cm__gt', 0), ('ancho_cm__gt', 0), ('largo_cm__gt', 0)), name='configuracionpaquete_valores_mayores_a_cero')],
             },
         ),
         migrations.RunPython(cargar_paquetes, migrations.RunPython.noop),
