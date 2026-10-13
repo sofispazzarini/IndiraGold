@@ -4,7 +4,7 @@ from urllib.parse import urlencode, urlparse
 
 from django.conf import settings
 from django.urls import reverse
-from django.db import models
+from django.db import models, transaction
 from django.core.validators import MinValueValidator
 from decimal import Decimal
 # Tipos de medida globales (ej: Largo, Ancho, Circunferencia)
@@ -76,6 +76,17 @@ class Producto(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     imagen_tecnica = models.ImageField(upload_to='productos/fichas/', blank=True, null=True)
     tamano_paquete = models.CharField(max_length=20, choices=TAMANOS_PAQUETE, default='mediano')
+
+    def save(self, *args, **kwargs):
+        # Producto nuevo sin código: se le asigna el siguiente ART-XXXX al guardarlo, en la misma
+        # transacción (si el guardado falla, el número no se consume). Después el código no cambia.
+        if self._state.adding and not (self.codigo or '').strip():
+            from .codigos import siguiente_codigo_producto
+            with transaction.atomic():
+                self.codigo = siguiente_codigo_producto()
+                super().save(*args, **kwargs)
+            return
+        super().save(*args, **kwargs)
 
     @property
     def stock_total(self):
@@ -187,6 +198,21 @@ class Color(models.Model):
 
     def __str__(self):
         return self.nombre
+
+
+class SecuenciaCodigoProducto(models.Model):
+    """Último número usado en los códigos automáticos de producto (ART-0001...). Una sola fila; se
+    bloquea al asignar cada código y solo avanza (ver productos/codigos.py). No editar a mano."""
+    id = models.AutoField(primary_key=True)
+    nombre = models.CharField(max_length=30, unique=True)
+    ultimo_numero = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        verbose_name = 'Secuencia de códigos de producto'
+        verbose_name_plural = 'Secuencias de códigos de producto'
+
+    def __str__(self):
+        return f'{self.nombre}: {self.ultimo_numero}'
 
 
 class Variante(models.Model):
