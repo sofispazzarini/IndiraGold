@@ -87,9 +87,8 @@
                         <div class="char-counter"><span class="char-count">0</span>/150</div>
                     </div>
                     <div class="col-3 border-end border-dark p-2">
-                        <label class="d-block small fw-bold text-muted">ARTÍCULO / CÓDIGO DEL PRODUCTO <span class="char-limit">máx. 50</span></label>
-                        <input type="text" name="codigo" class="form-control border-0 bg-transparent p-0 char-input" data-max="50" maxlength="50" required value="{{ form.codigo.value|default_if_none:'' }}">
-                        <div class="char-counter"><span class="char-count">0</span>/50</div>
+                        <label class="d-block small fw-bold text-muted">ARTÍCULO / CÓDIGO DEL PRODUCTO</label>
+                        <div class="small text-muted" style="padding-top: 0.2rem;"><i class="bi bi-magic me-1" aria-hidden="true"></i>El código se genera automáticamente al guardar</div>
                     </div>
                     <div class="col-3 border-end border-dark p-2">
                         <label class="d-block small fw-bold text-muted">TEMPORADA <span class="char-limit">máx. 100</span></label>

@@ -72,6 +72,12 @@ class ProductoForm(forms.ModelForm):
             self.fields['subcategoria'].required = False
         if 'proveedor' in self.fields:
             self.fields['proveedor'].empty_label = 'Sin proveedor'
+        # Código del producto: lo genera el sistema al guardar el alta (ART-0001...) y no cambia después
+        if 'codigo' in self.fields:
+            if self.instance.pk:
+                self.fields['codigo'].disabled = True
+            else:
+                del self.fields['codigo']
    
     class Meta:
         model = Producto
