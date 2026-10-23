@@ -467,4 +467,9 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 </script>
+{% include '_campo_ciudad_localidades.html' %}
+<script>
+  // Ciudad = localidades de la provincia elegida; se puede escribir otra a mano
+  iniciarCiudadesEnFormularios('form[method="post"]');
+</script>
 {% endblock %}

@@ -88,6 +88,23 @@
             background: #b8922a;
             color: #fff;
         }
+        .btn-ig-submit:disabled {
+            opacity: .45;
+            cursor: not-allowed;
+            background: #1a1612;
+            color: #e8c96a;
+        }
+        .confirmo-ubicacion {
+            display: flex;
+            gap: .6rem;
+            align-items: flex-start;
+            text-align: left;
+            font-size: .9rem;
+            color: #4a3f35;
+            margin-bottom: 1rem;
+            cursor: pointer;
+        }
+        .confirmo-ubicacion input { margin-top: .2rem; accent-color: #b8922a; width: 18px; height: 18px; flex-shrink: 0; }
         .btn-corrige {
             color: #b8922a;
             font-weight: 700;
@@ -125,6 +142,8 @@
   .alert { border-radius: 12px; padding: .9rem 1rem; margin-bottom: 1.25rem; text-align: left; }
   .alert.alert-info { background:#fffbe6; color:#7c2a3a; border:1px solid #f1e3b0; }
   .alert.alert-danger { background:#fdecef; border:1px solid #f1c2cc; color:#6E0E2E; border-radius:12px; padding:.9rem 1rem; margin-bottom:1.25rem; text-align:left; }
+  .alert.alert-success { background:#edf7ee; color:#1f5f2c; border:1px solid #bfe0c4; }
+  .alert.alert-warning { background:#fff4e0; color:#7a4a05; border:1px solid #f3d29a; }
   .modal-direccion-caja input, .modal-direccion-caja select { display: block; width: 100%; box-sizing: border-box; }
 </style>
 
@@ -135,8 +154,9 @@
     </div>
     <div class="ubicacion-content">
         <div class="col-left-ubicacion">
-            <div class="alert alert-info border-0 shadow-sm rounded-4 mb-4 small" style="background:#fffbe6; color:#7c2a3a;">
-                <i class="bi bi-info-circle me-2"></i> Por favor, verificá que el marcador en el mapa coincida con tu domicilio.
+            <!-- Estado de la ubicación: lo actualiza el script del mapa (verificada / aproximada / sin verificar) -->
+            <div id="estado-ubicacion" class="alert alert-info border-0 shadow-sm rounded-4 mb-4 small" role="status" aria-live="polite">
+                <i class="bi bi-hourglass-split me-2"></i> Buscando tu dirección en el mapa...
             </div>
             <div class="domicilio-box">
                 <h6>Domicilio Registrado:</h6>
@@ -152,9 +172,17 @@
                 {% endif %}
             </div>
             {% endif %}
-            <form method="POST">
+            <form method="POST" id="form-confirmar-ubicacion">
                 {% csrf_token %}
-                <button type="submit" class="btn-ig-submit">CONFIRMAR DIRECCIÓN</button>
+                <!-- Coordenadas del marcador que el usuario confirma (no las sugeridas por el mapa sin confirmar) -->
+                <input type="hidden" name="latitud" id="ubicacion-latitud">
+                <input type="hidden" name="longitud" id="ubicacion-longitud">
+                <input type="hidden" name="ubicacion_origen" id="ubicacion-origen">
+                <label class="confirmo-ubicacion" id="confirmo-ubicacion-caja" style="display:none;">
+                    <input type="checkbox" name="confirmo_ubicacion" value="1" id="confirmo-ubicacion">
+                    <span>Confirmo que el marcador está en mi domicilio.</span>
+                </label>
+                <button type="submit" class="btn-ig-submit" id="btn-confirmar-ubicacion" disabled>CONFIRMAR DIRECCIÓN</button>
             </form>
                         <a href="#" class="btn-corrige" id="btn-editar-direccion"><i class="bi bi-pencil me-1"></i> Corregir datos</a>
                         <!-- Modal edición dirección -->
@@ -252,23 +280,216 @@
         });
     };
 </script>
+{% include '_campo_ciudad_localidades.html' %}
 <script>
+    // Ciudad del modal = localidades de la provincia elegida
+    iniciarCiudadDatalist(document.getElementById('edit_provincia'), document.getElementById('edit_ciudad'));
+</script>
+<script>
+    // Ubicación en el mapa: se busca la dirección escrita y solo se da por verificada si el resultado
+    // coincide en calle, altura y localidad. Si no (por ejemplo, devuelve "421 bis" para "423 bis"
+    // o encuentra la calle sin la altura), el usuario mueve el marcador y confirma a mano.
+    // Nunca se reemplaza la dirección escrita por la que sugiere el mapa.
     document.addEventListener('DOMContentLoaded', function() {
-        const address = "{{ data.calle }} {{ data.numero }}, {{ data.ciudad }}, {{ data.provincia }}, Argentina";
-        let map = L.map('map').setView([-34.921, -57.954], 15);
+        const DIRECCION = {
+            calle: '{{ data.calle|escapejs }}',
+            numero: '{{ data.numero|escapejs }}',
+            ciudad: '{{ data.ciudad|escapejs }}',
+            provincia: '{{ data.provincia|escapejs }}',
+        };
+        const PROVINCIA_MAPA = DIRECCION.provincia.toUpperCase() === 'CABA'
+            ? 'Ciudad Autónoma de Buenos Aires' : DIRECCION.provincia;
+
+        const estado = document.getElementById('estado-ubicacion');
+        const inputLat = document.getElementById('ubicacion-latitud');
+        const inputLon = document.getElementById('ubicacion-longitud');
+        const inputOrigen = document.getElementById('ubicacion-origen');
+        const cajaConfirmo = document.getElementById('confirmo-ubicacion-caja');
+        const checkConfirmo = document.getElementById('confirmo-ubicacion');
+        const boton = document.getElementById('btn-confirmar-ubicacion');
+
+        const map = L.map('map').setView([-34.921, -57.954], 13);
         L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
             attribution: 'Tiles &copy; Esri',
-            maxZoom: 18
+            maxZoom: 19
         }).addTo(map);
-        let marker = L.marker([-34.921, -57.954]).addTo(map);
+        let marker = null;
+        // "buscando" | "automatica" | "aproximada" | "sin_verificar"
+        let modo = 'buscando';
+        let movidoPorUsuario = false;
 
-        fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}`)
-            .then(r => r.json()).then(d => {
-                if (d.length > 0) {
-                    map.setView([d[0].lat, d[0].lon], 16);
-                    marker.setLatLng([d[0].lat, d[0].lon]);
-                }
+        function mostrarEstado(tipo, icono, html) {
+            estado.className = `alert alert-${tipo} border-0 shadow-sm rounded-4 mb-4 small`;
+            estado.innerHTML = `<i class="bi ${icono} me-2"></i> ${html}`;
+        }
+
+        function escapar(texto) {
+            const div = document.createElement('div');
+            div.textContent = texto;
+            return div.innerHTML;
+        }
+
+        // Habilita "Confirmar" solo con una ubicación válida: verificada automáticamente, o
+        // confirmada a mano con el checkbox (y, si no se encontró nada, después de ubicar el marcador)
+        function actualizarFormulario() {
+            const pos = marker ? marker.getLatLng() : null;
+            const manual = modo !== 'automatica';
+            const puedeUsarMarcador = pos && (modo !== 'sin_verificar' || movidoPorUsuario);
+            inputLat.value = puedeUsarMarcador ? pos.lat.toFixed(6) : '';
+            inputLon.value = puedeUsarMarcador ? pos.lng.toFixed(6) : '';
+            inputOrigen.value = puedeUsarMarcador ? (manual ? 'manual' : 'automatica') : '';
+            cajaConfirmo.style.display = manual && modo !== 'buscando' ? 'flex' : 'none';
+            boton.disabled = !puedeUsarMarcador || (manual && !checkConfirmo.checked);
+        }
+        checkConfirmo.addEventListener('change', actualizarFormulario);
+
+        function ponerMarcador(lat, lon) {
+            if (!marker) {
+                marker = L.marker([lat, lon], { draggable: true }).addTo(map);
+                marker.on('dragend', marcadorMovido);
+            } else {
+                marker.setLatLng([lat, lon]);
+            }
+        }
+
+        function marcadorMovido() {
+            movidoPorUsuario = true;
+            if (modo === 'automatica') {
+                // La ubicación verificada se cambió a mano: pasa a confirmación manual
+                modo = 'aproximada';
+                mostrarEstado('warning', 'bi-hand-index', 'Moviste el marcador. Si quedó en tu domicilio, marcá la confirmación de abajo.');
+            }
+            checkConfirmo.checked = false;
+            actualizarFormulario();
+        }
+
+        // Click en el mapa: lleva el marcador ahí (también sirve si todavía no hay marcador)
+        map.on('click', function(e) {
+            if (modo === 'buscando') return;
+            ponerMarcador(e.latlng.lat, e.latlng.lng);
+            marcadorMovido();
+        });
+
+        // --- Comparación de la dirección escrita con lo que devuelve el mapa ---
+        function normalizar(texto) {
+            return (texto || '')
+                .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+                .toLowerCase()
+                .replace(/[.,º°#]/g, ' ')
+                .replace(/(\d)([a-z])/g, '$1 $2')   // "423bis" -> "423 bis"
+                .replace(/\s+/g, ' ')
+                .trim();
+        }
+        function normalizarCalle(texto) {
+            // "Calle 423 Bis" = "423 bis"; "Av. 7" = "Avenida 7" = "7". Diagonales y pasajes se comparan completos.
+            return normalizar(texto).replace(/^(calle|avenida|av)\s+/, '');
+        }
+        function normalizarLocalidad(texto) {
+            return normalizar(texto).replace(/^(partido de|localidad de|ciudad de)\s+/, '');
+        }
+        function mismaLocalidad(a, b) {
+            if (!a || !b) return false;
+            if (a === b) return true;
+            // "Manuel B Gonnet" / "Gonnet": una contiene a la otra como palabras completas
+            const [corta, larga] = a.length < b.length ? [a, b] : [b, a];
+            return (` ${larga} `).includes(` ${corta} `);
+        }
+
+        const calleBuscada = normalizarCalle(DIRECCION.calle);
+        const numeroBuscado = normalizar(DIRECCION.numero).replace(/\s+/g, '');
+        const localidadBuscada = normalizarLocalidad(DIRECCION.ciudad);
+
+        function clasificar(resultado) {
+            const a = resultado.address || {};
+            const calle = a.road || a.pedestrian || a.footway || a.residential || '';
+            if (!calle || normalizarCalle(calle) !== calleBuscada) return null;
+            const localidades = [a.suburb, a.neighbourhood, a.quarter, a.hamlet, a.village, a.town,
+                                 a.city, a.city_district, a.municipality]
+                .filter(Boolean).map(normalizarLocalidad);
+            if (!localidades.some(l => mismaLocalidad(l, localidadBuscada))) return null;
+            const numero = normalizar(a.house_number || '').replace(/\s+/g, '');
+            return numero && numero === numeroBuscado ? 'exacta' : 'aproximada';
+        }
+
+        function buscarNominatim(params) {
+            const query = new URLSearchParams(Object.assign({
+                format: 'jsonv2', addressdetails: '1', countrycodes: 'ar', limit: '10', 'accept-language': 'es',
+            }, params));
+            return fetch(`https://nominatim.openstreetmap.org/search?${query}`)
+                .then(r => r.ok ? r.json() : [])
+                .catch(() => []);
+        }
+
+        function centroLocalidad() {
+            // Centro de la localidad según Georef: solo para encuadrar el mapa, no se guarda
+            const params = new URLSearchParams({
+                provincia: PROVINCIA_MAPA, nombre: DIRECCION.ciudad, campos: 'centroide', max: '1',
             });
+            return fetch(`https://apis.datos.gob.ar/georef/api/localidades?${params}`)
+                .then(r => r.ok ? r.json() : null)
+                .then(d => d && d.localidades && d.localidades[0] ? d.localidades[0].centroide : null)
+                .catch(() => null);
+        }
+
+        async function ubicar() {
+            const consultas = [
+                { street: `${DIRECCION.numero} ${DIRECCION.calle}`, city: DIRECCION.ciudad, state: PROVINCIA_MAPA, country: 'Argentina' },
+                { q: `${DIRECCION.calle} ${DIRECCION.numero}, ${DIRECCION.ciudad}, ${PROVINCIA_MAPA}, Argentina` },
+            ];
+            // Las calles numéricas de La Plata y alrededores figuran como "Calle 423 Bis"
+            if (/^\d/.test(DIRECCION.calle.trim())) {
+                consultas.splice(1, 0, { street: `${DIRECCION.numero} Calle ${DIRECCION.calle}`, city: DIRECCION.ciudad, state: PROVINCIA_MAPA, country: 'Argentina' });
+            }
+
+            let aproximada = null;
+            for (const params of consultas) {
+                const resultados = await buscarNominatim(params);
+                for (const r of resultados) {
+                    const tipo = clasificar(r);
+                    if (tipo === 'exacta') return { tipo, resultado: r };
+                    if (tipo === 'aproximada' && !aproximada) aproximada = r;
+                }
+                if (aproximada) break;
+            }
+            return aproximada ? { tipo: 'aproximada', resultado: aproximada } : { tipo: 'ninguna' };
+        }
+
+        const textoDireccion = escapar(`${DIRECCION.calle} ${DIRECCION.numero}, ${DIRECCION.ciudad}`);
+
+        ubicar().then(async ({ tipo, resultado }) => {
+            if (tipo === 'exacta') {
+                modo = 'automatica';
+                ponerMarcador(+resultado.lat, +resultado.lon);
+                map.setView([+resultado.lat, +resultado.lon], 17);
+                mostrarEstado('success', 'bi-check-circle',
+                    `Ubicamos <strong>${textoDireccion}</strong> en el mapa. Si el marcador no está en tu casa, arrastralo hasta el lugar correcto.`);
+            } else if (tipo === 'aproximada') {
+                modo = 'aproximada';
+                ponerMarcador(+resultado.lat, +resultado.lon);
+                map.setView([+resultado.lat, +resultado.lon], 17);
+                mostrarEstado('warning', 'bi-exclamation-triangle',
+                    `Encontramos la calle <strong>${escapar(DIRECCION.calle)}</strong> en ${escapar(DIRECCION.ciudad)}, pero no la altura <strong>${escapar(DIRECCION.numero)}</strong>. ` +
+                    'Arrastrá el marcador (o tocá el mapa) hasta tu domicilio y confirmá abajo.');
+            } else {
+                modo = 'sin_verificar';
+                const centro = await centroLocalidad();
+                if (centro) map.setView([centro.lat, centro.lon], 14);
+                mostrarEstado('warning', 'bi-geo',
+                    `No pudimos verificar automáticamente <strong>${textoDireccion}</strong>. ` +
+                    'Tocá el mapa en el lugar de tu domicilio (podés arrastrar el marcador para ajustarlo) y confirmá abajo. ' +
+                    'Si la dirección está mal escrita, usá "Corregir datos".');
+            }
+            actualizarFormulario();
+        });
+
+        // Por si el formulario se envía igual (por ejemplo, con el botón habilitado a mano)
+        document.getElementById('form-confirmar-ubicacion').addEventListener('submit', function(e) {
+            actualizarFormulario();
+            if (boton.disabled) {
+                e.preventDefault();
+                mostrarEstado('danger', 'bi-exclamation-circle', 'Ubicá el marcador en tu domicilio y marcá la confirmación antes de continuar.');
+            }
+        });
     });
 </script>
 {% endblock %}

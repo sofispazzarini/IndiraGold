@@ -63,23 +63,17 @@ def _to_int(value) -> int | None:
         return None
 
 def precio_unitario_vigente(variante):
-    """Precio que se cobra hoy por una variante: el precio publicado del producto
-    con la oferta activa aplicada. Es el mismo para invitados y clientes logueados.
+    """Precio que se cobra hoy por una variante: el precio publicado del producto con el
+    aumento y el descuento activos aplicados (Producto.calcular_precio). Es el mismo para
+    invitados, clientes logueados y ventas presenciales.
     El precio del producto manda: los talles no tienen precio propio editable y su
     copia (Variante.precio) puede quedar vieja."""
-    from decimal import Decimal
-
     producto = variante.producto
-    precio_base = producto.precio or variante.precio or Decimal('0')
-    oferta = producto.obtener_oferta_activa()
-    if oferta:
-        descuento = Decimal(oferta.descuento) / Decimal(100)
-        return (precio_base * (1 - descuento)).quantize(Decimal('0.01'))
-    return precio_base
+    return producto.calcular_precio(producto.precio or variante.precio)
 
 
 def refrescar_precios_carrito(carrito):
-    """Actualiza el precio de cada ítem del carrito al precio vigente (ofertas incluidas)
+    """Actualiza el precio de cada ítem del carrito al precio vigente (aumentos y ofertas incluidos)
     antes de mostrar el checkout o cobrar."""
     if carrito is None:
         return

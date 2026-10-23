@@ -577,7 +577,7 @@
         <div>
             <div class="header-eyebrow">Gestión</div>
             <h1 class="page-title">Ofertas</h1>
-            <p class="page-subtitle">Creá y gestioná las ofertas de tus productos.</p>
+            <p class="page-subtitle">Creá y gestioná las ofertas y los aumentos de precio de tus productos.</p>
         </div>
     </div>
 
@@ -586,13 +586,25 @@
         {% csrf_token %}
         <input type="hidden" name="tipo_oferta" value="catalogo">
 
-        <h2>Crear nueva oferta</h2>
+        <h2>Crear oferta o aumento</h2>
 
-        <div class="form-grid">
+        <div class="form-grid form-grid-3">
 
             <div class="form-group">
 
-                <label>Nombre de la oferta <span class="char-limit">máx. 100</span></label>
+                <label for="tipoOperacion">Tipo de operación</label>
+
+                <!-- Un aumento sube el precio y no es oferta: sin etiqueta, sin tachado y fuera de Ofertas -->
+                <select name="tipo" id="tipoOperacion">
+                    <option value="descuento">Descuento (oferta)</option>
+                    <option value="aumento">Aumento de precio</option>
+                </select>
+
+            </div>
+
+            <div class="form-group">
+
+                <label>Nombre <span class="char-limit">máx. 100</span></label>
 
                 <input
                     type="text"
@@ -609,14 +621,18 @@
 
             <div class="form-group">
 
-                <label>Porcentaje de descuento</label>
+                <label id="porcentajeLabel">Porcentaje de descuento</label>
 
                 <input
                     type="number"
                     name="descuento"
+                    id="porcentajeOperacion"
+                    min="1"
+                    max="100"
                     placeholder="Ej: 20"
                     required
                 >
+                <small id="porcentajeAyuda" style="color:var(--muted, #8c7e70); font-size:.78rem;">El producto se muestra como oferta, con el precio anterior tachado.</small>
 
             </div>
 
@@ -733,6 +749,7 @@
             <button
                 type="submit"
                 class="btn-primary"
+                id="btnCrearOperacion"
             >
                 Crear oferta
             </button>
@@ -807,7 +824,7 @@
                 <tr>
                     <th>NOMBRE</th>
                     <th>CÓDIGO</th>
-                    <th>DESCUENTO</th>
+                    <th>PORCENTAJE</th>
                     <th>APLICA A</th>
                     <th>LÍMITE</th>
                     <th>ESTADO</th>
@@ -835,9 +852,13 @@
                     </td>
 
                     <td>
-                        <strong>
-                            {{ oferta.descuento }}%
-                        </strong>
+                        {% if oferta.es_aumento %}
+                            <strong>+{{ oferta.descuento }}%</strong>
+                            <div style="font-size:.75rem; color:var(--muted, #8c7e70);">Aumento</div>
+                        {% else %}
+                            <strong>-{{ oferta.descuento }}%</strong>
+                            <div style="font-size:.75rem; color:var(--muted, #8c7e70);">Descuento</div>
+                        {% endif %}
                     </td>
 
                     <td>
@@ -972,6 +993,26 @@ document.querySelectorAll('input[name="alcance"]')
     });
 
 actualizarAlcanceOferta();
+
+const tipoOperacion = document.getElementById('tipoOperacion');
+const porcentajeOperacion = document.getElementById('porcentajeOperacion');
+
+function actualizarTipoOperacion(){
+    const esAumento = tipoOperacion.value === 'aumento';
+    document.getElementById('porcentajeLabel').textContent =
+        esAumento ? 'Porcentaje de aumento' : 'Porcentaje de descuento';
+    document.getElementById('porcentajeAyuda').textContent = esAumento
+        ? 'Se muestra directamente el precio aumentado, sin etiqueta de oferta.'
+        : 'El producto se muestra como oferta, con el precio anterior tachado.';
+    document.getElementById('btnCrearOperacion').textContent =
+        esAumento ? 'Crear aumento' : 'Crear oferta';
+    porcentajeOperacion.max = esAumento ? 300 : 100;
+}
+
+tipoOperacion.addEventListener('change', actualizarTipoOperacion);
+// "Limpiar" vuelve el select a Descuento: se actualizan los textos después del reset
+tipoOperacion.form.addEventListener('reset', () => setTimeout(actualizarTipoOperacion));
+actualizarTipoOperacion();
 
 const buscarProducto =
     document.getElementById('buscarProducto');

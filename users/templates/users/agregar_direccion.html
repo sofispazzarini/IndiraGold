@@ -145,4 +145,9 @@
     .agregar-direccion-card h2 { font-size: 1.8rem; }
 }
 </style>
+{% include '_campo_ciudad_localidades.html' %}
+<script>
+    // Ciudad = localidades de la provincia elegida; se puede escribir otra a mano
+    iniciarCiudadesEnFormularios('#direccionForm');
+</script>
 {% endblock %}

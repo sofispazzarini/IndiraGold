@@ -106,49 +106,53 @@ class Producto(models.Model):
         imagen = self.imagenes.filter(es_portada=True).first() or self.imagenes.first()
         return imagen.imagen if imagen else None
 
+    def _operacion_activa(self, tipo):
+        """Oferta de catálogo activa de un tipo ('descuento' o 'aumento'), sin cupones.
+        Prioridad: la del producto, después la de su categoría, después la global; dentro de
+        cada nivel gana la más nueva. Nunca se suman dos operaciones del mismo tipo."""
+        cache = self.__dict__.setdefault('_operaciones_activas', {})
+        if tipo in cache:
+            return cache[tipo]
+
+        activas = Oferta.objects.filter(activa=True, es_cupon=False, tipo=tipo).order_by('-id')
+        oferta = (
+            activas.filter(productos=self).first()
+            or activas.filter(categoria=self.categoria_id).first()
+            or activas.filter(aplicar_a_todos=True).first()
+        )
+        cache[tipo] = oferta
+        return oferta
+
     def obtener_oferta_activa(self):
+        """Descuento activo: lo único que se muestra como oferta. Un aumento no es oferta."""
+        return self._operacion_activa(Oferta.TIPO_DESCUENTO)
 
-        oferta_producto = Oferta.objects.filter(
-            activa=True,
-            es_cupon=False,
-            productos=self
-        ).first()
+    def obtener_aumento_activo(self):
+        return self._operacion_activa(Oferta.TIPO_AUMENTO)
 
-        if oferta_producto:
-            return oferta_producto
+    def calcular_precio(self, precio_base, con_descuento=True):
+        """Precio que se cobra a partir de un precio base: primero el aumento y, sobre ese
+        precio, el descuento. Es el único lugar donde se aplican los porcentajes."""
+        precio = Decimal(precio_base or 0)
+        aumento = self.obtener_aumento_activo()
+        if aumento:
+            precio = (precio * (1 + Decimal(aumento.descuento) / Decimal(100))).quantize(Decimal('0.01'))
+        oferta = self.obtener_oferta_activa() if con_descuento else None
+        if oferta:
+            precio = (precio * (1 - Decimal(oferta.descuento) / Decimal(100))).quantize(Decimal('0.01'))
+        return precio
 
-        oferta_categoria = Oferta.objects.filter(
-            activa=True,
-            es_cupon=False,
-            categoria=self.categoria
-        ).first()
-
-        if oferta_categoria:
-            return oferta_categoria
-
-        oferta_global = Oferta.objects.filter(
-            activa=True,
-            es_cupon=False,
-            aplicar_a_todos=True
-        ).first()
-
-        if oferta_global:
-            return oferta_global
-
-        return None
-
+    @property
+    def precio_lista(self):
+        """Precio normal que ve el cliente: el cargado más el aumento activo (sin descuento).
+        Es el que aparece tachado cuando hay oferta."""
+        return self.calcular_precio(self.precio, con_descuento=False)
 
     @property
     def precio_final(self):
+        return self.calcular_precio(self.precio)
 
-        oferta = self.obtener_oferta_activa()
 
-        if not oferta:
-            return self.precio
-
-        descuento = Decimal(oferta.descuento) / Decimal(100)
-
-        return (self.precio * (1 - descuento)).quantize(Decimal('0.01'))
 class ImagenProducto(models.Model):
     producto = models.ForeignKey(Producto, related_name='imagenes', on_delete=models.CASCADE)
     imagen = models.ImageField(upload_to='productos/')
@@ -335,12 +339,23 @@ class VarianteColor(models.Model):
     def __str__(self):
         return f"{self.variante.producto.nombre} - {self.variante.talle} - {self.color.nombre}"
 class Oferta(models.Model):
+    TIPO_DESCUENTO = 'descuento'
+    TIPO_AUMENTO = 'aumento'
+    TIPOS = (
+        (TIPO_DESCUENTO, 'Descuento'),
+        (TIPO_AUMENTO, 'Aumento'),
+    )
+
     nombre = models.CharField(max_length=100)
     codigo = models.CharField(max_length=40, unique=True, null=True, blank=True)
     es_cupon = models.BooleanField(default=False)
 
+    # Un aumento sube el precio y no es oferta (sin etiqueta, sin tachado, fuera de la sección
+    # Ofertas). Los cupones son siempre descuentos.
+    tipo = models.CharField(max_length=10, choices=TIPOS, default=TIPO_DESCUENTO)
+
     descuento = models.PositiveIntegerField(
-        help_text='Porcentaje de descuento'
+        help_text='Porcentaje de descuento o de aumento, según el tipo'
     )
 
     aplicar_a_todos = models.BooleanField(default=False)
@@ -411,5 +426,10 @@ class Oferta(models.Model):
         self.codigo = self.codigo.strip().upper() if self.codigo else None
         super().save(*args, **kwargs)
 
+    @property
+    def es_aumento(self):
+        return self.tipo == self.TIPO_AUMENTO
+
     def __str__(self):
-        return f"{self.nombre} - {self.descuento}%"
+        signo = '+' if self.es_aumento else '-'
+        return f"{self.nombre} {signo}{self.descuento}%"

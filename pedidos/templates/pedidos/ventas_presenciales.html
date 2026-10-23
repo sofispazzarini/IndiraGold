@@ -3796,4 +3796,9 @@ async function registrarPago(ventaId){
     }
 }
 </script>
+{% include '_campo_ciudad_localidades.html' %}
+<script>
+  // Ciudad = localidades de la provincia escrita; se puede escribir otra a mano
+  iniciarCiudadesEnFormularios('#formNuevaDireccionVenta');
+</script>
 {% endblock %}
