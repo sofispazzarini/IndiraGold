@@ -278,6 +278,7 @@ class VentaLocal(models.Model):
         ('mercado_pago', 'Mercado Pago'),
         ('mercado_pago_qr', 'Mercado Pago QR'),
         ('tarjeta', 'Tarjeta'),
+        ('transferencia', 'Transferencia'),
     )
     METODOS_ENTREGA = (
         ('local', 'Retiro en local'),

@@ -169,6 +169,14 @@ class CobrosEnElLocalTests(DatosStockMixin, TestCase):
     def test_efectivo_no_tiene_retencion(self):
         self.assertEqual(self.vender('efectivo').retencion, Decimal('0.00'))
 
+    def test_transferencia_se_registra_sin_retencion(self):
+        venta = self.vender('transferencia', deuda='4000')
+        self.assertEqual((venta.metodo_pago, venta.retencion), ('transferencia', Decimal('0.00')))
+        self.assertTrue(self.cobrar(venta, '1000', 'transferencia').json()['success'])
+        venta.refresh_from_db()
+        self.assertEqual(venta.retencion, Decimal('0.00'))
+        self.assertEqual(list(venta.pagos.values_list('metodo_pago', flat=True).distinct()), ['transferencia'])
+
     def test_venta_parcial_y_cobros_posteriores_con_su_medio(self):
         venta = self.vender('tarjeta', deuda='4000')
         self.assertEqual((venta.monto_pagado, venta.saldo_pendiente, venta.retencion), (Decimal('6000.00'), Decimal('4000.00'), Decimal('300.00')))

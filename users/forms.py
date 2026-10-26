@@ -176,7 +176,9 @@ class RegistroUsuarioForm(forms.ModelForm):
             raise ValidationError("Las contraseñas no coinciden.")
         return cleaned_data
     @transaction.atomic #esto hace que si falla el guardado de la direccion, no se crea ningun user ni cliente
-    def save(self, commit=True):
+    def save(self, commit=True, ubicacion=None):
+        """ubicacion: {'latitud', 'longitud', 'origen'} confirmada en el mapa (ver
+        users.views.leer_ubicacion_confirmada); sin ella la dirección queda sin coordenadas."""
         dni = self.cleaned_data['dni']
         nombre = self.cleaned_data['nombre']
         apellido = self.cleaned_data['apellido']
@@ -209,7 +211,10 @@ class RegistroUsuarioForm(forms.ModelForm):
             ciudad=self.cleaned_data['ciudad'],
             provincia=self.cleaned_data['provincia'],
             codigo_postal=self.cleaned_data['codigo_postal'],
-            referencia=self.cleaned_data.get('referencia', '')
+            referencia=self.cleaned_data.get('referencia', ''),
+            latitud=ubicacion['latitud'] if ubicacion else None,
+            longitud=ubicacion['longitud'] if ubicacion else None,
+            ubicacion_origen=ubicacion['origen'] if ubicacion else '',
         )
 
         return cliente

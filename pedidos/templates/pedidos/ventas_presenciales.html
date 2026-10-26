@@ -1402,6 +1402,7 @@
                                     <option value="efectivo">Efectivo</option>
                                     <option value="mercado_pago">Mercado Pago</option>
                                     <option value="tarjeta">Tarjeta</option>
+                                    <option value="transferencia">Transferencia</option>
 
                                 </select>
 
@@ -3407,6 +3408,7 @@ async function abrirDetalleVenta(ventaId){
                                 <option value="efectivo" ${data.metodo_pago_codigo === 'efectivo' ? 'selected' : ''}>Efectivo</option>
                                 <option value="mercado_pago" ${data.metodo_pago_codigo === 'mercado_pago' ? 'selected' : ''}>Mercado Pago</option>
                                 <option value="tarjeta" ${data.metodo_pago_codigo === 'tarjeta' ? 'selected' : ''}>Tarjeta</option>
+                                <option value="transferencia" ${data.metodo_pago_codigo === 'transferencia' ? 'selected' : ''}>Transferencia</option>
                             </select>
 
                             <button
@@ -3795,5 +3797,10 @@ async function registrarPago(ventaId){
         alert(data.error || 'Error al registrar pago')
     }
 }
+</script>
+{% include '_campo_ciudad_localidades.html' %}
+<script>
+  // Ciudad = localidades de la provincia escrita; se puede escribir otra a mano
+  iniciarCiudadesEnFormularios('#formNuevaDireccionVenta');
 </script>
 {% endblock %}

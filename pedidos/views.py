@@ -3280,7 +3280,7 @@ def registrar_venta_local(request):
 
             })
         
-        if metodo_pago not in ['efectivo', 'mercado_pago', 'tarjeta']:
+        if metodo_pago not in METODOS_PAGO_PRESENCIAL:
             return JsonResponse({
                 'success': False,
                 'error': 'Método de pago inválido'
@@ -3363,16 +3363,8 @@ def registrar_venta_local(request):
                     'error': str(error)
                 }, status=400)
 
-            # El precio publicado es el del producto (el del talle solo si el producto no tiene)
-            precio_base = variante.producto.precio or variante.precio
-
-            # Aplicar descuento si hay oferta activa
-            oferta = variante.producto.obtener_oferta_activa()
-            if oferta:
-                descuento = Decimal(oferta.descuento) / Decimal(100)
-                precio_unitario = precio_base * (1 - descuento)
-            else:
-                precio_unitario = precio_base
+            # Mismo precio que en la tienda: aumento y oferta activos aplicados
+            precio_unitario = precio_unitario_vigente(variante)
 
             subtotal = precio_unitario * cantidad
             total += subtotal

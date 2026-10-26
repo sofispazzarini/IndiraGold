@@ -88,7 +88,7 @@ class HomePublicaView(TemplateView):
         ctx['colores'] = colores
 
         # Sección "Ofertas": misma regla que el precio (oferta por producto, por categoría o
-        # global, sin cupones). Antes no incluía las ofertas por categoría.
+        # global, sin cupones). Solo descuentos: un aumento no es oferta.
         productos_oferta = [producto for producto in productos if producto.obtener_oferta_activa()]
 
         ctx['productos_oferta'] = productos_oferta

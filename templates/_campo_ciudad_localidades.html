@@ -1,0 +1,191 @@
+<!--Campo "Ciudad" con las localidades de Georef (no municipios: Villa Elisa, City Bell y Gonnet
+   son localidades del partido de La Plata). Siempre se puede escribir una que no esté en la lista,
+   y lo que el usuario eligió o escribió no se reemplaza.
+   Uso: incluir este archivo y después llamar a
+   - iniciarCiudadTomSelect(selectProvincia, inputCiudad) donde la página ya carga TomSelect
+   - iniciarCiudadDatalist(campoProvincia, inputCiudad) en los formularios simples (sugerencias nativas)-->
+<script>
+(function () {
+  if (window.cargarLocalidades) return;
+
+  const URL_LOCALIDADES = 'https://apis.datos.gob.ar/georef/api/localidades';
+  const POR_PAGINA = 5000;  // máximo que acepta la API; Buenos Aires tiene ~950
+  // El select usa "CABA"; Georef espera el nombre oficial
+  const NOMBRE_GEOREF = { 'caba': 'Ciudad Autónoma de Buenos Aires' };
+  const cache = {};
+
+  function normalizar(texto) {
+    return (texto || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\s+/g, ' ').trim();
+  }
+
+  function nombreProvincia(valor) {
+    const texto = (valor || '').trim();
+    return NOMBRE_GEOREF[texto.toLowerCase()] || texto;
+  }
+
+  function pedirPagina(provincia, inicio) {
+    const params = new URLSearchParams({
+      provincia: provincia,
+      campos: 'nombre,departamento.nombre',
+      orden: 'nombre',
+      max: POR_PAGINA,
+      inicio: inicio,
+    });
+    return fetch(`${URL_LOCALIDADES}?${params}`).then(r => {
+      if (!r.ok) throw new Error('georef ' + r.status);
+      return r.json();
+    });
+  }
+
+  // Lista de {nombre, partidos} sin repetir nombres (ej. "Manuel B. Gonnet" está en La Plata
+  // y en 9 de Julio: una sola opción que muestra los dos partidos). Recorre todas las páginas.
+  window.cargarLocalidades = function (valorProvincia) {
+    const provincia = nombreProvincia(valorProvincia);
+    if (!provincia) return Promise.resolve([]);
+    if (cache[provincia]) return cache[provincia];
+
+    cache[provincia] = (async () => {
+      const porNombre = new Map();
+      let inicio = 0;
+      while (true) {
+        const data = await pedirPagina(provincia, inicio);
+        (data.localidades || []).forEach(l => {
+          const nombre = (l.nombre || '').trim();
+          if (!nombre) return;
+          const partido = l.departamento && l.departamento.nombre;
+          if (!porNombre.has(nombre)) porNombre.set(nombre, new Set());
+          if (partido) porNombre.get(nombre).add(partido);
+        });
+        inicio += data.cantidad || 0;
+        if (!data.cantidad || inicio >= (data.total || 0)) break;
+      }
+      return [...porNombre.entries()]
+        .map(([nombre, partidos]) => ({ nombre, partidos: [...partidos].join(' / ') }))
+        .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+    })().catch(error => {
+      delete cache[provincia];  // que se pueda reintentar al volver a elegir la provincia
+      throw error;
+    });
+    return cache[provincia];
+  };
+
+  function avisoSinLista(inputCiudad, mostrar) {
+    const contenedor = inputCiudad.closest('div') || inputCiudad.parentElement;
+    let aviso = contenedor.querySelector('.aviso-localidades');
+    if (!mostrar) { if (aviso) aviso.remove(); return; }
+    if (!aviso) {
+      aviso = document.createElement('small');
+      aviso.className = 'aviso-localidades';
+      aviso.style.cssText = 'display:block;margin-top:.3rem;color:#8c7e70;font-size:.78rem;';
+      contenedor.appendChild(aviso);
+    }
+    aviso.textContent = 'No pudimos cargar la lista de localidades. Escribí tu ciudad a mano.';
+  }
+
+  window.iniciarCiudadTomSelect = function (selectProvincia, inputCiudad) {
+    if (!selectProvincia || !inputCiudad || typeof TomSelect === 'undefined') return null;
+    const valorInicial = (inputCiudad.value || '').trim();
+    const ts = new TomSelect(inputCiudad, {
+      create: true,
+      createOnBlur: true,
+      persist: false,
+      maxItems: 1,
+      maxOptions: 200,
+      valueField: 'value',
+      labelField: 'value',
+      searchField: ['value', 'partidos'],
+      sortField: [{ field: '$score' }, { field: 'value' }],
+      // Primero las localidades cuyo nombre empieza con lo escrito ("villa e" -> Villa Elisa),
+      // después las que lo contienen y al final las que coinciden por el partido
+      score: function (busqueda) {
+        const q = normalizar(busqueda);
+        return item => {
+          if (!q) return 1;
+          const nombre = normalizar(item.value);
+          if (nombre.startsWith(q)) return 4;
+          if ((' ' + nombre).includes(' ' + q)) return 3;
+          if (nombre.includes(q)) return 2;
+          const texto = ' ' + nombre + ' ' + normalizar(item.partidos);
+          return q.split(' ').every(palabra => texto.includes(' ' + palabra)) ? 1 : 0;
+        };
+      },
+      render: {
+        option: (item, escape) => `<div>${escape(item.value)}${item.partidos ? `<small style="color:#8c7e70;"> — ${escape(item.partidos)}</small>` : ''}</div>`,
+        option_create: (data, escape) => `<div class="create">Usar <strong>${escape(data.input)}</strong></div>`,
+        no_results: () => '<div class="no-results">No está en la lista: escribila y elegí "Usar".</div>',
+      },
+    });
+    // Con "score" propio TomSelect no ordena por puntaje: se ordena acá (mayor puntaje, después A-Z)
+    const buscar = ts.search.bind(ts);
+    ts.search = function (consulta) {
+      const resultado = buscar(consulta);
+      resultado.items.sort((a, b) => b.score - a.score || String(a.id).localeCompare(String(b.id), 'es'));
+      return resultado;
+    };
+    // La ciudad que ya venía cargada (por ej. al volver con un error) queda elegida tal cual
+    if (valorInicial) { ts.addOption({ value: valorInicial }); ts.setValue(valorInicial, true); }
+
+    function cargar(mantenerValor) {
+      const actual = mantenerValor ? ts.getValue() : '';
+      ts.clearOptions();
+      if (!mantenerValor) ts.clear(true);
+      if (actual) ts.addOption({ value: actual });
+      avisoSinLista(inputCiudad, false);
+      if (!selectProvincia.value) return;
+      const provincia = selectProvincia.value;
+      cargarLocalidades(provincia).then(lista => {
+        if (selectProvincia.value !== provincia) return;  // cambió de provincia mientras cargaba
+        lista.forEach(l => ts.addOption({ value: l.nombre, partidos: l.partidos }));
+        ts.refreshOptions(false);
+      }).catch(() => avisoSinLista(inputCiudad, true));
+    }
+
+    selectProvincia.addEventListener('change', () => cargar(false));
+    if (selectProvincia.value) cargar(true);
+    return ts;
+  };
+
+  let contadorListas = 0;
+  window.iniciarCiudadDatalist = function (campoProvincia, inputCiudad) {
+    if (!campoProvincia || !inputCiudad) return;
+    const lista = document.createElement('datalist');
+    lista.id = 'localidades-georef-' + (++contadorListas);
+    inputCiudad.insertAdjacentElement('afterend', lista);
+    inputCiudad.setAttribute('list', lista.id);
+    inputCiudad.setAttribute('autocomplete', 'off');
+    let ultimaProvincia = null;
+
+    function cargar() {
+      const provincia = (campoProvincia.value || '').trim();
+      if (provincia === ultimaProvincia) return;
+      ultimaProvincia = provincia;
+      lista.innerHTML = '';
+      avisoSinLista(inputCiudad, false);
+      if (!provincia) return;
+      cargarLocalidades(provincia).then(localidades => {
+        if ((campoProvincia.value || '').trim() !== provincia) return;
+        const fragmento = document.createDocumentFragment();
+        localidades.forEach(l => {
+          const opcion = document.createElement('option');
+          opcion.value = l.nombre;
+          if (l.partidos) opcion.label = l.partidos;
+          fragmento.appendChild(opcion);
+        });
+        lista.appendChild(fragmento);
+      }).catch(() => { ultimaProvincia = null; avisoSinLista(inputCiudad, true); });
+    }
+
+    campoProvincia.addEventListener('change', cargar);
+    // Al entrar a Ciudad (por si la provincia se cargó por código, sin evento "change")
+    inputCiudad.addEventListener('focus', cargar);
+    if (campoProvincia.value) cargar();
+  };
+
+  // Todos los formularios que coincidan con el selector y tengan campos "provincia" y "ciudad"
+  window.iniciarCiudadesEnFormularios = function (selector) {
+    document.querySelectorAll(selector).forEach(form => {
+      iniciarCiudadDatalist(form.querySelector('[name="provincia"]'), form.querySelector('[name="ciudad"]'));
+    });
+  };
+})();
+</script>

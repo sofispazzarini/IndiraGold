@@ -259,7 +259,7 @@ function scrollOfertas(dir) {
     {% if producto.obtener_oferta_activa %}
 
       <span class="product-price-old">
-        {{ producto.precio|pesos }}
+        {{ producto.precio_lista|pesos }}
       </span>
 
       <span class="product-price-new">
@@ -269,7 +269,7 @@ function scrollOfertas(dir) {
     {% else %}
 
       <span class="product-card__price">
-        {{ producto.precio|pesos }}
+        {{ producto.precio_lista|pesos }}
       </span>
 
     {% endif %}

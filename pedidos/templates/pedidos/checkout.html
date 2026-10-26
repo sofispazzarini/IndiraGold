@@ -2614,4 +2614,9 @@ if (checkoutExpiresIn > 0) {
 }
 
 </script>
+{% include '_campo_ciudad_localidades.html' %}
+<script>
+  // Ciudad = localidades de la provincia escrita; se puede escribir otra a mano
+  iniciarCiudadesEnFormularios('#formNuevaDireccionCheckout');
+</script>
 {% endblock %}

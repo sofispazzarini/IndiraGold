@@ -6,6 +6,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
 from config.permisos import admin_required
 import random
+from decimal import Decimal, InvalidOperation
 from django.core.mail import send_mail
 from django.conf import settings
 from config.contacto import whatsapp_numero_visible
@@ -488,6 +489,26 @@ def verificar_codigo_email(request):
     return JsonResponse({'success': False, 'error': 'Método no permitido'})
 
 
+def leer_ubicacion_confirmada(post):
+    """Ubicación del marcador que el usuario confirmó en el mapa, o None si falta o no es válida.
+    "automatica": el mapa encontró la calle, la altura y la localidad exactas.
+    "manual": el usuario ubicó o movió el marcador y marcó la confirmación."""
+    origen = post.get('ubicacion_origen', '')
+    if origen not in (Direccion.UBICACION_AUTOMATICA, Direccion.UBICACION_MANUAL):
+        return None
+    if origen == Direccion.UBICACION_MANUAL and post.get('confirmo_ubicacion') != '1':
+        return None
+    try:
+        latitud = Decimal(post.get('latitud', '')).quantize(Decimal('0.000001'))
+        longitud = Decimal(post.get('longitud', '')).quantize(Decimal('0.000001'))
+    except (InvalidOperation, TypeError, ValueError):
+        return None
+    # Dentro de Argentina (continental e Islas Malvinas / Tierra del Fuego)
+    if not (Decimal('-56') <= latitud <= Decimal('-21') and Decimal('-74') <= longitud <= Decimal('-53')):
+        return None
+    return {'latitud': latitud, 'longitud': longitud, 'origen': origen}
+
+
 def confirmar_direccion(request):
     data = request.session.get("registro_data")
 
@@ -521,10 +542,15 @@ def confirmar_direccion(request):
 
     # Confirmación final de dirección (POST sin campos de dirección)
     elif request.method == "POST":
+        # Sin una ubicación confirmada en el mapa no se crea la cuenta (no se inventan coordenadas)
+        ubicacion = leer_ubicacion_confirmada(request.POST)
+        if ubicacion is None:
+            request.session["confirmar_direccion_error"] = "Confirmá la ubicación en el mapa antes de terminar el registro: ubicá el marcador en tu domicilio y marcá la confirmación."
+            return redirect("users:confirmar_direccion")
         form = RegistroUsuarioForm(data, password_hash=data.get("password_hash"))
         if form.is_valid():
             try:
-                cliente = form.save()
+                cliente = form.save(ubicacion=ubicacion)
             except IntegrityError:
                 request.session["confirmar_direccion_error"] = "Ya existe una cuenta con ese DNI o correo. Iniciá sesión con tu DNI o volvé al registro con otros datos."
                 return redirect("users:confirmar_direccion")

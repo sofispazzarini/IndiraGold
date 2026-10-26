@@ -1523,16 +1523,10 @@ def buscar_productos(request):
 # Uso interno (ventas presenciales / QRs): solo admin
 @admin_required
 def obtener_variantes_producto(request, producto_id):
-    from decimal import Decimal
-
     producto = get_object_or_404(
         Producto,
         id=producto_id
     )
-
-    # Calcular descuento si hay oferta activa
-    oferta = producto.obtener_oferta_activa()
-    descuento = Decimal(oferta.descuento) / Decimal(100) if oferta else Decimal(0)
 
     variantes = producto.variantes.filter(
         activa=True,
@@ -1565,10 +1559,8 @@ def obtener_variantes_producto(request, producto_id):
                     'stock': None,
                 })
 
-        # El precio publicado es el del producto (el del talle solo si el producto no tiene)
-        precio_base = producto.precio or variante.precio
-        # Aplicar descuento al precio
-        precio_final = float(precio_base * (1 - descuento))
+        # Mismo precio que en la tienda: aumento y oferta activos aplicados
+        precio_final = float(precio_unitario_vigente(variante))
 
         data.append({
 
@@ -1680,51 +1672,6 @@ def gestionar_productos_categoria_orden(request, cat_id):
         'productos_en_categoria': productos_en_categoria,
         'productos_disponibles': productos_disponibles,
     })
-def obtener_oferta_activa(self):
-
-    oferta_producto = Oferta.objects.filter(
-        activa=True,
-        es_cupon=False,
-        productos=self
-    ).first()
-
-    if oferta_producto:
-        return oferta_producto
-
-    oferta_categoria = Oferta.objects.filter(
-        activa=True,
-        es_cupon=False,
-        categoria=self.categoria
-    ).first()
-
-    if oferta_categoria:
-        return oferta_categoria
-
-    oferta_global = Oferta.objects.filter(
-        activa=True,
-        es_cupon=False,
-        aplicar_a_todos=True
-    ).first()
-
-    if oferta_global:
-        return oferta_global
-
-    return None
-
-
-@property
-def precio_final(self):
-
-    oferta = self.obtener_oferta_activa()
-
-    if not oferta:
-        return self.precio
-
-    descuento = (
-        Decimal(oferta.descuento) / Decimal(100)
-    )
-
-    return self.precio * (1 - descuento)
 @admin_required
 def admin_ofertas(request):
 
@@ -1740,9 +1687,6 @@ def admin_ofertas(request):
         # Código sin espacios (con espacios después no funcionaba en el checkout)
         codigo = ''.join(request.POST.get('codigo', '').split()).upper()
         nombre = (nombre or '').strip()
-        if not nombre:
-            messages.error(request, 'Poné un nombre para la oferta.')
-            return redirect('productos:admin_ofertas')
 
         try:
             descuento_numero = int(descuento)
@@ -1750,7 +1694,21 @@ def admin_ofertas(request):
             messages.error(request, 'El descuento debe ser un número.')
             return redirect('productos:admin_ofertas')
 
-        if descuento_numero < 1 or descuento_numero > 100:
+        # Los cupones son siempre descuentos; el aumento solo existe para el catálogo
+        tipo = Oferta.TIPO_AUMENTO if tipo_oferta != 'cupon' and request.POST.get('tipo') == Oferta.TIPO_AUMENTO else Oferta.TIPO_DESCUENTO
+
+        # El aumento no pide nombre (no se muestra en la tienda): se identifica en el admin por su porcentaje
+        if not nombre and tipo == Oferta.TIPO_AUMENTO:
+            nombre = f'Aumento +{descuento_numero}%'
+        if not nombre:
+            messages.error(request, 'Poné un nombre para la oferta.')
+            return redirect('productos:admin_ofertas')
+
+        if tipo == Oferta.TIPO_AUMENTO and not 1 <= descuento_numero <= 300:
+            messages.error(request, 'El aumento debe estar entre 1 y 300.')
+            return redirect('productos:admin_ofertas')
+
+        if tipo == Oferta.TIPO_DESCUENTO and not 1 <= descuento_numero <= 100:
             messages.error(request, 'El descuento debe estar entre 1 y 100.')
             return redirect('productos:admin_ofertas')
 
@@ -1792,6 +1750,7 @@ def admin_ofertas(request):
 
             Oferta.objects.create(
                 nombre=nombre,
+                tipo=Oferta.TIPO_DESCUENTO,
                 descuento=descuento_numero,
                 codigo=codigo,
                 es_cupon=True,
@@ -1810,18 +1769,19 @@ def admin_ofertas(request):
         if alcance == 'categoria':
             categoria_id = request.POST.get('categoria')
             if not str(categoria_id or '').isdigit():
-                messages.error(request, 'Elegí la categoría a la que se aplica la oferta.')
+                messages.error(request, 'Elegí la categoría a la que se aplica.')
                 return redirect('productos:admin_ofertas')
             categoria = get_object_or_404(Categoria, id=categoria_id, activa=True)
 
         productos_ids = request.POST.getlist('productos') if alcance == 'productos' else []
         if alcance == 'productos' and not productos_ids:
             # Antes se creaba una oferta vacía (sin productos) sin ningún aviso
-            messages.error(request, 'Elegí al menos un producto para la oferta.')
+            messages.error(request, 'Elegí al menos un producto.')
             return redirect('productos:admin_ofertas')
 
         oferta = Oferta.objects.create(
             nombre=nombre,
+            tipo=tipo,
             descuento=descuento_numero,
             aplicar_a_todos=aplicar_a_todos,
             categoria=categoria,
@@ -1831,7 +1791,10 @@ def admin_ofertas(request):
         if alcance == 'productos':
             oferta.productos.set(productos_ids)
 
-        messages.success(request, f'Oferta "{nombre}" creada correctamente.')
+        if tipo == Oferta.TIPO_AUMENTO:
+            messages.success(request, f'Aumento de +{descuento_numero}% creado correctamente.')
+        else:
+            messages.success(request, f'Oferta "{nombre}" creada correctamente.')
         return redirect('productos:admin_ofertas')
 
     context = {

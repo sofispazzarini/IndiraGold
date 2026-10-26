@@ -871,8 +871,7 @@
         </div>
         <div class="form-group">
           <label class="form-label">Ciudad <span class="char-limit">máx. 50</span></label>
-          <input list="lista_ciudades_nueva" name="ciudad" id="id_ciudad_nueva" class="form-control" placeholder="Seleccioná tu ciudad" value="{{ direccion_form.ciudad.value|default:'' }}" maxlength="50">
-          <datalist id="lista_ciudades_nueva"></datalist>
+          <input type="text" name="ciudad" id="id_ciudad_nueva" class="form-control" placeholder="Buscá tu localidad o escribila" value="{{ direccion_form.ciudad.value|default:'' }}" maxlength="50">
           <div class="char-counter"><span class="char-count">0</span>/50</div>
         </div>
         <div class="form-group">
@@ -1000,37 +999,12 @@ function previewImage(input) {
 </script>
 
 <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
+{% include '_campo_ciudad_localidades.html' %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-  // TomSelect para ciudad en formulario de nueva dirección
-  const provinciaSelect = document.getElementById('id_provincia');
-  const ciudadInput = document.getElementById('id_ciudad_nueva');
-
-  if (provinciaSelect && ciudadInput) {
-    const ts = new TomSelect(ciudadInput, { create: true, persist: false, maxItems: 1 });
-
-    provinciaSelect.addEventListener('change', function() {
-      ts.clear();
-      ts.clearOptions();
-      if (!this.value) return;
-      fetch(`https://apis.datos.gob.ar/georef/api/municipios?provincia=${encodeURIComponent(this.value)}&max=500`)
-        .then(r => r.json())
-        .then(data => {
-          data.municipios.forEach(m => ts.addOption({ value: m.nombre, text: m.nombre }));
-          ts.refreshOptions(false);
-        });
-    });
-
-    // Si ya hay una provincia seleccionada, cargar ciudades
-    if (provinciaSelect.value) {
-      fetch(`https://apis.datos.gob.ar/georef/api/municipios?provincia=${encodeURIComponent(provinciaSelect.value)}&max=500`)
-        .then(r => r.json())
-        .then(data => {
-          data.municipios.forEach(m => ts.addOption({ value: m.nombre, text: m.nombre }));
-          ts.refreshOptions(false);
-        });
-    }
-  }
+  // Ciudad = localidades de la provincia elegida (no municipios); se puede escribir otra a mano
+  iniciarCiudadTomSelect(document.getElementById('id_provincia'), document.getElementById('id_ciudad_nueva'));
+  iniciarCiudadesEnFormularios('.edit-address-form');
 
   // Character counters para campos del formulario de direccion
   document.querySelectorAll('#address-form .form-control').forEach(input => {

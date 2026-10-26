@@ -47,6 +47,19 @@ class Direccion(models.Model):
     codigo_postal = models.CharField(max_length=10)
     referencia = models.CharField(max_length=255, blank=True)
 
+    # Ubicación que el cliente confirmó en el mapa al registrarse. "automatica": el geocodificador
+    # encontró calle, altura y localidad exactas; "manual": el cliente movió o aceptó el marcador.
+    UBICACION_AUTOMATICA = 'automatica'
+    UBICACION_MANUAL = 'manual'
+    ORIGENES_UBICACION = (
+        ('', 'Sin ubicar'),
+        (UBICACION_AUTOMATICA, 'Verificada automáticamente'),
+        (UBICACION_MANUAL, 'Confirmada a mano en el mapa'),
+    )
+    latitud = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    longitud = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    ubicacion_origen = models.CharField(max_length=12, choices=ORIGENES_UBICACION, blank=True, default='')
+
     def __str__(self):
         return f"{self.etiqueta}: {self.calle} {self.numero}"
 
