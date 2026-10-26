@@ -132,6 +132,11 @@ DATABASES = {
     }
 }
 
+# Tipo de los id fijado explícitamente: sin esto cada versión de Django usaba su default y
+# makemigrations generaba "alter id" de ida y vuelta (AutoField <-> BigAutoField) en todas las apps.
+# AutoField es el estado que dejaron las últimas migraciones: no hace falta migrar nada.
+DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
+
 
 # Password validation
 # https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators

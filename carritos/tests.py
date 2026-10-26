@@ -39,32 +39,33 @@ class AgregarProductoCarritoTests(TestCase):
 		self.cliente = Cliente.objects.create(user=self.user, dni="12345678", telefono="123456")
 
 	def test_agregar_producto_con_stock_lo_incorpora_en_sesion(self):
+		# El carrito se arma por talle (variante), no por producto
 		url = reverse("carritos:agregar_producto")
-		res = self.client.post(url, {"producto_id": self.producto.id, "next": "/home/"})
+		res = self.client.post(url, {"variante_id": self.variante.id, "next": "/home/"})
 		self.assertEqual(res.status_code, 200)
 
 		session = self.client.session
 		self.assertIn("carrito", session)
-		self.assertEqual(session["carrito"].get(str(self.producto.id)), 1)
+		self.assertEqual(session["carrito"].get(str(self.variante.id)), 1)
 
 	def test_agregar_producto_sin_stock_no_incrementa(self):
 		url = reverse("carritos:agregar_producto")
-		self.client.post(url, {"producto_id": self.producto.id, "next": "/home/"})
-		res = self.client.post(url, {"producto_id": self.producto.id, "next": "/home/"})
+		self.client.post(url, {"variante_id": self.variante.id, "next": "/home/"})
+		res = self.client.post(url, {"variante_id": self.variante.id, "next": "/home/"})
 		self.assertEqual(res.status_code, 200)
 		session = self.client.session
-		self.assertEqual(session["carrito"].get(str(self.producto.id)), 1)
+		self.assertEqual(session["carrito"].get(str(self.variante.id)), 1)
 
 	def test_eliminar_producto_lo_quita_del_carrito_y_recalcula(self):
 		agregar_url = reverse("carritos:agregar_producto")
 		eliminar_url = reverse("carritos:eliminar_producto")
 
-		self.client.post(agregar_url, {"producto_id": self.producto.id, "next": "/home/"})
-		res = self.client.post(eliminar_url, {"producto_id": self.producto.id, "next": "/home/"})
+		self.client.post(agregar_url, {"variante_id": self.variante.id, "next": "/home/"})
+		res = self.client.post(eliminar_url, {"variante_id": self.variante.id, "next": "/home/"})
 		self.assertEqual(res.status_code, 200)
 
 		session = self.client.session
-		self.assertNotIn(str(self.producto.id), session.get("carrito", {}))
+		self.assertNotIn(str(self.variante.id), session.get("carrito", {}))
 
 		# Al renderizar home_publico.html, el total y count deben quedar en 0
 		self.assertIsNotNone(res.context)
@@ -74,20 +75,20 @@ class AgregarProductoCarritoTests(TestCase):
 	def test_carrito_expirado_se_limpia_y_se_reinicia_al_agregar(self):
 		url = reverse("carritos:agregar_producto")
 		session = self.client.session
-		session["carrito"] = {str(self.producto.id): 1}
+		session["carrito"] = {str(self.variante.id): 1}
 		session[SESSION_CART_STARTED_AT_KEY] = int(timezone.now().timestamp()) - 3700
 		session.save()
 
-		res = self.client.post(url, {"producto_id": self.producto.id, "next": "/home/"})
+		res = self.client.post(url, {"variante_id": self.variante.id, "next": "/home/"})
 		self.assertEqual(res.status_code, 200)
 
 		session = self.client.session
-		self.assertEqual(session["carrito"].get(str(self.producto.id)), 1)
+		self.assertEqual(session["carrito"].get(str(self.variante.id)), 1)
 		self.assertIn(SESSION_CART_STARTED_AT_KEY, session)
 
 	def test_expirar_carrito_endpoint_vacia_carrito(self):
 		session = self.client.session
-		session["carrito"] = {str(self.producto.id): 1}
+		session["carrito"] = {str(self.variante.id): 1}
 		session[SESSION_CART_STARTED_AT_KEY] = int(timezone.now().timestamp())
 		session.save()
 
@@ -104,7 +105,7 @@ class AgregarProductoCarritoTests(TestCase):
 		# ahora todas las compras van por el checkout.
 		self.client.force_login(self.user)
 		session = self.client.session
-		session["carrito"] = {str(self.producto.id): 1}
+		session["carrito"] = {str(self.variante.id): 1}
 		session.save()
 
 		url = reverse("carritos:confirmar_compra")

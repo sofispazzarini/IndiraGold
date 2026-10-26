@@ -45,3 +45,6 @@ $RECYCLE.BIN/
 # ======================
 node_modules/
 "estudio b/"
+
+# Material de estudio personal (no es del proyecto)
+estudio b/
