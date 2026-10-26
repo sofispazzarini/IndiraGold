@@ -1687,9 +1687,6 @@ def admin_ofertas(request):
         # Código sin espacios (con espacios después no funcionaba en el checkout)
         codigo = ''.join(request.POST.get('codigo', '').split()).upper()
         nombre = (nombre or '').strip()
-        if not nombre:
-            messages.error(request, 'Poné un nombre para la oferta.')
-            return redirect('productos:admin_ofertas')
 
         try:
             descuento_numero = int(descuento)
@@ -1699,6 +1696,13 @@ def admin_ofertas(request):
 
         # Los cupones son siempre descuentos; el aumento solo existe para el catálogo
         tipo = Oferta.TIPO_AUMENTO if tipo_oferta != 'cupon' and request.POST.get('tipo') == Oferta.TIPO_AUMENTO else Oferta.TIPO_DESCUENTO
+
+        # El aumento no pide nombre (no se muestra en la tienda): se identifica en el admin por su porcentaje
+        if not nombre and tipo == Oferta.TIPO_AUMENTO:
+            nombre = f'Aumento +{descuento_numero}%'
+        if not nombre:
+            messages.error(request, 'Poné un nombre para la oferta.')
+            return redirect('productos:admin_ofertas')
 
         if tipo == Oferta.TIPO_AUMENTO and not 1 <= descuento_numero <= 300:
             messages.error(request, 'El aumento debe estar entre 1 y 300.')
@@ -1788,7 +1792,7 @@ def admin_ofertas(request):
             oferta.productos.set(productos_ids)
 
         if tipo == Oferta.TIPO_AUMENTO:
-            messages.success(request, f'Aumento "{nombre}" (+{descuento_numero}%) creado correctamente.')
+            messages.success(request, f'Aumento de +{descuento_numero}% creado correctamente.')
         else:
             messages.success(request, f'Oferta "{nombre}" creada correctamente.')
         return redirect('productos:admin_ofertas')

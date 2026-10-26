@@ -3280,7 +3280,7 @@ def registrar_venta_local(request):
 
             })
         
-        if metodo_pago not in ['efectivo', 'mercado_pago', 'tarjeta']:
+        if metodo_pago not in METODOS_PAGO_PRESENCIAL:
             return JsonResponse({
                 'success': False,
                 'error': 'Método de pago inválido'

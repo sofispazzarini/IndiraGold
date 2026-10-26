@@ -112,6 +112,10 @@
     gap:.5rem;
 }
 
+.form-group[hidden]{
+    display:none;
+}
+
 .form-group label{
     font-weight:600;
     color:var(--text);
@@ -576,7 +580,7 @@
     <div class="page-header">
         <div>
             <div class="header-eyebrow">Gestión</div>
-            <h1 class="page-title">Ofertas</h1>
+            <h1 class="page-title">Ofertas y aumentos</h1>
             <p class="page-subtitle">Creá y gestioná las ofertas y los aumentos de precio de tus productos.</p>
         </div>
     </div>
@@ -602,13 +606,15 @@
 
             </div>
 
-            <div class="form-group">
+            <!-- El aumento no lleva nombre: se oculta al elegir "Aumento de precio" -->
+            <div class="form-group" id="grupoNombreOperacion">
 
-                <label>Nombre <span class="char-limit">máx. 100</span></label>
+                <label for="nombreOperacion">Nombre <span class="char-limit">máx. 100</span></label>
 
                 <input
                     type="text"
                     name="nombre"
+                    id="nombreOperacion"
                     class="char-input"
                     data-max="100"
                     maxlength="100"
@@ -815,7 +821,7 @@
 
     <div class="ofertas-card">
 
-        <h2>🏷 Ofertas creadas</h2>
+        <h2>🏷 Ofertas y aumentos creados</h2>
 
         <table class="ofertas-table">
 
@@ -1007,6 +1013,12 @@ function actualizarTipoOperacion(){
     document.getElementById('btnCrearOperacion').textContent =
         esAumento ? 'Crear aumento' : 'Crear oferta';
     porcentajeOperacion.max = esAumento ? 300 : 100;
+    const nombreOperacion = document.getElementById('nombreOperacion');
+    document.getElementById('grupoNombreOperacion').hidden = esAumento;
+    nombreOperacion.required = !esAumento;
+    if (esAumento) nombreOperacion.value = '';
+    // Sin el nombre quedan 2 campos: el grid pasa a 2 columnas para no dejar un hueco
+    tipoOperacion.closest('.form-grid').classList.toggle('form-grid-3', !esAumento);
 }
 
 tipoOperacion.addEventListener('change', actualizarTipoOperacion);

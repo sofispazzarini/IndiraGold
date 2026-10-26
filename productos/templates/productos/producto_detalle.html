@@ -459,6 +459,17 @@
         color: #1a1612;
         margin-bottom: 1rem;
     }
+
+    /* El dibujo queda más chico que la foto comercial, centrado */
+    .ficha-tecnica-img {
+        display: block;
+        width: 100%;
+        max-width: 420px;
+        max-height: 420px;
+        object-fit: contain;
+        margin: 0 auto;
+        border-radius: 8px;
+    }
     
     .ficha-detalles {
         display: grid;
@@ -1071,7 +1082,7 @@
     {% if producto.imagen_tecnica %}
         <div class="ficha-tecnica-section">
             <div class="ficha-titulo">Ficha Técnica</div>
-            <img src="{{ producto.imagen_tecnica.url }}" alt="Ficha técnica" style="width: 100%; border-radius: 8px;">
+            <img src="{{ producto.imagen_tecnica.url }}" alt="Ficha técnica" class="ficha-tecnica-img">
         </div>
     {% endif %}
 

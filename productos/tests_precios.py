@@ -136,6 +136,21 @@ class AdminOfertasAumentoTests(DatosStockMixin, TestCase):
         oferta = Oferta.objects.get()
         self.assertEqual((oferta.tipo, oferta.descuento), (Oferta.TIPO_AUMENTO, 150))
 
+    def test_crear_aumento_sin_nombre(self):
+        self.admin_logueado().post(reverse('productos:admin_ofertas'), {
+            'tipo_oferta': 'catalogo', 'tipo': 'aumento', 'nombre': '', 'descuento': '15',
+            'alcance': 'productos', 'productos': [self.remera.id],
+        })
+        oferta = Oferta.objects.get()
+        self.assertEqual((oferta.tipo, oferta.nombre), (Oferta.TIPO_AUMENTO, 'Aumento +15%'))
+
+    def test_descuento_sin_nombre_se_rechaza(self):
+        self.admin_logueado().post(reverse('productos:admin_ofertas'), {
+            'tipo_oferta': 'catalogo', 'tipo': 'descuento', 'nombre': '', 'descuento': '15',
+            'alcance': 'todos',
+        })
+        self.assertFalse(Oferta.objects.exists())
+
     def test_descuento_mayor_a_100_se_rechaza(self):
         self.admin_logueado().post(reverse('productos:admin_ofertas'), {
             'tipo_oferta': 'catalogo', 'tipo': 'descuento', 'nombre': 'Mal', 'descuento': '150',

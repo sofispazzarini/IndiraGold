@@ -10,7 +10,7 @@ Sin dependencias de las vistas: lo usan las vistas de pago y el comando de diagn
 """
 from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 
-METODOS_PAGO_PRESENCIAL = ('efectivo', 'mercado_pago', 'tarjeta')
+METODOS_PAGO_PRESENCIAL = ('efectivo', 'mercado_pago', 'tarjeta', 'transferencia')
 
 
 def redondear(valor):
@@ -87,8 +87,8 @@ def campos_costos_pago(desglose):
 
 def retencion_cobro_presencial(monto, metodo_pago, configuracion=None):
     """Retención estimada de un cobro en el local con el porcentaje que carga la administradora:
-    el de Posnet solo para tarjeta y el de Mercado Pago en el local para Mercado Pago. Efectivo no
-    tiene. Es una estimación manual: en el local no hay datos de la API de Mercado Pago."""
+    el de Posnet solo para tarjeta y el de Mercado Pago en el local para Mercado Pago. Efectivo y
+    transferencia no tienen. Es una estimación manual: en el local no hay datos de la API de Mercado Pago."""
     if not monto or monto <= 0:
         return Decimal('0.00')
     if metodo_pago not in ('tarjeta', 'mercado_pago', 'mercado_pago_qr'):
