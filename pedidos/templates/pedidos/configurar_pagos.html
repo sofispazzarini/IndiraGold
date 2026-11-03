@@ -254,6 +254,15 @@
   <form method="post" class="pago-card">
     {% csrf_token %}
 
+    <section class="pago-section" id="descuentos-metodo-pago">
+      <div class="pago-section-title"><i class="bi bi-percent"></i> Descuentos por método de pago</div>
+      <p class="pago-help">Se aplican sobre productos más envío, después del cupón si corresponde. Usá 0% para desactivar cada descuento. El efectivo conserva la opción de retiro en el local.</p>
+      <div class="pago-grid">
+        <div><label class="field-label" for="{{ form.descuento_transferencia_porcentaje.id_for_label }}">Transferencia (%)</label>{{ form.descuento_transferencia_porcentaje }}{{ form.descuento_transferencia_porcentaje.errors }}</div>
+        <div><label class="field-label" for="{{ form.descuento_efectivo_porcentaje.id_for_label }}">Efectivo (%)</label>{{ form.descuento_efectivo_porcentaje }}{{ form.descuento_efectivo_porcentaje.errors }}</div>
+      </div>
+    </section>
+
     <section class="pago-section">
       <div class="pago-section-title"><i class="bi bi-toggle2-on"></i> Medios disponibles</div>
       <div class="pago-grid">

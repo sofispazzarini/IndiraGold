@@ -1,5 +1,5 @@
 {% extends 'base_publica.html' %}
-{% load static %}
+{% load static descuentos_pago %}
 
 {% block title %}{{ producto.nombre }} — IndiraGold{% endblock %}
 
@@ -1007,6 +1007,8 @@
 
             </div>
 
+            {% descuentos_producto producto 'detalle' %}
+
             {% if plan_cuotas_mejor %}
             <div class="cuotas-badge">
               <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
@@ -1117,6 +1119,7 @@
                             {% if oferta %}<span style="background:#6E0E2E; color:#fff; font-size:.7em; padding:1px 6px; border-radius:999px; margin-left:.3rem;">-{{ oferta.descuento }}%</span>{% endif %}
                         </div>
                         {% endwith %}
+                        {% descuentos_producto prod %}
                     </div>
                 </a>
             {% endfor %}

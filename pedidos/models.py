@@ -1,6 +1,6 @@
 from config.textos import capitalizar_texto
 from django.conf import settings
-from django.core.validators import MinValueValidator
+from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
 from users.models import Cliente
 from productos.models import Producto
@@ -133,6 +133,11 @@ class Pedido(models.Model):
     codigo_descuento = models.CharField(max_length=40, blank=True, null=True)
     descuento_porcentaje = models.PositiveIntegerField(default=0)
     descuento_monto = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    descuento_pago_porcentaje = models.DecimalField(
+        max_digits=5, decimal_places=2, default=0,
+        validators=[MinValueValidator(0), MaxValueValidator(100)],
+    )
+    descuento_pago_monto = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     tipo_venta = models.CharField(
         max_length=30,
         choices=TIPOS_VENTA
@@ -629,6 +634,14 @@ class EnvioPedido(models.Model):
 
 
 class ConfiguracionPago(models.Model):
+    descuento_transferencia_porcentaje = models.DecimalField(
+        'Descuento por transferencia (%)', max_digits=5, decimal_places=2, default=0,
+        validators=[MinValueValidator(0), MaxValueValidator(100)],
+    )
+    descuento_efectivo_porcentaje = models.DecimalField(
+        'Descuento por efectivo (%)', max_digits=5, decimal_places=2, default=0,
+        validators=[MinValueValidator(0), MaxValueValidator(100)],
+    )
     mercado_pago_activo = models.BooleanField(default=True)
     transferencia_activa = models.BooleanField(default=True)
     titular_cuenta = models.CharField(max_length=150, default='Yazmin Miranda Capitanio')

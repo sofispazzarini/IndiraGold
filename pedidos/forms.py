@@ -45,6 +45,8 @@ class ConfiguracionPagoForm(forms.ModelForm):
     class Meta:
         model = ConfiguracionPago
         fields = [
+            'descuento_transferencia_porcentaje',
+            'descuento_efectivo_porcentaje',
             'mercado_pago_activo',
             'transferencia_activa',
             'titular_cuenta',
@@ -55,6 +57,8 @@ class ConfiguracionPagoForm(forms.ModelForm):
             'texto_transferencia',
         ]
         widgets = {
+            'descuento_transferencia_porcentaje': forms.NumberInput(attrs={'class': 'envio-input', 'min': '0', 'max': '100', 'step': '0.01'}),
+            'descuento_efectivo_porcentaje': forms.NumberInput(attrs={'class': 'envio-input', 'min': '0', 'max': '100', 'step': '0.01'}),
             'mercado_pago_activo': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'transferencia_activa': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'titular_cuenta': forms.TextInput(attrs={'class': 'envio-input'}),

@@ -19,6 +19,7 @@
 <div class="line">Subtotal: {{ subtotal }}</div>
 {% if descuento_porcentaje %}<div class="line">Descuento: {{ descuento_porcentaje }}% (- {{ descuento }})</div>{% endif %}
 {% if tiene_envio %}<div class="line">Envío: {{ costo_envio }}</div>{% endif %}
+{% if descuento_pago_porcentaje %}<div class="line">Descuento por pago: {{ descuento_pago_porcentaje }}% (- {{ descuento_pago }})</div>{% endif %}
 <div class="line strong">TOTAL: {{ total }}</div>
 {% endif %}
 

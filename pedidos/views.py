@@ -1,4 +1,5 @@
 from pedidos.templatetags.moneda import pesos
+from .descuentos import calcular_totales, porcentaje_pago
 from django.shortcuts import render, get_object_or_404, redirect
 from django.urls import reverse
 from django.contrib.auth.decorators import login_required, user_passes_test
@@ -991,7 +992,12 @@ def editar_pedido(request, pedido_id):
                         subtotal_items * Decimal(pedido.descuento_porcentaje) / Decimal(100)
                     )
                 pedido.descuento_monto = min(pedido.descuento_monto or Decimal('0.00'), subtotal_items)
-                pedido.total = subtotal_items - pedido.descuento_monto + (pedido.costo_envio or Decimal('0.00'))
+                totales_pago = calcular_totales(
+                    subtotal_items, pedido.costo_envio or Decimal('0.00'),
+                    pedido.descuento_pago_porcentaje, pedido.descuento_monto,
+                )
+                pedido.descuento_pago_monto = totales_pago['descuento']
+                pedido.total = totales_pago['total']
                 pedido.deuda = max(pedido.total - pedido.monto_pagado, Decimal('0.00'))
                 pedido.save()
         except ValueError as error:
@@ -1767,7 +1773,17 @@ def _crear_pago(request):
             "unit_price": float(costo_envio)
         })
 
-    total_pedido = (subtotal_productos - descuento_monto) + costo_envio
+    totales_pago = calcular_totales(
+        subtotal_productos, costo_envio,
+        porcentaje_pago(configuracion_pago, metodo_pago), descuento_monto,
+    )
+    total_pedido = totales_pago['total']
+    # Las líneas enviadas a la integración deben sumar exactamente el total persistido.
+    # Un cupón con centavos puede producir diferencias al redondear por unidad.
+    importe_integracion = sum((Decimal(str(p['unit_price'])) * p['quantity'] for p in productos), Decimal('0'))
+    if importe_integracion != total_pedido:
+        productos = [{'title': 'Compra IndiraGold (productos y envío)', 'quantity': 1,
+                      'currency_id': 'ARS', 'unit_price': float(total_pedido)}]
     direccion_pedido = direccion_flex or direccion_correo
 
     def crear_pedido_pendiente(metodo):
@@ -1775,6 +1791,8 @@ def _crear_pago(request):
         pedido = Pedido.objects.create(
             cliente=cliente,
             total=total_pedido,
+            descuento_pago_porcentaje=totales_pago['porcentaje'],
+            descuento_pago_monto=totales_pago['descuento'],
             costo_envio=costo_envio,
             opcion_flex=opcion_flex,
             codigo_descuento=cupon.codigo if cupon else None,
@@ -3699,7 +3717,9 @@ def contexto_ticket_pedido(pedido):
         'orden': str(pedido.id).zfill(5),
         'cliente_nombre': f'{pedido.cliente.user.first_name} {pedido.cliente.user.last_name}'.strip() or pedido.cliente.user.username,
         'telefono': pedido.cliente.telefono,
-        'subtotal': formato_pesos(pedido.total - pedido.costo_envio + pedido.descuento_monto),
+        'subtotal': formato_pesos(pedido.total - pedido.costo_envio + pedido.descuento_monto + pedido.descuento_pago_monto),
+        'descuento_pago_porcentaje': pedido.descuento_pago_porcentaje,
+        'descuento_pago': formato_pesos(pedido.descuento_pago_monto),
         'descuento': formato_pesos(pedido.descuento_monto),
         'descuento_porcentaje': pedido.descuento_porcentaje,
         'total': formato_pesos(pedido.total),

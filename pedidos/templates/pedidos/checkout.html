@@ -1,5 +1,5 @@
 {% extends 'users/dashboard_cliente.html' %}
-{% load l10n %}
+{% load l10n static %}
 
 {% block extra_head %}
 {{ block.super }}
@@ -1563,9 +1563,13 @@
             <span class="value discount" id="descuento-label">- {{ descuento_monto|pesos }}</span>
           </div>
 
+          <div class="resumen-row" id="descuento-pago-row" style="display:none;" aria-live="polite">
+            <span class="label" id="descuento-pago-nombre"></span>
+            <span class="value discount" id="descuento-pago-monto"></span>
+          </div>
           <div class="resumen-divider"></div>
 
-          <div class="resumen-total">
+          <div class="resumen-total" aria-live="polite">
             <span class="label">Total</span>
             <span class="value" id="total-final-display">{{ total|pesos }}</span>
           </div>
@@ -1636,7 +1640,12 @@
   </div>
 </div>
 
+<script src="{% static 'pedidos/descuentos_pago.js' %}"></script>
 <script>
+const descuentosPorPago = {
+  transferencia: {% if configuracion_pago.transferencia_activa %}{{ configuracion_pago.descuento_transferencia_porcentaje|unlocalize }}{% else %}0{% endif %},
+  efectivo: {{ configuracion_pago.descuento_efectivo_porcentaje|unlocalize }}
+};
 const subtotalBase = parseFloat("{{ subtotal|floatformat:'2' }}".replace(',', '.'));
 const costoFlexLegacy = parseFloat("{{ precio_flex|floatformat:'2' }}".replace(',', '.')) || 0;
 // El correo se cotiza con la API: hasta tener cotización el costo es null ("A cotizar"), nunca NaN ni "Gratis"
@@ -1770,7 +1779,13 @@ function actualizarEntrega() {
     envioTexto.classList.add('green');
   }
 
-  totalDisplay.innerText = formatearPesos(Math.max(0, subtotalBase - descuentoAplicado) + costoEnvio);
+  const medio = valorSeleccionado('metodo_pago');
+  const porcentaje = descuentosPorPago[medio] || 0;
+  const calculo = IndiraDescuentos.calcular(subtotalBase, costoEnvio, porcentaje, descuentoAplicado);
+  document.getElementById('descuento-pago-row').style.display = porcentaje > 0 ? 'flex' : 'none';
+  document.getElementById('descuento-pago-nombre').textContent = `Descuento por ${medio === 'efectivo' ? 'efectivo' : 'transferencia'} (${porcentaje}%)`;
+  document.getElementById('descuento-pago-monto').textContent = '- ' + formatearPesos(calculo.descuento);
+  totalDisplay.innerText = formatearPesos(calculo.total) + (envioPendiente ? ' + envío a cotizar' : '');
   actualizarBotonPago();
 }
 
@@ -1796,7 +1811,7 @@ radiosEntrega.forEach(radio => {
 });
 
 document.querySelectorAll('input[name="metodo_pago"]').forEach(radio => {
-  radio.addEventListener('change', actualizarBotonPago);
+  radio.addEventListener('change', actualizarEntrega);
 });
 
 document.querySelectorAll('input[name="tipo_correo"]').forEach(radio => {

@@ -268,6 +268,7 @@ class ConfiguracionYDiagnosticoTests(DatosStockMixin, TestCase):
         datos = {
             'mercado_pago_activo': 'on', 'transferencia_activa': 'on', 'titular_cuenta': 'Titular', 'cuit_cuil': '20-1-1',
             'cvu': '0', 'alias': 'alias', 'texto_mercado_pago': 'MP', 'texto_transferencia': 'TR',
+            'descuento_transferencia_porcentaje': '0', 'descuento_efectivo_porcentaje': '0',
             'retencion_tarjeta_porcentaje': '4.5', 'retencion_mercado_pago_presencial_porcentaje': '2,25',
             'cuotas[]': ['3'], 'retencion_porcentaje[]': ['10'], 'activo[]': ['0'],
         }

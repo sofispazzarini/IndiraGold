@@ -1,8 +1,10 @@
 {% extends 'base_publica.html' %}
+{% load static descuentos_pago %}
 
 {% block title %}IndiraGold — Tienda{% endblock %}
 
 {% block content %}
+<script src="{% static 'home/catalogo_filtros.js' %}"></script>
 
 <div id="toastContainer" aria-live="polite" aria-atomic="true"></div>
 
@@ -190,12 +192,18 @@ function scrollOfertas(dir) {
           <input type="text" id="searchInput" placeholder="Buscar productos…" oninput="filterSearch(this.value)" />
         </div>
         <div class="variant-filters">
-          <select id="talleFilter" onchange="filterTalle(this.value)">
-            <option value="">Todos los talles</option>
-            {% for talle in talles %}
-              <option value="{{ talle.id }}">{{ talle.nombre }}</option>
-            {% endfor %}
-          </select>
+          <details class="talle-dropdown" id="talleFilter">
+            <summary id="talles-label">Todos los talles</summary>
+            <div class="talle-dropdown__menu">
+              <button type="button" class="color-dropdown__opcion" onclick="limpiarTalles()">Limpiar talles</button>
+              <div class="talle-dropdown__opciones">
+                {% for talle in talles %}
+                <label><input type="checkbox" name="talles" value="{{ talle.id }}" data-nombre="{{ talle.nombre }}" onchange="cambiarTalles()"> {{ talle.nombre }}</label>
+                {% endfor %}
+              </div>
+            </div>
+          </details>
+          <button type="button" class="color-dropdown__btn" onclick="limpiarFiltros()">Limpiar filtros</button>
           <div class="color-dropdown" id="colorDropdown">
             <button type="button" class="color-dropdown__btn" onclick="toggleColorDropdown()">
               <span class="color-dropdown__label">Todos los colores</span>
@@ -224,93 +232,7 @@ function scrollOfertas(dir) {
 
     <div class="products-grid" id="productsGrid">
       {% for producto in productos %}
-          <div class="product-card" data-cat="{{ producto.categoria.id }}" data-name="{{ producto.nombre|lower }} {{ producto.tipo|lower }} {{ producto.tela|lower }}" data-talles="{{ producto.talles_con_stock }}" data-colores="{% for v in producto.variantes.all %}{% for c in v.colores.all %}{{ c.id }},{% endfor %}{% endfor %}">
-            <a href="{% url 'productos:detalle_producto' producto.id %}" class="product-card__img-wrap">
-          {% if producto.imagen %}
-            <img src="{{ producto.imagen.url }}" alt="{{ producto.nombre }}" class="product-card__img" />
-          {% else %}
-            <div class="product-card__placeholder">
-              <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" fill="currentColor" viewBox="0 0 16 16">
-                <path d="M6.002 5.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z"/>
-                <path d="M2.002 1a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V3a2 2 0 0 0-2-2h-12zm12 1a1 1 0 0 1 1 1v6.5l-3.777-1.947a.5.5 0 0 0-.577.093l-3.71 3.71-2.66-1.772a.5.5 0 0 0-.63.062L1.002 12V3a1 1 0 0 1 1-1h12z"/>
-              </svg>
-            </div>
-          {% endif %}
-          {% if producto.stock_total == 0 %}
-            <span class="product-card__badge product-card__badge--agotado">Agotado</span>
-          {% elif producto.stock_total < 5 %}
-            <span class="product-card__badge product-card__badge--ultimos">Últimos</span>
-          {% endif %}
-        </a>
-        <div class="product-card__body">
-          <span class="product-card__cat">{{ producto.categoria.nombre }}</span>
-          <h3 class="product-card__name">{{ producto.nombre }}</h3>
-          <p class="product-card__meta">{{ producto.tipo }} · {{ producto.tela }}</p>
-          {% if producto.obtener_oferta_activa %}
-  <div class="product-discount-circle">
-    -{{ producto.obtener_oferta_activa.descuento }}%
-  </div>
-{% endif %}
-
-<div class="product-card__footer">
-
-  <div>
-
-    {% if producto.obtener_oferta_activa %}
-
-      <span class="product-price-old">
-        {{ producto.precio_lista|pesos }}
-      </span>
-
-      <span class="product-price-new">
-        {{ producto.precio_final|pesos }}
-      </span>
-
-    {% else %}
-
-      <span class="product-card__price">
-        {{ producto.precio_lista|pesos }}
-      </span>
-
-    {% endif %}
-
-  </div>
-
-  {% if producto.variantes.first and producto.stock_total > 0 %}
-
-    <button
-      type="button"
-      class="product-card__btn"
-      data-variantes="{{ producto.variantes_json }}"
-      data-nombre="{{ producto.nombre }}"
-      onclick="abrirModalCantidad(this)"
-    >
-
-      <svg xmlns="http://www.w3.org/2000/svg"
-           width="14"
-           height="14"
-           fill="currentColor"
-           viewBox="0 0 16 16">
-
-        <path d="M8 1a2.5 2.5 0 0 1 2.5 2.5V4h-5v-.5A2.5 2.5 0 0 1 8 1zm3.5 3v-.5a3.5 3.5 0 1 0-7 0V4H1v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V4h-3.5zM2 5h12v9a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V5z"/>
-
-      </svg>
-
-      Agregar
-
-    </button>
-
-  {% else %}
-
-    <span class="product-card__agotado">
-      Sin stock
-    </span>
-
-  {% endif %}
-
-</div>
-        </div>
-      </div>
+        {% include 'home/_tarjeta_producto.html' %}
       {% empty %}
         <div class="empty-catalog">
           <p>No hay productos disponibles por el momento.</p>
@@ -704,9 +626,9 @@ function scrollOfertas(dir) {
   .featured-btn { width: 40px; height: 40px; border-radius: 10px; border: 1px solid #e8dfd4; background: #fff; color: #1a1612; cursor: pointer; font-size: 1.1rem; line-height: 1; }
   .featured-btn:hover { border-color: #b8922a; color: #b8922a; }
   .featured-viewport { overflow: hidden; }
-  .featured-track { display: grid; grid-auto-flow: column; grid-auto-columns: 260px; gap: 1rem; overflow-x: auto; scroll-behavior: smooth; padding-bottom: .35rem; scrollbar-width: none; }
+  .featured-track { display: grid; grid-auto-flow: column; grid-auto-columns: min(260px, 100%); gap: 1rem; overflow-x: auto; scroll-behavior: smooth; padding-bottom: .35rem; scrollbar-width: none; }
   .featured-track::-webkit-scrollbar { display: none; }
-  .featured-item { width: 260px; }
+  .featured-item { width: 100%; min-width: 0; display: flex; }
 
   /* CATÁLOGO */
   .catalog-section { padding: 4rem 0 5rem; background: #fff; }
@@ -717,7 +639,15 @@ function scrollOfertas(dir) {
   .search-wrap { display: flex; align-items: center; gap: .5rem; background: #fff; border: 1px solid #e8dfd4; border-radius: 8px; padding: .45rem .85rem; }
   .search-wrap svg { color: #8c7e70; flex-shrink: 0; }
   .search-wrap input { border: none; outline: none; font-size: .875rem; font-family: 'DM Sans', sans-serif; color: #1a1612; width: 220px; background: transparent; }
-  .variant-filters { display: flex; gap: .5rem; }
+  .variant-filters { display: flex; gap: .5rem; flex-wrap: wrap; }
+  .talle-dropdown { position: relative; color: #1a1612; font-size: .82rem; }
+  .talle-dropdown summary { cursor: pointer; padding: .45rem .65rem; border: 1px solid #e8dfd4; border-radius: 8px; background: #fff; min-width: 140px; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .talle-dropdown__menu { position: absolute; top: 100%; left: 0; margin-top: 4px; width: 220px; max-width: calc(100vw - 2rem); background: #fff; padding: .5rem; border: 1px solid #e8dfd4; border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,.12); z-index: 101; }
+  .talle-dropdown__opciones { max-height: 250px; overflow-y: auto; }
+  .talle-dropdown label { display: flex; gap: .65rem; align-items: center; min-height: 44px; padding: .4rem .5rem; cursor: pointer; }
+  .talle-dropdown input { accent-color: #b8922a; }
+  .talle-dropdown :focus-visible { outline: 2px solid #b8922a; outline-offset: 2px; }
+  @media (max-width: 600px) { .talle-dropdown__menu { width: 190px; } }
   .variant-filters select {
     border: 1px solid #e8dfd4;
     background: #fff;
@@ -781,7 +711,7 @@ function scrollOfertas(dir) {
 
   .products-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.5rem; }
 
-  .product-card { background: #fff; border: 1px solid #e8dfd4; border-radius: 12px; overflow: hidden; transition: all .25s; animation: fadeUp .5s ease both; }
+  .product-card { display: flex; flex-direction: column; height: 100%; min-width: 0; background: #fff; border: 1px solid #e8dfd4; border-radius: 12px; overflow: hidden; transition: all .25s; animation: fadeUp .5s ease both; }
   .product-card:hover { box-shadow: 0 12px 40px rgba(0,0,0,.08); transform: translateY(-4px); border-color: #b8922a; }
   .product-card__img-wrap { display: block; position: relative; aspect-ratio: 3/4; overflow: hidden; background: #f3ede6; text-decoration: none; }
   .product-card__img { width: 100%; height: 100%; object-fit: cover; transition: transform .4s; }
@@ -791,12 +721,13 @@ function scrollOfertas(dir) {
   .product-card__badge--agotado { background: #1a1612; color: #fff; }
   .product-card__badge--ultimos { background: #b8922a; color: #fff; }
 
-  .product-card__body { padding: 1rem 1.1rem 1.1rem; }
+  .product-card__body { padding: 1rem 1.1rem 1.1rem; display: flex; flex-direction: column; flex: 1; min-width: 0; }
+  .product-card__pricing { min-width: 0; margin-top: auto; }
   .product-card__cat  { font-size: .72rem; font-weight: 600; text-transform: uppercase; letter-spacing: .1em; color: #b8922a; }
   /* Nombre, tipo y tela largos: máximo 2 líneas (las cards de la fila quedan parejas) */
   .product-card__name { font-family: 'Cormorant Garamond', serif; font-size: 1.1rem; font-weight: 600; color: #1a1612; margin: .2rem 0 .25rem; line-height: 1.25; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
   .product-card__meta { font-size: .78rem; color: #8c7e70; margin-bottom: .75rem; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-  .product-card__footer { display: flex; justify-content: space-between; align-items: center; }
+  .product-card__footer { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: .5rem; padding-top: .85rem; }
   .product-card__price { font-family: 'Cormorant Garamond', serif; font-size: 1.2rem; font-weight: 700; color: #1a1612; }
   .product-card__btn {
     display: inline-flex; align-items: center; gap: .35rem;
@@ -1028,6 +959,9 @@ function scrollOfertas(dir) {
     position: relative;
     text-align: center;
     box-shadow: 0 32px 80px rgba(0,0,0,0.35);
+    max-height: calc(100vh - 2rem);
+    max-height: calc(100dvh - 2rem);
+    overflow-y: auto;
     animation: welcomeIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
   @keyframes welcomeIn {
@@ -1099,6 +1033,31 @@ function scrollOfertas(dir) {
     background: #faf7f0;
     color: #b8922a;
   }
+  .welcome-talles .talle-btn { max-width: 100%; overflow-wrap: anywhere; min-height: 44px; }
+  .welcome-talles .talle-btn[aria-pressed="true"] {
+    background: #b8922a;
+    border-color: #b8922a;
+    color: #fff;
+    font-weight: 600;
+  }
+  .welcome-talles .talle-btn:focus-visible, .welcome-apply:focus-visible {
+    outline: 2px solid #1a1612;
+    outline-offset: 3px;
+  }
+  .welcome-apply {
+    display: block;
+    width: 100%;
+    padding: .8rem 1rem;
+    margin-bottom: .5rem;
+    background: #1a1612;
+    border: 1px solid #1a1612;
+    border-radius: 10px;
+    color: #fff;
+    font: inherit;
+    font-weight: 500;
+    cursor: pointer;
+  }
+  .welcome-apply:hover { background: #b8922a; border-color: #b8922a; }
   .welcome-skip {
     background: none;
     border: none;
@@ -1146,7 +1105,7 @@ function scrollOfertas(dir) {
 
   let activeCategory = '';
   let searchTerm = '';
-  let selectedTalle = '';
+  let selectedTalles = [];
   let selectedColor = '';
 
   // ─── localStorage Cart Backup ───
@@ -1320,25 +1279,12 @@ function scrollOfertas(dir) {
     return document.querySelectorAll('#productsGrid .product-card');
   }
 
-  function parseList(datasetValue) {
-    return (datasetValue || '')
-      .split(',')
-      .map(v => v.trim())
-      .filter(Boolean);
-  }
-
   function applyFilters() {
     const cards = getCatalogCards();
     cards.forEach(card => {
-      const matchCategory = activeCategory === '' || card.dataset.cat === activeCategory;
-      const matchSearch = sinTildes(card.dataset.name).includes(searchTerm);
-
-      const talles = parseList(card.dataset.talles);
-      const colores = parseList(card.dataset.colores);
-      const matchTalle = selectedTalle === '' || talles.includes(selectedTalle);
-      const matchColor = selectedColor === '' || colores.includes(selectedColor);
-
-      card.style.display = (matchCategory && matchSearch && matchTalle && matchColor) ? '' : 'none';
+      card.style.display = IndiraCatalogo.coincide(card.dataset, {
+        categoria: activeCategory, busqueda: searchTerm, talles: selectedTalles, color: selectedColor
+      }) ? '' : 'none';
     });
     checkEmpty();
   }
@@ -1358,10 +1304,42 @@ function scrollOfertas(dir) {
     applyFilters();
   }
 
-  function filterTalle(talleId) {
-    selectedTalle = talleId;
+  function cambiarTalles() {
+    const marcados = [...document.querySelectorAll('#talleFilter input:checked')];
+    selectedTalles = marcados.map(input => input.value);
+    document.getElementById('talles-label').textContent = marcados.length
+      ? 'Talles: ' + marcados.map(input => input.dataset.nombre).join(', ')
+      : 'Todos los talles';
+    sincronizarTallesWelcome();
     applyFilters();
   }
+
+  function filterTalle(talleId) {
+    document.querySelectorAll('#talleFilter input').forEach(input => { input.checked = input.value === talleId; });
+    cambiarTalles();
+  }
+
+  function limpiarTalles() { filterTalle(''); }
+
+  function limpiarFiltros() {
+    activeCategory = '';
+    searchTerm = '';
+    document.getElementById('searchInput').value = '';
+    document.querySelectorAll('.cat-pill').forEach((pill, i) => pill.classList.toggle('cat-pill--active', i === 0));
+    selectColor('', 'Todos los colores', null);
+    limpiarTalles();
+  }
+
+  document.addEventListener('click', event => {
+    const desplegable = document.getElementById('talleFilter');
+    if (!desplegable.contains(event.target)) desplegable.open = false;
+  });
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape') {
+      const desplegable = document.getElementById('talleFilter');
+      if (desplegable.open) { desplegable.open = false; desplegable.querySelector('summary').focus(); }
+    }
+  });
 
   function filterColor(colorId) {
     selectedColor = colorId;
@@ -1871,17 +1849,35 @@ function scrollOfertas(dir) {
     document.getElementById('welcomeModal').classList.remove('show');
   }
 
+  function sincronizarTallesWelcome() {
+    document.querySelectorAll('#welcomeModal [data-talle-id]').forEach(boton => {
+      boton.setAttribute('aria-pressed', String(selectedTalles.includes(boton.dataset.talleId)));
+    });
+  }
+
   function mostrarWelcome() {
+    sincronizarTallesWelcome();
     document.getElementById('welcomeModal').classList.add('show');
   }
 
   function seleccionarTalle(talleId) {
+    const checkbox = [...document.querySelectorAll('#talleFilter input')]
+      .find(input => input.value === talleId);
+    if (!checkbox) return;
+    checkbox.checked = !checkbox.checked;
+    cambiarTalles();
+  }
+
+  function aplicarTallesWelcome() {
     cerrarWelcome();
-    document.getElementById('talleFilter').value = talleId;
-    filterTalle(talleId);
     setTimeout(() => {
       document.getElementById('catalogo').scrollIntoView({ behavior: 'smooth' });
     }, 300);
+  }
+
+  function verTodoCatalogo() {
+    limpiarTalles();
+    aplicarTallesWelcome();
   }
 
   // Mostrar modal si no fue cerrado antes + agregar botón al navbar
@@ -1924,16 +1920,17 @@ function scrollOfertas(dir) {
       <h2 class="welcome-title">Indira Gold</h2>
       <p class="welcome-text">
         Encontrá prendas únicas pensadas para vos.<br>
-        Seleccioná tu talle y te mostramos lo que tenemos disponible.
+        Seleccioná uno o varios talles y te mostramos lo que tenemos disponible.
       </p>
-      <div class="welcome-talles">
+      <div class="welcome-talles" role="group" aria-label="Seleccioná tus talles">
         {% for talle in talles %}
-        <button class="talle-btn" onclick="seleccionarTalle('{{ talle.id }}')">
+        <button type="button" class="talle-btn" data-talle-id="{{ talle.id }}" aria-pressed="false" onclick="seleccionarTalle(this.dataset.talleId)">
           {{ talle.nombre }}
         </button>
         {% endfor %}
       </div>
-      <button class="welcome-skip" onclick="cerrarWelcome()">
+      <button type="button" class="welcome-apply" onclick="aplicarTallesWelcome()">Ver productos</button>
+      <button type="button" class="welcome-skip" onclick="verTodoCatalogo()">
         Ver todo el catálogo
       </button>
     </div>

@@ -1,0 +1,13 @@
+{% if ofertas_pago %}
+<div class="descuentos-pago{% if detalle_promociones %} descuentos-pago--detalle{% endif %}" aria-label="Descuentos por método de pago">
+  {% if detalle_promociones %}<p class="descuentos-pago__titulo">Promociones disponibles</p>{% endif %}
+  <ul class="descuentos-pago__lista">
+    {% for oferta in ofertas_pago %}
+    <li class="descuentos-pago__oferta">
+      <span class="descuentos-pago__mensaje">{{ oferta.porcentaje|floatformat:"-2" }}% OFF abonando {% if oferta.nombre == 'efectivo' %}en efectivo{% else %}con transferencia{% endif %}</span>
+      <strong class="descuentos-pago__precio">{{ oferta.precio|pesos }}</strong>
+    </li>
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}

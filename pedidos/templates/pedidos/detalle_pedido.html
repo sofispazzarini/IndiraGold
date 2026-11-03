@@ -431,6 +431,12 @@
                     <span class="detail-val" style="color:#2f6b38;">Gratis</span>
                     {% endif %}
                 </div>
+                {% if pedido.descuento_pago_porcentaje > 0 %}
+                <div class="detail-row">
+                    <span class="detail-lbl">Descuento por {{ pedido.get_metodo_pago_display }} ({{ pedido.descuento_pago_porcentaje|floatformat:"-2" }}%)</span>
+                    <span class="detail-val" style="color:#2f6b38;">-{{ pedido.descuento_pago_monto|pesos }}</span>
+                </div>
+                {% endif %}
                 <div class="detail-row">
                     <span class="detail-lbl">Articulos</span>
                     <span class="detail-val">{{ items|length }} producto{% if items|length != 1 %}s{% endif %}</span>
