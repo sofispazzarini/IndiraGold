@@ -439,6 +439,32 @@
     cursor: not-allowed;
 }
 
+/* Vencimiento del cupón */
+.vencimiento-opciones{
+    display:flex;
+    flex-wrap:wrap;
+    gap:.4rem 1rem;
+    margin-bottom:.5rem;
+}
+.vencimiento-opcion{
+    display:flex;
+    align-items:center;
+    gap:.4rem;
+    font-weight:400 !important;
+    cursor:pointer;
+}
+.form-group .vencimiento-opcion input{
+    height:auto;
+    padding:0;
+    accent-color:var(--gold);
+}
+.vencimiento-campos{
+    display:flex;
+    gap:.5rem;
+}
+.vencimiento-campos[hidden]{ display:none; }
+.vencimiento-campos input{ flex:1; min-width:0; }
+
 /* Tablet grande / laptop pequeña */
 @media(max-width:1100px){
     .ofertas-page{
@@ -798,15 +824,40 @@
                     <label>Cantidad de usos <span class="char-limit">opcional</span></label>
                     <input type="number" name="limite_usos" id="limiteUsosInput" min="1" placeholder="Ej: 5">
                     <div style="font-size: 0.75rem; color: var(--muted); margin-top: 0.25rem;">
-                        Cuántos clientes pueden usarlo
+                        Cuántas veces se puede usar. Vacío = ilimitado
                     </div>
                 </div>
 
-                <div class="form-group" id="fechaFinGroup">
-                    <label>Fecha límite <span class="char-limit">opcional</span></label>
-                    <input type="date" name="fecha_fin" id="fechaFinInput">
-                    <div style="font-size: 0.75rem; color: var(--muted); margin-top: 0.25rem;">
-                        Hasta cuándo se puede usar
+                <div class="form-group" id="vencimientoGroup">
+                    <label>Vencimiento</label>
+                    <div class="vencimiento-opciones">
+                        <label class="vencimiento-opcion">
+                            <input type="radio" name="vencimiento_tipo" value="sin" checked> Sin vencimiento
+                        </label>
+                        <label class="vencimiento-opcion">
+                            <input type="radio" name="vencimiento_tipo" value="duracion"> Vence en…
+                        </label>
+                        <label class="vencimiento-opcion">
+                            <input type="radio" name="vencimiento_tipo" value="fecha"> Hasta una fecha
+                        </label>
+                    </div>
+
+                    <div class="vencimiento-campos" data-vencimiento="duracion" hidden>
+                        <input type="number" name="vencimiento_cantidad" id="vencimientoCantidad" min="1" placeholder="Ej: 30">
+                        <select name="vencimiento_unidad" id="vencimientoUnidad">
+                            <option value="horas">horas</option>
+                            <option value="dias" selected>días</option>
+                            <option value="meses">meses</option>
+                            <option value="anios">años</option>
+                        </select>
+                    </div>
+
+                    <div class="vencimiento-campos" data-vencimiento="fecha" hidden>
+                        <input type="date" name="fecha_fin" id="fechaFinInput">
+                    </div>
+
+                    <div id="vencimientoPreview" style="font-size: 0.75rem; color: var(--muted); margin-top: 0.25rem;">
+                        Se puede usar mientras tenga usos disponibles
                     </div>
                 </div>
             </div>
@@ -884,10 +935,12 @@
                     <td style="font-size: 0.8rem;">
                         {% if oferta.es_cupon %}
                             {% if oferta.limite_usos %}
-                                <span style="color: var(--burgundy);">{{ oferta.usos_actuales }}/{{ oferta.limite_usos }} usos</span>
-                            {% elif oferta.fecha_fin %}
-                                <span>Hasta {{ oferta.fecha_fin|date:"d/m/Y" }}</span>
-                            {% else %}
+                                <div style="color: var(--burgundy);">{{ oferta.usos_actuales }}/{{ oferta.limite_usos }} usos</div>
+                            {% endif %}
+                            {% if oferta.fecha_fin %}
+                                <div>Hasta {{ oferta.fecha_fin|date:"d/m/Y H:i" }}</div>
+                            {% endif %}
+                            {% if not oferta.limite_usos and not oferta.fecha_fin %}
                                 <span style="color: var(--muted);">Sin límite</span>
                             {% endif %}
                         {% else %}
@@ -1090,39 +1143,81 @@ document.querySelectorAll('.char-input').forEach(input => {
     });
 });
 
-// Campos mutuamente excluyentes: limite_usos y fecha_fin
-const limiteUsosInput = document.getElementById('limiteUsosInput');
-const fechaFinInput = document.getElementById('fechaFinInput');
-const limiteUsosGroup = document.getElementById('limiteUsosGroup');
-const fechaFinGroup = document.getElementById('fechaFinGroup');
+// Vencimiento del cupón: se combina con la cantidad de usos
+(function () {
+    const grupo = document.getElementById('vencimientoGroup');
+    if (!grupo) return;
+    const radios = grupo.querySelectorAll('input[name="vencimiento_tipo"]');
+    const cantidad = document.getElementById('vencimientoCantidad');
+    const unidad = document.getElementById('vencimientoUnidad');
+    const fecha = document.getElementById('fechaFinInput');
+    const preview = document.getElementById('vencimientoPreview');
 
-function updateLimiteExclusivo() {
-    if (limiteUsosInput.value) {
-        fechaFinInput.disabled = true;
-        fechaFinInput.value = '';
-        fechaFinGroup.style.opacity = '0.5';
-    } else {
-        fechaFinInput.disabled = false;
-        fechaFinGroup.style.opacity = '1';
+    // No se puede elegir una fecha pasada
+    const hoy = new Date();
+    const iso = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    fecha.min = iso(hoy);
+
+    function sumarMeses(base, meses) {
+        const total = base.getMonth() + meses;
+        const anio = base.getFullYear() + Math.floor(total / 12);
+        const mes = ((total % 12) + 12) % 12;
+        const ultimo = new Date(anio, mes + 1, 0).getDate();
+        return new Date(anio, mes, Math.min(base.getDate(), ultimo));
     }
-}
 
-function updateFechaExclusivo() {
-    if (fechaFinInput.value) {
-        limiteUsosInput.disabled = true;
-        limiteUsosInput.value = '';
-        limiteUsosGroup.style.opacity = '0.5';
-    } else {
-        limiteUsosInput.disabled = false;
-        limiteUsosGroup.style.opacity = '1';
+    function tipoElegido() {
+        const r = grupo.querySelector('input[name="vencimiento_tipo"]:checked');
+        return r ? r.value : 'sin';
     }
-}
 
-if (limiteUsosInput && fechaFinInput) {
-    limiteUsosInput.addEventListener('input', updateLimiteExclusivo);
-    fechaFinInput.addEventListener('input', updateFechaExclusivo);
-    fechaFinInput.addEventListener('change', updateFechaExclusivo);
-}
+    function actualizar() {
+        const tipo = tipoElegido();
+        grupo.querySelectorAll('.vencimiento-campos').forEach(el => {
+            const visible = el.dataset.vencimiento === tipo;
+            el.hidden = !visible;
+            el.querySelectorAll('input, select').forEach(i => { i.disabled = !visible; });
+        });
+        cantidad.required = tipo === 'duracion';
+        fecha.required = tipo === 'fecha';
+
+        let fin = null;
+        let horaExacta = false;
+        if (tipo === 'duracion') {
+            const n = parseInt(cantidad.value, 10);
+            if (n >= 1) {
+                const base = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
+                if (unidad.value === 'horas') {
+                    fin = new Date(Date.now() + n * 3600 * 1000);
+                    horaExacta = true;
+                } else if (unidad.value === 'meses') fin = sumarMeses(base, n);
+                else if (unidad.value === 'anios') fin = sumarMeses(base, n * 12);
+                else fin = new Date(base.getFullYear(), base.getMonth(), base.getDate() + n);
+            }
+        } else if (tipo === 'fecha' && fecha.value) {
+            const [y, m, d] = fecha.value.split('-').map(Number);
+            fin = new Date(y, m - 1, d);
+        }
+
+        if (tipo === 'sin') {
+            preview.textContent = 'Se puede usar mientras tenga usos disponibles';
+        } else if (fin) {
+            const hora = horaExacta
+                ? fin.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })
+                : '23:59';
+            preview.textContent = `Vence el ${fin.toLocaleDateString('es-AR')} a las ${hora}`;
+        } else {
+            preview.textContent = tipo === 'duracion' ? 'Indicá en cuánto tiempo vence' : 'Elegí la fecha de vencimiento';
+        }
+    }
+
+    radios.forEach(r => r.addEventListener('change', actualizar));
+    [cantidad, unidad, fecha].forEach(el => {
+        el.addEventListener('input', actualizar);
+        el.addEventListener('change', actualizar);
+    });
+    actualizar();
+})();
 
 </script>
 

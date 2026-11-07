@@ -1,16 +1,19 @@
 """Aumentos y descuentos de precio: un aumento sube el precio sin ser oferta; un descuento es oferta.
 El precio que se muestra es el que se cobra (carrito, checkout y ventas presenciales)."""
 import json
+from datetime import date, datetime, time, timedelta
 from decimal import Decimal
 
 from django.test import TestCase
 from django.urls import reverse
+from django.utils import timezone
 
 from carritos.utils import precio_unitario_vigente
 from pedidos.models import VentaLocalItem
 from pedidos.tests import DatosStockMixin
 from pedidos.views import calcular_descuento_cupon
 from productos.models import Oferta, Producto
+from productos.views import _sumar_meses
 
 
 class PreciosAumentosDescuentosTests(DatosStockMixin, TestCase):
@@ -163,3 +166,74 @@ class AdminOfertasAumentoTests(DatosStockMixin, TestCase):
             'tipo_oferta': 'cupon', 'tipo': 'aumento', 'nombre': 'Cupón', 'descuento': '10', 'codigo': 'HOLA',
         })
         self.assertEqual(Oferta.objects.get().tipo, Oferta.TIPO_DESCUENTO)
+
+
+class CuponesVencimientoTests(DatosStockMixin, TestCase):
+    """Cantidad de usos y vencimiento se combinan; el vencimiento puede ser por duración, fecha o ninguno."""
+
+    def setUp(self):
+        self.crear_datos()
+
+    def crear_cupon(self, **datos):
+        base = {'tipo_oferta': 'cupon', 'nombre': 'Cupón', 'descuento': '10', 'codigo': 'HOLA'}
+        base.update(datos)
+        return self.admin_logueado().post(reverse('productos:admin_ofertas'), base)
+
+    def fin_del_dia(self, dia):
+        return timezone.make_aware(datetime.combine(dia, time(23, 59, 59)))
+
+    def test_usos_y_duracion_en_dias_juntos(self):
+        self.crear_cupon(limite_usos='5', vencimiento_tipo='duracion', vencimiento_cantidad='10', vencimiento_unidad='dias')
+        cupon = Oferta.objects.get()
+        self.assertEqual(cupon.limite_usos, 5)
+        self.assertEqual(cupon.fecha_fin, self.fin_del_dia(timezone.localdate() + timedelta(days=10)))
+        self.assertTrue(cupon.puede_usarse()[0])
+
+    def test_duracion_en_horas_vence_a_la_hora_exacta(self):
+        antes = timezone.now()
+        self.crear_cupon(limite_usos='2', vencimiento_tipo='duracion', vencimiento_cantidad='6', vencimiento_unidad='horas')
+        cupon = Oferta.objects.get()
+        self.assertEqual(cupon.limite_usos, 2)
+        esperado = antes.replace(second=0, microsecond=0) + timedelta(hours=6)
+        self.assertLess(abs((cupon.fecha_fin - esperado).total_seconds()), 61)
+        self.assertTrue(cupon.puede_usarse()[0])
+
+    def test_duracion_en_meses_y_anios(self):
+        hoy = timezone.localdate()
+        self.crear_cupon(vencimiento_tipo='duracion', vencimiento_cantidad='2', vencimiento_unidad='meses')
+        self.assertEqual(Oferta.objects.get(codigo='HOLA').fecha_fin, self.fin_del_dia(_sumar_meses(hoy, 2)))
+        self.crear_cupon(codigo='CHAU', vencimiento_tipo='duracion', vencimiento_cantidad='1', vencimiento_unidad='anios')
+        self.assertEqual(Oferta.objects.get(codigo='CHAU').fecha_fin, self.fin_del_dia(_sumar_meses(hoy, 12)))
+
+    def test_sumar_meses_ajusta_fin_de_mes(self):
+        self.assertEqual(_sumar_meses(date(2026, 1, 31), 1), date(2026, 2, 28))
+        self.assertEqual(_sumar_meses(date(2028, 1, 31), 1), date(2028, 2, 29))
+        self.assertEqual(_sumar_meses(date(2026, 11, 30), 3), date(2027, 2, 28))
+        self.assertEqual(_sumar_meses(date(2028, 2, 29), 12), date(2029, 2, 28))
+
+    def test_sin_vencimiento_con_usos(self):
+        self.crear_cupon(limite_usos='5', vencimiento_tipo='sin', fecha_fin='2030-01-01')
+        cupon = Oferta.objects.get()
+        self.assertIsNone(cupon.fecha_fin)
+        self.assertEqual(cupon.limite_usos, 5)
+
+    def test_hasta_una_fecha_con_usos(self):
+        manana = timezone.localdate() + timedelta(days=1)
+        self.crear_cupon(limite_usos='3', vencimiento_tipo='fecha', fecha_fin=manana.isoformat())
+        cupon = Oferta.objects.get()
+        self.assertEqual((cupon.limite_usos, cupon.fecha_fin), (3, self.fin_del_dia(manana)))
+
+    def test_fecha_pasada_se_rechaza(self):
+        ayer = timezone.localdate() - timedelta(days=1)
+        self.crear_cupon(vencimiento_tipo='fecha', fecha_fin=ayer.isoformat())
+        self.assertFalse(Oferta.objects.exists())
+
+    def test_duracion_invalida_se_rechaza(self):
+        for cantidad in ('', '0', '-3', 'abc'):
+            self.crear_cupon(vencimiento_tipo='duracion', vencimiento_cantidad=cantidad, vencimiento_unidad='dias')
+        self.assertFalse(Oferta.objects.exists())
+
+    def test_formulario_viejo_solo_con_fecha(self):
+        manana = timezone.localdate() + timedelta(days=1)
+        self.crear_cupon(fecha_fin=manana.isoformat())
+        self.assertEqual(Oferta.objects.get().fecha_fin, self.fin_del_dia(manana))
