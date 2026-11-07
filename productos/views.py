@@ -1672,6 +1672,64 @@ def gestionar_productos_categoria_orden(request, cat_id):
         'productos_en_categoria': productos_en_categoria,
         'productos_disponibles': productos_disponibles,
     })
+def _sumar_meses(fecha, meses):
+    """Suma meses a una fecha; si el día no existe en el mes destino usa el último (31/01 + 1 mes = fin de febrero)."""
+    import calendar
+    total = fecha.month - 1 + meses
+    anio, mes = fecha.year + total // 12, total % 12 + 1
+    return fecha.replace(year=anio, month=mes, day=min(fecha.day, calendar.monthrange(anio, mes)[1]))
+
+
+def _vencimiento_cupon(datos):
+    """(fecha_fin, error) para un cupón según el formulario. fecha_fin es None si no vence.
+
+    En días, meses, años o fecha cubre el día completo (hasta las 23:59:59); en horas vence a la hora exacta."""
+    from datetime import datetime, timedelta
+
+    tipo = (datos.get('vencimiento_tipo') or '').strip()
+    fecha_texto = (datos.get('fecha_fin') or '').strip()
+    if not tipo:
+        # Formularios viejos: solo mandaban la fecha
+        tipo = 'fecha' if fecha_texto else 'sin'
+
+    hoy = timezone.localdate()
+
+    if tipo == 'sin':
+        return None, None
+
+    if tipo == 'duracion':
+        try:
+            cantidad = int((datos.get('vencimiento_cantidad') or '').strip())
+        except ValueError:
+            cantidad = 0
+        if cantidad < 1:
+            return None, 'Indicá en cuánto tiempo vence el cupón (1 o más).'
+        unidad = datos.get('vencimiento_unidad', 'dias')
+        try:
+            if unidad == 'horas':
+                # En horas vence a la hora exacta, no al final del día
+                return timezone.now().replace(second=0, microsecond=0) + timedelta(hours=cantidad), None
+            if unidad == 'meses':
+                dia = _sumar_meses(hoy, cantidad)
+            elif unidad == 'anios':
+                dia = _sumar_meses(hoy, cantidad * 12)
+            else:
+                dia = hoy + timedelta(days=cantidad)
+        except (ValueError, OverflowError):
+            return None, 'La duración del cupón es demasiado larga.'
+    elif tipo == 'fecha':
+        try:
+            dia = datetime.strptime(fecha_texto, '%Y-%m-%d').date()
+        except ValueError:
+            return None, 'Elegí la fecha hasta la que vale el cupón.'
+        if dia < hoy:
+            return None, 'La fecha límite no puede ser anterior a hoy.'
+    else:
+        return None, 'Elegí cómo vence el cupón.'
+
+    return timezone.make_aware(datetime.combine(dia, datetime.max.time().replace(microsecond=0))), None
+
+
 @admin_required
 def admin_ofertas(request):
 
@@ -1731,22 +1789,12 @@ def admin_ofertas(request):
                 except (TypeError, ValueError):
                     limite_usos_valor = None
 
-            # Procesar fecha límite
-            fecha_fin = request.POST.get('fecha_fin', '').strip()
-            fecha_fin_valor = None
-            if fecha_fin:
-                try:
-                    from datetime import datetime
-                    from django.utils import timezone
-                    # "Hasta el 08/10" incluye todo ese día
-                    fecha_fin_valor = timezone.make_aware(
-                        datetime.strptime(fecha_fin, '%Y-%m-%d').replace(hour=23, minute=59, second=59)
-                    )
-                except (TypeError, ValueError):
-                    fecha_fin_valor = None
-                if fecha_fin_valor and fecha_fin_valor < timezone.now():
-                    messages.error(request, 'La fecha límite no puede ser anterior a hoy.')
-                    return redirect('productos:admin_ofertas')
+            # Vencimiento: sin vencimiento, por duración (días/meses/años) o hasta una fecha.
+            # Se combina libremente con la cantidad de usos.
+            fecha_fin_valor, error = _vencimiento_cupon(request.POST)
+            if error:
+                messages.error(request, error)
+                return redirect('productos:admin_ofertas')
 
             Oferta.objects.create(
                 nombre=nombre,
