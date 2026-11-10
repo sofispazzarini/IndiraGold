@@ -1,5 +1,5 @@
 {% extends 'base_publica.html' %}
-{% load static descuentos_pago %}
+{% load static descuentos_pago imagenes_producto %}
 
 {% block title %}{{ producto.nombre }} — IndiraGold{% endblock %}
 
@@ -931,7 +931,7 @@
         <div class="detalle-galeria">
             <div class="imagen-principal">
                 {% if producto.imagenes.all %}
-                    <img id="imagenPrincipal" src="{{ producto.imagenes.all.0.imagen.url }}" alt="{{ producto.nombre }}">
+                    <img id="imagenPrincipal" src="{{ producto.imagenes.all.0.imagen|imagen_optimizada:1600 }}" decoding="async" alt="{{ producto.nombre }}">
                 {% else %}
                     <div style="text-align: center; color: #bbb;">
                         <svg width="60" height="60" fill="currentColor" viewBox="0 0 16 16" style="opacity: 0.3; margin-bottom: 1rem;">
@@ -946,8 +946,8 @@
             {% if producto.imagenes.all|length > 1 %}
                 <div class="miniaturas">
                     {% for imagen in producto.imagenes.all|slice:":5" %}
-                        <div class="miniatura {% if forloop.first %}activa{% endif %}" onclick="cambiarImagen(this, '{{ imagen.imagen.url }}')">
-                            <img src="{{ imagen.imagen.url }}" alt="Miniatura">
+                        <div class="miniatura {% if forloop.first %}activa{% endif %}" onclick="cambiarImagen(this, '{{ imagen.imagen|imagen_optimizada:1600 }}')">
+                            <img src="{{ imagen.imagen|imagen_optimizada:480 }}" loading="lazy" decoding="async" alt="Miniatura">
                         </div>
                     {% endfor %}
                 </div>
@@ -1101,7 +1101,7 @@
                 <a href="{% url 'productos:detalle_producto' prod.id %}" class="relacionado-card">
                     <div class="relacionado-img">
                         {% if prod.imagenes.all %}
-                            <img src="{{ prod.imagenes.all.0.imagen.url }}" alt="{{ prod.nombre }}">
+                            <img src="{{ prod.imagenes.all.0.imagen|imagen_optimizada:480 }}" loading="lazy" decoding="async" alt="{{ prod.nombre }}">
                         {% else %}
                             <svg width="60" height="60" fill="#ddd" viewBox="0 0 16 16">
                                 <path d="M6.002 5.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z"/>
@@ -1574,7 +1574,7 @@ async function submitCartForm(form) {
         });
 
         if (!response.ok) {
-            form.submit();
+            showToast('No pudimos actualizar el carrito. Volvé a cargar la página para comprobarlo e intentá de nuevo.', 'error');
             return;
         }
 
@@ -1586,11 +1586,11 @@ async function submitCartForm(form) {
             try { sincronizarEnCarrito(); } catch (e) { /* ignore */ }
         } else {
             form.removeAttribute('data-submitting');
-            form.submit();
+            showToast('No pudimos actualizar el carrito. Volvé a cargar la página para comprobarlo e intentá de nuevo.', 'error');
         }
     } catch (error) {
         form.removeAttribute('data-submitting');
-        form.submit();
+        showToast('No pudimos actualizar el carrito. Volvé a cargar la página para comprobarlo e intentá de nuevo.', 'error');
     }
     finally {
         try { form.removeAttribute('data-submitting'); } catch (e) {}

@@ -148,6 +148,7 @@ class Pedido(models.Model):
         default='pendiente'
     )
     metodo_pago = models.CharField(max_length=20, choices=METODOS_PAGO, null=True, blank=True)
+    mercado_pago_referencia = models.CharField(max_length=100, null=True, blank=True, unique=True, editable=False)
     # True mientras las unidades del pedido están descontadas del stock (reservadas o vendidas).
     # Es la marca que evita descontar o reponer dos veces.
     stock_descontado = models.BooleanField(default=False)

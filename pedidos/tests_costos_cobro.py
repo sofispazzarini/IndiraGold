@@ -105,7 +105,7 @@ class PagoOnlineGuardaLosCostosTests(DatosStockMixin, TestCase):
         with mock.patch('pedidos.views.sdk', sdk):
             self.comprar(self.cliente_a, [(self.bota_m, 2, 'Rojo')], metodo_pago='mercado_pago')
         referencia = sdk.preference.return_value.create.call_args[0][0]['external_reference']
-        detalle = dict(detalle_sin_referencia, external_reference=referencia)
+        detalle = dict(detalle_sin_referencia, external_reference=referencia, currency_id='ARS')
         sdk_pago = mock.MagicMock()
         sdk_pago.payment.return_value.get.return_value = {'status': 200, 'response': detalle}
         client = self.cliente_logueado(self.cliente_a)

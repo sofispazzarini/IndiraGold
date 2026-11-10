@@ -1,5 +1,6 @@
 import uuid
 import io
+from PIL import Image
 from urllib.parse import urlencode, urlparse
 
 from django.conf import settings
@@ -93,7 +94,12 @@ class Producto(models.Model):
         """Stock vendible: por cada talle activo, la suma de sus colores si tiene stock por
         color (VarianteColor) o, si no, el stock del talle."""
         total = 0
-        for variante in self.variantes.filter(activa=True).prefetch_related('variante_colores'):
+        variantes = self.variantes.all()
+        if 'variantes' not in getattr(self, '_prefetched_objects_cache', {}):
+            variantes = variantes.prefetch_related('variante_colores')
+        for variante in variantes:
+            if not variante.activa:
+                continue
             colores = [vc for vc in variante.variante_colores.all() if vc.activo]
             total += sum(vc.stock for vc in colores) if colores else variante.stock
         return total
@@ -103,7 +109,12 @@ class Producto(models.Model):
 
     @property
     def imagen(self):
-        imagen = self.imagenes.filter(es_portada=True).first() or self.imagenes.first()
+        # Usar la precarga del catálogo; filter().first() la descartaba en cada <img>.
+        if 'imagenes' in getattr(self, '_prefetched_objects_cache', {}):
+            imagenes = sorted(self.imagenes.all(), key=lambda foto: foto.pk)
+            imagen = next((foto for foto in imagenes if foto.es_portada), None) or next(iter(imagenes), None)
+        else:
+            imagen = self.imagenes.filter(es_portada=True).first() or self.imagenes.first()
         return imagen.imagen if imagen else None
 
     def _operacion_activa(self, tipo):
@@ -158,6 +169,19 @@ class ImagenProducto(models.Model):
     imagen = models.ImageField(upload_to='productos/')
     # Opcional: un campo para definir cuál es la principal
     es_portada = models.BooleanField(default=False)
+
+    def save(self, *args, **kwargs):
+        nueva_imagen = bool(self.imagen and not self.imagen._committed)
+        super().save(*args, **kwargs)
+        if nueva_imagen:
+            from .imagenes import generar_derivadas
+            import logging
+            try:
+                generar_derivadas(self.imagen)
+            except (OSError, ValueError, Image.DecompressionBombError):
+                # El alta no se pierde si la optimización falla. El comando permite
+                # reintentar y reporta los archivos que requieren atención.
+                logging.getLogger(__name__).exception('No se pudo optimizar ImagenProducto %s', self.pk)
 ORDEN_TALLES_LETRA = ['XXXS', 'XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL', '4XL', '5XL', '6XL']
 
 

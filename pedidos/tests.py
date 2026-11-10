@@ -128,6 +128,7 @@ class DatosStockMixin:
             sdk.payment.return_value.get.return_value = {
                 'status': 200,
                 'response': {
+                    'currency_id': 'ARS',
                     'status': estado,
                     'external_reference': referencia_de_pedido,
                     'transaction_amount': float(monto or 0),

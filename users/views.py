@@ -25,7 +25,6 @@ from django.db.models import Q
 from django.db import IntegrityError
 from django.contrib.auth.models import User
 from .forms_manual import RegistroManualClienteForm, EditarClienteForm, NuevaDireccionForm
-from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 from django.http import JsonResponse
 from django.contrib.auth.decorators import user_passes_test
@@ -475,7 +474,6 @@ def registro(request):
 
 
 
-@csrf_exempt
 def verificar_codigo_email(request):
     if request.method == 'POST':
         codigo_usuario = (request.POST.get('codigo') or '').strip()

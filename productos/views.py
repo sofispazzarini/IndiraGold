@@ -1095,7 +1095,8 @@ def gestion_medidas(request):
 @admin_required
 def obtener_detalle_producto_ajax(request, producto_id):
     producto = get_object_or_404(Producto, id=producto_id)
-    imagenes = [{'url': img.imagen.url} for img in producto.imagenes.all()]
+    from .imagenes import url_imagen
+    imagenes = [{'url': url_imagen(img.imagen, 1600)} for img in producto.imagenes.all()]
     if not imagenes:
         # El placeholder png nunca existió (404): recuadro gris con ícono, en línea
         imagenes = [{'url': (

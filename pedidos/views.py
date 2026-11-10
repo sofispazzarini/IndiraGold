@@ -51,6 +51,8 @@ import mercadopago
 from django.conf import settings
 from config.contacto import whatsapp_numero, whatsapp_numero_visible
 from django.views.decorators.http import require_POST
+from django.views.decorators.csrf import csrf_exempt
+from .mercado_pago import base_url, firma_valida, items_preferencia
 from django.core.mail import send_mail
 from django.conf import settings
 from django.db.models import Q
@@ -339,9 +341,18 @@ def qr_data_a_imagen_base64(qr_data):
     return f"data:image/png;base64,{base64.b64encode(buffer.getvalue()).decode('ascii')}"
 
 
+def crear_preferencia_mp(datos):
+    try:
+        return sdk.preference().create(datos)
+    except Exception as error:
+        # No registrar el cuerpo de la respuesta ni credenciales del SDK.
+        logger.warning('Fallo de transporte de Mercado Pago: %s', type(error).__name__)
+        raise ErrorPreferenciaMercadoPago('No pudimos conectar con Mercado Pago. Intentá de nuevo en unos minutos.') from error
+
+
 def crear_qr_link_pago_mercado_pago(productos, external_reference):
-    site_url = settings.SITE_URL.rstrip('/')
-    preference_response = sdk.preference().create({
+    site_url = base_url()
+    preference_response = crear_preferencia_mp({
         "items": productos,
         "external_reference": external_reference,
         "back_urls": {
@@ -1537,6 +1548,7 @@ def buscar_sucursales_correo(request):
 
 
 @login_required
+@require_POST
 def crear_pago(request):
     """Un solo pedido por carrito aunque lleguen dos "Confirmar" a la vez (doble envío con red
     lenta, dos pestañas): el segundo espera o se corta y no encuentra nada que comprar.
@@ -1780,10 +1792,12 @@ def _crear_pago(request):
     total_pedido = totales_pago['total']
     # Las líneas enviadas a la integración deben sumar exactamente el total persistido.
     # Un cupón con centavos puede producir diferencias al redondear por unidad.
-    importe_integracion = sum((Decimal(str(p['unit_price'])) * p['quantity'] for p in productos), Decimal('0'))
-    if importe_integracion != total_pedido:
-        productos = [{'title': 'Compra IndiraGold (productos y envío)', 'quantity': 1,
-                      'currency_id': 'ARS', 'unit_price': float(total_pedido)}]
+    if metodo_pago in ('mercado_pago', 'mercado_pago_qr'):
+        try:
+            productos = items_preferencia(productos, total_pedido)
+        except ValueError as error:
+            messages.error(request, str(error))
+            return redirect('pedidos:checkout')
     direccion_pedido = direccion_flex or direccion_correo
 
     def crear_pedido_pendiente(metodo):
@@ -1835,7 +1849,7 @@ def _crear_pago(request):
                     productos,
                     f"pedido_qr_{uuid.uuid4().hex[:16]}"
                 )
-            except ValueError:
+            except (ValueError, ErrorPreferenciaMercadoPago):
                 messages.error(
                     request,
                     "No pudimos generar el QR de Mercado Pago. Probá de nuevo en unos minutos o elegí transferencia."
@@ -1883,13 +1897,20 @@ def _crear_pago(request):
     # MERCADO PAGO: el pedido se crea pendiente con sus unidades reservadas antes de ir a pagar, así
     # nadie más compra esas unidades mientras la clienta paga. El link de pago vence junto con la
     # reserva; pago_exitoso confirma este mismo pedido y, si no se paga, vence solo.
-    site_url = settings.SITE_URL.rstrip('/')
+    try:
+        site_url = base_url()
+    except ValueError:
+        logger.error('SITE_URL inválida para el checkout de Mercado Pago.')
+        messages.error(request, 'No pudimos iniciar el pago. Contactanos o elegí transferencia.')
+        return redirect('pedidos:checkout')
     desde = timezone.localtime()
     hasta = desde + plazo_reserva_mercado_pago()
     try:
         with transaction.atomic():
             pedido = crear_pedido_pendiente('mercado_pago')
             referencia_mp = f"pedido_{pedido.id}_{uuid.uuid4().hex[:12]}"
+            pedido.mercado_pago_referencia = referencia_mp
+            pedido.save(update_fields=['mercado_pago_referencia'])
             preference_data = {
                 "items": productos,
                 "external_reference": referencia_mp,
@@ -1911,7 +1932,9 @@ def _crear_pago(request):
                     ]
                 }
             }
-            preference_response = sdk.preference().create(preference_data)
+            if getattr(settings, 'MERCADO_PAGO_WEBHOOK_SECRET', ''):
+                preference_data['notification_url'] = site_url + reverse('pedidos:mercado_pago_webhook')
+            preference_response = crear_preferencia_mp(preference_data)
 
             # VALIDAR RESPUESTA (si falla, no queda pedido ni reserva)
             if preference_response.get("status") != 201:
@@ -1949,43 +1972,83 @@ def pago_exitoso(request):
     return _confirmar_pago_reservado(request, mercado_pago, pedido_id)
 
 
+@csrf_exempt
+@require_POST
+def mercado_pago_webhook(request):
+    """Servidor a servidor: autenticado con HMAC, nunca con una sesión del navegador."""
+    if not getattr(settings, 'MERCADO_PAGO_WEBHOOK_SECRET', ''):
+        return JsonResponse({'error': 'not_configured'}, status=503)
+    if not firma_valida(request):
+        return JsonResponse({'error': 'invalid_signature'}, status=401)
+    if request.GET.get('type') != 'payment':
+        return JsonResponse({'received': True})
+    payment_id = request.GET['data.id']
+    if not payment_id.isascii() or not payment_id.isdigit():
+        return JsonResponse({'error': 'invalid_payment_id'}, status=400)
+    detalle = obtener_detalle_pago_mercado_pago(payment_id)
+    if not detalle:
+        # No confirmar recepción si la API falló: Mercado Pago debe reintentar.
+        return JsonResponse({'error': 'payment_lookup_failed'}, status=503)
+    if str(detalle.get('id')) != payment_id:
+        return JsonResponse({'error': 'payment_id_mismatch'}, status=400)
+    if detalle.get('status') != 'approved':
+        # Reembolsos/contracargos requieren intervención: no revierte ventas o stock solo.
+        logger.info('Notificación MP %s con estado %s; sin cambio automático.', payment_id, detalle.get('status'))
+        return JsonResponse({'received': True})
+    pedido_id = pedido_id_de_referencia(detalle.get('external_reference'))
+    if pedido_id is None:
+        logger.warning('Pago MP %s con referencia anterior o QR; requiere conciliación manual.', payment_id)
+        return JsonResponse({'received': True})
+    mercado_pago = {'payment_id': payment_id, 'detalle': detalle,
+                    'cuotas': int(detalle.get('installments') or 1),
+                    **desglose_pago_mercado_pago(detalle)}
+    try:
+        pedido, aviso, nuevo = registrar_pago_reservado(mercado_pago, pedido_id)
+    except ValueError as error:
+        logger.error('Pago MP %s no aplicado al pedido %s: %s', payment_id, pedido_id, error)
+        return JsonResponse({'error': 'payment_mismatch'}, status=422)
+    if nuevo:
+        transaction.on_commit(lambda: enviar_emails_pago_mercado_pago(pedido, aviso))
+    return JsonResponse({'received': True})
+
+
 def pedido_id_de_referencia(referencia):
     """Id del pedido de una referencia de Mercado Pago 'pedido_<id>_<código>', o None."""
     coincidencia = re.fullmatch(r'pedido_(\d+)_[0-9a-f]+', referencia or '')
     return int(coincidencia.group(1)) if coincidencia else None
 
 
-def _confirmar_pago_reservado(request, mercado_pago, pedido_id):
-    """Confirma el pedido pendiente que se creó (con sus unidades reservadas) al ir a pagar.
-    Idempotente: la fila del pedido se bloquea y un retorno repetido ve el pago ya registrado,
-    sin crear otro pago ni mover stock."""
+def registrar_pago_reservado(mercado_pago, pedido_id, cliente_id=None):
+    """Entrada común a webhook y retorno; valida y bloquea antes de cambiar stock o pago."""
     detalle_pago = mercado_pago['detalle']
     payment_id = mercado_pago['payment_id']
-    cliente, _ = Cliente.objects.get_or_create(user=request.user)
-    pedido = Pedido.objects.filter(pk=pedido_id, cliente=cliente).first()
-
-    error_pago = None
-    if not pedido:
-        error_pago = 'El pago informado no corresponde a esta compra.'
-    elif detalle_pago.get('status') != 'approved':
-        error_pago = 'Mercado Pago todavía no aprobó tu pago.'
-    elif decimal_mp(detalle_pago.get('transaction_amount')) + Decimal('1.00') < pedido.total:
-        error_pago = 'El monto pagado no coincide con el total de tu compra.'
-    if error_pago:
-        messages.error(
-            request,
-            f'{error_pago} Tu pedido no fue confirmado. Si el dinero se debitó, '
-            'escribinos por WhatsApp con el comprobante.'
-        )
-        return redirect('pedidos:checkout')
-
     aviso_admin = ''
     with transaction.atomic():
-        pedido = Pedido.objects.select_for_update().get(pk=pedido.pk)
-        pago_registrado = Pago.objects.filter(Q(mercado_pago_payment_id=payment_id) | Q(pedido=pedido)).first()
+        pedido = Pedido.objects.select_for_update().filter(pk=pedido_id).first()
+        if not pedido or (cliente_id is not None and pedido.cliente_id != cliente_id):
+            raise ValueError('El pago informado no corresponde a esta compra.')
+        referencia = detalle_pago.get('external_reference')
+        if pedido.metodo_pago != 'mercado_pago' or (
+            pedido.mercado_pago_referencia and referencia != pedido.mercado_pago_referencia
+        ):
+            raise ValueError('El pago informado no corresponde a esta compra.')
+        if not pedido.mercado_pago_referencia and cliente_id is None:
+            raise ValueError('Referencia anterior sin asociación persistida; requiere revisión manual.')
+        if not payment_id or detalle_pago.get('status') != 'approved':
+            raise ValueError('Mercado Pago todavía no aprobó tu pago.')
+        try:
+            importe = Decimal(str(detalle_pago.get('transaction_amount')))
+        except (InvalidOperation, TypeError, ValueError):
+            raise ValueError('El monto pagado no es válido.')
+        if not importe.is_finite() or importe != pedido.total or detalle_pago.get('currency_id') != 'ARS':
+            raise ValueError('El monto o la moneda no coinciden con tu compra.')
+        pago_registrado = Pago.objects.filter(mercado_pago_payment_id=payment_id).first()
         if pago_registrado:
-            messages.info(request, f'Tu pago ya estaba registrado. Pedido #{pago_registrado.pedido_id}.')
-            return redirect('pedidos:estado_pedido', pedido_id=pago_registrado.pedido_id)
+            if pago_registrado.pedido_id != pedido.pk:
+                raise ValueError('Este pago ya está asociado a otro pedido.')
+            return pedido, '', False
+        if Pago.objects.filter(pedido=pedido).exists():
+            raise ValueError('El pedido ya tiene otro pago registrado; requiere revisión manual.')
 
         estado_anterior = pedido.estado
         if estado_anterior in ('pendiente', 'vencido'):
@@ -2028,13 +2091,33 @@ def _confirmar_pago_reservado(request, mercado_pago, pedido_id):
 
     if aviso_admin:
         logger.error('Pago de Mercado Pago %s para el pedido %s: %s', payment_id, pedido.id, aviso_admin)
-    enviar_emails_pago_mercado_pago(pedido, aviso_admin)
+    return pedido, aviso_admin, True
 
-    request.session.pop('mp_external_reference', None)
+
+
+def _confirmar_pago_reservado(request, mercado_pago, pedido_id):
+    cliente, _ = Cliente.objects.get_or_create(user=request.user)
+    try:
+        pedido, aviso_admin, nuevo = registrar_pago_reservado(mercado_pago, pedido_id, cliente.pk)
+    except ValueError as error:
+        messages.error(request, f'{error} Tu pedido no fue confirmado. Si el dinero se debitó, escribinos por WhatsApp con el comprobante.')
+        return redirect('pedidos:checkout')
+    if nuevo:
+        transaction.on_commit(lambda: enviar_emails_pago_mercado_pago(pedido, aviso_admin))
+    referencia_sesion = request.session.pop('mp_external_reference', None)
     carrito = Carrito.objects.filter(cliente=cliente, activo=True).first()
-    if carrito:
-        vaciar_carrito_completo(request, carrito)
-    if aviso_admin:
+    # El webhook puede confirmar antes de volver del proveedor. No borrar un
+    # carrito que la clienta ya cambió o empezó después de esa compra.
+    if carrito and (nuevo or referencia_sesion == mercado_pago['detalle'].get('external_reference')):
+        lineas_carrito = sorted((vid, color or '', cantidad) for vid, color, cantidad in
+                                carrito.items.values_list('variante_id', 'color_nombre', 'cantidad'))
+        lineas_pedido = sorted((vid, color or '', cantidad) for vid, color, cantidad in
+                               pedido.items.values_list('variante_id', 'color_nombre', 'cantidad'))
+        if lineas_carrito == lineas_pedido:
+            vaciar_carrito_completo(request, carrito)
+    if not nuevo:
+        messages.info(request, f'Tu pago ya estaba registrado. Pedido #{pedido.pk}.')
+    elif aviso_admin:
         messages.warning(
             request,
             f'Recibimos tu pago del pedido #{pedido.id}, pero las unidades ya no están disponibles. '
@@ -2121,9 +2204,10 @@ def _pago_exitoso_desde_carrito(request, mercado_pago):
         error_pago = 'No pudimos verificar tu pago con Mercado Pago.'
     elif detalle_pago.get('status') != 'approved':
         error_pago = 'Mercado Pago todavía no aprobó tu pago.'
-    elif referencia_esperada and detalle_pago.get('external_reference') != referencia_esperada:
+    elif not referencia_esperada or detalle_pago.get('external_reference') != referencia_esperada:
         error_pago = 'El pago informado no corresponde a esta compra.'
-    elif decimal_mp(detalle_pago.get('transaction_amount')) + Decimal('1.00') < total_esperado:
+    elif (detalle_pago.get('currency_id') != 'ARS' or
+          decimal_mp(detalle_pago.get('transaction_amount')) != total_esperado):
         error_pago = 'El monto pagado no coincide con el total de tu compra.'
     elif Pago.objects.filter(mercado_pago_payment_id=mercado_pago['payment_id']).exists():
         error_pago = 'Este pago ya fue registrado.'

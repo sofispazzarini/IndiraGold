@@ -1,4 +1,5 @@
 {% extends 'users/dashboard_admin.html' %}
+{% load imagenes_producto %}
 
 {% block extra_head %}
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,600&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -449,7 +450,7 @@
           {% if producto.activo %}Activo{% else %}Inactivo{% endif %}
         </span>
         {% if producto.imagenes.all %}
-          <img src="{{ producto.imagenes.all.0.imagen.url }}" alt="{{ producto.nombre }}">
+          <img src="{{ producto.imagenes.all.0.imagen|imagen_optimizada:480 }}" loading="lazy" decoding="async" alt="{{ producto.nombre }}">
         {% else %}
           <div class="product-image-placeholder">
             <i class="bi bi-image"></i>

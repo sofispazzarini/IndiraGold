@@ -1,8 +1,8 @@
-{% load descuentos_pago %}
+{% load descuentos_pago imagenes_producto %}
           <div class="product-card" data-cat="{{ producto.categoria.id }}" data-name="{{ producto.nombre|lower }} {{ producto.tipo|lower }} {{ producto.tela|lower }}" data-talles="{{ producto.talles_con_stock }}" data-colores="{% for v in producto.variantes.all %}{% for c in v.colores.all %}{{ c.id }},{% endfor %}{% endfor %}">
             <a href="{% url 'productos:detalle_producto' producto.id %}" class="product-card__img-wrap">
           {% if producto.imagen %}
-            <img src="{{ producto.imagen.url }}" alt="{{ producto.nombre }}" class="product-card__img" />
+            <img src="{{ producto.imagen|imagen_optimizada:480 }}" srcset="{{ producto.imagen|imagen_optimizada:480 }} 480w, {{ producto.imagen|imagen_optimizada:960 }} 960w" sizes="(max-width: 600px) 50vw, 280px" loading="lazy" decoding="async" alt="{{ producto.nombre }}" class="product-card__img" />
           {% else %}
             <div class="product-card__placeholder">
               <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" fill="currentColor" viewBox="0 0 16 16">

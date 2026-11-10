@@ -61,6 +61,15 @@ if DEBUG:
 
 CSRF_TRUSTED_ORIGINS = env_lista("CSRF_TRUSTED_ORIGINS")
 
+# Verificar request.is_secure() en el servidor antes de habilitar un proxy.
+# Solo confiar en X-Forwarded-Proto si el proxy lo limpia y vuelve a establecer.
+if env_bool('TRUST_X_FORWARDED_PROTO', False):
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+SECURE_SSL_REDIRECT = env_bool('SECURE_SSL_REDIRECT', not DEBUG)
+SECURE_REFERRER_POLICY = 'same-origin'
+CSRF_FAILURE_VIEW = 'config.seguridad.csrf_failure'
+MERCADO_PAGO_WEBHOOK_SECRET = os.getenv('MERCADO_PAGO_WEBHOOK_SECRET', '')
+
 
 
 # Application definition
@@ -83,6 +92,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'config.middleware.FormulariosSegurosMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',

@@ -1534,7 +1534,7 @@ function scrollOfertas(dir) {
       });
 
       if (!response.ok) {
-        form.submit();
+        showToast('No pudimos actualizar el carrito. Volvé a cargar la página para comprobarlo e intentá de nuevo.', 'error');
         return;
       }
 
@@ -1545,11 +1545,11 @@ function scrollOfertas(dir) {
         try { cerrarModalCantidad(); } catch (e) { /* ignore */ }
       } else {
         form.removeAttribute('data-submitting');
-        form.submit();
+        showToast('No pudimos actualizar el carrito. Volvé a cargar la página para comprobarlo e intentá de nuevo.', 'error');
       }
     } catch (error) {
       form.removeAttribute('data-submitting');
-      form.submit();
+      showToast('No pudimos actualizar el carrito. Volvé a cargar la página para comprobarlo e intentá de nuevo.', 'error');
     }
     finally {
       // ensure flag cleared

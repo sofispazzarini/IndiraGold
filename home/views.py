@@ -24,7 +24,12 @@ def variantes_json(producto):
     from productos.views import normalizar_hex_color
 
     variantes_data = []
-    for v in producto.variantes.filter(activa=True).select_related('talle').prefetch_related('colores', 'variante_colores__color'):
+    variantes = producto.variantes.all()
+    if 'variantes' not in getattr(producto, '_prefetched_objects_cache', {}):
+        variantes = variantes.select_related('talle').prefetch_related('colores', 'variante_colores__color')
+    for v in variantes:
+        if not v.activa:
+            continue
         colores_con_stock = [
             {
                 'nombre': vc.color.nombre,
@@ -61,14 +66,18 @@ class HomePublicaView(TemplateView):
         ctx = super().get_context_data(**kwargs)
         expire_cart_if_needed(self.request.session)
 
-        productos = Producto.objects.filter(activo=True).prefetch_related('variantes__talle', 'variantes__colores')
+        productos = Producto.objects.filter(activo=True).select_related('categoria').prefetch_related(
+            'imagenes', 'variantes__talle', 'variantes__colores', 'variantes__variante_colores__color'
+        )
 
-        from productos.stock import stock_total_variante
         for producto in productos:
             producto.variantes_json = variantes_json(producto)
             # Para el filtro por talle: solo los talles que tienen stock (por color si corresponde)
             producto.talles_con_stock = ','.join(
-                str(v.talle_id) for v in producto.variantes.all() if v.activa and stock_total_variante(v) > 0
+                str(v.talle_id) for v in producto.variantes.all() if v.activa and (
+                    sum(vc.stock for vc in v.variante_colores.all() if vc.activo)
+                    if any(vc.activo for vc in v.variante_colores.all()) else v.stock
+                ) > 0
             )
 
         from productos.models import orden_talle
@@ -219,7 +228,8 @@ class HomePublicaView(TemplateView):
         categorias_orden = CategoriaOrden.objects.filter(activo=True).prefetch_related(
             'categoriaordenproducto_set__producto__imagenes',
             'categoriaordenproducto_set__producto__variantes__talle',
-            'categoriaordenproducto_set__producto__variantes__colores'
+            'categoriaordenproducto_set__producto__variantes__colores',
+            'categoriaordenproducto_set__producto__variantes__variante_colores__color'
         )
         # Configurar variantes_json para productos en categorías de orden
         for cat_orden in categorias_orden:

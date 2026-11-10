@@ -23,6 +23,7 @@ import django
 django.setup()
 from django.conf import settings
 settings.ALLOWED_HOSTS = ['testserver', 'indira.test']
+settings.SECURE_SSL_REDIRECT = False
 settings.PASSWORD_HASHERS = ['django.contrib.auth.hashers.MD5PasswordHasher']
 settings.EMAIL_BACKEND = 'django.core.mail.backends.locmem.EmailBackend'
 from django.core.management import call_command

@@ -4,6 +4,7 @@ from . import views
 app_name = 'pedidos'
 
 urlpatterns = [
+    path('mercado-pago/webhook/', views.mercado_pago_webhook, name='mercado_pago_webhook'),
     path('gestion/', views.gestion_pedidos, name='gestion_pedidos'),
     path('estadisticas/', views.estadisticas_ventas, name='estadisticas_ventas'),
     path('gastos/', views.listado_gastos, name='listado_gastos'),
