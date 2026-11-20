@@ -8,6 +8,7 @@ import logging
 from django.db import IntegrityError, transaction
 from django.contrib import messages
 from django.db.models import Sum, Count, Avg, Q, F
+from django.db.models.functions import TruncDate
 from datetime import datetime, timedelta
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 from .models import (
@@ -2647,10 +2648,11 @@ def estadisticas_ventas(request):
     )
 
     # Estadísticas generales
-    total_ventas = (
-        pedidos.aggregate(Sum('total'))['total__sum']
-        or Decimal('0.00')
+    importes_online = pedidos.aggregate(
+        total=Sum('total'), cupones=Sum('descuento_monto'), cobrado=Sum('monto_pagado'),
     )
+    total_ventas = importes_online['total'] or Decimal('0.00')
+    total_cupones = importes_online['cupones'] or Decimal('0.00')
 
     cantidad_pedidos = pedidos.count()
 
@@ -2687,6 +2689,32 @@ def estadisticas_ventas(request):
         created_at__date__gte=fecha_inicio,
         created_at__date__lte=fecha_fin
     )
+    importes_local = ventas_locales_periodo.aggregate(
+        cantidad=Count('id'), total=Sum('total'), cobrado=Sum('monto_pagado'),
+        retenciones=Sum('retencion'), deuda=Sum('saldo_pendiente'),
+    )
+    total_ventas_locales = importes_local['total'] or Decimal('0.00')
+
+    etiquetas_pago = dict(Pedido.METODOS_PAGO) | dict(VentaLocal.METODOS_PAGO)
+    descuentos_por_medio = {}
+    total_descuentos_pago = Decimal('0.00')
+    for canal, ventas in (('online', pedidos), ('local', ventas_locales_periodo)):
+        filas = ventas.filter(descuento_pago_monto__gt=0).values('metodo_pago').annotate(
+            descuento=Sum('descuento_pago_monto'),
+        ).order_by()
+        for fila in filas:
+            metodo = fila['metodo_pago']
+            importe = fila['descuento']
+            medio = descuentos_por_medio.setdefault(metodo, {
+                'medio': etiquetas_pago.get(metodo, metodo or 'Sin especificar'),
+                'online': Decimal('0.00'), 'local': Decimal('0.00'), 'total': Decimal('0.00'),
+            })
+            medio[canal] = importe
+            medio['total'] += importe
+            total_descuentos_pago += importe
+
+    total_descuentos = total_descuentos_pago + total_cupones
+    total_vendido = total_ventas + total_ventas_locales
 
     # Productos más vendidos: pedidos confirmados + ventas presenciales
     acumulado_top = {}
@@ -2715,7 +2743,8 @@ def estadisticas_ventas(request):
         pedidos.values('tipo_venta')
         .annotate(
             cantidad=Count('id'),
-            total=Sum('total')
+            total=Sum('total'),
+            cobrado=Sum('monto_pagado'),
         )
         .order_by('-cantidad')
     )
@@ -2733,12 +2762,13 @@ def estadisticas_ventas(request):
             item['tipo_venta']
         )
 
-    if ventas_locales_periodo.exists():
+    if importes_local['cantidad']:
         ventas_por_tipo.append({
             'tipo_venta': 'venta_local',
             'tipo_label': 'Ventas en el local',
-            'cantidad': ventas_locales_periodo.count(),
-            'total': ventas_locales_periodo.aggregate(total=Sum('total'))['total'] or Decimal('0.00'),
+            'cantidad': importes_local['cantidad'],
+            'total': total_ventas_locales,
+            'cobrado': importes_local['cobrado'] or Decimal('0.00'),
         })
         ventas_por_tipo.sort(key=lambda item: item['cantidad'], reverse=True)
 
@@ -2748,28 +2778,22 @@ def estadisticas_ventas(request):
     # El gráfico sigue el período elegido (antes siempre mostraba los últimos 30 días); si el
     # período es muy largo se muestran sus últimos 92 días para que el gráfico se lea
     inicio_grafico = max(fecha_inicio, fecha_fin - timedelta(days=91))
+    cobros_por_dia = {}
+    for ventas in (pedidos, ventas_locales_periodo):
+        filas = ventas.filter(created_at__date__gte=inicio_grafico).annotate(
+            dia=TruncDate('created_at'),
+        ).values('dia').annotate(cantidad=Count('id'), cobrado=Sum('monto_pagado')).order_by()
+        for fila in filas:
+            dia = cobros_por_dia.setdefault(fila['dia'], {'cantidad': 0, 'total': Decimal('0.00')})
+            dia['cantidad'] += fila['cantidad']
+            dia['total'] += fila['cobrado'] or Decimal('0.00')
+
     for i in range((fecha_fin - inicio_grafico).days + 1):
-
         fecha = inicio_grafico + timedelta(days=i)
-
-        pedidos_dia = Pedido.objects.filter(
-            created_at__date=fecha,
-            estado__in=Pedido.ESTADOS_CON_STOCK_DESCONTADO,
-        )
-
-        ventas_locales_dia = VentaLocal.objects.filter(created_at__date=fecha)
-
-        total_dia = (
-            (pedidos_dia.aggregate(Sum('total'))['total__sum'] or Decimal('0.00'))
-            + (ventas_locales_dia.aggregate(Sum('total'))['total__sum'] or Decimal('0.00'))
-        )
-
-        cantidad_dia = pedidos_dia.count() + ventas_locales_dia.count()
-
+        dia = cobros_por_dia.get(fecha, {'cantidad': 0, 'total': Decimal('0.00')})
         evolucion_diaria.append({
             'fecha': fecha.strftime('%d/%m/%Y'),
-            'cantidad': cantidad_dia,
-            'total': total_dia,
+            **dia,
         })
 
     # Gastos en el período
@@ -2804,25 +2828,8 @@ def estadisticas_ventas(request):
         or Decimal('0.00')
     )
 
-    # Ventas locales en el período
-    ventas_locales = VentaLocal.objects.filter(
-        created_at__date__gte=fecha_inicio,
-        created_at__date__lte=fecha_fin
-    )
-    total_ventas_locales = (
-        ventas_locales.aggregate(total=Sum('total'))['total']
-        or Decimal('0.00')
-    )
-    cobrado_ventas_locales = (
-        ventas_locales.aggregate(total=Sum('monto_pagado'))['total']
-        or Decimal('0.00')
-    )
-
     # Retenciones estimadas de ventas presenciales (% de Posnet o de Mercado Pago en el local de cada cobro)
-    retenciones_presenciales = (
-        ventas_locales.aggregate(total=Sum('retencion'))['total']
-        or Decimal('0.00')
-    )
+    retenciones_presenciales = importes_local['retenciones'] or Decimal('0.00')
 
     # Total retenciones = costos de Mercado Pago online + retenciones estimadas del local
     total_retenciones = retenciones_mp + retenciones_presenciales
@@ -2830,18 +2837,14 @@ def estadisticas_ventas(request):
     # Deudas: saldo sin cobrar de los pedidos confirmados y de las ventas del local del período
     total_deudas = (
         (pedidos.aggregate(total=Sum('deuda'))['total'] or Decimal('0.00'))
-        + (ventas_locales.aggregate(total=Sum('saldo_pendiente'))['total'] or Decimal('0.00'))
+        + (importes_local['deuda'] or Decimal('0.00'))
     )
 
     # Total con deudas (ventas confirmadas incluyendo lo que falta cobrar), menos notas de crédito
-    total_con_deudas = total_ventas + total_ventas_locales - total_notas_credito
+    total_con_deudas = total_vendido - total_notas_credito
 
     # Lo realmente cobrado = monto_pagado de pedidos + monto_pagado de ventas locales
-    cobrado_pedidos = (
-        pedidos.aggregate(total=Sum('monto_pagado'))['total']
-        or Decimal('0.00')
-    )
-    ingresos_brutos = cobrado_pedidos + cobrado_ventas_locales
+    ingresos_brutos = (importes_online['cobrado'] or Decimal('0.00')) + (importes_local['cobrado'] or Decimal('0.00'))
 
     # Neto negocio = lo cobrado - notas de crédito - gastos - costos y retenciones de cobro. Las deudas
     # todavía no cobradas no cuentan (antes partía de las ventas, con deudas incluidas).
@@ -2867,6 +2870,11 @@ def estadisticas_ventas(request):
         'pagos_sin_costos': pagos_sin_costos,
         'total_neto_recibido': total_neto_recibido,
         'total_con_deudas': total_con_deudas,
+        'total_original': total_vendido + total_descuentos,
+        'total_vendido': total_vendido,
+        'total_descuentos': total_descuentos,
+        'total_cupones': total_cupones,
+        'descuentos_por_medio': sorted(descuentos_por_medio.values(), key=lambda medio: medio['medio']),
         'ingresos_brutos': ingresos_brutos,
         'neto_negocio': neto_negocio,
         'total_notas_credito': total_notas_credito,
@@ -3335,6 +3343,7 @@ def ventas_presenciales(request):
         page_number
     )
 
+    configuracion_pago = ConfiguracionPago.actual()
     return render(
         request,
         'pedidos/ventas_presenciales.html',
@@ -3342,6 +3351,10 @@ def ventas_presenciales(request):
             'ventas': page_obj.object_list,
             'page_obj': page_obj,
             'opciones_flex': OpcionEnvioFlex.objects.filter(activo=True),
+            'descuentos_venta_local': {
+                metodo: porcentaje_pago(configuracion_pago, metodo)
+                for metodo in METODOS_PAGO_PRESENCIAL
+            },
             'q': q,
             'dia': dia,
             'mes': mes,
@@ -3427,7 +3440,7 @@ def registrar_venta_local(request):
 
         # Validar todos los ítems y la deuda ANTES de guardar nada, para no dejar
         # ventas a medias ni descontar stock si algo falla.
-        total = Decimal('0.00')
+        subtotal_productos = Decimal('0.00')
         lineas = []
         pedidas_por_variante = {}
 
@@ -3469,11 +3482,20 @@ def registrar_venta_local(request):
             precio_unitario = precio_unitario_vigente(variante)
 
             subtotal = precio_unitario * cantidad
-            total += subtotal
+            subtotal_productos += subtotal
             lineas.append((variante, color, cantidad, precio_unitario, subtotal))
 
-        # El envío se cobra junto con los productos
-        total += costo_envio
+        configuracion_pago = ConfiguracionPago.actual()
+        totales = calcular_totales(
+            subtotal_productos, costo_envio, porcentaje_pago(configuracion_pago, metodo_pago),
+        )
+        total = totales['total']
+
+        if 'total_previsualizado' in data and leer_monto(data['total_previsualizado']) != total:
+            return JsonResponse({
+                'success': False,
+                'error': 'Cambió el total de la venta. Recargá la página y revisá los importes antes de confirmar.',
+            }, status=409)
 
         if nueva_deuda < 0:
             return JsonResponse({
@@ -3491,6 +3513,8 @@ def registrar_venta_local(request):
             cliente=cliente,
 
             total=total,
+            descuento_pago_porcentaje=totales['porcentaje'],
+            descuento_pago_monto=totales['descuento'],
 
             monto_pagado=0,
 
@@ -3544,7 +3568,7 @@ def registrar_venta_local(request):
         # Retención estimada solo sobre lo cobrado ahora y con el % del medio usado (Posnet para
         # tarjeta, el de Mercado Pago en el local para Mercado Pago). Lo que queda debiendo no
         # tiene retención hasta que se cobra.
-        retencion_cobro = retencion_cobro_presencial(monto_pagado, metodo_pago)
+        retencion_cobro = retencion_cobro_presencial(monto_pagado, metodo_pago, configuracion_pago)
         venta.retencion = retencion_cobro
 
         venta.save()
@@ -3621,6 +3645,8 @@ def detalle_venta_local(request, venta_id):
         ),
 
         'total': float(venta.total),
+        'descuento_pago_porcentaje': float(venta.descuento_pago_porcentaje),
+        'descuento_pago_monto': float(venta.descuento_pago_monto),
         'pagado': float(venta.monto_pagado),
 
         'pendiente': float(venta.saldo_pendiente),
@@ -3750,7 +3776,9 @@ def contexto_ticket_venta(venta):
         'cliente_nombre': f'{venta.cliente.user.first_name} {venta.cliente.user.last_name}'.strip(),
         'telefono': venta.cliente.telefono,
         # El total de la venta incluye el envío: el subtotal es solo lo de los productos
-        'subtotal': formato_pesos(venta.total - costo_envio),
+        'subtotal': formato_pesos(venta.total + venta.descuento_pago_monto - costo_envio),
+        'descuento_pago_porcentaje': venta.descuento_pago_porcentaje,
+        'descuento_pago': formato_pesos(venta.descuento_pago_monto),
         'descuento': formato_pesos(0),
         'descuento_porcentaje': 0,
         'total': formato_pesos(venta.total),

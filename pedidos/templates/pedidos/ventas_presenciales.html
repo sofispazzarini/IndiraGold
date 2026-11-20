@@ -1358,6 +1358,19 @@
                             <!-- Desglose envío -->
                             <div id="envio-info" style="display:none; border-top:1px dashed var(--border); padding-top:0.75rem; margin-bottom:0.75rem;"></div>
 
+                            <div id="desglose-venta" class="small" aria-live="polite" hidden>
+                                <div class="d-flex justify-content-between text-muted gap-2 mb-2">
+                                    <span>Subtotal antes del descuento</span>
+                                    <span id="subtotal-venta" class="text-nowrap"></span>
+                                </div>
+                                <div id="descuento-venta" hidden>
+                                    <div class="d-flex justify-content-between gap-2 mb-2">
+                                        <span id="descuento-venta-label"></span>
+                                        <span id="descuento-venta-monto" class="text-nowrap"></span>
+                                    </div>
+                                </div>
+                            </div>
+
                             <div
                                 class="d-flex justify-content-between align-items-end mb-4"
                                 style="border-top:1px solid var(--border); padding-top:0.75rem;"
@@ -1365,7 +1378,7 @@
 
                                 <span class="h5 mb-0">
 
-                                    TOTAL
+                                    Total de la venta
 
                                 </span>
 
@@ -1622,12 +1635,18 @@
         </div>
     </div>
 </div>
+{{ descuentos_venta_local|json_script:"descuentos-venta-local" }}
+<script src="{% static 'pedidos/descuentos_pago.js' %}"></script>
 <script>
 // Formato de moneda argentino ($1.062.500 / $16.149,99), igual al filtro |pesos de los templates
 function formatoPesos(valor){
     const numero = Number(String(valor ?? 0).replace(',', '.')) || 0
     return '$' + numero.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 2 })
 }
+
+const metodoPagoVenta = document.getElementById('metodo-pago')
+const descuentosVentaLocal = JSON.parse(document.getElementById('descuentos-venta-local').textContent)
+metodoPagoVenta.addEventListener('change', () => renderProductosVenta())
 
 // Escapa texto antes de insertarlo con innerHTML (nombres, direcciones, etc. cargados por usuarios)
 function escHtml(valor){
@@ -2151,9 +2170,7 @@ document.getElementById(
             return
         }
 
-        const metodoPago = document.getElementById(
-            'metodo-pago'
-        ).value
+        const metodoPago = metodoPagoVenta.value
 
         const metodoEntrega = metodoEntregaSelect.value
         const direccionId = direccionEnvioSelect.value
@@ -2182,10 +2199,7 @@ document.getElementById(
         const nuevaDeuda = document.getElementById(
             'nueva-deuda'
         ).value
-        const totalVenta = productosVenta.reduce(
-            (acc, p) => acc + (parseFloat(p.precio) * p.cantidad),
-            0
-        ) + (metodoEntrega === 'envio' && opcionEnvioSeleccionada() ? (parseFloat(opcionEnvioSeleccionada().dataset.precio) || 0) : 0)
+        const { total: totalVenta } = calcularResumenVenta()
         const deudaNumerica = parseFloat(nuevaDeuda) || 0
 
         if(deudaNumerica < 0 || deudaNumerica > totalVenta){
@@ -2236,6 +2250,7 @@ document.getElementById(
                             productosVenta,
 
                         nueva_deuda: nuevaDeuda,
+                        total_previsualizado: totalVenta,
                         
                         metodo_pago: metodoPago,
 
@@ -2926,15 +2941,21 @@ function eliminarProductoVenta(index){
     renderProductosVenta()
 }
 
+function calcularResumenVenta(){
+    const subtotalProductos = productosVenta.reduce((suma, producto) => suma + producto.subtotal, 0)
+    const opcionEnvio = metodoEntregaSelect.value === 'envio' ? opcionEnvioSeleccionada() : null
+    const costoEnvio = Number(opcionEnvio?.dataset.precio || 0)
+    const porcentaje = Number(descuentosVentaLocal[metodoPagoVenta.value] || 0)
+    const totales = IndiraDescuentos.calcular(subtotalProductos, costoEnvio, porcentaje)
+    return { subtotalProductos, opcionEnvio, costoEnvio, porcentaje, ...totales }
+}
+
 function renderProductosVenta(){
 
     const container = document.getElementById('lista-productos')
     container.innerHTML = ''
-    let subtotalProductos = 0
 
     productosVenta.forEach((producto, index) => {
-
-        subtotalProductos += producto.subtotal
 
         container.innerHTML += `
             <div class="border rounded-4 p-3 mb-3 position-relative">
@@ -2964,26 +2985,15 @@ function renderProductosVenta(){
         `
     })
 
-    // Calcular envío si está seleccionado "Con envío"
     const metodoEntrega = metodoEntregaSelect.value
-    let costoEnvio = 0;
-    let envioGratis = false;
-    let envioTexto = '';
-    let ciudadNormalizada = direccionSeleccionadaCiudad.toLowerCase().trim();
-
-    const opcionEnvio = opcionEnvioSeleccionada()
-    if (metodoEntrega === 'envio' && ciudadNormalizada && opcionEnvio) {
-        costoEnvio = parseFloat(opcionEnvio.dataset.precio) || 0;
-        envioGratis = costoEnvio === 0;
-        envioTexto = opcionEnvio.dataset.nombre || 'Envío Flex';
-    }
-
-    const total = subtotalProductos + costoEnvio
+    const { subtotalProductos, opcionEnvio, costoEnvio, porcentaje, descuento, total } = calcularResumenVenta()
 
     // Mostrar desglose de envío
     const envioInfoEl = document.getElementById('envio-info')
     if (envioInfoEl) {
         if (metodoEntrega === 'envio' && direccionSeleccionadaCiudad && opcionEnvio) {
+            const envioGratis = costoEnvio === 0
+            const envioTexto = escHtml(opcionEnvio.dataset.nombre || 'Envío Flex')
             envioInfoEl.innerHTML = `
                 <div class="d-flex justify-content-between text-muted small mb-2">
                     <span>Subtotal productos</span>
@@ -2991,7 +3001,7 @@ function renderProductosVenta(){
                 </div>
                 <div class="d-flex justify-content-between small mb-2" style="color: ${envioGratis ? '#166534' : 'var(--burgundy)'};">
                     <span><i class="bi bi-truck me-1"></i>${envioTexto}</span>
-                    <span>${envioGratis ? 'Gratis' : '$' + costoEnvio.toLocaleString('es-AR')}</span>
+                    <span>${envioGratis ? 'Gratis' : formatoPesos(costoEnvio)}</span>
                 </div>
             `
             envioInfoEl.style.display = 'block'
@@ -3005,6 +3015,16 @@ function renderProductosVenta(){
         } else {
             envioInfoEl.style.display = 'none'
         }
+    }
+
+    const hayProductos = productosVenta.length > 0
+    document.getElementById('desglose-venta').hidden = !hayProductos
+    document.getElementById('subtotal-venta').textContent = formatoPesos(subtotalProductos + costoEnvio)
+    document.getElementById('descuento-venta').hidden = !porcentaje
+    if (porcentaje) {
+        const medio = metodoPagoVenta.selectedOptions[0].textContent.toLowerCase()
+        document.getElementById('descuento-venta-label').textContent = `Descuento por ${medio} (${porcentaje.toLocaleString('es-AR')} %)`
+        document.getElementById('descuento-venta-monto').textContent = `-${formatoPesos(descuento)}`
     }
 
     document.getElementById(
@@ -3340,6 +3360,17 @@ async function abrirDetalleVenta(ventaId){
             html += `
 
                 <div class="mb-3" id="resumen-pago-venta">
+
+                    ${data.descuento_pago_porcentaje ? `
+                        <div class="d-flex justify-content-between small gap-2">
+                            <span>Importe antes del descuento</span>
+                            <span class="text-nowrap">${formatoPesos(data.total + data.descuento_pago_monto)}</span>
+                        </div>
+                        <div class="d-flex justify-content-between small gap-2">
+                            <span>Descuento por ${escHtml(data.metodo_pago.toLowerCase())} (${data.descuento_pago_porcentaje.toLocaleString('es-AR')} %)</span>
+                            <span class="text-nowrap">-${formatoPesos(data.descuento_pago_monto)}</span>
+                        </div>
+                    ` : ''}
 
                     <div class="d-flex justify-content-between">
 

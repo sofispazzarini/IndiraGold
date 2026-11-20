@@ -302,6 +302,12 @@ class VentaLocal(models.Model):
         decimal_places=2
     )
 
+    descuento_pago_porcentaje = models.DecimalField(
+        max_digits=5, decimal_places=2, default=0,
+        validators=[MinValueValidator(0), MaxValueValidator(100)],
+    )
+    descuento_pago_monto = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+
     created_at = models.DateTimeField(
         auto_now_add=True
     )

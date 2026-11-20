@@ -155,6 +155,12 @@
     margin-bottom: 3rem;
   }
 
+  @media (min-width: 901px) {
+    .kpi-grid-secundario {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+
   .kpi-card {
     background: #fff;
     padding: 2rem 1.5rem;
@@ -222,7 +228,7 @@
   /* Data Tables */
   .data-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 2rem;
   }
 
@@ -336,7 +342,7 @@
       grid-template-columns: repeat(2, 1fr);
     }
     .data-grid {
-      grid-template-columns: 1fr;
+      grid-template-columns: minmax(0, 1fr);
     }
   }
 
@@ -442,14 +448,27 @@
   <!-- KPIs principales -->
   <div class="kpi-grid">
     <div class="kpi-card">
-      <div class="kpi-label"><i class="bi bi-cash-coin"></i> Subtotal Ventas</div>
-      <div class="kpi-value"><span class="currency">$</span>{{ total_con_deudas|pesos_numero }}</div>
-      {% if total_notas_credito %}<div style="font-size:.72rem; color:var(--muted); margin-top:.25rem;">Ya descuenta {{ total_notas_credito|pesos }} de notas de crédito</div>{% endif %}
+      <div class="kpi-label"><i class="bi bi-receipt"></i> Ventas antes de descuentos</div>
+      <div class="kpi-value"><span class="currency">$</span>{{ total_original|pesos_numero }}</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label"><i class="bi bi-tag"></i> Descuentos otorgados</div>
+      <div class="kpi-value"><span class="currency">$</span>{{ total_descuentos|pesos_numero }}</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label"><i class="bi bi-cash-coin"></i> Vendido con descuentos</div>
+      <div class="kpi-value"><span class="currency">$</span>{{ total_vendido|pesos_numero }}</div>
+      {% if total_notas_credito %}<div style="font-size:.72rem; color:var(--muted); margin-top:.25rem;">{{ total_con_deudas|pesos }} después de notas de crédito</div>{% endif %}
     </div>
     <div class="kpi-card">
       <div class="kpi-label"><i class="bi bi-wallet2"></i> Ingresos Brutos</div>
       <div class="kpi-value"><span class="currency">$</span>{{ ingresos_brutos|pesos_numero }}</div>
+      <div style="font-size:.72rem; color:var(--muted); margin-top:.25rem;">Cobrado de las ventas del período</div>
     </div>
+  </div>
+
+  <!-- KPIs secundarios -->
+  <div class="kpi-grid kpi-grid-secundario">
     <div class="kpi-card">
       <div class="kpi-label"><i class="bi bi-graph-down-arrow"></i> Gastos</div>
       <div class="kpi-value" style="color: var(--burgundy);"><span class="currency">$</span>{{ total_gastos|pesos_numero }}</div>
@@ -459,10 +478,6 @@
       <div class="kpi-value"><span class="currency">$</span>{{ neto_negocio|pesos_numero }}</div>
       <div style="font-size:.72rem; color:var(--muted); margin-top:.25rem;">Cobrado − notas de crédito − gastos − retenciones. No incluye deudas sin cobrar.</div>
     </div>
-  </div>
-
-  <!-- KPIs secundarios -->
-  <div class="kpi-grid" style="margin-top: 1px;">
     <div class="kpi-card">
       <div class="kpi-label"><i class="bi bi-bag-check"></i> Pedidos confirmados</div>
       <div class="kpi-value">{{ cantidad_pedidos }}</div>
@@ -519,33 +534,61 @@
 
       <div>
         <h3 class="section-title"><i class="bi bi-shop"></i> Ventas por tipo</h3>
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>Tipo de venta</th>
-              <th>Cantidad</th>
-              <th>Total</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for item in ventas_por_tipo %}
-            <tr>
-              <td><strong>{{ item.tipo_label }}</strong></td>
-              <td><span class="cantidad-badge">{{ item.cantidad }}</span></td>
-              <td>{{ item.total|pesos }}</td>
-            </tr>
-            {% empty %}
-            <tr class="empty-row">
-              <td colspan="3">
-                <i class="bi bi-inbox"></i>
-                Sin datos
-              </td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Tipo de venta</th>
+                <th>Cantidad</th>
+                <th>Vendido</th>
+                <th>Cobrado</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in ventas_por_tipo %}
+              <tr>
+                <td><strong>{{ item.tipo_label }}</strong></td>
+                <td><span class="cantidad-badge">{{ item.cantidad }}</span></td>
+                <td>{{ item.total|pesos }}</td>
+                <td>{{ item.cobrado|pesos }}</td>
+              </tr>
+              {% empty %}
+              <tr class="empty-row">
+                <td colspan="4">
+                  <i class="bi bi-inbox"></i>
+                  Sin datos
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
+  </div>
+
+  <div class="section">
+    <h3 class="section-title"><i class="bi bi-tag"></i> Descuentos por medio de pago</h3>
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr><th>Medio de pago</th><th>Online</th><th>Local</th><th>Total</th></tr>
+        </thead>
+        <tbody>
+          {% for item in descuentos_por_medio %}
+          <tr>
+            <td><strong>{{ item.medio }}</strong></td>
+            <td>{{ item.online|pesos }}</td>
+            <td>{{ item.local|pesos }}</td>
+            <td>{{ item.total|pesos }}</td>
+          </tr>
+          {% empty %}
+          <tr class="empty-row"><td colspan="4">Sin descuentos por medio de pago en este período</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if total_cupones %}<p class="small mt-3 mb-0 text-muted">Descuentos por cupones online: {{ total_cupones|pesos }}</p>{% endif %}
   </div>
 
   <!-- Gráfico de productos más vendidos -->
@@ -616,7 +659,7 @@ document.addEventListener('DOMContentLoaded', function() {
         labels: [{% for dia in evolucion_diaria %}'{{ dia.fecha|slice:":5"|escapejs }}'{% if not forloop.last %}, {% endif %}{% endfor %}],
         datasets: [
           {
-            label: 'Total Ventas ($)',
+            label: 'Cobrado de las ventas del día ($)',
             data: [{% for dia in evolucion_diaria %}{{ dia.total|default:0|unlocalize }}{% if not forloop.last %}, {% endif %}{% endfor %}],
             borderColor: 'rgba(184, 146, 42, 1)',
             backgroundColor: 'rgba(184, 146, 42, 0.1)',
@@ -630,7 +673,7 @@ document.addEventListener('DOMContentLoaded', function() {
             yAxisID: 'y'
           },
           {
-            label: 'Cantidad Pedidos',
+            label: 'Cantidad de ventas',
             data: [{% for dia in evolucion_diaria %}{{ dia.cantidad|default:0|unlocalize }}{% if not forloop.last %}, {% endif %}{% endfor %}],
             borderColor: 'rgba(110, 14, 46, 1)',
             backgroundColor: 'rgba(110, 14, 46, 0.05)',
