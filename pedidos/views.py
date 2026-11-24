@@ -76,8 +76,8 @@ from .servicios_envio import ErrorEnvio, SERVICIOS_CORREO, calcular_paquete_envi
 from .costos_cobro import (
     METODOS_PAGO_PRESENCIAL,
     campos_costos_pago,
+    datos_retencion_cobro,
     desglose_pago_mercado_pago,
-    retencion_cobro_presencial,
 )
 logger = logging.getLogger(__name__)
 
@@ -889,6 +889,8 @@ def detalle_pedido(request, pedido_id):
         'pedido': pedido,
         'pago': pago,
         'pagos_registrados': pagos_registrados,
+        'retencion_pagos_registrados': sum((p.retencion or Decimal('0.00') for p in pagos_registrados), Decimal('0.00')),
+        'neto_pagos_registrados': sum((p.neto for p in pagos_registrados), Decimal('0.00')),
         'saldo_pendiente': saldo_pendiente,
         'subtotal_items': sum((item.precio_total for item in pedido.items.all()), Decimal('0.00')),
         'items_devolvibles': [(item, unidades_devolvibles(item)) for item in pedido.items.all()],
@@ -2831,8 +2833,18 @@ def estadisticas_ventas(request):
     # Retenciones estimadas de ventas presenciales (% de Posnet o de Mercado Pago en el local de cada cobro)
     retenciones_presenciales = importes_local['retenciones'] or Decimal('0.00')
 
-    # Total retenciones = costos de Mercado Pago online + retenciones estimadas del local
-    total_retenciones = retenciones_mp + retenciones_presenciales
+    # Retenciones estimadas de los pagos de pedidos confirmados a mano (tarjeta o Mercado Pago QR/link/Point).
+    # Mismo período que ingresos_brutos (fecha del pedido). No se duplican con Pago: un pedido pagado por
+    # la API nace saldado y no tiene cobros manuales.
+    pagos_manuales = PagoPedido.objects.filter(pedido__in=pedidos)
+    retenciones_pagos_pedido = pagos_manuales.aggregate(total=Sum('retencion'))['total'] or Decimal('0.00')
+    # Cobros con tarjeta o MP sin retención calculada (anteriores a esta versión): se avisan, no son $0
+    pagos_sin_retencion = pagos_manuales.filter(
+        metodo_pago__in=('tarjeta', 'mercado_pago'), retencion__isnull=True,
+    ).count()
+
+    # Total retenciones = costos de Mercado Pago online + pedidos confirmados a mano + retenciones del local
+    total_retenciones = retenciones_mp + retenciones_pagos_pedido + retenciones_presenciales
 
     # Deudas: saldo sin cobrar de los pedidos confirmados y de las ventas del local del período
     total_deudas = (
@@ -2868,6 +2880,10 @@ def estadisticas_ventas(request):
         'total_deudas': total_deudas,
         'total_retenciones': total_retenciones,
         'pagos_sin_costos': pagos_sin_costos,
+        'retenciones_mp_online': retenciones_mp,
+        'retenciones_pagos_pedido': retenciones_pagos_pedido,
+        'retenciones_presenciales': retenciones_presenciales,
+        'pagos_sin_retencion': pagos_sin_retencion,
         'total_neto_recibido': total_neto_recibido,
         'total_con_deudas': total_con_deudas,
         'total_original': total_vendido + total_descuentos,
@@ -3568,7 +3584,7 @@ def registrar_venta_local(request):
         # Retención estimada solo sobre lo cobrado ahora y con el % del medio usado (Posnet para
         # tarjeta, el de Mercado Pago en el local para Mercado Pago). Lo que queda debiendo no
         # tiene retención hasta que se cobra.
-        retencion_cobro = retencion_cobro_presencial(monto_pagado, metodo_pago, configuracion_pago)
+        porcentaje_retencion, retencion_cobro = datos_retencion_cobro(monto_pagado, metodo_pago, configuracion_pago)
         venta.retencion = retencion_cobro
 
         venta.save()
@@ -3586,6 +3602,8 @@ def registrar_venta_local(request):
                 metodo_pago=metodo_pago,
 
                 retencion=retencion_cobro,
+                retencion_porcentaje=porcentaje_retencion,
+                retencion_origen='al_cobrar',
             )
 
         return JsonResponse({
@@ -3976,7 +3994,7 @@ def registrar_pago_venta(request, venta_id):
             venta.estado_pago = 'PAGADO'
 
         # Retención estimada de este cobro, con el % de su medio
-        retencion_cobro = retencion_cobro_presencial(monto, metodo_pago)
+        porcentaje_retencion, retencion_cobro = datos_retencion_cobro(monto, metodo_pago)
         venta.retencion = (venta.retencion or Decimal('0.00')) + retencion_cobro
 
         venta.save()
@@ -3990,6 +4008,8 @@ def registrar_pago_venta(request, venta_id):
             metodo_pago=metodo_pago,
 
             retencion=retencion_cobro,
+            retencion_porcentaje=porcentaje_retencion,
+            retencion_origen='al_cobrar',
         )
 
     items = venta.items.all()
@@ -4062,6 +4082,9 @@ def registrar_pago_pedido(request, pedido_id):
     if monto is None or monto <= 0:
         return JsonResponse({'success': False, 'error': 'Ingresá un monto mayor a 0.'})
 
+    if metodo_pago not in dict(PagoPedido.METODOS_PAGO):
+        return JsonResponse({'success': False, 'error': 'Elegí un medio de pago válido.'})
+
     saldo_pendiente = pedido.total - pedido.monto_pagado
     if saldo_pendiente <= 0:
         return JsonResponse({'success': False, 'error': 'Este pedido ya está pagado.'})
@@ -4100,21 +4123,34 @@ def registrar_pago_pedido(request, pedido_id):
 
         pedido.save()
 
+        # Retención estimada sobre lo cobrado (ya sin vuelto) con el % del medio de este cobro.
+        # No toca monto_pagado ni deuda: solo baja el neto del negocio.
+        porcentaje_retencion, retencion_cobro = datos_retencion_cobro(monto, metodo_pago)
         PagoPedido.objects.create(
             pedido=pedido,
             monto=monto,
             metodo_pago=metodo_pago,
-            observaciones=observaciones
+            observaciones=observaciones,
+            retencion_porcentaje=porcentaje_retencion,
+            retencion=retencion_cobro,
+            retencion_origen='al_cobrar',
         )
 
     pagos = pedido.pagos_registrados.all()
     pagos_html = ""
     for p in pagos:
+        retencion_html = ''
+        if p.retencion:
+            retencion_html = (
+                f'<div class="pago-retencion">Retención ({p.retencion_porcentaje.normalize():f}%): '
+                f'−{pesos(p.retencion)} · Neto {pesos(p.neto)}</div>'
+            )
         pagos_html += f"""
         <div class="pago-item">
             <div class="pago-fecha">{p.fecha.strftime('%d/%m/%Y %H:%M')}</div>
             <div class="pago-metodo">{p.get_metodo_pago_display()}</div>
             <div class="pago-monto">{pesos(p.monto)}</div>
+            {retencion_html}
         </div>
         """
 

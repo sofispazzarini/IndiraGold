@@ -13,8 +13,8 @@ from django.core.management import call_command
 from django.test import SimpleTestCase, TestCase
 from django.urls import reverse
 
-from pedidos.costos_cobro import desglose_pago_mercado_pago, retencion_cobro_presencial
-from pedidos.models import ConfiguracionPago, Gasto, NotaCredito, Pago, PagoVentaLocal, Pedido, VentaLocal
+from pedidos.costos_cobro import datos_retencion_cobro, desglose_pago_mercado_pago, retencion_cobro_presencial
+from pedidos.models import ConfiguracionPago, Gasto, NotaCredito, Pago, PagoPedido, PagoVentaLocal, Pedido, VentaLocal
 from pedidos.tests import DatosStockMixin
 
 
@@ -295,3 +295,140 @@ class ConfiguracionYDiagnosticoTests(DatosStockMixin, TestCase):
         pago.refresh_from_db()
         self.assertEqual((pago.retencion_mercado_pago, pago.neto_recibido), (Decimal('0.00'), Decimal('1000.00')))
         self.assertNotIn('30000001', texto)  # sin datos personales
+
+
+class RetencionPagosDePedidoTests(DatosStockMixin, TestCase):
+    """Pagos de pedidos confirmados a mano desde administración (QR/link, tarjeta o MP en el local)."""
+
+    def setUp(self):
+        self.crear_datos()
+        self.admin_client = self.admin_logueado()
+        ConfiguracionPago.objects.update_or_create(pk=1, defaults={
+            'retencion_tarjeta_porcentaje': Decimal('15'),
+            'retencion_mercado_pago_presencial_porcentaje': Decimal('15'),
+        })
+
+    def pedido_de(self, total, estado='pendiente', metodo_pago='mercado_pago_qr', **extra):
+        pedido = self.crear_pedido(self.cliente_a, [(self.remera_m, 1, None)], estado=estado, metodo_pago=metodo_pago)
+        Pedido.objects.filter(pk=pedido.pk).update(total=Decimal(total), deuda=Decimal(total), monto_pagado=0, **extra)
+        pedido.refresh_from_db()
+        return pedido
+
+    def pagar(self, pedido, monto, metodo_pago):
+        respuesta = self.admin_client.post(
+            reverse('pedidos:registrar_pago_pedido', args=[pedido.id]),
+            json.dumps({'monto': monto, 'metodo_pago': metodo_pago}), content_type='application/json',
+        )
+        return respuesta.json()
+
+    def contexto(self):
+        return self.admin_client.get(reverse('pedidos:estadisticas_ventas'), {'tipo_periodo': 'hoy'}).context
+
+    def test_pago_completo_con_tarjeta_guarda_la_retencion_y_baja_el_neto(self):
+        pedido = self.pedido_de('100000', estado='aceptado')
+        self.assertTrue(self.pagar(pedido, '100000', 'tarjeta')['success'])
+        pedido.refresh_from_db()
+        pago = pedido.pagos_registrados.get()
+        self.assertEqual((pago.retencion_porcentaje, pago.retencion, pago.retencion_origen), (Decimal('15.00'), Decimal('15000.00'), 'al_cobrar'))
+        self.assertEqual((pedido.monto_pagado, pedido.deuda), (Decimal('100000.00'), Decimal('0.00')))
+        contexto = self.contexto()
+        self.assertEqual(contexto['ingresos_brutos'], Decimal('100000.00'))
+        self.assertEqual(contexto['total_retenciones'], Decimal('15000.00'))
+        self.assertEqual(contexto['retenciones_pagos_pedido'], Decimal('15000.00'))
+        self.assertEqual(contexto['neto_negocio'], Decimal('85000.00'))
+        self.assertEqual(contexto['pagos_sin_retencion'], 0)
+
+    def test_pedido_qr_pendiente_cobrado_por_mercado_pago(self):
+        pedido = self.pedido_de('100000')
+        respuesta = self.pagar(pedido, '100000', 'mercado_pago')
+        self.assertTrue(respuesta['success'], respuesta)
+        self.assertIn('Retención (15%)', respuesta['pagos_html'])
+        pedido.refresh_from_db()
+        self.assertEqual(pedido.estado, 'aceptado')
+        self.assertEqual(pedido.pagos_registrados.get().retencion, Decimal('15000.00'))
+
+    def test_pago_parcial_mixto_retiene_solo_lo_cobrado_con_mp(self):
+        pedido = self.pedido_de('100000', estado='aceptado')
+        self.assertTrue(self.pagar(pedido, '40000', 'efectivo')['success'])
+        self.assertTrue(self.pagar(pedido, '60000', 'mercado_pago')['success'])
+        self.assertEqual(sum(pedido.pagos_registrados.values_list('retencion', flat=True)), Decimal('9000.00'))
+        self.assertEqual(self.contexto()['total_retenciones'], Decimal('9000.00'))
+
+    def test_el_vuelto_no_tiene_retencion(self):
+        pedido = self.pedido_de('10000', estado='aceptado')
+        self.assertTrue(self.pagar(pedido, '12000', 'tarjeta')['success'])
+        self.assertEqual(pedido.pagos_registrados.get().retencion, Decimal('1500.00'))
+
+    def test_pedido_con_descuento_por_transferencia_no_tiene_retencion(self):
+        pedido = self.pedido_de('90000', estado='aceptado', metodo_pago='transferencia',
+                                descuento_pago_porcentaje=Decimal('10'), descuento_pago_monto=Decimal('10000'))
+        self.assertTrue(self.pagar(pedido, '90000', 'transferencia')['success'])
+        pago = pedido.pagos_registrados.get()
+        self.assertEqual((pago.retencion_porcentaje, pago.retencion), (Decimal('0.00'), Decimal('0.00')))
+        pedido.refresh_from_db()
+        self.assertEqual((pedido.total, pedido.descuento_pago_monto), (Decimal('90000.00'), Decimal('10000.00')))
+
+    def test_cambiar_el_porcentaje_no_modifica_pagos_anteriores(self):
+        pedido = self.pedido_de('100000', estado='aceptado')
+        self.pagar(pedido, '100000', 'tarjeta')
+        ConfiguracionPago.objects.filter(pk=1).update(retencion_tarjeta_porcentaje=Decimal('20'))
+        pago = pedido.pagos_registrados.get()
+        self.assertEqual((pago.retencion_porcentaje, pago.retencion), (Decimal('15.00'), Decimal('15000.00')))
+        self.assertEqual(self.contexto()['total_retenciones'], Decimal('15000.00'))
+
+    def test_medio_de_pago_invalido_se_rechaza(self):
+        pedido = self.pedido_de('1000', estado='aceptado')
+        self.assertFalse(self.pagar(pedido, '1000', 'cheque')['success'])
+        pedido.refresh_from_db()
+        self.assertEqual((pedido.monto_pagado, pedido.pagos_registrados.count()), (Decimal('0.00'), 0))
+
+    def test_pedido_pagado_por_la_api_no_suma_retencion_de_pagos_manuales(self):
+        pedido = self.pedido_de('10000', estado='aceptado')
+        Pedido.objects.filter(pk=pedido.pk).update(monto_pagado=Decimal('10000'), deuda=0)
+        Pago.objects.create(pedido=pedido, metodo='Mercado Pago', monto=Decimal('10000.00'),
+                            retencion_mercado_pago=Decimal('700.00'), neto_recibido=Decimal('9300.00'))
+        self.assertFalse(self.pagar(pedido, '1000', 'tarjeta')['success'])  # ya no hay saldo
+        contexto = self.contexto()
+        self.assertEqual((contexto['total_retenciones'], contexto['retenciones_pagos_pedido']), (Decimal('700.00'), Decimal('0.00')))
+
+    def test_pagos_anteriores_sin_retencion_se_avisan_y_el_comando_los_recalcula(self):
+        pedido = self.pedido_de('100000', estado='aceptado')
+        Pedido.objects.filter(pk=pedido.pk).update(monto_pagado=Decimal('100000'), deuda=0)
+        viejo = PagoPedido.objects.create(pedido=pedido, monto=Decimal('100000'), metodo_pago='tarjeta')
+        efectivo = PagoPedido.objects.create(pedido=pedido, monto=Decimal('500'), metodo_pago='efectivo')
+        contexto = self.contexto()
+        self.assertEqual((contexto['pagos_sin_retencion'], contexto['total_retenciones']), (1, Decimal('0.00')))
+
+        salida = StringIO()
+        call_command('recalcular_retenciones', '--porcentaje-tarjeta', '15', '--porcentaje-mp', '15', stdout=salida)
+        self.assertIn('Se guardarían', salida.getvalue())
+        viejo.refresh_from_db()
+        self.assertIsNone(viejo.retencion)  # sin --aplicar no escribe
+
+        call_command('recalcular_retenciones', '--porcentaje-tarjeta', '15', '--porcentaje-mp', '15', '--aplicar', stdout=StringIO())
+        viejo.refresh_from_db()
+        efectivo.refresh_from_db()
+        self.assertEqual((viejo.retencion, viejo.retencion_origen), (Decimal('15000.00'), 'recalculada'))
+        self.assertIsNone(efectivo.retencion)
+        pedido.refresh_from_db()
+        self.assertEqual((pedido.monto_pagado, pedido.deuda), (Decimal('100000.00'), Decimal('0.00')))
+        contexto = self.contexto()
+        self.assertEqual((contexto['pagos_sin_retencion'], contexto['neto_negocio']), (0, Decimal('85000.00')))
+
+        # Idempotente: una segunda corrida con otro % no pisa lo guardado
+        call_command('recalcular_retenciones', '--porcentaje-tarjeta', '30', '--porcentaje-mp', '30', '--aplicar', stdout=StringIO())
+        viejo.refresh_from_db()
+        self.assertEqual(viejo.retencion, Decimal('15000.00'))
+
+    def test_venta_local_guarda_el_porcentaje_del_cobro(self):
+        datos = {'cliente_id': self.cliente_a.user_id, 'metodo_pago': 'tarjeta', 'metodo_entrega': 'local', 'nueva_deuda': '0',
+                 'productos': [{'variante_id': self.remera_m.id, 'cantidad': 1, 'color': ''}]}
+        venta_id = self.admin_client.post(reverse('pedidos:registrar_venta_local'), json.dumps(datos), content_type='application/json').json()['venta_id']
+        pago = PagoVentaLocal.objects.get(venta_id=venta_id)
+        self.assertEqual((pago.retencion_porcentaje, pago.retencion, pago.retencion_origen), (Decimal('15.00'), Decimal('150.00'), 'al_cobrar'))
+
+    def test_datos_retencion_cobro(self):
+        configuracion = ConfiguracionPago(retencion_tarjeta_porcentaje=Decimal('15'), retencion_mercado_pago_presencial_porcentaje=Decimal('12'))
+        self.assertEqual(datos_retencion_cobro(Decimal('1000'), 'tarjeta', configuracion), (Decimal('15.00'), Decimal('150.00')))
+        self.assertEqual(datos_retencion_cobro(Decimal('1000'), 'mercado_pago_qr', configuracion), (Decimal('12.00'), Decimal('120.00')))
+        self.assertEqual(datos_retencion_cobro(Decimal('1000'), 'efectivo', configuracion), (Decimal('0.00'), Decimal('0.00')))

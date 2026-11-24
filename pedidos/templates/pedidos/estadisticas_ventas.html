@@ -495,7 +495,8 @@
     <div class="kpi-card">
       <div class="kpi-label"><i class="bi bi-credit-card"></i> Retenciones</div>
       <div class="kpi-value" style="color: var(--muted);"><span class="currency">$</span>{{ total_retenciones|pesos_numero }}</div>
-      <div style="font-size:.72rem; color:var(--muted); margin-top:.25rem;">Costos informados por Mercado Pago y % estimado de los cobros del local</div>
+      <div style="font-size:.72rem; color:var(--muted); margin-top:.25rem;">MP online ${{ retenciones_mp_online|pesos_numero }} · Pedidos confirmados a mano ${{ retenciones_pagos_pedido|pesos_numero }} · Local ${{ retenciones_presenciales|pesos_numero }}</div>
+      {% if pagos_sin_retencion %}<div style="font-size:.72rem; color:var(--burgundy); margin-top:.25rem;">{{ pagos_sin_retencion }} pago{{ pagos_sin_retencion|pluralize }} con tarjeta o Mercado Pago sin retención calculada: no incluido{{ pagos_sin_retencion|pluralize }}</div>{% endif %}
       {% if pagos_sin_costos %}<div style="font-size:.72rem; color:var(--burgundy); margin-top:.25rem;">{{ pagos_sin_costos }} pago{{ pagos_sin_costos|pluralize }} de Mercado Pago sin datos de costos: no incluido{{ pagos_sin_costos|pluralize }}</div>{% endif %}
     </div>
   </div>

@@ -1,3 +1,4 @@
+from decimal import Decimal
 from config.textos import capitalizar_texto
 from django.conf import settings
 from django.core.validators import MinValueValidator, MaxValueValidator
@@ -237,6 +238,12 @@ class Pago(models.Model):
         return f"Pago Pedido {self.pedido.id}"
 
 
+ORIGENES_RETENCION = (
+    ('al_cobrar', 'Calculada al cobrar'),
+    ('recalculada', 'Recalculada después'),
+)
+
+
 class PagoPedido(models.Model):
     METODOS_PAGO = (
         ('efectivo', 'Efectivo'),
@@ -257,12 +264,21 @@ class PagoPedido(models.Model):
     )
     observaciones = models.CharField(max_length=255, blank=True)
     fecha = models.DateTimeField(auto_now_add=True)
+    # Retención estimada de este cobro con el % de su medio al momento de cobrar.
+    # NULL = no calculada (pagos anteriores a esta versión), nunca cero.
+    retencion_porcentaje = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+    retencion = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    retencion_origen = models.CharField(max_length=20, choices=ORIGENES_RETENCION, null=True, blank=True)
 
     class Meta:
         ordering = ['-fecha']
 
     def __str__(self):
         return f"Pago ${self.monto} - Pedido #{self.pedido.id}"
+
+    @property
+    def neto(self):
+        return self.monto - (self.retencion or Decimal('0.00'))
 
 
 class Gasto(models.Model):
@@ -430,6 +446,10 @@ class PagoVentaLocal(models.Model):
     # Medio y retención estimada de cada cobro (vacíos en los cobros anteriores a esta versión)
     metodo_pago = models.CharField(max_length=20, choices=VentaLocal.METODOS_PAGO, null=True, blank=True)
     retencion = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    retencion_porcentaje = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+    retencion_origen = models.CharField(max_length=20, choices=ORIGENES_RETENCION, null=True, blank=True)
+
+
 class ConfiguracionEnvio(models.Model):
     # Envío Flex con precio
     flex_activo = models.BooleanField(

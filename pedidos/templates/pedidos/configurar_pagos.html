@@ -298,21 +298,21 @@
     </section>
 
     <section class="pago-section">
-      <div class="pago-section-title"><i class="bi bi-credit-card-2-front"></i> Retenciones en el local</div>
-      <p class="pago-help">Porcentajes estimados que se descuentan de cada cobro en el local según su medio de pago. Se aplican sobre lo cobrado, no sobre lo que queda debiendo. El efectivo no tiene retención.</p>
+      <div class="pago-section-title"><i class="bi bi-credit-card-2-front"></i> Retenciones de cobros registrados a mano</div>
+      <p class="pago-help">Porcentajes estimados que se descuentan de cada cobro en el local, y de cada pago de un pedido que confirmás desde administración, según su medio de pago. Se aplican sobre lo cobrado, no sobre lo que queda debiendo. El efectivo no tiene retención.</p>
       <label class="field-label" style="margin-top:0.75rem;">Tarjeta (Posnet)</label>
       <div style="display:flex; align-items:center; gap:0.5rem;">
         <input type="number" name="retencion_tarjeta_porcentaje" class="envio-input" style="width:100px;"
                value="{{ retencion_tarjeta|unlocalize }}" min="0" max="100" step="0.01">
         <span>%</span>
       </div>
-      <label class="field-label" style="margin-top:0.75rem;">Mercado Pago en el local (QR, link o Point)</label>
+      <label class="field-label" style="margin-top:0.75rem;">Mercado Pago (QR, link o Point)</label>
       <div style="display:flex; align-items:center; gap:0.5rem;">
         <input type="number" name="retencion_mercado_pago_presencial_porcentaje" class="envio-input" style="width:100px;"
                value="{{ retencion_mp_presencial|unlocalize }}" min="0" max="100" step="0.01">
         <span>%</span>
       </div>
-      <p class="pago-help">Si lo dejás en 0, a los cobros con Mercado Pago en el local no se les descuenta nada. Los pagos online no usan estos porcentajes: toman los costos que informa Mercado Pago en cada operación.</p>
+      <p class="pago-help">Si lo dejás en 0, a los cobros con Mercado Pago no se les descuenta nada. También se aplica a los pedidos online cobrados por QR o link y confirmados a mano. Los pagos online aprobados automáticamente por Mercado Pago no usan estos porcentajes: toman los costos que informa Mercado Pago en cada operación. Cambiar un porcentaje no modifica los cobros ya registrados.</p>
     </section>
 
     <section class="pago-section">
