@@ -85,14 +85,17 @@ def campos_costos_pago(desglose):
     }
 
 
-def retencion_cobro_presencial(monto, metodo_pago, configuracion=None):
-    """Retención estimada de un cobro en el local con el porcentaje que carga la administradora:
-    el de Posnet solo para tarjeta y el de Mercado Pago en el local para Mercado Pago. Efectivo y
-    transferencia no tienen. Es una estimación manual: en el local no hay datos de la API de Mercado Pago."""
-    if not monto or monto <= 0:
-        return Decimal('0.00')
-    if metodo_pago not in ('tarjeta', 'mercado_pago', 'mercado_pago_qr'):
-        return Decimal('0.00')
+METODOS_CON_RETENCION = ('tarjeta', 'mercado_pago', 'mercado_pago_qr')
+
+
+def datos_retencion_cobro(monto, metodo_pago, configuracion=None):
+    """(porcentaje, monto) de la retención estimada de un cobro registrado a mano (en el local o al
+    confirmar un pedido desde administración), con el porcentaje que carga la administradora: el de
+    Posnet para tarjeta y el de Mercado Pago para Mercado Pago (QR, link, Point). Efectivo y
+    transferencia dan 0%. Es una estimación manual: estos cobros no tienen datos de la API."""
+    cero = Decimal('0.00')
+    if metodo_pago not in METODOS_CON_RETENCION:
+        return cero, cero
     if configuracion is None:
         from .models import ConfiguracionPago
         configuracion = ConfiguracionPago.actual()
@@ -100,4 +103,12 @@ def retencion_cobro_presencial(monto, metodo_pago, configuracion=None):
         porcentaje = configuracion.retencion_tarjeta_porcentaje
     else:
         porcentaje = configuracion.retencion_mercado_pago_presencial_porcentaje
-    return redondear(Decimal(monto) * (porcentaje or Decimal('0')) / Decimal('100'))
+    porcentaje = redondear(porcentaje or 0)
+    if not monto or monto <= 0:
+        return porcentaje, cero
+    return porcentaje, redondear(Decimal(monto) * porcentaje / Decimal('100'))
+
+
+def retencion_cobro_presencial(monto, metodo_pago, configuracion=None):
+    """Solo el monto de datos_retencion_cobro (se conserva para el código y los tests existentes)."""
+    return datos_retencion_cobro(monto, metodo_pago, configuracion)[1]
