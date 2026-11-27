@@ -1971,12 +1971,12 @@ function abrirModalSobreVenta(id){
 
 document.getElementById('formNuevoClienteVenta').addEventListener('submit', async function(e){
     e.preventDefault()
-    const errorBox = document.getElementById('nuevoClienteError')
     const botonGuardar = this.querySelector('button[type="submit"]')
     if(botonGuardar.disabled) return
     botonGuardar.disabled = true
     botonGuardar.innerText = 'Guardando...'
 
+    let data
     try{
         const response = await fetch('/users/ajax/crear-cliente/', {
             method: 'POST',
@@ -1985,18 +1985,10 @@ document.getElementById('formNuevoClienteVenta').addEventListener('submit', asyn
             },
             body: new FormData(this)
         })
-        const data = await response.json()
+        data = await response.json()
         if(!response.ok || !data.success){
             throw new Error(data.error || 'No se pudo crear el cliente')
         }
-
-        errorBox.classList.add('d-none')
-        errorBox.innerText = ''
-        window.clienteSeleccionado = data.cliente.id
-        inputCliente.value = data.cliente.nombre
-        renderDireccionesVenta([])
-        this.reset()
-        bootstrap.Modal.getInstance(document.getElementById('modalNuevoClienteVenta')).hide()
     }catch(error){
         let errDiv = document.getElementById('nuevoClienteError')
         if(!errDiv){
@@ -2008,10 +2000,24 @@ document.getElementById('formNuevoClienteVenta').addEventListener('submit', asyn
         errDiv.textContent = error.message
         errDiv.className = 'alert alert-danger rounded-3 py-3 fw-bold mb-3'
         errDiv.style.cssText = 'display:block; background:#ffe0e0; border:2px solid #dc3545; color:#721c24;'
+        return
     }finally{
         botonGuardar.disabled = false
         botonGuardar.innerText = 'Guardar cliente'
     }
+
+    // El cliente ya quedó creado: lo que sigue es solo interfaz y no debe mostrarse como error del alta.
+    const errorBox = document.getElementById('nuevoClienteError')
+    if(errorBox){
+        errorBox.classList.add('d-none')
+        errorBox.style.cssText = ''
+        errorBox.textContent = ''
+    }
+    window.clienteSeleccionado = data.cliente.id
+    inputCliente.value = data.cliente.nombre
+    renderDireccionesVenta([])
+    this.reset()
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('modalNuevoClienteVenta')).hide()
 })
 
 document.getElementById('formNuevaDireccionVenta').addEventListener('submit', async function(e) {
