@@ -478,8 +478,9 @@
     });
   }
 
-  // Auto-dismiss alerts after 10 seconds
-  document.querySelectorAll('.alert').forEach(function(alert) {
+  // Cerrar solos los mensajes de Django a los 10 segundos. Solo esos: los cuadros de error
+  // ocultos de los modales también usan .alert y borrarlos rompía sus formularios.
+  document.querySelectorAll('#django-messages .alert').forEach(function(alert) {
     setTimeout(function() {
       if (alert && alert.parentElement) {
         alert.classList.add('hiding');
