@@ -81,3 +81,22 @@ test('centavos, porcentajes fraccionarios, cupón y 100%', () => {
   assert.deepEqual(calcular(50000, 8000, 10, 5000), { descuento: 5300, total: 47700 });
   assert.deepEqual(calcular(50000, 8000, 100), { descuento: 58000, total: 0 });
 });
+
+const reducirImagenes = require('../home/static/home/reducir_imagenes.js');
+
+test('Reducir imágenes solo procesa fotos pesadas de tipos soportados', () => {
+  const MB = 1024 * 1024;
+  assert.equal(reducirImagenes.necesitaReducir({ type: 'image/jpeg', size: 12 * MB }), true);
+  assert.equal(reducirImagenes.necesitaReducir({ type: 'image/png', size: 27 * MB }), true);
+  assert.equal(reducirImagenes.necesitaReducir({ type: 'image/jpeg', size: 300 * 1024 }), false);
+  assert.equal(reducirImagenes.necesitaReducir({ type: 'image/gif', size: 5 * MB }), false);
+  assert.equal(reducirImagenes.necesitaReducir({ type: 'application/pdf', size: 5 * MB }), false);
+});
+
+test('Reducir imágenes respeta proporción y no agranda', () => {
+  assert.deepEqual(reducirImagenes.medidas(4032, 3024, 2560), { ancho: 2560, alto: 1920 });
+  assert.deepEqual(reducirImagenes.medidas(3024, 4032, 2560), { ancho: 1920, alto: 2560 });
+  assert.deepEqual(reducirImagenes.medidas(800, 600, 2560), { ancho: 800, alto: 600 });
+  assert.equal(reducirImagenes.nombreCon('IMG_1234.HEIC.png', 'image/webp'), 'IMG_1234.HEIC.webp');
+  assert.equal(reducirImagenes.nombreCon('foto', 'image/jpeg'), 'foto.jpg');
+});

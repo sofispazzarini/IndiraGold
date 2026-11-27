@@ -159,25 +159,27 @@ Incorporar manualmente el diff de settings y revisar variables como se explica a
 
 No hace falta actualizar Django, SDK o todo requirements.txt para este cambio. Revisar las versiones instaladas; la versión local de prueba es Django 6.0.1/Pillow 13.0.0. Evitar `pip install -U` en producción.
 
-4. Verificar el esquema y aplicar **solo la migración aditiva de pedidos**. No ejecutar makemigrations en producción:
+4. Verificar el esquema y aplicar **solo las migraciones aditivas de pedidos (0046–0048)**. No ejecutar makemigrations en producción:
 
 ```bash
 python manage.py check
 python manage.py diagnosticar_tienda
 python manage.py showmigrations pedidos
-python manage.py migrate pedidos 0046_pedido_mercado_pago_referencia --plan
+python manage.py migrate pedidos 0048_retencion_pagos_manuales --plan
 python manage.py sqlmigrate pedidos 0046_pedido_mercado_pago_referencia
+python manage.py sqlmigrate pedidos 0047_descuentos_venta_local
+python manage.py sqlmigrate pedidos 0048_retencion_pagos_manuales
 ```
 
-Revisar que 0045 y sus dependencias ya estén aplicadas. Si el plan incluye migraciones históricas pendientes, detenerse y revisarlas. Con el esquema previo correcto:
+Revisar que 0045 y sus dependencias ya estén aplicadas. Si 0046 ya se aplicó en un despliegue anterior, el plan debe listar solo 0047 y 0048. Si el plan incluye migraciones históricas pendientes, detenerse y revisarlas. Con el esquema previo correcto:
 
 ```bash
-python manage.py migrate pedidos 0046_pedido_mercado_pago_referencia
+python manage.py migrate pedidos 0048_retencion_pagos_manuales
 python manage.py collectstatic --noinput
 python manage.py check --deploy
 ```
 
-0046 agrega un campo nullable único a pedidos, sin borrar ni transformar registros. Puede tomar un bloqueo breve de la tabla: ejecutarlo en baja actividad y antes de recargar los workers nuevos. Revisar advertencias de check --deploy: no cambiar SECRET_KEY ni HSTS automáticamente.
+0046 agrega un campo nullable único a pedidos. 0047 agrega a ventas locales `descuento_pago_monto` y `descuento_pago_porcentaje`, ambos con default 0. 0048 agrega a pagos de pedidos y de ventas locales las columnas de retención, todas nullable (NULL = retención no calculada). Ninguna borra ni transforma registros. Pueden tomar un bloqueo breve de la tabla: ejecutarlo en baja actividad y antes de recargar los workers nuevos. Revisar advertencias de check --deploy: no cambiar SECRET_KEY ni HSTS automáticamente.
 
 En la pestaña Web comprobar los mapeos `/static/` → STATIC_ROOT y `/media/` → MEDIA_ROOT reales. Recargar la aplicación con **Reload** (no se conoce la ruta real del WSGI para inventar un `touch`). Las variables de la consola no se propagan automáticamente a workers WSGI: confirmar que ambos cargan el mismo entorno.
 
@@ -210,7 +212,7 @@ cp "$BACKUP_DIR/settings.py" config/settings.py
 python manage.py collectstatic --noinput
 ```
 
-Revisar/revertir las variables nuevas manualmente y recargar Web. Mantener **Force HTTPS** activado. Dejar la columna nullable 0046 en la BD: el código anterior la ignora y conserva referencias de pagos. No restaurar un dump antiguo sobre ventas nuevas ni borrar la columna como rollback automático. Revisar pagos pendientes/tardíos con el proveedor y no repetir cobros.
+Revisar/revertir las variables nuevas manualmente y recargar Web. Mantener **Force HTTPS** activado. Dejar en la BD las columnas de 0046–0048: el código anterior las ignora y conserva referencias de pagos. No restaurar un dump antiguo sobre ventas nuevas ni borrar la columna como rollback automático. Revisar pagos pendientes/tardíos con el proveedor y no repetir cobros.
 
 ## Pruebas locales reproducibles
 
